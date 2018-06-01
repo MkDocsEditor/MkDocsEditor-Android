@@ -23,6 +23,15 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
+    //for JVM
+    implementation "com.github.kittinunf.fuel:fuel:${rootProject.ext.fuelVersion}"
+    //for RxJava support
+    implementation "com.github.kittinunf.fuel:fuel-rxjava:${rootProject.ext.fuelVersion}"
+    //for Gson support
+    implementation "com.github.kittinunf.fuel:fuel-gson:${rootProject.ext.fuelVersion}"
+    //for Android
+    implementation "com.github.kittinunf.fuel:fuel-android:${rootProject.ext.fuelVersion}"
+
     implementation 'com.android.support:appcompat-v7:27.1.1'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
