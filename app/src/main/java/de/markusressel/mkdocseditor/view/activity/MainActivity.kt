@@ -8,5 +8,4 @@ class MainActivity : DaggerSupportActivityBase() {
         get() = DEFAULT
     override val layoutRes: Int
         get() = R.layout.activity_main
-
 }
