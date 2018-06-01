@@ -58,6 +58,28 @@ dependencies {
     implementation "com.mikepenz:iconics-views:${iconicsVersion}@aar"
     implementation 'com.mikepenz:material-design-iconic-typeface:+@aar'
 
+    // RxLifecycle to prevent memory leaks
+    def rxLifecycleVersion = rootProject.ext.rxLifecycleVersion
+    implementation "com.trello.rxlifecycle2:rxlifecycle:$rxLifecycleVersion"
+    implementation "com.trello.rxlifecycle2:rxlifecycle-kotlin:$rxLifecycleVersion"
+    implementation "com.trello.rxlifecycle2:rxlifecycle-android:$rxLifecycleVersion"
+    implementation "com.trello.rxlifecycle2:rxlifecycle-android-lifecycle-kotlin:$rxLifecycleVersion"
+
+    // Android Architecture Components
+    implementation "androidx.core:core-ktx:$aacAndroidKtxVersion"
+
+    // Logging
+    api "com.github.ajalt:timberkt:${rootProject.ext.timberKtVersion}"
+
+    // RxBus (event bus)
+    implementation 'com.eightbitlab:rxbus:1.0.2'
+
+    // AboutLibraries ("About" screen)
+    implementation("com.mikepenz:aboutlibraries:$aboutlibrariesVersion@aar") {
+        transitive = true
+    }
+
+
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'

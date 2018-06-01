@@ -1,11 +1,10 @@
-package de.markusressel.mkdocseditor.dagger
+package de.markusressel.mkdocseditor.view.activity.base
 
 import android.os.Bundle
 import android.support.annotation.CallSuper
 import android.support.annotation.IntDef
 import android.support.annotation.LayoutRes
 import android.support.v4.app.Fragment
-import android.support.v7.app.AppCompatActivity
 import android.view.Window
 import android.view.WindowManager
 import dagger.android.AndroidInjection
@@ -19,7 +18,7 @@ import javax.inject.Inject
 /**
  * Created by Markus on 20.12.2017.
  */
-abstract class DaggerSupportActivityBase : AppCompatActivity(), HasFragmentInjector, HasSupportFragmentInjector {
+abstract class DaggerSupportActivityBase : LifecycleActivityBase(), HasFragmentInjector, HasSupportFragmentInjector {
 
     @Inject
     internal lateinit var supportFragmentInjector: DispatchingAndroidInjector<Fragment>

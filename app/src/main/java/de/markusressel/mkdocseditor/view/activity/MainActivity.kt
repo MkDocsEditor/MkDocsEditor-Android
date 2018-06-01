@@ -1,7 +1,7 @@
-package de.markusressel.mkdocseditor.view
+package de.markusressel.mkdocseditor.view.activity
 
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.dagger.DaggerSupportActivityBase
+import de.markusressel.mkdocseditor.view.activity.base.DaggerSupportActivityBase
 
 class MainActivity : DaggerSupportActivityBase() {
     override val style: Int

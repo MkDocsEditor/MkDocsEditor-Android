@@ -7,7 +7,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.android.ContributesAndroidInjector
 import de.markusressel.mkdocseditor.application.App
-import de.markusressel.mkdocseditor.view.MainActivity
+import de.markusressel.mkdocseditor.view.activity.MainActivity
+import de.markusressel.mkdocseditor.view.activity.base.DaggerSupportActivityBase
 import javax.inject.Singleton
 
 /**
