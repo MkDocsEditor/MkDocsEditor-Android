@@ -75,6 +75,18 @@ dependencies {
     // Logging
     api "com.github.ajalt:timberkt:${rootProject.ext.timberKtVersion}"
 
+    // RxJava (RxKotlin actually)
+    implementation "io.reactivex.rxjava2:rxjava:2.1.9"
+    implementation 'io.reactivex.rxjava2:rxandroid:2.0.2'
+    implementation "io.reactivex.rxjava2:rxkotlin:${rootProject.ext.rxKotlinVersion}"
+
+    // RxBinding
+    // RxJava binding APIs for Android UI widgets from the platform and support libraries.
+    implementation "com.jakewharton.rxbinding2:rxbinding:${rootProject.ext.rxBindingVersion}"
+    implementation "com.jakewharton.rxbinding2:rxbinding-support-v4:${rootProject.ext.rxBindingVersion}"
+    implementation "com.jakewharton.rxbinding2:rxbinding-design:${rootProject.ext.rxBindingVersion}"
+
+
     // RxBus (event bus)
     implementation 'com.eightbitlab:rxbus:1.0.2'
 
