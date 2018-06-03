@@ -29,7 +29,7 @@ import io.reactivex.Single
 /**
  * Created by Markus on 08.02.2018.
  */
-class RequestManager(hostname: String = "localhost", apiResource: String = "api", apiVersion: String = "1.0", var basicAuthConfig: BasicAuthConfig? = null) {
+class RequestManager(hostname: String = "localhost", apiResource: String = "", var basicAuthConfig: BasicAuthConfig? = null) {
 
     var hostname: String = hostname
         set(value) {
@@ -38,12 +38,6 @@ class RequestManager(hostname: String = "localhost", apiResource: String = "api"
         }
 
     var apiResource: String = apiResource
-        set(value) {
-            field = value
-            updateBaseUrl()
-        }
-
-    var apiVersion: String = apiVersion
         set(value) {
             field = value
             updateBaseUrl()
@@ -77,7 +71,11 @@ class RequestManager(hostname: String = "localhost", apiResource: String = "api"
      */
     private fun updateBaseUrl() {
         fuelManager
-                .basePath = "https://$hostname/$apiResource/v$apiVersion"
+                .basePath = "http://$hostname"
+        if (apiResource.isNotEmpty()) {
+            fuelManager
+                    .basePath = fuelManager.basePath + "/$apiResource/"
+        }
     }
 
     /**
@@ -196,23 +194,8 @@ class RequestManager(hostname: String = "localhost", apiResource: String = "api"
                 .rx_response()
     }
 
-    /**
-     * Creates a list of parameters that are commonly used for GET requests that return lists
-     *
-     * @param limit the maximum amount of entries to request
-     * @param offset an offset for the requested items
-     * @return "limit" and "offset" parameter, ready to be passed to a "doRequest" method
-     */
-    fun createLimitOffsetParams(limit: Int, offset: Int): List<Pair<String, Any?>> {
-        return listOf("limit" to limit, "offset" to offset)
-    }
-
     companion object {
-        const val DEFAULT_LIMIT = 20
-        const val DEFAULT_OFFSET = 0
-
         val HEADER_CONTENT_TYPE_JSON = "Content-Type" to "application/json"
-
     }
 
 }

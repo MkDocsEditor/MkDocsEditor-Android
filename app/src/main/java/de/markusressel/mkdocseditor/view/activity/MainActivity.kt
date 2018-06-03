@@ -5,7 +5,9 @@ import android.os.Bundle
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.view.activity.base.DaggerSupportActivityBase
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
 import javax.inject.Inject
 
@@ -25,11 +27,10 @@ class MainActivity : DaggerSupportActivityBase() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        restClient.setHostname("localhost:8080")
-        restClient.setApiResource("/")
-
-
-        restClient.getDocument("bla")
+        restClient.setHostname("10.0.2.2:8080")
+        restClient.getDocument("9360119919153839349")
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribeBy(
                         onSuccess = {
                             textView.text = it.toString()

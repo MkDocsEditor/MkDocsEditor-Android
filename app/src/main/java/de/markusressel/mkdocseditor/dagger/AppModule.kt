@@ -9,6 +9,7 @@ import dagger.android.ContributesAndroidInjector
 import de.markusressel.mkdocseditor.application.App
 import de.markusressel.mkdocseditor.view.activity.MainActivity
 import de.markusressel.mkdocseditor.view.activity.base.DaggerSupportActivityBase
+import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import javax.inject.Singleton
 
 /**
@@ -34,6 +35,13 @@ abstract class AppModule {
         @JvmStatic
         internal fun provideContext(application: Application): Context {
             return application
+        }
+
+        @Provides
+        @Singleton
+        @JvmStatic
+        internal fun provideMkDocsRestClient(): MkDocsRestClient {
+            return MkDocsRestClient()
         }
 
     }
