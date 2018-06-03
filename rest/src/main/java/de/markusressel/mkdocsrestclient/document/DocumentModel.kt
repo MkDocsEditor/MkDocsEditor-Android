@@ -8,7 +8,7 @@ import java.util.*
 /**
  * Created by Markus on 03.06.2018.
  */
-class DocumentModel(
+data class DocumentModel(
         val type: String,
         val id: String,
         val name: String,

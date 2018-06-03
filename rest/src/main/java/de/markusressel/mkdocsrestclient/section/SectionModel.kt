@@ -9,7 +9,7 @@ import de.markusressel.mkdocsrestclient.resource.ResourceModel
 /**
  * Created by Markus on 03.06.2018.
  */
-class SectionModel(
+data class SectionModel(
         val id: String,
         val name: String,
         val subsections: List<SectionModel>,

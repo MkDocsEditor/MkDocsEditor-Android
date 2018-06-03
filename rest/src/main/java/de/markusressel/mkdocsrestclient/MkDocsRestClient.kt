@@ -1,11 +1,14 @@
 package de.markusressel.mkdocsrestclient
 
+import com.github.kittinunf.fuel.core.Method
 import de.markusressel.mkdocsrestclient.document.DocumentApi
 import de.markusressel.mkdocsrestclient.document.DocumentApiImpl
 import de.markusressel.mkdocsrestclient.resource.ResourceApi
 import de.markusressel.mkdocsrestclient.resource.ResourceApiImpl
 import de.markusressel.mkdocsrestclient.section.SectionApi
 import de.markusressel.mkdocsrestclient.section.SectionApiImpl
+import de.markusressel.mkdocsrestclient.section.SectionModel
+import io.reactivex.Single
 
 /**
  * Convenience delegation class for easy access to all api methods
@@ -43,6 +46,14 @@ class MkDocsRestClient(private val requestManager: RequestManager = RequestManag
     fun setBasicAuthConfig(basicAuthConfig: BasicAuthConfig) {
         requestManager
                 .basicAuthConfig = basicAuthConfig
+    }
+
+    /**
+     * Get the complete item tree
+     */
+    fun getItemTree(): Single<SectionModel> {
+        return requestManager
+                .doRequest("/tree/", Method.GET, SectionModel.SingleDeserializer())
     }
 
 }

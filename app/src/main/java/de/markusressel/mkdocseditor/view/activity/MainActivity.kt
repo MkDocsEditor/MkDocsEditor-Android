@@ -28,7 +28,9 @@ class MainActivity : DaggerSupportActivityBase() {
         super.onCreate(savedInstanceState)
 
         restClient.setHostname("10.0.2.2:8080")
-        restClient.getDocument("9360119919153839349")
+
+
+        restClient.getItemTree()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeBy(
@@ -39,6 +41,18 @@ class MainActivity : DaggerSupportActivityBase() {
                             textView.text = it.message
                         }
                 )
+
+//        restClient.getDocument("9360119919153839349")
+//                .subscribeOn(Schedulers.io())
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .subscribeBy(
+//                        onSuccess = {
+//                            textView.text = it.toString()
+//                        },
+//                        onError = {
+//                            textView.text = it.message
+//                        }
+//                )
     }
 
 }
