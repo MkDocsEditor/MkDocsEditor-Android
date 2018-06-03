@@ -37,7 +37,9 @@ buildscript {
 
         timberKtVersion = "1.3.0"
 
-        fuelVersion = "1.13.0"
+        fuelVersion = "1.12.1"
+        gsonVersion = "2.8.2"
+        kotsonVersion = "2.5.0"
     }
 
     repositories {
