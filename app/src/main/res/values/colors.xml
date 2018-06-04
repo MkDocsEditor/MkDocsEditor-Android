@@ -3,4 +3,15 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
+
+
+    <color name="textColorPrimary">@android:color/white</color>
+    <color name="textColorSecondary">#B2FFFFFF</color>
+    <!-- inverse text color: 87% black -->
+    <color name="textColorPrimaryInverse">#DE000000</color>
+    <color name="textColorSecondaryInverse">#8A000000</color>
+    <color name="textColorInactive">#FFFFFFFF</color>
+
+    <color name="cardview_background">@color/color_gray_800</color>
+    <color name="cardview_backgroundInverse">@color/color_gray_100</color>
 </resources>

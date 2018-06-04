@@ -1,0 +1,76 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'io.objectbox'
+
+android {
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+
+    defaultConfig {
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode rootProject.ext.versionCode
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+
+}
+
+dependencies {
+    api project(':rest')
+
+    // Dagger 2
+    implementation "com.google.dagger:dagger:${rootProject.ext.dagger2Version}"
+    kapt "com.google.dagger:dagger-compiler:${rootProject.ext.dagger2Version}"
+    // kapt "com.android.databinding:compiler:$gradle_plugin_version"
+
+    // if you use the support libraries
+    kapt "com.google.dagger:dagger-android-processor:${rootProject.ext.dagger2Version}"
+    implementation "com.google.dagger:dagger-android:${rootProject.ext.dagger2Version}"
+    implementation "com.google.dagger:dagger-android-support:${rootProject.ext.dagger2Version}"
+
+    implementation "com.google.code.gson:gson:${rootProject.ext.gsonVersion}"
+    // Kotlin bindings for GSON
+    implementation "com.github.salomonbrys.kotson:kotson:${rootProject.ext.kotsonVersion}"
+    implementation "io.reactivex.rxjava2:rxkotlin:${rootProject.ext.rxKotlinVersion}"
+    implementation "com.android.support:support-annotations:${rootProject.ext.supportLibVersion}"
+
+    // Android Architecture Components
+    implementation "androidx.core:core-ktx:$aacAndroidKtxVersion"
+
+    // Logging
+    api "com.github.ajalt:timberkt:${rootProject.ext.timberKtVersion}"
+
+    // my own preference stuff
+    api('com.github.markusressel:KutePreferences:master-SNAPSHOT') {
+        exclude module: 'app'
+        transitive = true
+    }
+
+    // ObjectBox
+    api "io.objectbox:objectbox-android:$objectboxVersion"
+    api "io.objectbox:objectbox-kotlin:$objectboxVersion"
+
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+}

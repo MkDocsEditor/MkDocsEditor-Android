@@ -16,7 +16,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package de.markusressel.mkdocseditor.view.activity
+package de.markusressel.mkdocseditor.view
 
 import android.os.Bundle
 import android.os.Parcelable

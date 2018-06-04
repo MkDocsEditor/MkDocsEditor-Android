@@ -2,7 +2,7 @@ package de.markusressel.mkdocseditor.view.activity.base
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import de.markusressel.mkdocseditor.view.activity.InstanceStateProvider
+import de.markusressel.mkdocseditor.view.InstanceStateProvider
 
 /**
  * Created by Markus on 21.02.2018.
