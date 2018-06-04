@@ -5,7 +5,7 @@ import de.markusressel.mkdocseditor.view.view.rule.*
 class MarkdownSyntaxHighlighter : SyntaxHighlighter {
 
     override fun getRules(): Set<SyntaxHighlighterRule> {
-        return setOf(HeadingRule(), ItalicRule(), BoldRule(), CodeInlineRule(), CodeLineRule())
+        return setOf(HeadingRule(), ItalicRule(), BoldRule(), CodeInlineRule(), CodeLineRule(), LinkRule())
     }
 
 }
