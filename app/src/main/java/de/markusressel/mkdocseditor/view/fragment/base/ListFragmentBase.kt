@@ -64,11 +64,6 @@ abstract class ListFragmentBase<ModelType : Any, EntityType : Any> : DaggerSuppo
     protected val listValues: MutableList<EntityType> = ArrayList()
     private lateinit var recyclerViewAdapter: LastAdapter
 
-    private val persistenceLoaderId = loaderIdCounter
-            .getAndIncrement()
-
-    protected abstract val entityTypeId: Long
-
     protected val loadingComponent by lazy {
         LoadingComponent(this, onShowContent = {
             updateFabVisibility(View.VISIBLE)

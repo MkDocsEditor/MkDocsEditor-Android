@@ -4,6 +4,14 @@
         <attr name="cardview_backgroundColor" format="color" />
     </declare-styleable>
 
+    <style name="sub_header_content_textview">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">?android:textColorPrimary</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
     <style name="fab_style" parent="Widget.Design.FloatingActionButton">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
