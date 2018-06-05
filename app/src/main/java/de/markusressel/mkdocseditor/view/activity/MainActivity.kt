@@ -21,11 +21,12 @@ class MainActivity : DaggerSupportActivityBase() {
         super
                 .onCreate(savedInstanceState)
 
-        val fragment = DocumentsFragment()
+        val existingFragment = supportFragmentManager.findFragmentByTag("itemtree")
+        val fragment = existingFragment ?: DocumentsFragment()
 
         supportFragmentManager
                 .beginTransaction()
-                .replace(R.id.contentLayout, fragment, null)
+                .replace(R.id.contentLayout, fragment, "itemtree")
                 .commit()
 
         //        restClient

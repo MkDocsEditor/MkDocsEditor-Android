@@ -1,5 +1,7 @@
 package de.markusressel.mkdocseditor.view.fragment
 
+import android.annotation.SuppressLint
+import android.arch.lifecycle.LifecycleOwner
 import android.content.Context
 import android.os.Bundle
 import android.support.annotation.CallSuper
@@ -9,16 +11,19 @@ import android.widget.Toast
 import androidx.core.widget.toast
 import com.jakewharton.rxbinding2.widget.RxTextView
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
+import com.otaliastudios.zoom.ZoomLayout
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindToLifecycle
+import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.extensions.prettyPrint
 import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
+import de.markusressel.mkdocseditor.view.view.MarkdownEditText
+import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
-import kotlinx.android.synthetic.main.fragment_editor.*
 import java.util.concurrent.TimeUnit
 
 
@@ -31,6 +36,15 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
     override val layoutRes: Int
         get() = R.layout.fragment_editor
+
+    private lateinit var zoomLayout: ZoomLayout
+    private lateinit var editTextView: MarkdownEditText
+
+    private var currentText: String by savedInstanceState("")
+
+    private var currentXPosition by savedInstanceState(0F)
+    private var currentYPosition by savedInstanceState(0F)
+    private var currentZoom by savedInstanceState(8F)
 
     private val loadingComponent by lazy { LoadingComponent(this) }
 
@@ -80,40 +94,49 @@ class EditorFragment : DaggerSupportFragmentBase() {
                 .onCreateView(inflater, parent, savedInstanceState)
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @CallSuper
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super
                 .onViewCreated(view, savedInstanceState)
 
+        currentText = getString(R.string.markdown_demo_text)
+
+        zoomLayout = view.findViewById(R.id.zoom_container)
+        editTextView = view.findViewById(R.id.md_editor)
+
         RxTextView
-                .afterTextChangeEvents(md_editor)
+                .afterTextChangeEvents(editTextView)
                 .debounce(200, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .bindToLifecycle(this)
+                .bindToLifecycle(this as LifecycleOwner)
                 .subscribeBy(onNext = {
-                    md_editor
+                    currentText = it.editable().toString()
+                    editTextView
                             .refreshSyntaxHighlighting()
                 }, onError = {
                     context
                             ?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
                 })
 
-        md_editor
-                .setText(R.string.markdown_demo_text, TextView.BufferType.EDITABLE)
 
-        // scroll to top
-        md_editor
-                .post {
-                    md_editor
-                            .scrollTo(0, 0)
-                }
+        editTextView
+                .setText(currentText, TextView.BufferType.EDITABLE)
 
-        zoom_container
-                .post {
-                    zoom_container
-                            .moveTo(10F, 0F, 0F, true)
-                }
+        // zoom in
+        zoomLayout.post {
+            zoomLayout.moveTo(currentZoom, currentXPosition, currentYPosition, true)
+        }
+
+        // remember zoom and pan
+        Observable.interval(1000, TimeUnit.MILLISECONDS)
+                .bindToLifecycle(zoomLayout)
+                .subscribeBy(onNext = {
+                    currentXPosition = zoomLayout.panX
+                    currentYPosition = zoomLayout.panY
+                    currentZoom = zoomLayout.zoom
+                })
 
         loadingComponent
                 .showContent()

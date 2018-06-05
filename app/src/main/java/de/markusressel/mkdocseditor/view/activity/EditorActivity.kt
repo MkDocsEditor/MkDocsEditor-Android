@@ -27,12 +27,13 @@ class EditorActivity : DaggerSupportActivityBase() {
         val content = intent
                 .getStringExtra(KEY_CONTENT)
 
-        val fragment = EditorFragment
+        val existingFragment = supportFragmentManager.findFragmentByTag("editor")
+        val fragment = existingFragment ?: EditorFragment
                 .newInstance(id, content)
 
         supportFragmentManager
                 .beginTransaction()
-                .replace(R.id.contentLayout, fragment, null)
+                .replace(R.id.contentLayout, fragment, "editor")
                 .commit()
     }
 
