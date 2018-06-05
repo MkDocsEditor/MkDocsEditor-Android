@@ -18,7 +18,7 @@ class LinkRule : HighlighterRuleBase() {
         val PATTERN = "\\!\\[.*?\\]\\(.*?\\)"
                 .toRegex()
         val COLOR = Color
-                .parseColor("#6200EA")
+                .parseColor("#7C4DFF")
     }
 
 }

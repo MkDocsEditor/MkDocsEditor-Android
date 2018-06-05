@@ -101,6 +101,14 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
         md_editor
                 .setText(R.string.markdown_demo_text, TextView.BufferType.EDITABLE)
+
+        // scroll to top
+        md_editor
+                .post {
+                    md_editor
+                            .scrollTo(0, 0)
+                }
+
         loadingComponent
                 .showContent()
     }

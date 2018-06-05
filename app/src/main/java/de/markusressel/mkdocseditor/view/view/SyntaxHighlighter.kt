@@ -1,7 +1,6 @@
 package de.markusressel.mkdocseditor.view.view
 
 import android.text.Editable
-import android.util.Log
 
 
 interface SyntaxHighlighter {
@@ -15,9 +14,6 @@ interface SyntaxHighlighter {
      * Highlight the given text
      */
     fun highlight(editable: Editable) {
-        Log
-                .e("SYNTAX", "START")
-
         // cleanup
         getRules()
                 .forEach {
@@ -31,9 +27,6 @@ interface SyntaxHighlighter {
                     it
                             .apply(editable)
                 }
-
-        Log
-                .e("SYNTAX", "FINISH")
     }
 
 }

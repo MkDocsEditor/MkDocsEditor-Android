@@ -27,6 +27,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.fragment_recyclerview.*
+import java.util.*
 import javax.inject.Inject
 
 
@@ -81,15 +82,18 @@ class DocumentsFragment : ListFragmentBase<DocumentModel, DocumentEntity>() {
     }
 
     override fun loadListDataFromSource(): Single<List<DocumentModel>> {
-        return restClient
-                .getItemTree()
-                .map {
-                    it
-                            .documents
-                }
-        //        return Single
-        //                .just(listOf(DocumentModel("document", "1", "Test", 10, Date())))
-        //        return restClient.getDocument()
+        val dummyItem = DocumentModel("document", "1", "Test", 10, Date())
+
+        //        return restClient
+        //                .getItemTree()
+        //                .map {
+        //                    // always append a dummy item for now
+        //                    listOf(*it.documents.toTypedArray(), dummyItem)
+        //                }
+
+        // TODO: remove dummy entry
+        return Single
+                .just(listOf(dummyItem))
     }
 
     override fun mapToEntity(it: DocumentModel): DocumentEntity {
