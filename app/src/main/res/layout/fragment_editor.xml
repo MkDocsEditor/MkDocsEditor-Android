@@ -5,23 +5,42 @@
     android:id="@+id/zoom_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:scrollbars="vertical|horizontal"
     app:hasClickableChildren="true"
     app:maxZoom="50.0"
     app:maxZoomType="zoom"
     app:minZoom="0.7"
     app:minZoomType="zoom"
     app:overPinchable="true"
-    app:overScrollHorizontal="true"
-    app:overScrollVertical="true">
+    app:overScrollHorizontal="false"
+    app:overScrollVertical="false">
 
-    <de.markusressel.mkdocseditor.view.view.MarkdownEditText
-        android:id="@+id/md_editor"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:inputType="textMultiLine"
-        android:scrollHorizontally="false"
-        android:scrollbars="none"
-        android:typeface="monospace" />
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/lines"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@color/cardview_dark_background"
+            android:gravity="right|center_vertical"
+            android:paddingTop="12.5dp"
+            android:textSize="12sp"
+            android:typeface="monospace" />
+
+        <de.markusressel.mkdocseditor.view.view.MarkdownEditText
+            android:id="@+id/md_editor"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:inputType="textMultiLine"
+            android:scrollHorizontally="false"
+            android:scrollbars="none"
+            android:textSize="12sp"
+            android:typeface="monospace" />
+
+    </LinearLayout>
 
 </com.otaliastudios.zoom.ZoomLayout>
 

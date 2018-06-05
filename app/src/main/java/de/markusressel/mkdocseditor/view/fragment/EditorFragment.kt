@@ -38,6 +38,7 @@ class EditorFragment : DaggerSupportFragmentBase() {
         get() = R.layout.fragment_editor
 
     private lateinit var zoomLayout: ZoomLayout
+    private lateinit var linesTextView: TextView
     private lateinit var editTextView: MarkdownEditText
 
     private var currentText: String by savedInstanceState("")
@@ -103,7 +104,31 @@ class EditorFragment : DaggerSupportFragmentBase() {
         currentText = getString(R.string.markdown_demo_text)
 
         zoomLayout = view.findViewById(R.id.zoom_container)
+        linesTextView = view.findViewById(R.id.lines)
         editTextView = view.findViewById(R.id.md_editor)
+
+        RxTextView
+                .afterTextChangeEvents(editTextView)
+                .debounce(50, TimeUnit.MILLISECONDS)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .map {
+                    it to it.editable()!!.lines().size
+                }
+                .bindToLifecycle(this as LifecycleOwner)
+                .subscribeBy(onNext = {
+                    currentText = it.first.editable().toString()
+
+                    // Line Numbers
+                    val sb = StringBuilder()
+                    for (i in 1..it.second) {
+                        sb.append("$i:\n")
+                    }
+                    linesTextView.text = sb.toString()
+                }, onError = {
+                    context
+                            ?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
+                })
 
         RxTextView
                 .afterTextChangeEvents(editTextView)
@@ -112,7 +137,7 @@ class EditorFragment : DaggerSupportFragmentBase() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindToLifecycle(this as LifecycleOwner)
                 .subscribeBy(onNext = {
-                    currentText = it.editable().toString()
+                    // syntax highlighting
                     editTextView
                             .refreshSyntaxHighlighting()
                 }, onError = {
