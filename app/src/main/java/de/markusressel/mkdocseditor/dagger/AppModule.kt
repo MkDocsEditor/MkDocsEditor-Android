@@ -7,9 +7,14 @@ import dagger.Module
 import dagger.Provides
 import dagger.android.ContributesAndroidInjector
 import de.markusressel.mkdocseditor.application.App
+import de.markusressel.mkdocseditor.data.persistence.entity.MyObjectBox
+import de.markusressel.mkdocseditor.view.activity.EditorActivity
 import de.markusressel.mkdocseditor.view.activity.MainActivity
 import de.markusressel.mkdocseditor.view.activity.base.DaggerSupportActivityBase
+import de.markusressel.mkdocseditor.view.fragment.DocumentsFragment
+import de.markusressel.mkdocseditor.view.fragment.EditorFragment
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
+import io.objectbox.BoxStore
 import javax.inject.Singleton
 
 /**
@@ -27,6 +32,15 @@ abstract class AppModule {
     @ContributesAndroidInjector
     internal abstract fun MainActivity(): MainActivity
 
+    @ContributesAndroidInjector
+    internal abstract fun DocumentsFragment(): DocumentsFragment
+
+    @ContributesAndroidInjector
+    internal abstract fun EditorActivity(): EditorActivity
+
+    @ContributesAndroidInjector
+    internal abstract fun EditorFragment(): EditorFragment
+
     @Module
     companion object {
 
@@ -41,7 +55,20 @@ abstract class AppModule {
         @Singleton
         @JvmStatic
         internal fun provideMkDocsRestClient(): MkDocsRestClient {
-            return MkDocsRestClient()
+            val restClient = MkDocsRestClient()
+            restClient
+                    .setHostname("10.0.2.2:8080")
+            return restClient
+        }
+
+        @Provides
+        @Singleton
+        @JvmStatic
+        internal fun provideBoxStore(context: Context): BoxStore {
+            return MyObjectBox
+                    .builder()
+                    .androidContext(context)
+                    .build()
         }
 
     }

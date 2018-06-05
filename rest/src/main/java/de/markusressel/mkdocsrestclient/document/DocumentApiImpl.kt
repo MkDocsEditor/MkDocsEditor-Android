@@ -37,17 +37,14 @@ class DocumentApiImpl(private val requestManager: RequestManager) : DocumentApi 
     }
 
     override fun getDocumentContent(id: String): Single<String> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        return Single
+                .just("# Main\n\nThis is just a dummy value")
     }
 
     override fun createDocument(parentId: String, name: String): Single<DocumentModel> {
-        val data = jsonObject(
-                "parent" to parentId,
-                "name" to name
-        )
+        val data = jsonObject("parent" to parentId, "name" to name)
         return requestManager
-                .doJsonRequest("/document/", Method.POST, data,
-                        DocumentModel.SingleDeserializer())
+                .doJsonRequest("/document/", Method.POST, data, DocumentModel.SingleDeserializer())
     }
 
     override fun updateDocumentContent(id: String, newContent: String): Single<String> {

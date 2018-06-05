@@ -5,10 +5,9 @@
     android:layout_height="match_parent"
     tools:context=".view.activity.MainActivity">
 
-    <de.markusressel.mkdocseditor.view.view.MarkdownEditText
-        android:id="@+id/md_editor"
+    <FrameLayout
+        android:id="@+id/contentLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:textSize="12sp" />
+        android:layout_height="match_parent"></FrameLayout>
 
 </android.support.constraint.ConstraintLayout>

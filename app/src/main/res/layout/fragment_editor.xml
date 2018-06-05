@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <de.markusressel.mkdocseditor.view.view.MarkdownEditText
+        android:id="@+id/md_editor"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:textSize="12sp" />
+
+</LinearLayout>
