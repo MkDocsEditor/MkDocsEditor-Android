@@ -10,7 +10,7 @@ class CodeInlineRule : CodeRule() {
     }
 
     companion object {
-        val PATTERN = "`{1,3}[^`]*?`{1,3}"
+        val PATTERN = "(`{1,3})([^`]+?)\\1"
                 .toRegex()
     }
 
