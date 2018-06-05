@@ -10,7 +10,7 @@ class CodeLineRule : CodeRule() {
     }
 
     companion object {
-        val PATTERN = "(?m)^\\s{4}.+"
+        val PATTERN = "(?m)^ {4}.+"
                 .toRegex()
     }
 
