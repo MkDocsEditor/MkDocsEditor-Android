@@ -110,6 +110,9 @@ dependencies {
     // LastAdapter
     implementation 'com.github.nitrico.lastadapter:lastadapter:2.3.0'
 
+    // Zoom Layout Container
+    implementation 'com.otaliastudios:zoomlayout:1.2.0'
+
     // AboutLibraries ("About" screen)
     implementation("com.mikepenz:aboutlibraries:$aboutlibrariesVersion@aar") {
         transitive = true

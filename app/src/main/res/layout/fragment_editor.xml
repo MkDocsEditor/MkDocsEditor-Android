@@ -1,24 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v4.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content"
+
+<com.otaliastudios.zoom.ZoomLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/zoom_container"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:scrollbars="vertical">
+    app:hasClickableChildren="true"
+    app:maxZoom="50.0"
+    app:maxZoomType="zoom"
+    app:minZoom="0.7"
+    app:minZoomType="zoom"
+    app:overPinchable="true"
+    app:overScrollHorizontal="true"
+    app:overScrollVertical="true">
 
-    <HorizontalScrollView
-        android:layout_width="match_parent"
+    <de.markusressel.mkdocseditor.view.view.MarkdownEditText
+        android:id="@+id/md_editor"
+        android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:scrollbars="horizontal">
+        android:inputType="textMultiLine"
+        android:scrollHorizontally="false"
+        android:scrollbars="none"
+        android:typeface="monospace" />
 
-        <de.markusressel.mkdocseditor.view.view.MarkdownEditText
-            android:id="@+id/md_editor"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:inputType="textMultiLine"
-            android:scrollHorizontally="false"
-            android:scrollbars="none"
-            android:textSize="12sp"
-            android:typeface="monospace" />
+</com.otaliastudios.zoom.ZoomLayout>
 
-    </HorizontalScrollView>
-
-</android.support.v4.widget.NestedScrollView>

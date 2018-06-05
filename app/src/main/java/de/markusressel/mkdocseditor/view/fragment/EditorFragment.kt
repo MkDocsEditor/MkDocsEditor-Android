@@ -109,6 +109,12 @@ class EditorFragment : DaggerSupportFragmentBase() {
                             .scrollTo(0, 0)
                 }
 
+        zoom_container
+                .post {
+                    zoom_container
+                            .moveTo(10F, 0F, 0F, true)
+                }
+
         loadingComponent
                 .showContent()
     }
