@@ -17,7 +17,7 @@ class ItalicRule : HighlighterRuleBase() {
     }
 
     companion object {
-        val PATTERN = "\\*(?!\\*).+?\\*"
+        val PATTERN = "(?<!\\*)\\*(?!\\*).+?\\*(?!\\*)"
                 .toRegex()
         val COLOR = Color
                 .parseColor("#0091EA")
