@@ -109,15 +109,12 @@ class CodeEditorView : ZoomLayout {
 
         RxTextView
                 .textChanges(editTextView)
-                .debounce(50, TimeUnit.MILLISECONDS)
+                .debounce(250, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .map {
-                    it to it.lines().size
-                }
                 .bindToLifecycle(this)
                 .subscribeBy(onNext = {
-                    updateLineNumbers(it.second)
+                    updateLineNumbers(editTextView.lineCount)
                 }, onError = {
                     context
                             ?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
