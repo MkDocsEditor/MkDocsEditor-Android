@@ -13,7 +13,7 @@ import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 
-class MarkdownEditText : AppCompatEditText {
+class CodeEditText : AppCompatEditText {
 
     private val syntaxHighlighter = MarkdownSyntaxHighlighter()
 

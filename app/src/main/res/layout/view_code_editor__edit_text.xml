@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<de.markusressel.mkdocseditor.view.view.CodeEditText xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/md_editor"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:inputType="textMultiLine"
+    android:maxLength="99999999"
+    android:maxLines="99999999"
+    android:scrollHorizontally="false"
+    android:scrollbars="none"
+    android:textSize="12sp"
+    android:typeface="monospace" />
