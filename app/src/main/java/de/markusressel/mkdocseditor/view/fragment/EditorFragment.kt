@@ -3,6 +3,7 @@ package de.markusressel.mkdocseditor.view.fragment
 import android.annotation.SuppressLint
 import android.arch.lifecycle.LifecycleOwner
 import android.content.Context
+import android.graphics.Rect
 import android.os.Bundle
 import android.support.annotation.CallSuper
 import android.view.*
@@ -26,6 +27,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 
 
 /**
@@ -147,6 +149,11 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
         editTextView
                 .setText(currentText, TextView.BufferType.EDITABLE)
+        editTextView
+                .post {
+                    editTextView
+                            .setSelection(0)
+                }
 
         // zoom in
         zoomLayout
@@ -156,9 +163,10 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
                     // remember zoom and pan
                     Observable
-                            .interval(1000, TimeUnit.MILLISECONDS)
+                            .interval(500, TimeUnit.MILLISECONDS)
                             .bindToLifecycle(zoomLayout)
                             .subscribeBy(onNext = {
+                                moveScreenWithCursorIfNecessary()
                                 currentXPosition = zoomLayout
                                         .panX
                                 currentYPosition = zoomLayout
@@ -181,6 +189,52 @@ class EditorFragment : DaggerSupportFragmentBase() {
         linesTextView
                 .text = sb
                 .toString()
+    }
+
+    private fun moveScreenWithCursorIfNecessary() {
+        val pos = editTextView
+                .selectionStart
+        val layout = editTextView
+                .layout
+
+        if (layout != null) {
+            val line = layout
+                    .getLineForOffset(pos)
+            val baseline = layout
+                    .getLineBaseline(line)
+            val ascent = layout
+                    .getLineAscent(line)
+            val x = layout
+                    .getPrimaryHorizontal(pos)
+            val y = (baseline + ascent)
+                    .toFloat()
+
+            val zoomLayoutRect = Rect()
+            zoomLayout
+                    .getLocalVisibleRect(zoomLayoutRect)
+
+            val transformedX = x * zoomLayout.realZoom + zoomLayout.panX * zoomLayout.realZoom + linesTextView.width * zoomLayout.realZoom
+            val transformedY = y * zoomLayout.realZoom + zoomLayout.panY * zoomLayout.realZoom
+
+            if (!zoomLayoutRect.contains(transformedX.roundToInt(), transformedY.roundToInt())) {
+
+                var newX = zoomLayout
+                        .panX
+                var newY = zoomLayout
+                        .panY
+
+                if (transformedX < zoomLayoutRect.left || transformedX > zoomLayoutRect.right) {
+                    newX = -x
+                }
+
+                if (transformedY < zoomLayoutRect.top || transformedY > zoomLayoutRect.bottom) {
+                    newY = -y
+                }
+
+                zoomLayout
+                        .moveTo(currentZoom, newX, newY, false)
+            }
+        }
     }
 
     companion object {
