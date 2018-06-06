@@ -6,7 +6,6 @@ import android.content.Context
 import android.graphics.Rect
 import android.os.Bundle
 import android.support.annotation.CallSuper
-import android.util.Log
 import android.view.*
 import android.widget.TextView
 import android.widget.Toast
@@ -121,18 +120,11 @@ class EditorFragment : DaggerSupportFragmentBase() {
                 .setOnTouchListener { view, motionEvent ->
                     when (motionEvent.action) {
                         MotionEvent.ACTION_DOWN -> {
-
-                            Log
-                                    .v("", "DOWN")
                         }
                         MotionEvent.ACTION_MOVE -> {
                             moveWithCursorEnabled = false
-                            Log
-                                    .v("", "MOVE")
                         }
                         MotionEvent.ACTION_UP -> {
-                            Log
-                                    .v("", "UP")
                         }
                     }
                     false
@@ -145,7 +137,7 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
         RxTextView
                 .textChanges(editTextView)
-                .debounce(5, TimeUnit.MILLISECONDS)
+                .debounce(50, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .map {
@@ -153,6 +145,7 @@ class EditorFragment : DaggerSupportFragmentBase() {
                 }
                 .bindToLifecycle(this as LifecycleOwner)
                 .subscribeBy(onNext = {
+                    moveWithCursorEnabled = true
                     currentText = it
                             .first
                             .toString()
