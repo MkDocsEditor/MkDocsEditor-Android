@@ -6,6 +6,7 @@ import android.content.Context
 import android.graphics.Rect
 import android.os.Bundle
 import android.support.annotation.CallSuper
+import android.util.Log
 import android.view.*
 import android.widget.TextView
 import android.widget.Toast
@@ -43,6 +44,8 @@ class EditorFragment : DaggerSupportFragmentBase() {
     private lateinit var zoomLayout: ZoomLayout
     private lateinit var linesTextView: TextView
     private lateinit var editTextView: MarkdownEditText
+
+    private var moveWithCursorEnabled = false
 
     private var currentText: String by savedInstanceState("")
     private var currentLines: Int = -1
@@ -114,6 +117,32 @@ class EditorFragment : DaggerSupportFragmentBase() {
         editTextView = view
                 .findViewById(R.id.md_editor)
 
+        zoomLayout
+                .setOnTouchListener { view, motionEvent ->
+                    when (motionEvent.action) {
+                        MotionEvent.ACTION_DOWN -> {
+
+                            Log
+                                    .v("", "DOWN")
+                        }
+                        MotionEvent.ACTION_MOVE -> {
+                            moveWithCursorEnabled = false
+                            Log
+                                    .v("", "MOVE")
+                        }
+                        MotionEvent.ACTION_UP -> {
+                            Log
+                                    .v("", "UP")
+                        }
+                    }
+                    false
+                }
+
+        editTextView
+                .setOnClickListener {
+                    moveWithCursorEnabled = true
+                }
+
         RxTextView
                 .textChanges(editTextView)
                 .debounce(5, TimeUnit.MILLISECONDS)
@@ -166,7 +195,9 @@ class EditorFragment : DaggerSupportFragmentBase() {
                             .interval(500, TimeUnit.MILLISECONDS)
                             .bindToLifecycle(zoomLayout)
                             .subscribeBy(onNext = {
-                                moveScreenWithCursorIfNecessary()
+                                if (moveWithCursorEnabled) {
+                                    moveScreenWithCursorIfNecessary()
+                                }
                                 currentXPosition = zoomLayout
                                         .panX
                                 currentYPosition = zoomLayout
