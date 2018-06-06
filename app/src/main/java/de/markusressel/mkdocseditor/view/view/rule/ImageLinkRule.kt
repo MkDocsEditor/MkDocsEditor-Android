@@ -5,7 +5,7 @@ import android.text.Editable
 import android.text.style.CharacterStyle
 import android.text.style.ForegroundColorSpan
 
-class LinkRule : HighlighterRuleBase() {
+class ImageLinkRule : HighlighterRuleBase() {
 
     override val styles = setOf<() -> CharacterStyle>({ ForegroundColorSpan(COLOR) })
 
@@ -15,7 +15,7 @@ class LinkRule : HighlighterRuleBase() {
     }
 
     companion object {
-        val PATTERN = "\\[.*?]\\(.*?\\)"
+        val PATTERN = "!\\[.*?]\\(.*?\\)"
                 .toRegex()
         val COLOR = Color
                 .parseColor("#7C4DFF")

@@ -8,6 +8,7 @@ import android.support.annotation.CallSuper
 import android.view.*
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.view.postDelayed
 import androidx.core.widget.toast
 import com.jakewharton.rxbinding2.widget.RxTextView
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
@@ -42,10 +43,11 @@ class EditorFragment : DaggerSupportFragmentBase() {
     private lateinit var editTextView: MarkdownEditText
 
     private var currentText: String by savedInstanceState("")
+    private var currentLines: Int = -1
 
     private var currentXPosition by savedInstanceState(0F)
     private var currentYPosition by savedInstanceState(0F)
-    private var currentZoom by savedInstanceState(8F)
+    private var currentZoom by savedInstanceState(9F)
 
     private val loadingComponent by lazy { LoadingComponent(this) }
 
@@ -103,71 +105,87 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
         currentText = getString(R.string.markdown_demo_text)
 
-        zoomLayout = view.findViewById(R.id.zoom_container)
-        linesTextView = view.findViewById(R.id.lines)
-        editTextView = view.findViewById(R.id.md_editor)
+        zoomLayout = view
+                .findViewById(R.id.zoom_container)
+        linesTextView = view
+                .findViewById(R.id.lines)
+        editTextView = view
+                .findViewById(R.id.md_editor)
 
         RxTextView
-                .afterTextChangeEvents(editTextView)
-                .debounce(50, TimeUnit.MILLISECONDS)
+                .textChanges(editTextView)
+                .debounce(5, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .map {
-                    it to it.editable()!!.lines().size
+                    it to it.lines().size
                 }
                 .bindToLifecycle(this as LifecycleOwner)
                 .subscribeBy(onNext = {
-                    currentText = it.first.editable().toString()
+                    currentText = it
+                            .first
+                            .toString()
 
                     // Line Numbers
-                    val sb = StringBuilder()
-                    for (i in 1..it.second) {
-                        sb.append("$i:\n")
+                    val newLineCount = it
+                            .second
+                    if (newLineCount != currentLines) {
+                        updateLineNumbers(newLineCount)
+
+                        // move view with the cursor
+                        val changeInPixel = LINE_HIGHT_IN_PX * (newLineCount - currentLines) * -1
+                        zoomLayout
+                                .panBy(0F, changeInPixel, false)
+
+                        currentLines = newLineCount
                     }
-                    linesTextView.text = sb.toString()
+
                 }, onError = {
                     context
                             ?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
                 })
-
-        RxTextView
-                .afterTextChangeEvents(editTextView)
-                .debounce(200, TimeUnit.MILLISECONDS)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .bindToLifecycle(this as LifecycleOwner)
-                .subscribeBy(onNext = {
-                    // syntax highlighting
-                    editTextView
-                            .refreshSyntaxHighlighting()
-                }, onError = {
-                    context
-                            ?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
-                })
-
 
         editTextView
                 .setText(currentText, TextView.BufferType.EDITABLE)
 
         // zoom in
-        zoomLayout.post {
-            zoomLayout.moveTo(currentZoom, currentXPosition, currentYPosition, true)
-        }
+        zoomLayout
+                .postDelayed(500) {
+                    zoomLayout
+                            .moveTo(currentZoom, currentXPosition, currentYPosition, true)
 
-        // remember zoom and pan
-        Observable.interval(1000, TimeUnit.MILLISECONDS)
-                .bindToLifecycle(zoomLayout)
-                .subscribeBy(onNext = {
-                    currentXPosition = zoomLayout.panX
-                    currentYPosition = zoomLayout.panY
-                    currentZoom = zoomLayout.zoom
-                })
+                    // remember zoom and pan
+                    Observable
+                            .interval(1000, TimeUnit.MILLISECONDS)
+                            .bindToLifecycle(zoomLayout)
+                            .subscribeBy(onNext = {
+                                currentXPosition = zoomLayout
+                                        .panX
+                                currentYPosition = zoomLayout
+                                        .panY
+                                currentZoom = zoomLayout
+                                        .zoom
+                            })
+                }
 
         loadingComponent
                 .showContent()
     }
 
+    private fun updateLineNumbers(lines: Int) {
+        val sb = StringBuilder()
+        for (i in 1..lines) {
+            sb
+                    .append("$i:\n")
+        }
+        linesTextView
+                .text = sb
+                .toString()
+    }
+
     companion object {
+
+        private const val LINE_HIGHT_IN_PX = 42F
 
         private const val KEY_ID = "KEY_ID"
         private const val KEY_CONTENT = "KEY_CONTENT"
