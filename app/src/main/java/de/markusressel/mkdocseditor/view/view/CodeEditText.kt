@@ -8,31 +8,38 @@ import androidx.core.widget.toast
 import com.jakewharton.rxbinding2.widget.RxTextView
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import de.markusressel.mkdocseditor.extensions.prettyPrint
+import de.markusressel.mkdocseditor.syntaxhighlighter.SyntaxHighlighter
+import de.markusressel.mkdocseditor.syntaxhighlighter.markdown.MarkdownSyntaxHighlighter
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 
 class CodeEditText : AppCompatEditText {
 
-    private val syntaxHighlighter = MarkdownSyntaxHighlighter()
-
+    var syntaxHighlighter: SyntaxHighlighter = MarkdownSyntaxHighlighter()
     private var highlightingTimeout = 200L to TimeUnit.MILLISECONDS
 
+    private var highlightingDisposable: Disposable? = null
+
     constructor(context: Context) : super(context) {
-        init()
+        reinit()
     }
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
-        init()
+        reinit()
     }
 
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
-        init()
+        reinit()
     }
 
-    private fun init() {
-        RxTextView
+    private fun reinit() {
+        highlightingDisposable
+                ?.dispose()
+
+        highlightingDisposable = RxTextView
                 .afterTextChangeEvents(this)
                 .debounce(highlightingTimeout.first, highlightingTimeout.second)
                 .subscribeOn(Schedulers.io())
@@ -47,8 +54,26 @@ class CodeEditText : AppCompatEditText {
                 })
     }
 
+    /**
+     * Set the timeout before new text is highlighted after the user has stopped typing
+     *
+     * @param timeout arbitrary value
+     * @param timeUnit the timeunit to use
+     */
+    @Suppress("unused")
     fun setHighlightingTimeout(timeout: Long, timeUnit: TimeUnit) {
         highlightingTimeout = timeout to timeUnit
+        reinit()
+    }
+
+    /**
+     * Get the current timeout in milliseconds
+     */
+    @Suppress("unused")
+    fun getHighlightingTimeout(): Long {
+        return highlightingTimeout
+                .second
+                .toMillis(highlightingTimeout.first)
     }
 
     fun refreshSyntaxHighlighting() {

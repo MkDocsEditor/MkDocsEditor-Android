@@ -1,9 +1,9 @@
-package de.markusressel.mkdocseditor.view.view.rule
+package de.markusressel.mkdocseditor.syntaxhighlighter.markdown.rule
 
 import android.text.Editable
 import android.text.Spannable
 import android.text.style.CharacterStyle
-import de.markusressel.mkdocseditor.view.view.SyntaxHighlighterRule
+import de.markusressel.mkdocseditor.syntaxhighlighter.SyntaxHighlighterRule
 
 abstract class HighlighterRuleBase : SyntaxHighlighterRule {
 
@@ -29,6 +29,13 @@ abstract class HighlighterRuleBase : SyntaxHighlighterRule {
                 .forEach {
                     editable
                             .setSpan(it(), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+    }
+
+    override fun getStyleTypes(): Collection<CharacterStyle> {
+        return styles
+                .map {
+                    it()
                 }
     }
 

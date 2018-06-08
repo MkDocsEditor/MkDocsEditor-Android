@@ -15,6 +15,7 @@ import com.otaliastudios.zoom.ZoomLayout
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.extensions.prettyPrint
+import de.markusressel.mkdocseditor.syntaxhighlighter.SyntaxHighlighter
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
@@ -29,7 +30,7 @@ class CodeEditorView : ZoomLayout {
     lateinit var lineNumberView: TextView
     lateinit var editTextView: CodeEditText
 
-    private var moveWithCursorEnabled = false
+    var moveWithCursorEnabled = false
 
     constructor(context: Context) : super(context) {
         initialize()
@@ -43,7 +44,7 @@ class CodeEditorView : ZoomLayout {
         initialize()
     }
 
-    fun initialize() {
+    private fun initialize() {
         readParameters()
 
         createViews()
@@ -177,11 +178,33 @@ class CodeEditorView : ZoomLayout {
     /**
      * Set the text in the editor
      */
-    fun setText(text: CharSequence) = editTextView.setText(text, TextView.BufferType.EDITABLE)
+    fun setText(text: CharSequence) {
+        editTextView
+                .setText(text, TextView.BufferType.EDITABLE)
+        updateLineNumbers(editTextView.lineCount)
+        editTextView
+                .refreshSyntaxHighlighting()
+    }
 
     /**
      * Set the text in the editor
      */
-    fun setText(@StringRes text: Int) = editTextView.setText(text, TextView.BufferType.EDITABLE)
+    @Suppress("unused")
+    fun setText(@StringRes text: Int) {
+        editTextView
+                .setText(text, TextView.BufferType.EDITABLE)
+        updateLineNumbers(editTextView.lineCount)
+        editTextView
+                .refreshSyntaxHighlighting()
+    }
+
+    /**
+     * Set the syntax highlighter to use for this CodeEditor
+     */
+    @Suppress("unused")
+    fun setSyntaxHighlighter(syntaxHighlighter: SyntaxHighlighter) {
+        editTextView
+                .syntaxHighlighter = syntaxHighlighter
+    }
 
 }

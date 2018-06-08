@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.view.view.rule
+package de.markusressel.mkdocseditor.syntaxhighlighter.markdown.rule
 
 import android.text.Editable
 

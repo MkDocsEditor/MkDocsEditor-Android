@@ -1,13 +1,12 @@
-package de.markusressel.mkdocseditor.view.view.rule
+package de.markusressel.mkdocseditor.syntaxhighlighter.markdown.rule
 
 import android.graphics.Color
 import android.text.Editable
-import android.text.style.CharacterStyle
 import android.text.style.ForegroundColorSpan
 
-class LinkRule : HighlighterRuleBase() {
+class HeadingRule : HighlighterRuleBase() {
 
-    override val styles = setOf<() -> CharacterStyle>({ ForegroundColorSpan(COLOR) })
+    override val styles = setOf({ ForegroundColorSpan(COLOR) })
 
     override fun findMatches(editable: Editable): Sequence<MatchResult> {
         return PATTERN
@@ -15,10 +14,10 @@ class LinkRule : HighlighterRuleBase() {
     }
 
     companion object {
-        val PATTERN = "(?<!!)\\[.*?]\\(.*?\\)"
+        val PATTERN = "#{1,6} .*"
                 .toRegex()
         val COLOR = Color
-                .parseColor("#7C4DFF")
+                .parseColor("#FF6D00")
     }
 
 }
