@@ -8,7 +8,7 @@ import io.objectbox.annotation.Id
  * Created by Markus on 05.06.2018.
  */
 @Entity
-data class SectionEntity(@Id var entityId: Long, val id: String, val name: String, val subsections: List<SectionEntity>, val documents: List<DocumentEntity>, val resources: List<ResourceEntity>)
+data class SectionEntity(@Id var entityId: Long = 0, val id: String = "", val name: String = "", val subsections: List<SectionEntity> = mutableListOf(), val documents: List<DocumentEntity> = mutableListOf(), val resources: List<ResourceEntity> = mutableListOf())
 
 fun SectionModel.asEntity(): SectionEntity {
     return SectionEntity(0, this.id, this.name, this.subsections.map {

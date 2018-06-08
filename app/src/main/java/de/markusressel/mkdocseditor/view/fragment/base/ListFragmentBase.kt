@@ -35,13 +35,11 @@ import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
 import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
-import io.reactivex.rxkotlin.toObservable
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.fragment_recyclerview.*
 import kotlinx.android.synthetic.main.layout_empty_list.*
@@ -53,7 +51,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * Created by Markus on 29.01.2018.
  */
-abstract class ListFragmentBase<ModelType : Any, EntityType : Any> : DaggerSupportFragmentBase() {
+abstract class ListFragmentBase : DaggerSupportFragmentBase() {
 
     override val layoutRes: Int
         get() = R.layout.fragment_recyclerview
@@ -61,7 +59,7 @@ abstract class ListFragmentBase<ModelType : Any, EntityType : Any> : DaggerSuppo
     protected open val fabConfig: FabConfig = FabConfig(left = mutableListOf(), right = mutableListOf())
     private val fabButtonViews = mutableListOf<FloatingActionButton>()
 
-    protected val listValues: MutableList<EntityType> = ArrayList()
+    protected val listValues: MutableList<Any> = ArrayList()
     private lateinit var recyclerViewAdapter: LastAdapter
 
     protected val loadingComponent by lazy {
@@ -128,6 +126,7 @@ abstract class ListFragmentBase<ModelType : Any, EntityType : Any> : DaggerSuppo
                 .onViewCreated(view, savedInstanceState)
 
         recyclerViewAdapter = createAdapter()
+                .into(recyclerView)
 
         recyclerView
                 .adapter = recyclerViewAdapter
@@ -138,16 +137,11 @@ abstract class ListFragmentBase<ModelType : Any, EntityType : Any> : DaggerSuppo
         setupFabs()
     }
 
-    override fun onStart() {
-        super
-                .onStart()
-    }
-
     override fun onResume() {
         super
                 .onResume()
 
-        fillListFromPersistence()
+        loadListDataFromSource()
     }
 
     private fun setupFabs() {
@@ -257,16 +251,13 @@ abstract class ListFragmentBase<ModelType : Any, EntityType : Any> : DaggerSuppo
     abstract fun createAdapter(): LastAdapter
 
     /**
-     * Loads the data using {@link loadListDataFromPersistence()}
+     * Reload list data asEntity it's original source, persist it and display it to the user afterwards
      */
-    private fun fillListFromPersistence() {
+    protected fun reloadDataFromSource() {
         loadingComponent
                 .showLoading()
 
-        Single
-                .fromCallable {
-                    loadListDataFromPersistence()
-                }
+        loadListDataFromSource()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindUntilEvent(this, Lifecycle.Event.ON_STOP)
@@ -289,75 +280,12 @@ abstract class ListFragmentBase<ModelType : Any, EntityType : Any> : DaggerSuppo
                 }, onError = {
                     if (it is CancellationException) {
                         Timber
-                                .d { "reload from persistence cancelled" }
-                    } else {
-                        loadingComponent
-                                .showError(it)
-                    }
-                })
-    }
-
-    /**
-     * Reload list data asEntity it's original source, persist it and display it to the user afterwards
-     */
-    protected fun reloadDataFromSource() {
-        loadingComponent
-                .showLoading()
-
-        loadListDataFromSource()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .bindUntilEvent(this, Lifecycle.Event.ON_STOP)
-                .subscribeBy(onSuccess = {
-                    it
-                            .toObservable()
-                            .bindUntilEvent(this, Lifecycle.Event.ON_STOP)
-                            .map {
-                                mapToEntity(it)
-                            }
-                            .toList()
-                            .subscribeOn(Schedulers.io())
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .subscribeBy(onSuccess = {
-                                persistListData(it)
-                                fillListFromPersistence()
-                            }, onError = {
-                                if (it is CancellationException) {
-                                    Timber
-                                            .d { "persisting reload from source cancelled" }
-                                } else {
-                                    loadingComponent
-                                            .showError(it)
-                                }
-                            })
-                }, onError = {
-                    if (it is CancellationException) {
-                        Timber
                                 .d { "reload from source cancelled" }
                     } else {
                         loadingComponent
                                 .showError(it)
                     }
                 })
-    }
-
-    /**
-     * Map the source object to the persistence object
-     */
-    abstract fun mapToEntity(it: ModelType): EntityType
-
-    /**
-     * Get the persistence handler for this list
-     */
-    protected abstract fun getPersistenceHandler(): PersistenceManagerBase<EntityType>
-
-    private fun persistListData(data: List<EntityType>) {
-        getPersistenceHandler()
-                .standardOperation()
-                .removeAll()
-        getPersistenceHandler()
-                .standardOperation()
-                .put(data)
     }
 
     private fun showEmpty() {
@@ -379,19 +307,9 @@ abstract class ListFragmentBase<ModelType : Any, EntityType : Any> : DaggerSuppo
     }
 
     /**
-     * Load the data to be displayed in the list asEntity the persistence
-     */
-    open fun loadListDataFromPersistence(): List<EntityType> {
-        val persistenceHandler = getPersistenceHandler()
-        return persistenceHandler
-                .standardOperation()
-                .all
-    }
-
-    /**
      * Load the data to be displayed in the list asEntity it's original source
      */
-    abstract fun loadListDataFromSource(): Single<List<ModelType>>
+    abstract fun loadListDataFromSource(): Single<List<Any>>
 
     private fun updateFabVisibility(visible: Int) {
         if (visible == View.VISIBLE) {

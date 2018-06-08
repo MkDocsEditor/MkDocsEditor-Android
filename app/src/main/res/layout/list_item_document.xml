@@ -22,7 +22,7 @@
 
         <variable
             name="item"
-            type="de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity" />
+            type="de.markusressel.mkdocsrestclient.document.DocumentModel" />
 
         <variable
             name="presenter"
