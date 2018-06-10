@@ -87,11 +87,13 @@ class DocumentsFragment : ListFragmentBase() {
         //                            listOf(*it.documents.toTypedArray(), dummyItem)
         //                        }
 
-        val dummyItems = listOf(*dummySection.subsections.toTypedArray(), *dummySection.documents.toTypedArray(), *dummySection.resources.toTypedArray())
-
         // TODO: remove dummy entry
         return Single
-                .just(dummyItems)
+                .just(sectionToList(dummySection))
+    }
+
+    private fun sectionToList(section: SectionModel): List<Any> {
+        return listOf(*section.subsections.toTypedArray(), *section.documents.toTypedArray(), *section.resources.toTypedArray())
     }
 
     override fun getRightFabs(): List<FabConfig.Fab> {
@@ -103,6 +105,17 @@ class DocumentsFragment : ListFragmentBase() {
     private fun openSection(section: SectionModel) {
         Timber
                 .d { "Opening Section '${section.name}'" }
+
+        listValues
+                .clear()
+        listValues
+                .addAll(sectionToList(section))
+
+        loadingComponent
+                .showContent()
+
+        recyclerViewAdapter
+                .notifyDataSetChanged()
     }
 
     private fun openDocumentEditor(document: DocumentModel) {

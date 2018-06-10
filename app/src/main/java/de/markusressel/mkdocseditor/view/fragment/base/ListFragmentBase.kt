@@ -60,7 +60,7 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
     private val fabButtonViews = mutableListOf<FloatingActionButton>()
 
     protected val listValues: MutableList<Any> = ArrayList()
-    private lateinit var recyclerViewAdapter: LastAdapter
+    protected lateinit var recyclerViewAdapter: LastAdapter
 
     protected val loadingComponent by lazy {
         LoadingComponent(this, onShowContent = {
