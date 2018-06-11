@@ -10,6 +10,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.widget.toast
+import com.github.ajalt.timberkt.Timber
 import com.jakewharton.rxbinding2.widget.RxTextView
 import com.otaliastudios.zoom.ZoomLayout
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
@@ -106,6 +107,8 @@ class CodeEditorView : ZoomLayout {
                 .bindToLifecycle(this)
                 .subscribeBy(onNext = {
                     moveScreenWithCursorIfNecessary()
+                }, onError = {
+                    Timber.e(it) { "Error moving screen with cursor" }
                 })
 
         RxTextView

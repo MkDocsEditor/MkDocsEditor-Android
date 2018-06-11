@@ -9,6 +9,7 @@ import android.view.*
 import android.widget.Toast
 import androidx.core.view.postDelayed
 import androidx.core.widget.toast
+import com.github.ajalt.timberkt.Timber
 import com.jakewharton.rxbinding2.widget.RxTextView
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindToLifecycle
@@ -19,6 +20,7 @@ import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocseditor.view.view.CodeEditorView
+import de.markusressel.mkdocseditor.websocket.SyncManager
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
@@ -42,7 +44,7 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
     private var currentXPosition by savedInstanceState(0F)
     private var currentYPosition by savedInstanceState(0F)
-    private var currentZoom by savedInstanceState(9F)
+    private var currentZoom by savedInstanceState(1F)
 
     private val loadingComponent by lazy { LoadingComponent(this) }
 
@@ -98,27 +100,41 @@ class EditorFragment : DaggerSupportFragmentBase() {
         super
                 .onViewCreated(view, savedInstanceState)
 
-        currentText = getString(R.string.markdown_demo_text)
-
         codeEditorView = view
                 .findViewById(R.id.codeEditorView)
 
+        val syncManager = SyncManager("echo.websocket.org")
+        syncManager.connect {
+            val initialText = getString(R.string.markdown_demo_text).substring(0, 50)
+            syncManager.sendPatch(initialText).subscribeBy(
+                    onSuccess = {
+                        Timber.d { "$it" }
+                    },
+                    onError = {
+                        Timber.e(it)
+                    }
+            )
+        }
+
         RxTextView
                 .textChanges(codeEditorView.editTextView)
-                .debounce(50, TimeUnit.MILLISECONDS)
+                .skipInitialValue()
+                .debounce(500, TimeUnit.MILLISECONDS)
+                .filter { it.toString() != currentText }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindToLifecycle(this as LifecycleOwner)
                 .subscribeBy(onNext = {
-                    currentText = it
-                            .toString()
+                    currentText = it.toString()
+                    syncManager.sendPatch(it.toString()).subscribeBy(onSuccess = {
+                        Timber.d { "Successfully sent patch" }
+                    }, onError = {
+                        Timber.e(it) { "Error sending patch" }
+                    })
                 }, onError = {
                     context
                             ?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
                 })
-
-        codeEditorView
-                .setText(currentText)
 
         // zoom in
         codeEditorView
@@ -139,6 +155,17 @@ class EditorFragment : DaggerSupportFragmentBase() {
                                         .zoom
                             })
                 }
+
+        syncManager.rxWebSocket.onTextMessage()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeBy(onNext = {
+                    val selection = codeEditorView.editTextView.selectionStart
+                    codeEditorView.setText(it.text!!)
+                    codeEditorView.editTextView.setSelection(selection)
+                }, onError = {
+                    Timber.e(it)
+                })
 
         loadingComponent
                 .showContent()
