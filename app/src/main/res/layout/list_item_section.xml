@@ -51,9 +51,9 @@
             <!--style="@style/sub_header"-->
             <!--android:text="@string/id" />-->
 
-            <TextView
-                style="@style/sub_header_content_textview"
-                android:text="@{item.id}" />
+            <!--<TextView-->
+            <!--style="@style/sub_header_content_textview"-->
+            <!--android:text="@{item.id}" />-->
 
             <TextView
                 style="@style/sub_header_content_textview"
