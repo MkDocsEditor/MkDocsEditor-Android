@@ -36,21 +36,21 @@ class CodeEditorView : ZoomLayout {
     private var currentLineCount = -1
 
     constructor(context: Context) : super(context) {
-        initialize()
+        initialize(null)
     }
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
-        initialize()
+        initialize(attrs)
     }
 
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
-        initialize()
+        initialize(attrs)
     }
 
-    private fun initialize() {
-        readParameters()
+    private fun initialize(attrs: AttributeSet?) {
+        readParameters(attrs)
 
-        createViews()
+        inflateViews(LayoutInflater.from(context))
         addView(contentLayout)
 
         setListeners()
@@ -63,29 +63,27 @@ class CodeEditorView : ZoomLayout {
     }
 
 
-    private fun readParameters() {
+    private fun readParameters(attrs: AttributeSet?) {
 
     }
 
-    private fun createViews() {
-        contentLayout = LinearLayout(context)
-        contentLayout
-                .orientation = LinearLayout
-                .HORIZONTAL
-        contentLayout
-                .layoutParams = LinearLayout
-                .LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+    private fun inflateViews(inflater: LayoutInflater) {
+        contentLayout = inflater.inflate(R.layout.view_code_editor__inner_layout, null) as LinearLayout
+        lineNumberView = contentLayout.findViewById(R.id.codeLinesView) as TextView
+        editTextView = contentLayout.findViewById(R.id.codeEditText) as CodeEditText
 
-        val inflater = LayoutInflater
-                .from(context)
+        post {
+            val displayMetrics = context
+                    .resources
+                    .displayMetrics
 
-        lineNumberView = inflater.inflate(R.layout.view_code_editor__line_numbers, null) as TextView
-        editTextView = inflater.inflate(R.layout.view_code_editor__edit_text, null) as CodeEditText
-
-        contentLayout
-                .addView(lineNumberView)
-        contentLayout
-                .addView(editTextView)
+            contentLayout
+                    .minimumHeight = displayMetrics
+                    .heightPixels
+            contentLayout
+                    .minimumWidth = displayMetrics
+                    .widthPixels
+        }
     }
 
     private fun setListeners() {
@@ -110,7 +108,8 @@ class CodeEditorView : ZoomLayout {
                 .subscribeBy(onNext = {
                     moveScreenWithCursorIfNecessary()
                 }, onError = {
-                    Timber.e(it) { "Error moving screen with cursor" }
+                    Timber
+                            .e(it) { "Error moving screen with cursor" }
                 })
 
         RxTextView
@@ -222,7 +221,7 @@ class CodeEditorView : ZoomLayout {
     }
 
     companion object {
-        const val MIN_LINES = 30
+        const val MIN_LINES = 1
     }
 
 }

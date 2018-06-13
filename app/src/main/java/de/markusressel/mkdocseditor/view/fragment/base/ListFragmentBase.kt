@@ -37,6 +37,7 @@ import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
+import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
@@ -265,13 +266,9 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
                     listValues
                             .clear()
 
-                    if (it.isEmpty()) {
-                        showEmpty()
-                    } else {
-                        hideEmpty()
-                        listValues
-                                .addAll(it)
-                    }
+                    hideEmpty()
+                    listValues
+                            .addAll(sectionToList(it))
                     loadingComponent
                             .showContent()
 
@@ -286,6 +283,10 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
                                 .showError(it)
                     }
                 })
+    }
+
+    protected fun sectionToList(section: SectionModel): List<Any> {
+        return listOf(*section.subsections.toTypedArray(), *section.documents.toTypedArray(), *section.resources.toTypedArray())
     }
 
     private fun showEmpty() {
@@ -309,7 +310,7 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
     /**
      * Load the data to be displayed in the list asEntity it's original source
      */
-    abstract fun loadListDataFromSource(): Single<List<Any>>
+    abstract fun loadListDataFromSource(): Single<SectionModel>
 
     private fun updateFabVisibility(visible: Int) {
         if (visible == View.VISIBLE) {

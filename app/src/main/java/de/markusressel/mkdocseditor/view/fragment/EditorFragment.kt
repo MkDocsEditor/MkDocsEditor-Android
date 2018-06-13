@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.support.annotation.CallSuper
 import android.view.*
 import android.widget.Toast
-import androidx.core.view.postDelayed
 import androidx.core.widget.toast
 import com.github.ajalt.timberkt.Timber
 import com.jakewharton.rxbinding2.widget.RxTextView
@@ -45,7 +44,9 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
     private var currentXPosition by savedInstanceState(0F)
     private var currentYPosition by savedInstanceState(0F)
-    private var currentZoom by savedInstanceState(1F)
+    private var currentZoom: Float? by savedInstanceState()
+
+    private var initialTextLoaded = false
 
     private lateinit var syncManager: DocumentSyncManager
 
@@ -92,27 +93,53 @@ class EditorFragment : DaggerSupportFragmentBase() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+        super
+                .onCreate(savedInstanceState)
 
         val documentId = arguments?.getString(KEY_ID)!!
 
-        syncManager = DocumentSyncManager(documentId = documentId, url = "ws://10.0.2.2:8080/document/$documentId/ws",
+        syncManager = DocumentSyncManager(documentId = documentId, url = "ws://10.0.2.2:8080/document/$documentId/ws", onInitialText = {
+            // TODO: there has to be a better way to do this...
+            Thread
+                    .sleep(2000)
 
-                onTextChanged = {
-                    runOnUiThread {
-                        val selection = codeEditorView.editTextView.selectionStart
-                        currentText = it
-                        codeEditorView.setText(it)
-                        if (selection <= it.length - 1) {
-                            codeEditorView.editTextView.setSelection(selection)
-                        }
+            runOnUiThread {
+                loadingComponent
+                        .showContent()
+
+                currentText = it
+                codeEditorView
+                        .setText(it)
+
+                val zoom = currentZoom ?: 1F
+                codeEditorView
+                        .moveTo(zoom, currentXPosition, currentYPosition, false)
+
+                initialTextLoaded = true
+            }
+        }, onTextChanged = {
+            runOnUiThread {
+                val selection = codeEditorView
+                        .editTextView
+                        .selectionStart
+                currentText = it
+                codeEditorView
+                        .setText(it)
+                if (selection <= it.length) {
+                    codeEditorView
+                            .editTextView
+                            .setSelection(selection)
+                }
+            }
+        }, onError = { code, throwable ->
+            throwable
+                    ?.let {
+                        loadingComponent
+                                .showError(it)
+                        Timber
+                                .e(throwable) { "Websocket error code: $code" }
                     }
-                },
-                onError = { code, throwable ->
-                    throwable?.let {
-                        Timber.e(throwable) { "Websocket error code: $code" }
-                    }
-                })
+        })
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -139,7 +166,8 @@ class EditorFragment : DaggerSupportFragmentBase() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindToLifecycle(this as LifecycleOwner)
                 .subscribeBy(onNext = {
-                    syncManager.sendPatch(currentText, it.toString())
+                    syncManager
+                            .sendPatch(currentText, it.toString())
                 }, onError = {
                     context
                             ?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
@@ -147,13 +175,13 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
         // zoom in
         codeEditorView
-                .postDelayed(500) {
-                    codeEditorView
-                            .moveTo(currentZoom, currentXPosition, currentYPosition, true)
-
+                .post {
                     // remember zoom and pan
                     Observable
                             .interval(500, TimeUnit.MILLISECONDS)
+                            .filter {
+                                initialTextLoaded
+                            }
                             .bindToLifecycle(codeEditorView)
                             .subscribeBy(onNext = {
                                 currentXPosition = codeEditorView
@@ -164,21 +192,22 @@ class EditorFragment : DaggerSupportFragmentBase() {
                                         .zoom
                             })
                 }
-
-        loadingComponent
-                .showContent()
     }
 
     override fun onStart() {
-        super.onStart()
+        super
+                .onStart()
 
-        syncManager.connect()
+        syncManager
+                .connect()
     }
 
     override fun onStop() {
-        syncManager.disconnect(1000, "Editor was closed")
+        syncManager
+                .disconnect(1000, "Editor was closed")
 
-        super.onStop()
+        super
+                .onStop()
     }
 
     companion object {

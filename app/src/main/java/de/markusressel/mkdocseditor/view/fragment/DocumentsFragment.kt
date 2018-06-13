@@ -1,8 +1,6 @@
 package de.markusressel.mkdocseditor.view.fragment
 
 import android.content.Context
-import android.widget.Toast
-import androidx.core.widget.toast
 import com.github.ajalt.timberkt.Timber
 import com.github.nitrico.lastadapter.LastAdapter
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
@@ -11,7 +9,6 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.databinding.ListItemDocumentBinding
 import de.markusressel.mkdocseditor.databinding.ListItemResourceBinding
 import de.markusressel.mkdocseditor.databinding.ListItemSectionBinding
-import de.markusressel.mkdocseditor.extensions.prettyPrint
 import de.markusressel.mkdocseditor.view.activity.EditorActivity
 import de.markusressel.mkdocseditor.view.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.view.fragment.base.ListFragmentBase
@@ -20,10 +17,6 @@ import de.markusressel.mkdocsrestclient.document.DocumentModel
 import de.markusressel.mkdocsrestclient.resource.ResourceModel
 import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.reactivex.Single
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.rxkotlin.subscribeBy
-import io.reactivex.schedulers.Schedulers
-import java.util.*
 import javax.inject.Inject
 
 
@@ -71,29 +64,21 @@ class DocumentsFragment : ListFragmentBase() {
                 }
     }
 
-    override fun loadListDataFromSource(): Single<List<Any>> {
-        val dummyDocument1 = DocumentModel("document", "2358329473448408384", "Automatic updates.md", 456, Date())
-        val dummyDocument2 = DocumentModel("document", "2", "Android Studio", 50, Date())
-        val dummySubsectionSoftware = SectionModel("1", "Software", subsections = emptyList(), documents = listOf(dummyDocument1, dummyDocument2), resources = emptyList())
+    override fun loadListDataFromSource(): Single<SectionModel> {
+        return restClient
+                .getItemTree()
 
-        val dummyDocument3 = DocumentModel("document", "3", "CPU", 50, Date())
-        val dummySubsectionHardware = SectionModel("2", "Hardware", subsections = emptyList(), documents = listOf(dummyDocument3), resources = emptyList())
-        val dummySection = SectionModel("0", "root", subsections = listOf(dummySubsectionSoftware, dummySubsectionHardware), documents = listOf(), resources = emptyList())
-
-        //                return restClient
-        //                        .getItemTree()
-        //                        .map {
-        //                            // always append a dummy item for now
-        //                            listOf(*it.documents.toTypedArray(), dummyItem)
-        //                        }
-
-        // TODO: remove dummy entry
-        return Single
-                .just(sectionToList(dummySection))
-    }
-
-    private fun sectionToList(section: SectionModel): List<Any> {
-        return listOf(*section.subsections.toTypedArray(), *section.documents.toTypedArray(), *section.resources.toTypedArray())
+        //        val dummyDocument1 = DocumentModel("document", "2358329473448408384", "Automatic updates.md", 456, Date())
+        //        val dummyDocument2 = DocumentModel("document", "2", "Android Studio", 50, Date())
+        //        val dummySubsectionSoftware = SectionModel("1", "Software", subsections = emptyList(), documents = listOf(dummyDocument1, dummyDocument2), resources = emptyList())
+        //
+        //        val dummyDocument3 = DocumentModel("document", "3", "CPU", 50, Date())
+        //        val dummySubsectionHardware = SectionModel("2", "Hardware", subsections = emptyList(), documents = listOf(dummyDocument3), resources = emptyList())
+        //        val dummySection = SectionModel("0", "root", subsections = listOf(dummySubsectionSoftware, dummySubsectionHardware), documents = listOf(), resources = emptyList())
+        //
+        //        // TODO: remove dummy entry
+        //        return Single
+        //                .just(dummySection)
     }
 
     override fun getRightFabs(): List<FabConfig.Fab> {
@@ -122,18 +107,9 @@ class DocumentsFragment : ListFragmentBase() {
         Timber
                 .d { "Opening Document '${document.name}'" }
 
-        restClient
-                .getDocumentContent(document.id)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeBy(onSuccess = {
-                    val intent = EditorActivity
-                            .getNewInstanceIntent(context as Context, document.id, it)
-                    startActivity(intent)
-                }, onError = {
-                    context
-                            ?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
-                })
+        val intent = EditorActivity
+                .getNewInstanceIntent(context as Context, document.id, "")
+        startActivity(intent)
     }
 
     private fun openResourceDetailPage(resource: ResourceModel) {
