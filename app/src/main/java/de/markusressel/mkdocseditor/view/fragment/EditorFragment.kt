@@ -16,11 +16,12 @@ import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindToLifecycle
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.extensions.prettyPrint
+import de.markusressel.mkdocseditor.extensions.runOnUiThread
 import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocseditor.view.view.CodeEditorView
-import de.markusressel.mkdocseditor.websocket.SyncManager
+import de.markusressel.mkdocsrestclient.websocket.DocumentSyncManager
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
@@ -45,6 +46,8 @@ class EditorFragment : DaggerSupportFragmentBase() {
     private var currentXPosition by savedInstanceState(0F)
     private var currentYPosition by savedInstanceState(0F)
     private var currentZoom by savedInstanceState(1F)
+
+    private lateinit var syncManager: DocumentSyncManager
 
     private val loadingComponent by lazy { LoadingComponent(this) }
 
@@ -88,6 +91,30 @@ class EditorFragment : DaggerSupportFragmentBase() {
                 .onOptionsItemSelected(item)
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        val documentId = arguments?.getString(KEY_ID)!!
+
+        syncManager = DocumentSyncManager(documentId = documentId, url = "ws://10.0.2.2:8080/document/$documentId/ws",
+
+                onTextChanged = {
+                    runOnUiThread {
+                        val selection = codeEditorView.editTextView.selectionStart
+                        currentText = it
+                        codeEditorView.setText(it)
+                        if (selection <= it.length - 1) {
+                            codeEditorView.editTextView.setSelection(selection)
+                        }
+                    }
+                },
+                onError = { code, throwable ->
+                    throwable?.let {
+                        Timber.e(throwable) { "Websocket error code: $code" }
+                    }
+                })
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val parent = super.onCreateView(inflater, container, savedInstanceState) as ViewGroup
         return loadingComponent
@@ -103,19 +130,6 @@ class EditorFragment : DaggerSupportFragmentBase() {
         codeEditorView = view
                 .findViewById(R.id.codeEditorView)
 
-        val syncManager = SyncManager("echo.websocket.org")
-        syncManager.connect {
-            val initialText = getString(R.string.markdown_demo_text).substring(0, 50)
-            syncManager.sendPatch(initialText).subscribeBy(
-                    onSuccess = {
-                        Timber.d { "$it" }
-                    },
-                    onError = {
-                        Timber.e(it)
-                    }
-            )
-        }
-
         RxTextView
                 .textChanges(codeEditorView.editTextView)
                 .skipInitialValue()
@@ -125,12 +139,7 @@ class EditorFragment : DaggerSupportFragmentBase() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindToLifecycle(this as LifecycleOwner)
                 .subscribeBy(onNext = {
-                    currentText = it.toString()
-                    syncManager.sendPatch(it.toString()).subscribeBy(onSuccess = {
-                        Timber.d { "Successfully sent patch" }
-                    }, onError = {
-                        Timber.e(it) { "Error sending patch" }
-                    })
+                    syncManager.sendPatch(currentText, it.toString())
                 }, onError = {
                     context
                             ?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
@@ -156,19 +165,20 @@ class EditorFragment : DaggerSupportFragmentBase() {
                             })
                 }
 
-        syncManager.rxWebSocket.onTextMessage()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeBy(onNext = {
-                    val selection = codeEditorView.editTextView.selectionStart
-                    codeEditorView.setText(it.text!!)
-                    codeEditorView.editTextView.setSelection(selection)
-                }, onError = {
-                    Timber.e(it)
-                })
-
         loadingComponent
                 .showContent()
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        syncManager.connect()
+    }
+
+    override fun onStop() {
+        syncManager.disconnect(1000, "Editor was closed")
+
+        super.onStop()
     }
 
     companion object {

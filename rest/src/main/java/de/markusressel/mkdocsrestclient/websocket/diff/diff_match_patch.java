@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package de.markusressel.mkdocseditor.diff;
+package de.markusressel.mkdocsrestclient.websocket.diff;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;

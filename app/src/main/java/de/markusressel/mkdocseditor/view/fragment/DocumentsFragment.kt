@@ -72,7 +72,7 @@ class DocumentsFragment : ListFragmentBase() {
     }
 
     override fun loadListDataFromSource(): Single<List<Any>> {
-        val dummyDocument1 = DocumentModel("document", "1", "MkDocs", 10, Date())
+        val dummyDocument1 = DocumentModel("document", "2358329473448408384", "Automatic updates.md", 456, Date())
         val dummyDocument2 = DocumentModel("document", "2", "Android Studio", 50, Date())
         val dummySubsectionSoftware = SectionModel("1", "Software", subsections = emptyList(), documents = listOf(dummyDocument1, dummyDocument2), resources = emptyList())
 
