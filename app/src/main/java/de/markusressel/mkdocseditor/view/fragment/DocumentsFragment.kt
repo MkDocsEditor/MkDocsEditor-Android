@@ -9,6 +9,7 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.databinding.ListItemDocumentBinding
 import de.markusressel.mkdocseditor.databinding.ListItemResourceBinding
 import de.markusressel.mkdocseditor.databinding.ListItemSectionBinding
+import de.markusressel.mkdocseditor.extensions.isWifiEnabled
 import de.markusressel.mkdocseditor.view.activity.EditorActivity
 import de.markusressel.mkdocseditor.view.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.view.fragment.base.ListFragmentBase
@@ -17,6 +18,7 @@ import de.markusressel.mkdocsrestclient.document.DocumentModel
 import de.markusressel.mkdocsrestclient.resource.ResourceModel
 import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.reactivex.Single
+import java.util.*
 import javax.inject.Inject
 
 
@@ -65,20 +67,18 @@ class DocumentsFragment : ListFragmentBase() {
     }
 
     override fun loadListDataFromSource(): Single<SectionModel> {
-        return restClient
-                .getItemTree()
+        val dummyDocument1 = DocumentModel("document", "2358329473448408384", "Automatic updates.md", 456, Date())
+        val dummyDocument2 = DocumentModel("document", "2", "Android Studio", 50, Date())
+        val dummySubsectionSoftware = SectionModel("1", "Software", subsections = emptyList(), documents = listOf(dummyDocument1, dummyDocument2), resources = emptyList())
 
-        //        val dummyDocument1 = DocumentModel("document", "2358329473448408384", "Automatic updates.md", 456, Date())
-        //        val dummyDocument2 = DocumentModel("document", "2", "Android Studio", 50, Date())
-        //        val dummySubsectionSoftware = SectionModel("1", "Software", subsections = emptyList(), documents = listOf(dummyDocument1, dummyDocument2), resources = emptyList())
-        //
-        //        val dummyDocument3 = DocumentModel("document", "3", "CPU", 50, Date())
-        //        val dummySubsectionHardware = SectionModel("2", "Hardware", subsections = emptyList(), documents = listOf(dummyDocument3), resources = emptyList())
-        //        val dummySection = SectionModel("0", "root", subsections = listOf(dummySubsectionSoftware, dummySubsectionHardware), documents = listOf(), resources = emptyList())
-        //
-        //        // TODO: remove dummy entry
-        //        return Single
-        //                .just(dummySection)
+        val dummyDocument3 = DocumentModel("document", "3", "CPU", 50, Date())
+        val dummySubsectionHardware = SectionModel("2", "Hardware", subsections = emptyList(), documents = listOf(dummyDocument3), resources = emptyList())
+        val dummySection = SectionModel("0", "root", subsections = listOf(dummySubsectionSoftware, dummySubsectionHardware), documents = listOf(), resources = emptyList())
+
+        return when {
+            context!!.isWifiEnabled() -> restClient.getItemTree()
+            else -> Single.just(dummySection)
+        }
     }
 
     override fun getRightFabs(): List<FabConfig.Fab> {

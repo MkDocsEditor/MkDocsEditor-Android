@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.extensions
 
 import android.content.Context
+import android.net.wifi.WifiManager
 import android.os.AsyncTask
 import de.markusressel.mkdocseditor.R
 import java.util.*
@@ -33,4 +34,13 @@ fun Throwable.prettyPrint(): String {
     val message = "${this.message}:\n" + "${this.stackTrace.joinToString(separator = "\n")}}"
 
     return message
+}
+
+/**
+ * Checks if WiFi is currently enabled on the device
+ */
+fun Context.isWifiEnabled(): Boolean {
+    val wifiManager: WifiManager = this.getSystemService(Context.WIFI_SERVICE) as WifiManager
+    return wifiManager
+            .isWifiEnabled
 }
