@@ -134,8 +134,10 @@ class EditorFragment : DaggerSupportFragmentBase() {
         }, onError = { code, throwable ->
             throwable
                     ?.let {
-                        loadingComponent
-                                .showError(it)
+                        runOnUiThread {
+                            loadingComponent
+                                    .showError(it)
+                        }
                         Timber
                                 .e(throwable) { "Websocket error code: $code" }
                     }

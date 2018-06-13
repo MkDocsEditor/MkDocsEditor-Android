@@ -53,7 +53,9 @@ class DocumentSyncManager(private val url: String, private val documentId: Strin
                         .onFailure(webSocket, t, response)
                 Log
                         .e(TAG, "Websocket error", t)
-                onError(response?.code(), t)
+                callListenerAsync {
+                    onError(response?.code(), t)
+                }
             }
         }
 
