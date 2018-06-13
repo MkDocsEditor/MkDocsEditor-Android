@@ -33,6 +33,8 @@ class CodeEditorView : ZoomLayout {
 
     var moveWithCursorEnabled = false
 
+    private var currentLineCount = -1
+
     constructor(context: Context) : super(context) {
         initialize()
     }
@@ -113,7 +115,10 @@ class CodeEditorView : ZoomLayout {
 
         RxTextView
                 .textChanges(editTextView)
-                .debounce(250, TimeUnit.MILLISECONDS)
+                .debounce(50, TimeUnit.MILLISECONDS)
+                .filter {
+                    editTextView.lineCount != currentLineCount
+                }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindToLifecycle(this)
@@ -168,8 +173,16 @@ class CodeEditorView : ZoomLayout {
     }
 
     private fun updateLineNumbers(lines: Int) {
+        currentLineCount = lines
+
+        val linesToDraw = if (lines < MIN_LINES) {
+            MIN_LINES
+        } else {
+            lines
+        }
+
         val sb = StringBuilder()
-        for (i in 1..lines) {
+        for (i in 1..linesToDraw) {
             sb
                     .append("$i:\n")
         }
@@ -184,7 +197,6 @@ class CodeEditorView : ZoomLayout {
     fun setText(text: CharSequence) {
         editTextView
                 .setText(text, TextView.BufferType.EDITABLE)
-        updateLineNumbers(editTextView.lineCount)
         editTextView
                 .refreshSyntaxHighlighting()
     }
@@ -196,7 +208,6 @@ class CodeEditorView : ZoomLayout {
     fun setText(@StringRes text: Int) {
         editTextView
                 .setText(text, TextView.BufferType.EDITABLE)
-        updateLineNumbers(editTextView.lineCount)
         editTextView
                 .refreshSyntaxHighlighting()
     }
@@ -208,6 +219,10 @@ class CodeEditorView : ZoomLayout {
     fun setSyntaxHighlighter(syntaxHighlighter: SyntaxHighlighter) {
         editTextView
                 .syntaxHighlighter = syntaxHighlighter
+    }
+
+    companion object {
+        const val MIN_LINES = 30
     }
 
 }
