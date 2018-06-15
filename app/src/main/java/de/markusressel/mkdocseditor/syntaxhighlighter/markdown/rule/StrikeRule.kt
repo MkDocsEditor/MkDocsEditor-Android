@@ -3,11 +3,11 @@ package de.markusressel.mkdocseditor.syntaxhighlighter.markdown.rule
 import android.text.Editable
 import de.markusressel.mkdocseditor.syntaxhighlighter.colorscheme.SectionTypeEnum
 
-class ImageLinkRule : HighlighterRuleBase() {
+class StrikeRule : HighlighterRuleBase() {
 
     override fun getSectionType(): SectionTypeEnum {
         return SectionTypeEnum
-                .Link
+                .StrikedText
     }
 
     override fun findMatches(editable: Editable): Sequence<MatchResult> {
@@ -16,7 +16,7 @@ class ImageLinkRule : HighlighterRuleBase() {
     }
 
     companion object {
-        val PATTERN = "!\\[.*?]\\(.*?\\)"
+        val PATTERN = "(~{2})([^~]+?)\\1"
                 .toRegex()
     }
 

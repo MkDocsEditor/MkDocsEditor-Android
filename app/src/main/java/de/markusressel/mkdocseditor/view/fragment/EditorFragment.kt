@@ -13,6 +13,7 @@ import com.jakewharton.rxbinding2.widget.RxTextView
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindToLifecycle
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
+import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.extensions.prettyPrint
 import de.markusressel.mkdocseditor.extensions.runOnUiThread
@@ -98,10 +99,16 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
         val documentId = arguments?.getString(KEY_ID)!!
 
-        syncManager = DocumentSyncManager(documentId = documentId, url = "ws://10.0.2.2:8080/document/$documentId/ws", onInitialText = {
+        val host = if (BuildConfig.DEBUG) {
+            "10.0.2.2"
+        } else {
+            "192.168.2.90"
+        }
+
+        syncManager = DocumentSyncManager(documentId = documentId, url = "ws://$host:8080/document/$documentId/ws", onInitialText = {
             // TODO: there has to be a better way to do this...
             Thread
-                    .sleep(2000)
+                    .sleep(1000)
 
             runOnUiThread {
                 loadingComponent

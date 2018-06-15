@@ -1,13 +1,14 @@
 package de.markusressel.mkdocseditor.syntaxhighlighter.markdown.rule
 
-import android.graphics.Color
 import android.text.Editable
-import android.text.style.CharacterStyle
-import android.text.style.ForegroundColorSpan
+import de.markusressel.mkdocseditor.syntaxhighlighter.colorscheme.SectionTypeEnum
 
-class LinkRule : HighlighterRuleBase() {
+class TextLinkRule : HighlighterRuleBase() {
 
-    override val styles = setOf<() -> CharacterStyle>({ ForegroundColorSpan(COLOR) })
+    override fun getSectionType(): SectionTypeEnum {
+        return SectionTypeEnum
+                .Link
+    }
 
     override fun findMatches(editable: Editable): Sequence<MatchResult> {
         return PATTERN
@@ -17,8 +18,6 @@ class LinkRule : HighlighterRuleBase() {
     companion object {
         val PATTERN = "(?<!!)\\[.*?]\\(.*?\\)"
                 .toRegex()
-        val COLOR = Color
-                .parseColor("#7C4DFF")
     }
 
 }

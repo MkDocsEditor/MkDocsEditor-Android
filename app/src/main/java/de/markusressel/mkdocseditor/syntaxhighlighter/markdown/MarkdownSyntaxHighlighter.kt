@@ -1,13 +1,23 @@
 package de.markusressel.mkdocseditor.syntaxhighlighter.markdown
 
-import de.markusressel.mkdocseditor.syntaxhighlighter.SyntaxHighlighter
+import de.markusressel.mkdocseditor.syntaxhighlighter.SyntaxHighlighterBase
 import de.markusressel.mkdocseditor.syntaxhighlighter.SyntaxHighlighterRule
+import de.markusressel.mkdocseditor.syntaxhighlighter.colorscheme.SyntaxColorScheme
+import de.markusressel.mkdocseditor.syntaxhighlighter.markdown.colorscheme.DarkBackgroundColorScheme
 import de.markusressel.mkdocseditor.syntaxhighlighter.markdown.rule.*
 
-class MarkdownSyntaxHighlighter : SyntaxHighlighter {
+class MarkdownSyntaxHighlighter : SyntaxHighlighterBase() {
 
     override fun getRules(): Set<SyntaxHighlighterRule> {
-        return setOf(HeadingRule(), ItalicRule(), BoldRule(), CodeInlineRule(), CodeLineRule(), LinkRule(), ImageLinkRule())
+        return setOf(HeadingRule(), ItalicRule(), BoldRule(), CodeInlineRule(), CodeLineRule(), TextLinkRule(), ImageLinkRule(), StrikeRule())
+    }
+
+    override fun getColorScheme(): SyntaxColorScheme<*> {
+        return DEFAULT_COLOR_SCHEME
+    }
+
+    companion object {
+        val DEFAULT_COLOR_SCHEME = DarkBackgroundColorScheme()
     }
 
 }

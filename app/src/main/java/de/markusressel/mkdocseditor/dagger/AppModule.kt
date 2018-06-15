@@ -6,6 +6,7 @@ import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.android.ContributesAndroidInjector
+import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.application.App
 import de.markusressel.mkdocseditor.data.persistence.entity.MyObjectBox
 import de.markusressel.mkdocseditor.view.activity.EditorActivity
@@ -56,8 +57,15 @@ abstract class AppModule {
         @JvmStatic
         internal fun provideMkDocsRestClient(): MkDocsRestClient {
             val restClient = MkDocsRestClient()
-            restClient
-                    .setHostname("10.0.2.2:8080")
+
+            if (BuildConfig.DEBUG) {
+                restClient
+                        .setHostname("10.0.2.2:8080")
+            } else {
+                restClient
+                        .setHostname("192.168.2.90:8080")
+            }
+
             return restClient
         }
 
