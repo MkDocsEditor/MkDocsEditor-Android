@@ -6,7 +6,6 @@ import android.os.Bundle
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.view.activity.base.DaggerSupportActivityBase
 import de.markusressel.mkdocseditor.view.fragment.EditorFragment
-import kotlinx.android.synthetic.main.view_toolbar.*
 import javax.inject.Inject
 
 class EditorActivity : DaggerSupportActivityBase() {
@@ -30,7 +29,6 @@ class EditorActivity : DaggerSupportActivityBase() {
         val content = intent
                 .getStringExtra(KEY_CONTENT)
 
-        setSupportActionBar(toolbar)
         supportActionBar
                 ?.title = name
 

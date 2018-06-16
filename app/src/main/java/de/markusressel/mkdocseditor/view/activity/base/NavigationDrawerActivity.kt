@@ -113,9 +113,10 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
 
         return AccountHeaderBuilder()
                 .withActivity(this)
-                .withProfiles(profiles)
-                .withCloseDrawerOnProfileListClick(false)
-                .withCurrentProfileHiddenInList(true)
+                //                .withProfiles(profiles)
+                //                .withCloseDrawerOnProfileListClick(false)
+                //                .withCurrentProfileHiddenInList(true)
+                //                .withHeaderBackground()
                 .withDividerBelowHeader(true)
                 .withOnAccountHeaderListener { _, profile, current ->
                     Timber

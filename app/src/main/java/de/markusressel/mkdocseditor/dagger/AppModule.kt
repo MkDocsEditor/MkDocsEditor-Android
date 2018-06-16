@@ -8,7 +8,6 @@ import dagger.Provides
 import dagger.android.ContributesAndroidInjector
 import de.markusressel.kutepreferences.library.persistence.DefaultKutePreferenceDataProvider
 import de.markusressel.kutepreferences.library.persistence.KutePreferenceDataProvider
-import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.application.App
 import de.markusressel.mkdocseditor.data.persistence.entity.MyObjectBox
 import de.markusressel.mkdocseditor.view.activity.EditorActivity
@@ -71,16 +70,7 @@ abstract class AppModule {
         @Singleton
         @JvmStatic
         internal fun provideMkDocsRestClient(preferenceHolder: KutePreferencesHolder): MkDocsRestClient {
-
             val restClient = MkDocsRestClient()
-
-            if (BuildConfig.DEBUG) {
-                restClient
-                        .setHostname("10.0.2.2:8080")
-            } else {
-                restClient
-                        .setHostname("192.168.2.90:8080")
-            }
 
             restClient
                     .setHostname(preferenceHolder.connectionUriPreference.persistedValue)
