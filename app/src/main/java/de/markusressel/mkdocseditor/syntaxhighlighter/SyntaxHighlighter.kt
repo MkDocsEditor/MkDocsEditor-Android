@@ -13,14 +13,19 @@ interface SyntaxHighlighter {
     val appliedStyles: MutableSet<CharacterStyle>
 
     /**
+     * The currently active color scheme
+     */
+    var colorScheme: SyntaxColorScheme
+
+    /**
      * Get a set of rules for this highlighter
      */
     fun getRules(): Set<SyntaxHighlighterRule>
 
     /**
-     * Get the color scheme to use for this highlighter
+     * Get the default color scheme to use for this highlighter
      */
-    fun getColorScheme(): SyntaxColorScheme<*>
+    fun getDefaultColorScheme(): SyntaxColorScheme
 
     /**
      * Highlight the given text
@@ -45,8 +50,8 @@ interface SyntaxHighlighter {
 
                                 // needs to be called for each result
                                 // so multiple spans are created and applied
-                                val styles = getColorScheme()
-                                        .getStyle(sectionType)
+                                val styles = colorScheme
+                                        .getStyles(sectionType)
 
                                 highlight(editable, start, end, styles)
                             }
@@ -61,16 +66,17 @@ interface SyntaxHighlighter {
      * @param end the end position (inclusive)
      * @param styles the styles to apply
      */
-    private fun highlight(editable: Editable, start: Int, end: Int, styles: Set<CharacterStyle>) {
+    private fun highlight(editable: Editable, start: Int, end: Int, styles: Set<() -> CharacterStyle>) {
         styles
                 .forEach {
+                    val style = it()
                     editable
-                            .setSpan(it, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                }
+                            .setSpan(it(), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
 
-        // remember which styles were applied
-        appliedStyles
-                .addAll(styles)
+                    // remember which styles were applied
+                    appliedStyles
+                            .add(style)
+                }
     }
 
     /**
@@ -82,6 +88,8 @@ interface SyntaxHighlighter {
                     editable
                             .removeSpan(it)
                 }
+        appliedStyles
+                .clear()
     }
 
 }

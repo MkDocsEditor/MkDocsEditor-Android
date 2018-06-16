@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit
 class CodeEditText : AppCompatEditText {
 
     var syntaxHighlighter: SyntaxHighlighter = MarkdownSyntaxHighlighter()
-    private var highlightingTimeout = 200L to TimeUnit.MILLISECONDS
+    private var highlightingTimeout = 50L to TimeUnit.MILLISECONDS
 
     private var highlightingDisposable: Disposable? = null
 
@@ -76,6 +76,7 @@ class CodeEditText : AppCompatEditText {
                 .toMillis(highlightingTimeout.first)
     }
 
+    @Synchronized
     fun refreshSyntaxHighlighting() {
         syntaxHighlighter
                 .highlight(text)

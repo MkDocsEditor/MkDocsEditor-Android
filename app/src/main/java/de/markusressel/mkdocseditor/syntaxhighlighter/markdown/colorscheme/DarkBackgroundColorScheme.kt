@@ -7,32 +7,31 @@ import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import de.markusressel.mkdocseditor.syntaxhighlighter.colorscheme.SectionTypeEnum
 import de.markusressel.mkdocseditor.syntaxhighlighter.colorscheme.SyntaxColorScheme
-import de.markusressel.mkdocseditor.syntaxhighlighter.markdown.MarkdownSyntaxHighlighter
 
 /**
  * A dark color scheme for markdown text
  */
-class DarkBackgroundColorScheme : SyntaxColorScheme<MarkdownSyntaxHighlighter> {
+class DarkBackgroundColorScheme : SyntaxColorScheme {
 
-    override fun getStyle(type: SectionTypeEnum): Set<CharacterStyle> {
+    override fun getStyles(type: SectionTypeEnum): Set<() -> CharacterStyle> {
         return when (type) {
             SectionTypeEnum.BoldText -> {
-                setOf(ForegroundColorSpan(Color.parseColor("#0091EA")), StyleSpan(Typeface.BOLD))
+                setOf({ ForegroundColorSpan(Color.parseColor("#0091EA")) }, { StyleSpan(Typeface.BOLD) })
             }
             SectionTypeEnum.ItalicText -> {
-                setOf(ForegroundColorSpan(Color.parseColor("#0091EA")), StyleSpan(Typeface.ITALIC))
+                setOf({ ForegroundColorSpan(Color.parseColor("#0091EA")) }, { StyleSpan(Typeface.ITALIC) })
             }
             SectionTypeEnum.SourceCode -> {
-                setOf(ForegroundColorSpan(Color.parseColor("#00C853")))
+                setOf({ ForegroundColorSpan(Color.parseColor("#00C853")) })
             }
             SectionTypeEnum.Heading -> {
-                setOf(ForegroundColorSpan(Color.parseColor("#FF6D00")))
+                setOf({ ForegroundColorSpan(Color.parseColor("#FF6D00")) })
             }
             SectionTypeEnum.Link -> {
-                setOf(ForegroundColorSpan(Color.parseColor("#7C4DFF")))
+                setOf({ ForegroundColorSpan(Color.parseColor("#7C4DFF")) })
             }
             SectionTypeEnum.StrikedText -> {
-                setOf(ForegroundColorSpan(Color.parseColor("#5D4037")))
+                setOf({ ForegroundColorSpan(Color.parseColor("#5D4037")) })
             }
             else -> emptySet()
         }

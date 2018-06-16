@@ -12,12 +12,8 @@ class MarkdownSyntaxHighlighter : SyntaxHighlighterBase() {
         return setOf(HeadingRule(), ItalicRule(), BoldRule(), CodeInlineRule(), CodeLineRule(), TextLinkRule(), ImageLinkRule(), StrikeRule())
     }
 
-    override fun getColorScheme(): SyntaxColorScheme<*> {
-        return DEFAULT_COLOR_SCHEME
-    }
-
-    companion object {
-        val DEFAULT_COLOR_SCHEME = DarkBackgroundColorScheme()
+    override fun getDefaultColorScheme(): SyntaxColorScheme {
+        return DarkBackgroundColorScheme()
     }
 
 }
