@@ -3,19 +3,27 @@ package de.markusressel.mkdocsrestclient.websocket
 import android.os.AsyncTask
 import android.util.Log
 import com.github.salomonbrys.kotson.jsonObject
+import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.websocket.diff.diff_match_patch
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import okhttp3.WebSocket
+import okhttp3.*
 import java.util.concurrent.TimeUnit
 
-class DocumentSyncManager(private val url: String, private val documentId: String, private val onInitialText: ((initialText: String) -> Unit), private val onTextChanged: ((newText: String) -> Unit), private val onError: ((code: Int?, throwable: Throwable?) -> Unit)) {
+class DocumentSyncManager(private val url: String, private val basicAuthConfig: BasicAuthConfig, private val documentId: String, private val onInitialText: ((initialText: String) -> Unit), private val onTextChanged: ((newText: String) -> Unit), private val onError: ((code: Int?, throwable: Throwable?) -> Unit)) {
 
     private val client: OkHttpClient = OkHttpClient
             .Builder()
             .readTimeout(0, TimeUnit.MILLISECONDS)
             //            .pingInterval(30, TimeUnit.SECONDS)
+            .authenticator { route, response ->
+                val credential = Credentials
+                        .basic(basicAuthConfig.username, basicAuthConfig.password)
+
+                response
+                        .request()
+                        .newBuilder()
+                        .header("Authorization", credential)
+                        .build()
+            }
             .build()
 
     private var webSocket: WebSocket? = null

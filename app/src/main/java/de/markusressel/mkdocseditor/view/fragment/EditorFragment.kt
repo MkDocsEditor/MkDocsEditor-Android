@@ -21,6 +21,7 @@ import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
 import de.markusressel.mkdocseditor.view.view.CodeEditorView
+import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.websocket.DocumentSyncManager
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -111,7 +112,7 @@ class EditorFragment : DaggerSupportFragmentBase() {
                 .connectionUriPreference
                 .persistedValue
 
-        syncManager = DocumentSyncManager(documentId = documentId, url = "ws://$host/document/$documentId/ws", onInitialText = {
+        syncManager = DocumentSyncManager(documentId = documentId, url = "ws://$host/document/$documentId/ws", basicAuthConfig = BasicAuthConfig(preferencesHolder.basicAuthUserPreference.persistedValue, preferencesHolder.basicAuthPasswordPreference.persistedValue), onInitialText = {
             // TODO: there has to be a better way to do this...
             Thread
                     .sleep(1000)
