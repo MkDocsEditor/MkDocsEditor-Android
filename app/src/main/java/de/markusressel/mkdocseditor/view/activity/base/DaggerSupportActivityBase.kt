@@ -14,6 +14,7 @@ import dagger.android.HasFragmentInjector
 import dagger.android.support.HasSupportFragmentInjector
 import de.markusressel.mkdocseditor.navigation.Navigator
 import de.markusressel.mkdocseditor.view.IconHandler
+import kotlinx.android.synthetic.main.view_toolbar.*
 import java.util.*
 import javax.inject.Inject
 
@@ -81,7 +82,7 @@ abstract class DaggerSupportActivityBase : LifecycleActivityBase(), HasFragmentI
                 .inflate(layoutRes, null)
         setContentView(contentView)
 
-        //        setSupportActionBar(toolbar)
+        setSupportActionBar(toolbar)
 
         supportActionBar
                 ?.setDisplayHomeAsUpEnabled(true)

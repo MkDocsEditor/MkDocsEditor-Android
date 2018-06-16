@@ -13,13 +13,13 @@ import com.jakewharton.rxbinding2.widget.RxTextView
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindToLifecycle
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
-import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.extensions.prettyPrint
 import de.markusressel.mkdocseditor.extensions.runOnUiThread
 import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
+import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
 import de.markusressel.mkdocseditor.view.view.CodeEditorView
 import de.markusressel.mkdocsrestclient.websocket.DocumentSyncManager
 import io.reactivex.Observable
@@ -27,6 +27,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
 
 /**
@@ -38,6 +39,9 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
     override val layoutRes: Int
         get() = R.layout.fragment_editor
+
+    @Inject
+    lateinit var preferencesHolder: KutePreferencesHolder
 
     private lateinit var codeEditorView: CodeEditorView
 
@@ -64,6 +68,9 @@ class EditorFragment : DaggerSupportFragmentBase() {
         }, onOptionsMenuItemClicked = {
             when {
                 it.itemId == R.id.refresh -> {
+
+                    // TODO: disconnect and reconnect
+
                     true
                 }
                 else -> false
@@ -99,13 +106,12 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
         val documentId = arguments?.getString(KEY_ID)!!
 
-        val host = if (BuildConfig.DEBUG) {
-            "10.0.2.2"
-        } else {
-            "192.168.2.90"
-        }
 
-        syncManager = DocumentSyncManager(documentId = documentId, url = "ws://$host:8080/document/$documentId/ws", onInitialText = {
+        val host = preferencesHolder
+                .connectionUriPreference
+                .persistedValue
+
+        syncManager = DocumentSyncManager(documentId = documentId, url = "ws://$host/document/$documentId/ws", onInitialText = {
             // TODO: there has to be a better way to do this...
             Thread
                     .sleep(1000)
