@@ -20,7 +20,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".view.activity.EditorActivity" />
+        <activity
+            android:name=".view.activity.EditorActivity"
+            android:parentActivityName=".view.activity.MainActivity" />
     </application>
 
 </manifest>
