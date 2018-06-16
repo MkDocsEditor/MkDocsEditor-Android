@@ -12,6 +12,8 @@ import dagger.android.AndroidInjector
 import dagger.android.DispatchingAndroidInjector
 import dagger.android.HasFragmentInjector
 import dagger.android.support.HasSupportFragmentInjector
+import de.markusressel.mkdocseditor.navigation.Navigator
+import de.markusressel.mkdocseditor.view.IconHandler
 import java.util.*
 import javax.inject.Inject
 
@@ -24,6 +26,12 @@ abstract class DaggerSupportActivityBase : LifecycleActivityBase(), HasFragmentI
     internal lateinit var supportFragmentInjector: DispatchingAndroidInjector<Fragment>
     @Inject
     internal lateinit var frameworkFragmentInjector: DispatchingAndroidInjector<android.app.Fragment>
+
+    @Inject
+    internal lateinit var navigator: Navigator
+
+    @Inject
+    lateinit var iconHandler: IconHandler
 
     /**
      * @return true if this activity should use a dialog theme instead of a normal activity theme

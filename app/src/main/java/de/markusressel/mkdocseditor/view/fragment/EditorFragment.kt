@@ -163,6 +163,8 @@ class EditorFragment : DaggerSupportFragmentBase() {
         super
                 .onViewCreated(view, savedInstanceState)
 
+
+
         codeEditorView = view
                 .findViewById(R.id.codeEditorView)
 

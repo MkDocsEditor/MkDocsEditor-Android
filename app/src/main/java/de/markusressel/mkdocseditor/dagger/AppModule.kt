@@ -6,6 +6,8 @@ import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.android.ContributesAndroidInjector
+import de.markusressel.kutepreferences.library.persistence.DefaultKutePreferenceDataProvider
+import de.markusressel.kutepreferences.library.persistence.KutePreferenceDataProvider
 import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.application.App
 import de.markusressel.mkdocseditor.data.persistence.entity.MyObjectBox
@@ -14,6 +16,9 @@ import de.markusressel.mkdocseditor.view.activity.MainActivity
 import de.markusressel.mkdocseditor.view.activity.base.DaggerSupportActivityBase
 import de.markusressel.mkdocseditor.view.fragment.DocumentsFragment
 import de.markusressel.mkdocseditor.view.fragment.EditorFragment
+import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
+import de.markusressel.mkdocseditor.view.fragment.preferences.PreferencesFragment
+import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import io.objectbox.BoxStore
 import javax.inject.Singleton
@@ -42,6 +47,9 @@ abstract class AppModule {
     @ContributesAndroidInjector
     internal abstract fun EditorFragment(): EditorFragment
 
+    @ContributesAndroidInjector
+    internal abstract fun PreferencesFragment(): PreferencesFragment
+
     @Module
     companion object {
 
@@ -55,7 +63,15 @@ abstract class AppModule {
         @Provides
         @Singleton
         @JvmStatic
-        internal fun provideMkDocsRestClient(): MkDocsRestClient {
+        internal fun provideKutePreferenceDataProvider(context: Context): KutePreferenceDataProvider {
+            return DefaultKutePreferenceDataProvider(context)
+        }
+
+        @Provides
+        @Singleton
+        @JvmStatic
+        internal fun provideMkDocsRestClient(preferenceHolder: KutePreferencesHolder): MkDocsRestClient {
+
             val restClient = MkDocsRestClient()
 
             if (BuildConfig.DEBUG) {
@@ -65,6 +81,11 @@ abstract class AppModule {
                 restClient
                         .setHostname("192.168.2.90:8080")
             }
+
+            restClient
+                    .setHostname(preferenceHolder.connectionUriPreference.persistedValue)
+            restClient
+                    .setBasicAuthConfig(BasicAuthConfig(username = preferenceHolder.basicAuthUserPreference.persistedValue, password = preferenceHolder.basicAuthPasswordPreference.persistedValue))
 
             return restClient
         }

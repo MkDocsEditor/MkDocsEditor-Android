@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="category_connection_key" translatable="false">category_connection_key</string>
+
+    <string name="category_connection_title">Connection</string>
+    <string name="category_connection_description">Connection Desctiption</string>
+
+    <string name="connection_host_key" translatable="false">connection_host_key</string>
+    <string name="connection_host_title">Host</string>
+
+
+    <string name="divider_basic_auth_key" translatable="false">divider_basic_auth_key</string>
+    <string name="divider_basic_auth_title">Basic Auth</string>
+
+    <string name="connection_basic_auth_user_key" translatable="false">connection_basic_auth_user_key</string>
+    <string name="connection_basic_auth_user_title">User</string>
+
+
+    <string name="connection_basic_auth_password_key" translatable="false">connection_basic_auth_password_key</string>
+    <string name="connection_basic_auth_password_title">Password</string>
+
+    <string name="theme_title">Theme</string>
+
+    <string name="theme_dark_value_name">Dark</string>
+    <string name="theme_light_value_name">Light</string>
+
+    <!-- Theme -->
+    <string name="theme_key">theme</string>
+
+    <string name="theme_light_value">0</string>
+    <string name="theme_dark_value">1</string>
+    <string-array name="theme_values">
+        <item>@string/theme_light_value</item>
+        <item>@string/theme_dark_value</item>
+    </string-array>
+
+</resources>

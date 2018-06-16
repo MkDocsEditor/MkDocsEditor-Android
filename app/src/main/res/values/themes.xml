@@ -95,4 +95,24 @@
 
     </style>
 
+    <style name="ToolbarTheme" parent="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+        <!-- android:textColorPrimary is the color of the title text in the Toolbar  -->
+        <item name="android:textColorPrimary">@color/md_white_1000</item>
+        <!-- actionMenuTextColor is the color of the text of action (menu) items  -->
+        <item name="actionMenuTextColor">@color/md_white_1000</item>
+        <!-- Tints the input fields like checkboxes and text fields -->
+        <!--<item name="colorAccent">@color/cursorAccent</item>-->
+        <!-- Applies to views in their normal state. -->
+        <!--<item name="colorControlNormal">@color/controlNormal</item>-->
+        <!-- Applies to views in their activated state (i.e checked or switches) -->
+        <!--<item name="colorControlActivated">@color/controlActivated</item>-->
+        <!-- Applied to framework control highlights (i.e ripples or list selectors) -->
+        <!--<item name="colorControlHighlight">@color/controlActivated</item>-->
+
+        <!-- Enable these below if you want clicking icons to trigger a ripple effect -->
+
+        <item name="selectableItemBackground">?android:selectableItemBackground</item>
+        <item name="selectableItemBackgroundBorderless">?android:selectableItemBackground</item>
+    </style>
+
 </resources>

@@ -108,7 +108,7 @@ class DocumentsFragment : ListFragmentBase() {
                 .d { "Opening Document '${document.name}'" }
 
         val intent = EditorActivity
-                .getNewInstanceIntent(context as Context, document.id, "")
+                .getNewInstanceIntent(context as Context, document.id, document.name, "")
         startActivity(intent)
     }
 

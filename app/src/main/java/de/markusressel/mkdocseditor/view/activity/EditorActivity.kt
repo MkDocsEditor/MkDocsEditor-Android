@@ -24,12 +24,16 @@ class EditorActivity : DaggerSupportActivityBase() {
 
         val id = intent
                 .getStringExtra(KEY_ID)
+        val name = intent
+                .getStringExtra(KEY_NAME)
         val content = intent
                 .getStringExtra(KEY_CONTENT)
 
-        val existingFragment = supportFragmentManager.findFragmentByTag("editor")
-        val fragment = existingFragment ?: EditorFragment
-                .newInstance(id, content)
+        setTitle(name)
+
+        val existingFragment = supportFragmentManager
+                .findFragmentByTag("editor")
+        val fragment = existingFragment ?: EditorFragment.newInstance(id, content)
 
         supportFragmentManager
                 .beginTransaction()
@@ -40,15 +44,18 @@ class EditorActivity : DaggerSupportActivityBase() {
     companion object {
 
         private const val KEY_ID = "KEY_ID"
+        private const val KEY_NAME = "KEY_NAME"
         private const val KEY_CONTENT = "KEY_CONTENT"
 
-        fun getNewInstanceIntent(context: Context, id: String, content: String): Intent {
+        fun getNewInstanceIntent(context: Context, id: String, name: String, content: String): Intent {
             val intent = Intent(context, EditorActivity::class.java)
             intent
                     .flags = Intent
                     .FLAG_ACTIVITY_NEW_TASK
             intent
                     .putExtra(KEY_ID, id)
+            intent
+                    .putExtra(KEY_NAME, name)
             intent
                     .putExtra(KEY_CONTENT, content)
             return intent

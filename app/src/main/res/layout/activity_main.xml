@@ -1,13 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".view.activity.MainActivity">
 
+    <LinearLayout
+        android:id="@+id/drawerLayoutParent"
+        android:layout_width="270dp"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:visibility="gone" />
+
+    <View
+        android:id="@+id/drawerDividerView"
+        android:layout_width="2dp"
+        android:layout_height="match_parent"
+        android:layout_toEndOf="@id/drawerLayoutParent"
+        android:visibility="gone" />
+
+    <include
+        layout="@layout/view_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?android:attr/actionBarSize"
+        android:layout_toEndOf="@id/drawerDividerView" />
+
     <FrameLayout
         android:id="@+id/contentLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:layout_below="@id/toolbar"
+        android:layout_toEndOf="@id/drawerDividerView" />
 
-</android.support.constraint.ConstraintLayout>
+</RelativeLayout>
