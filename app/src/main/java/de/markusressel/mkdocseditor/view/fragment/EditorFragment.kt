@@ -184,6 +184,7 @@ class EditorFragment : DaggerSupportFragmentBase() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindToLifecycle(this as LifecycleOwner)
                 .subscribeBy(onNext = {
+                    // TODO: only send patch if the change is coming from user input
                     syncManager
                             .sendPatch(currentText, it.toString())
                 }, onError = {
