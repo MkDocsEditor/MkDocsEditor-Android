@@ -3,12 +3,14 @@ package de.markusressel.mkdocsrestclient.websocket
 import android.os.AsyncTask
 import android.util.Log
 import com.github.salomonbrys.kotson.jsonObject
+import com.google.gson.Gson
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.websocket.diff.diff_match_patch
 import okhttp3.*
+import java.util.*
 import java.util.concurrent.TimeUnit
 
-class DocumentSyncManager(private val url: String, private val basicAuthConfig: BasicAuthConfig, private val documentId: String, private val onInitialText: ((initialText: String) -> Unit), private val onTextChanged: ((newText: String) -> Unit), private val onError: ((code: Int?, throwable: Throwable?) -> Unit)) {
+class DocumentSyncManager(private val url: String, private val basicAuthConfig: BasicAuthConfig, private val documentId: String, private val onInitialText: ((initialText: String) -> Unit), private val onPatchReceived: ((patches: LinkedList<diff_match_patch.Patch>) -> Unit), private val onError: ((code: Int?, throwable: Throwable?) -> Unit)) {
 
     private val client: OkHttpClient = OkHttpClient
             .Builder()
@@ -28,6 +30,9 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
 
     private var webSocket: WebSocket? = null
     private var isInitialMessage = true
+
+    private val diffMatchPatch = diff_match_patch()
+    private var gson = Gson()
 
     /**
      * Connect to the given URL
@@ -50,8 +55,12 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
 
                     isInitialMessage = false
                 } else {
-                    callListenerAsync {
-                        onTextChanged(text ?: "")
+                    text?.let {
+                        callListenerAsync {
+                            val editRequestEntity = gson.fromJson(it, EditRequestEntity::class.java)
+                            val patch: LinkedList<diff_match_patch.Patch> = diffMatchPatch.patch_fromText(editRequestEntity.patches) as LinkedList<diff_match_patch.Patch>
+                            onPatchReceived(patch)
+                        }
                     }
                 }
             }
@@ -85,15 +94,18 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
      * Send a patch to the server
      */
     fun sendPatch(previousText: String, newText: String) {
-        val diffMatchPatch = diff_match_patch()
-
+        // compute diff
         val diffs = diffMatchPatch
                 .diff_main(previousText, newText)
+
+        // create path from diffs
         val patches = diffMatchPatch
                 .patch_make(diffs)
 
+        // parse to json
         val editRequestModel = jsonObject("documentId" to documentId, "patches" to diffMatchPatch.patch_toText(patches))
 
+        // send to server
         webSocket
                 ?.send(editRequestModel.toString())
     }

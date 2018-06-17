@@ -23,6 +23,7 @@ import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHol
 import de.markusressel.mkdocseditor.view.view.CodeEditorView
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.websocket.DocumentSyncManager
+import de.markusressel.mkdocsrestclient.websocket.diff.diff_match_patch
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
@@ -55,6 +56,9 @@ class EditorFragment : DaggerSupportFragmentBase() {
     private var initialTextLoaded = false
 
     private lateinit var syncManager: DocumentSyncManager
+
+    @Inject
+    lateinit var diffMatchPatch: diff_match_patch
 
     private val loadingComponent by lazy { LoadingComponent(this) }
 
@@ -131,15 +135,16 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
                 initialTextLoaded = true
             }
-        }, onTextChanged = {
+        }, onPatchReceived = {
             runOnUiThread {
                 val selection = codeEditorView
                         .editTextView
                         .selectionStart
-                currentText = it
+
+                currentText = diffMatchPatch.patch_apply(it, currentText)[0] as String
                 codeEditorView
-                        .setText(it)
-                if (selection <= it.length) {
+                        .setText(currentText)
+                if (selection <= currentText.length) {
                     codeEditorView
                             .editTextView
                             .setSelection(selection)

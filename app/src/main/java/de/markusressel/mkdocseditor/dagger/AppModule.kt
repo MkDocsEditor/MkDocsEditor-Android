@@ -19,6 +19,7 @@ import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHol
 import de.markusressel.mkdocseditor.view.fragment.preferences.PreferencesFragment
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
+import de.markusressel.mkdocsrestclient.websocket.diff.diff_match_patch
 import io.objectbox.BoxStore
 import javax.inject.Singleton
 
@@ -64,6 +65,13 @@ abstract class AppModule {
         @JvmStatic
         internal fun provideKutePreferenceDataProvider(context: Context): KutePreferenceDataProvider {
             return DefaultKutePreferenceDataProvider(context)
+        }
+
+        @Provides
+        @Singleton
+        @JvmStatic
+        internal fun provideDiffMatchPatch(): diff_match_patch {
+            return diff_match_patch()
         }
 
         @Provides
