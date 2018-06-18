@@ -28,6 +28,7 @@ import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
+import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -47,6 +48,10 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
     private lateinit var codeEditorView: CodeEditorView
 
+    val documentId by lazy {
+        arguments?.getString(KEY_ID)!!
+    }
+
     private var currentText: String by savedInstanceState("")
 
     private var currentXPosition by savedInstanceState(0F)
@@ -56,6 +61,8 @@ class EditorFragment : DaggerSupportFragmentBase() {
     private var initialTextLoaded = false
 
     private lateinit var syncManager: DocumentSyncManager
+
+    private var previouslySentPatches: MutableMap<String, String> = mutableMapOf()
 
     @Inject
     lateinit var diffMatchPatch: diff_match_patch
@@ -109,8 +116,6 @@ class EditorFragment : DaggerSupportFragmentBase() {
         super
                 .onCreate(savedInstanceState)
 
-        val documentId = arguments?.getString(KEY_ID)!!
-
 
         val host = preferencesHolder
                 .connectionUriPreference
@@ -135,20 +140,32 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
                 initialTextLoaded = true
             }
-        }, onPatchReceived = {
+        }, onPatchReceived = { requestId, documentId, patches ->
+            if (documentId != this.documentId) {
+                return@DocumentSyncManager
+            }
+
             runOnUiThread {
-                val selection = codeEditorView
+                if (previouslySentPatches.containsKey(requestId)) {
+                    previouslySentPatches
+                            .remove(requestId)
+                    return@runOnUiThread
+                }
+
+                val oldSelection = codeEditorView
                         .editTextView
                         .selectionStart
 
-                currentText = diffMatchPatch.patch_apply(it, currentText)[0] as String
+                // parse and apply patches
+                currentText = diffMatchPatch.patch_apply(patches, currentText)[0] as String
                 codeEditorView
                         .setText(currentText)
-                if (selection <= currentText.length) {
-                    codeEditorView
-                            .editTextView
-                            .setSelection(selection)
-                }
+
+                // set new cursor position
+                val newSelection = calculateNewSelectionIndex(oldSelection, patches)
+                codeEditorView
+                        .editTextView
+                        .setSelection(newSelection.coerceIn(0, currentText.length))
             }
         }, onError = { code, throwable ->
             throwable
@@ -161,6 +178,49 @@ class EditorFragment : DaggerSupportFragmentBase() {
                                 .e(throwable) { "Websocket error code: $code" }
                     }
         })
+    }
+
+    private fun calculateNewSelectionIndex(oldSelection: Int, patches: LinkedList<diff_match_patch.Patch>): Int {
+        var newSelection = oldSelection
+
+        var currentIndex: Int
+        // calculate how many characters have been inserted before the cursor
+        patches
+                .forEach {
+                    val patch = it
+                    currentIndex = patch
+                            .start1
+
+                    it
+                            .diffs
+                            .forEach {
+                                val diff = it
+
+                                when (diff.operation) {
+                                    diff_match_patch.Operation.DELETE -> {
+                                        if (currentIndex < newSelection) {
+                                            newSelection -= diff
+                                                    .text
+                                                    .length
+                                        }
+                                    }
+                                    diff_match_patch.Operation.INSERT -> {
+                                        if (currentIndex < newSelection) {
+                                            newSelection += diff
+                                                    .text
+                                                    .length
+                                        }
+                                    }
+                                    else -> {
+                                        currentIndex += diff
+                                                .text
+                                                .length
+                                    }
+                                }
+                            }
+                }
+
+        return newSelection
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -183,15 +243,19 @@ class EditorFragment : DaggerSupportFragmentBase() {
         RxTextView
                 .textChanges(codeEditorView.editTextView)
                 .skipInitialValue()
-                .debounce(500, TimeUnit.MILLISECONDS)
-                .filter { it.toString() != currentText }
+                .map {
+                    it
+                            .toString()
+                }
+                .filter { it != currentText }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindToLifecycle(this as LifecycleOwner)
                 .subscribeBy(onNext = {
                     // TODO: only send patch if the change is coming from user input
-                    syncManager
-                            .sendPatch(currentText, it.toString())
+                    val requestId = (syncManager.sendPatch(currentText, it))
+                    previouslySentPatches[requestId] = "sent"
+                    currentText = it
                 }, onError = {
                     context
                             ?.toast(it.prettyPrint(), Toast.LENGTH_LONG)

@@ -10,7 +10,7 @@ import okhttp3.*
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class DocumentSyncManager(private val url: String, private val basicAuthConfig: BasicAuthConfig, private val documentId: String, private val onInitialText: ((initialText: String) -> Unit), private val onPatchReceived: ((patches: LinkedList<diff_match_patch.Patch>) -> Unit), private val onError: ((code: Int?, throwable: Throwable?) -> Unit)) {
+class DocumentSyncManager(private val url: String, private val basicAuthConfig: BasicAuthConfig, private val documentId: String, private val onInitialText: ((initialText: String) -> Unit), private val onPatchReceived: ((requestId: String, documentId: String, patches: LinkedList<diff_match_patch.Patch>) -> Unit), private val onError: ((code: Int?, throwable: Throwable?) -> Unit)) {
 
     private val client: OkHttpClient = OkHttpClient
             .Builder()
@@ -55,13 +55,15 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
 
                     isInitialMessage = false
                 } else {
-                    text?.let {
-                        callListenerAsync {
-                            val editRequestEntity = gson.fromJson(it, EditRequestEntity::class.java)
-                            val patch: LinkedList<diff_match_patch.Patch> = diffMatchPatch.patch_fromText(editRequestEntity.patches) as LinkedList<diff_match_patch.Patch>
-                            onPatchReceived(patch)
-                        }
-                    }
+                    text
+                            ?.let {
+                                callListenerAsync {
+                                    val editRequestEntity = gson
+                                            .fromJson(it, EditRequestEntity::class.java)
+                                    val patch: LinkedList<diff_match_patch.Patch> = diffMatchPatch.patch_fromText(editRequestEntity.patches) as LinkedList<diff_match_patch.Patch>
+                                    onPatchReceived(editRequestEntity.requestId, editRequestEntity.documentId, patch)
+                                }
+                            }
                 }
             }
 
@@ -92,8 +94,10 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
 
     /**
      * Send a patch to the server
+     *
+     * @return id of the EditRequest sent to the server
      */
-    fun sendPatch(previousText: String, newText: String) {
+    fun sendPatch(previousText: String, newText: String): String {
         // compute diff
         val diffs = diffMatchPatch
                 .diff_main(previousText, newText)
@@ -103,11 +107,16 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
                 .patch_make(diffs)
 
         // parse to json
-        val editRequestModel = jsonObject("documentId" to documentId, "patches" to diffMatchPatch.patch_toText(patches))
+        val requestId = UUID
+                .randomUUID()
+                .toString()
+        val editRequestModel = jsonObject("requestId" to requestId, "documentId" to documentId, "patches" to diffMatchPatch.patch_toText(patches))
 
         // send to server
         webSocket
                 ?.send(editRequestModel.toString())
+
+        return requestId
     }
 
     /**
@@ -116,6 +125,7 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
     fun disconnect(code: Int, reason: String) {
         webSocket
                 ?.close(code, reason)
+        isInitialMessage = true
     }
 
     /**
