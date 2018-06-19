@@ -118,7 +118,7 @@ class CodeEditorView : ZoomLayout {
                 .filter {
                     editTextView.lineCount != currentLineCount
                 }
-                .subscribeOn(Schedulers.io())
+                .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindToLifecycle(this)
                 .subscribeBy(onNext = {

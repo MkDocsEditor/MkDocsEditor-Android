@@ -71,7 +71,7 @@ interface SyntaxHighlighter {
                 .forEach {
                     val style = it()
                     editable
-                            .setSpan(it(), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                            .setSpan(style, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
 
                     // remember which styles were applied
                     appliedStyles

@@ -23,6 +23,7 @@ import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHol
 import de.markusressel.mkdocseditor.view.view.CodeEditorView
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.websocket.DocumentSyncManager
+import de.markusressel.mkdocsrestclient.websocket.EditRequestEntity
 import de.markusressel.mkdocsrestclient.websocket.diff.diff_match_patch
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -116,7 +117,6 @@ class EditorFragment : DaggerSupportFragmentBase() {
         super
                 .onCreate(savedInstanceState)
 
-
         val host = preferencesHolder
                 .connectionUriPreference
                 .persistedValue
@@ -140,33 +140,8 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
                 initialTextLoaded = true
             }
-        }, onPatchReceived = { requestId, documentId, patches ->
-            if (documentId != this.documentId) {
-                return@DocumentSyncManager
-            }
-
-            runOnUiThread {
-                if (previouslySentPatches.containsKey(requestId)) {
-                    previouslySentPatches
-                            .remove(requestId)
-                    return@runOnUiThread
-                }
-
-                val oldSelection = codeEditorView
-                        .editTextView
-                        .selectionStart
-
-                // parse and apply patches
-                currentText = diffMatchPatch.patch_apply(patches, currentText)[0] as String
-                codeEditorView
-                        .setText(currentText)
-
-                // set new cursor position
-                val newSelection = calculateNewSelectionIndex(oldSelection, patches)
-                codeEditorView
-                        .editTextView
-                        .setSelection(newSelection.coerceIn(0, currentText.length))
-            }
+        }, onPatchReceived = { editRequest ->
+            processEditRequest(editRequest)
         }, onError = { code, throwable ->
             throwable
                     ?.let {
@@ -178,6 +153,42 @@ class EditorFragment : DaggerSupportFragmentBase() {
                                 .e(throwable) { "Websocket error code: $code" }
                     }
         })
+    }
+
+    @Synchronized
+    private fun processEditRequest(editRequest: EditRequestEntity) {
+        if (documentId != this.documentId) {
+            return
+        }
+
+        if (previouslySentPatches.containsKey(editRequest.requestId)) {
+            previouslySentPatches
+                    .remove(editRequest.requestId)
+            return
+        }
+
+        runOnUiThread {
+            val oldSelection = codeEditorView
+                    .editTextView
+                    .selectionStart
+
+            // parse and apply patches
+            val patches: LinkedList<diff_match_patch.Patch> = diffMatchPatch.patch_fromText(editRequest.patches) as LinkedList<diff_match_patch.Patch>
+
+            currentText = diffMatchPatch.patch_apply(patches, currentText)[0] as String
+
+            // set new cursor position
+            val newSelection = calculateNewSelectionIndex(oldSelection, patches)
+                    .coerceIn(0, currentText.length)
+
+
+            codeEditorView
+                    .setText(currentText)
+
+            codeEditorView
+                    .editTextView
+                    .setSelection(newSelection)
+        }
     }
 
     private fun calculateNewSelectionIndex(oldSelection: Int, patches: LinkedList<diff_match_patch.Patch>): Int {
@@ -235,27 +246,18 @@ class EditorFragment : DaggerSupportFragmentBase() {
         super
                 .onViewCreated(view, savedInstanceState)
 
-
-
         codeEditorView = view
                 .findViewById(R.id.codeEditorView)
 
         RxTextView
                 .textChanges(codeEditorView.editTextView)
                 .skipInitialValue()
-                .map {
-                    it
-                            .toString()
-                }
-                .filter { it != currentText }
+                .debounce(100, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindToLifecycle(this as LifecycleOwner)
                 .subscribeBy(onNext = {
-                    // TODO: only send patch if the change is coming from user input
-                    val requestId = (syncManager.sendPatch(currentText, it))
-                    previouslySentPatches[requestId] = "sent"
-                    currentText = it
+                    sendPatchIfChanged(it)
                 }, onError = {
                     context
                             ?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
@@ -280,6 +282,23 @@ class EditorFragment : DaggerSupportFragmentBase() {
                                         .zoom
                             })
                 }
+    }
+
+    @Synchronized
+    private fun sendPatchIfChanged(it: CharSequence) {
+        if (currentText.contentEquals(it)) {
+            Timber
+                    .e { "TEXT IST GLEICH" }
+            return
+        }
+
+        val newText = it
+                .toString()
+
+        // TODO: only send patch if the change is coming from user input
+        val requestId = (syncManager.sendPatch(currentText, newText))
+        previouslySentPatches[requestId] = "sent"
+        currentText = newText
     }
 
     override fun onStart() {

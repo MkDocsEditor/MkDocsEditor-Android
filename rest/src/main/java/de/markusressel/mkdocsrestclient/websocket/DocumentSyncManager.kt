@@ -10,7 +10,7 @@ import okhttp3.*
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class DocumentSyncManager(private val url: String, private val basicAuthConfig: BasicAuthConfig, private val documentId: String, private val onInitialText: ((initialText: String) -> Unit), private val onPatchReceived: ((requestId: String, documentId: String, patches: LinkedList<diff_match_patch.Patch>) -> Unit), private val onError: ((code: Int?, throwable: Throwable?) -> Unit)) {
+class DocumentSyncManager(private val url: String, private val basicAuthConfig: BasicAuthConfig, private val documentId: String, private val onInitialText: ((initialText: String) -> Unit), private val onPatchReceived: ((editRequest: EditRequestEntity) -> Unit), private val onError: ((code: Int?, throwable: Throwable?) -> Unit)) {
 
     private val client: OkHttpClient = OkHttpClient
             .Builder()
@@ -58,10 +58,7 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
                     text
                             ?.let {
                                 callListenerAsync {
-                                    val editRequestEntity = gson
-                                            .fromJson(it, EditRequestEntity::class.java)
-                                    val patch: LinkedList<diff_match_patch.Patch> = diffMatchPatch.patch_fromText(editRequestEntity.patches) as LinkedList<diff_match_patch.Patch>
-                                    onPatchReceived(editRequestEntity.requestId, editRequestEntity.documentId, patch)
+                                    onPatchReceived(gson.fromJson(it, EditRequestEntity::class.java))
                                 }
                             }
                 }
