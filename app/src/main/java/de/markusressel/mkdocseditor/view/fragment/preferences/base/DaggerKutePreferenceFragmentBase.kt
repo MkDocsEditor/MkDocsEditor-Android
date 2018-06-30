@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.view.fragment.preferences
+package de.markusressel.mkdocseditor.view.fragment.preferences.base
 
 import android.content.Context
 import android.support.v4.app.Fragment

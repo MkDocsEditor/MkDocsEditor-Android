@@ -22,6 +22,7 @@ import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.Settings
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.Tree
 import de.markusressel.mkdocseditor.navigation.DrawerMenuItem
 import de.markusressel.mkdocseditor.navigation.Navigator
+import de.markusressel.mkdocseditor.view.fragment.preferences.PreferencesFragment
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.view_toolbar.*
 import java.util.*
@@ -235,17 +236,18 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
             return
         }
 
+        // special case for preferences
+        val preferenceFragment = navigator
+                .currentFragment
+        if (preferenceFragment is PreferencesFragment) {
+            if (preferenceFragment.onBackPressed()) {
+                return
+            }
+        }
+
         val previousPage = navigator
                 .navigateBack()
         if (previousPage != null) {
-
-            // special case for preferences
-            //            if (navigator.currentFragment is MainPreferenceFragment) {
-            //                val preferenceFragment = navigator.currentFragment as MainPreferenceFragment
-            //                if (preferenceFragment.onBackPressed()) {
-            //                    return
-            //                }
-            //            }
 
             navigator
                     .drawer
