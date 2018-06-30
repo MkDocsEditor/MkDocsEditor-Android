@@ -38,7 +38,6 @@ class Navigator @Inject constructor(private val kutePreferencesHolder: KutePrefe
 
     lateinit var activity: AppCompatActivity
     lateinit var drawer: Drawer
-    lateinit var currentFragment: Fragment
 
     /**
      * Navigate to a specific page
@@ -97,7 +96,6 @@ class Navigator @Inject constructor(private val kutePreferencesHolder: KutePrefe
         val newState = NavigationState(drawerMenuItem, drawerMenuItem.navigationPage)
         stateStack
                 .push(newState)
-        currentFragment = newFragment
 
         return drawerMenuItem
                 .navigationPage
