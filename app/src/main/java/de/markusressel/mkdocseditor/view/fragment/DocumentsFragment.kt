@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.view.fragment
 
 import android.content.Context
+import android.widget.Toast
 import com.github.ajalt.timberkt.Timber
 import com.github.nitrico.lastadapter.LastAdapter
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
@@ -99,7 +100,9 @@ class DocumentsFragment : ListFragmentBase() {
     private fun openResourceDetailPage(resource: ResourceModel) {
         Timber
                 .d { "Opening Resource '${resource.name}'" }
-
+        Toast
+                .makeText(context as Context, "Resources are not yet supported :(", Toast.LENGTH_LONG)
+                .show()
     }
 
     private fun openAddDialog() {
