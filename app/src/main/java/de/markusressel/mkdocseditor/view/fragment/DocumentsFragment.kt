@@ -87,28 +87,12 @@ class DocumentsFragment : ListFragmentBase() {
         }))
     }
 
-    private fun openSection(section: SectionModel) {
-        Timber
-                .d { "Opening Section '${section.name}'" }
-
-        listValues
-                .clear()
-        listValues
-                .addAll(sectionToList(section))
-
-        loadingComponent
-                .showContent()
-
-        recyclerViewAdapter
-                .notifyDataSetChanged()
-    }
-
     private fun openDocumentEditor(document: DocumentModel) {
         Timber
                 .d { "Opening Document '${document.name}'" }
 
         val intent = EditorActivity
-                .getNewInstanceIntent(context as Context, document.id, document.name, "")
+                .getNewInstanceIntent(context as Context, document.id, document.name)
         startActivity(intent)
     }
 
@@ -126,6 +110,22 @@ class DocumentsFragment : ListFragmentBase() {
         super
                 .onStart()
         reloadDataFromSource()
+    }
+
+    /**
+     * Called when the user presses the back button
+     *
+     * @return true, if the back button event was consumed, false otherwise
+     */
+    fun onBackPressed(): Boolean {
+        if (backstack.size > 1) {
+            backstack
+                    .pop()
+            openSection(backstack.peek().section, false)
+            return true
+        }
+
+        return false
     }
 
 }

@@ -4,7 +4,6 @@
     <color name="colorPrimaryDark">#558B2F</color>
     <color name="colorAccent">#0091EA</color>
 
-
     <color name="textColorPrimary">@android:color/white</color>
     <color name="textColorSecondary">#B2FFFFFF</color>
     <!-- inverse text color: 87% black -->
@@ -14,4 +13,20 @@
 
     <color name="cardview_background">@color/color_gray_800</color>
     <color name="cardview_backgroundInverse">@color/color_gray_100</color>
+
+    <!-- Preferences -->
+    <color name="preference_item__default_icon_colorDark">@color/color_gray_100</color>
+    <color name="preference_item__default_icon_colorLight">@color/color_gray_900</color>
+
+
+    <!-- MkDocs Editor -->
+    <color name="sectionBackgroundColor">@color/md_blue_700</color>
+    <color name="sectionBackgroundColorInverse">@color/md_blue_400</color>
+
+    <color name="documentBackgroundColor">@color/colorPrimary</color>
+    <color name="documentBackgroundColorInverse">@color/colorPrimary</color>
+
+    <color name="resourceBackgroundColor">@color/md_grey_800</color>
+    <color name="resourceBackgroundColorInverse">@color/md_grey_200</color>
+
 </resources>

@@ -37,6 +37,7 @@ import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
+import de.markusressel.mkdocseditor.view.fragment.SectionBackstackItem
 import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -62,6 +63,8 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
 
     protected val listValues: MutableList<Any> = ArrayList()
     protected lateinit var recyclerViewAdapter: LastAdapter
+
+    internal val backstack: Stack<SectionBackstackItem> by savedInstanceState(Stack())
 
     protected val loadingComponent by lazy {
         LoadingComponent(this, onShowContent = {
@@ -266,6 +269,11 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
                     listValues
                             .clear()
 
+                    backstack
+                            .clear()
+                    backstack
+                            .push(SectionBackstackItem(it))
+
                     hideEmpty()
                     listValues
                             .addAll(sectionToList(it))
@@ -328,6 +336,27 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
                                 .INVISIBLE
                     }
         }
+    }
+
+    internal fun openSection(section: SectionModel, addToBackstack: Boolean = true) {
+        Timber
+                .d { "Opening Section '${section.name}'" }
+
+        if (addToBackstack) {
+            backstack
+                    .push(SectionBackstackItem(section))
+        }
+
+        listValues
+                .clear()
+        listValues
+                .addAll(sectionToList(section))
+
+        loadingComponent
+                .showContent()
+
+        recyclerViewAdapter
+                .notifyDataSetChanged()
     }
 
     companion object {

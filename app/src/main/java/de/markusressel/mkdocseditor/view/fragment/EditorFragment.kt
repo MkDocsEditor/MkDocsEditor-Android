@@ -320,15 +320,12 @@ class EditorFragment : DaggerSupportFragmentBase() {
     companion object {
 
         private const val KEY_ID = "KEY_ID"
-        private const val KEY_CONTENT = "KEY_CONTENT"
 
-        fun newInstance(id: String, content: String): EditorFragment {
+        fun newInstance(id: String): EditorFragment {
             val fragment = EditorFragment()
             val bundle = Bundle()
             bundle
                     .putString(KEY_ID, id)
-            bundle
-                    .putString(KEY_CONTENT, content)
 
             fragment
                     .arguments = bundle

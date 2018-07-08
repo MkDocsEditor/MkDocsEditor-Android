@@ -16,6 +16,10 @@
         <item name="android:textColorPrimary">@color/textColorPrimaryInverse</item>
         <item name="android:textColorSecondary">@color/textColorSecondaryInverse</item>
 
+        <item name="sectionBackgroundColor">@color/sectionBackgroundColorInverse</item>
+        <item name="documentBackgroundColor">@color/documentBackgroundColorInverse</item>
+        <item name="resourceBackgroundColor">@color/resourceBackgroundColorInverse</item>
+
         About Libraries
         <!--<item name="about_libraries_window_background">@color/windowBackgroundColorInverse</item>-->
         <item name="about_libraries_card">@color/cardview_backgroundInverse</item>
@@ -46,6 +50,12 @@
             @color/material_drawer_header_selection_text
         </item>
 
+        <!-- KutePreferences -->
+        <item name="kute_preferences__menu__icon_color">#fff</item>
+        <item name="kute_preferences__setting__default_icon_color">
+            @color/preference_item__default_icon_colorLight
+        </item>
+
     </style>
 
     <!-- Base application theme. -->
@@ -62,6 +72,10 @@
 
         <item name="android:textColorPrimary">@color/textColorPrimary</item>
         <item name="android:textColorSecondary">@color/textColorSecondary</item>
+
+        <item name="sectionBackgroundColor">@color/sectionBackgroundColor</item>
+        <item name="documentBackgroundColor">@color/documentBackgroundColor</item>
+        <item name="resourceBackgroundColor">@color/resourceBackgroundColor</item>
 
         <!-- About Libraries -->
         <!--<item name="about_libraries_window_background">@color/windowBackgroundColor</item>-->
@@ -91,6 +105,12 @@
         <item name="material_drawer_selected_text">@color/material_drawer_dark_selected_text</item>
         <item name="material_drawer_header_selection_text">
             @color/material_drawer_dark_header_selection_text
+        </item>
+
+        <!-- KutePreferences -->
+        <item name="kute_preferences__menu__icon_color">#fff</item>
+        <item name="kute_preferences__setting__default_icon_color">
+            @color/preference_item__default_icon_colorDark
         </item>
 
     </style>
