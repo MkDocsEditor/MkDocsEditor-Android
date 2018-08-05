@@ -22,6 +22,8 @@
 
         <item name="listItem_dividerColor">@color/listItem_dividerColorLight</item>
 
+        <item name="codeEditor_lineNumbersBackgroundColor">@color/cardview_light_background</item>
+
         <!--About Libraries-->
         <!--<item name="about_libraries_window_background">@color/windowBackgroundColorInverse</item>-->
         <item name="about_libraries_card">@color/cardview_backgroundInverse</item>
@@ -80,6 +82,8 @@
         <item name="resourceBackgroundColor">@color/resourceBackgroundColor</item>
 
         <item name="listItem_dividerColor">@color/listItem_dividerColorDark</item>
+
+        <item name="codeEditor_lineNumbersBackgroundColor">@color/cardview_dark_background</item>
 
         <!-- About Libraries -->
         <!--<item name="about_libraries_window_background">@color/windowBackgroundColor</item>-->

@@ -9,7 +9,7 @@
         android:id="@+id/codeLinesView"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:background="@color/cardview_dark_background"
+        android:background="?attr/codeEditor_lineNumbersBackgroundColor"
         android:gravity="right|top"
         android:paddingTop="10dp"
         android:textSize="12sp"
