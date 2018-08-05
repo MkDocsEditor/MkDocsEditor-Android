@@ -12,8 +12,14 @@ import dagger.android.AndroidInjector
 import dagger.android.DispatchingAndroidInjector
 import dagger.android.HasFragmentInjector
 import dagger.android.support.HasSupportFragmentInjector
+import de.markusressel.kutepreferences.library.persistence.KutePreferenceDataProvider
+import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.navigation.Navigator
 import de.markusressel.mkdocseditor.view.IconHandler
+import de.markusressel.mkdocseditor.view.ThemeHelper
+import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
+import de.markusressel.mkdocsrestclient.BasicAuthConfig
+import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import kotlinx.android.synthetic.main.view_toolbar.*
 import java.util.*
 import javax.inject.Inject
@@ -33,6 +39,18 @@ abstract class DaggerSupportActivityBase : LifecycleActivityBase(), HasFragmentI
 
     @Inject
     lateinit var iconHandler: IconHandler
+
+    @Inject
+    lateinit var themeHandler: ThemeHelper
+
+    @Inject
+    lateinit var restClient: MkDocsRestClient
+
+    @Inject
+    lateinit var preferencesDataProvider: KutePreferenceDataProvider
+
+    @Inject
+    lateinit var preferencesHolder: KutePreferencesHolder
 
     /**
      * @return true if this activity should use a dialog theme instead of a normal activity theme
@@ -63,7 +81,7 @@ abstract class DaggerSupportActivityBase : LifecycleActivityBase(), HasFragmentI
         //        initLocale()
 
         // set Theme before anything else in onCreate();
-        //        initTheme()
+        initTheme()
 
         if (style == FULLSCREEN) {
             supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -77,6 +95,11 @@ abstract class DaggerSupportActivityBase : LifecycleActivityBase(), HasFragmentI
         super
                 .onCreate(savedInstanceState)
 
+        restClient
+                .setHostname(preferencesHolder.connectionUriPreference.persistedValue)
+        restClient
+                .setBasicAuthConfig(BasicAuthConfig(username = preferencesHolder.basicAuthUserPreference.persistedValue, password = preferencesHolder.basicAuthPasswordPreference.persistedValue))
+
         // inflate view manually so it can be altered in plugins
         val contentView = layoutInflater
                 .inflate(layoutRes, null)
@@ -87,6 +110,18 @@ abstract class DaggerSupportActivityBase : LifecycleActivityBase(), HasFragmentI
         supportActionBar
                 ?.setDisplayHomeAsUpEnabled(true)
 
+    }
+
+    private fun initTheme() {
+        val theme = preferencesDataProvider
+                .getValueUnsafe(R.string.theme_key, getString(R.string.theme_dark_value))
+
+        //        if (style == DIALOG) {
+        //            themeHandler.applyDialogTheme(this, theme)
+        //        } else {
+        themeHandler
+                .applyTheme(this, theme)
+        //        }
     }
 
     /**

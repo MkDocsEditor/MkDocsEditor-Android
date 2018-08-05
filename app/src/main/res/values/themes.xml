@@ -20,7 +20,9 @@
         <item name="documentBackgroundColor">@color/documentBackgroundColorInverse</item>
         <item name="resourceBackgroundColor">@color/resourceBackgroundColorInverse</item>
 
-        About Libraries
+        <item name="listItem_dividerColor">@color/listItem_dividerColorLight</item>
+
+        <!--About Libraries-->
         <!--<item name="about_libraries_window_background">@color/windowBackgroundColorInverse</item>-->
         <item name="about_libraries_card">@color/cardview_backgroundInverse</item>
         <item name="about_libraries_title_description">@color/textColorPrimaryInverse</item>
@@ -76,6 +78,8 @@
         <item name="sectionBackgroundColor">@color/sectionBackgroundColor</item>
         <item name="documentBackgroundColor">@color/documentBackgroundColor</item>
         <item name="resourceBackgroundColor">@color/resourceBackgroundColor</item>
+
+        <item name="listItem_dividerColor">@color/listItem_dividerColorDark</item>
 
         <!-- About Libraries -->
         <!--<item name="about_libraries_window_background">@color/windowBackgroundColor</item>-->

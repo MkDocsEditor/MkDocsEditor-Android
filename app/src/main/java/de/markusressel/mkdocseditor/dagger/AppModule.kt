@@ -15,9 +15,7 @@ import de.markusressel.mkdocseditor.view.activity.MainActivity
 import de.markusressel.mkdocseditor.view.activity.base.DaggerSupportActivityBase
 import de.markusressel.mkdocseditor.view.fragment.DocumentsFragment
 import de.markusressel.mkdocseditor.view.fragment.EditorFragment
-import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
 import de.markusressel.mkdocseditor.view.fragment.preferences.PreferencesFragment
-import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import de.markusressel.mkdocsrestclient.websocket.diff.diff_match_patch
 import io.objectbox.BoxStore
@@ -77,15 +75,8 @@ abstract class AppModule {
         @Provides
         @Singleton
         @JvmStatic
-        internal fun provideMkDocsRestClient(preferenceHolder: KutePreferencesHolder): MkDocsRestClient {
-            val restClient = MkDocsRestClient()
-
-            restClient
-                    .setHostname(preferenceHolder.connectionUriPreference.persistedValue)
-            restClient
-                    .setBasicAuthConfig(BasicAuthConfig(username = preferenceHolder.basicAuthUserPreference.persistedValue, password = preferenceHolder.basicAuthPasswordPreference.persistedValue))
-
-            return restClient
+        internal fun provideMkDocsRestClient(): MkDocsRestClient {
+            return MkDocsRestClient()
         }
 
         @Provides

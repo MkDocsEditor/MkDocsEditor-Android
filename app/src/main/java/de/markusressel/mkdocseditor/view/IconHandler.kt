@@ -8,6 +8,7 @@ import android.support.v4.content.ContextCompat
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.typeface.IIcon
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
+import de.markusressel.mkdocseditor.R
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -118,8 +119,8 @@ class IconHandler @Inject constructor() {
      * @return an icon for a preference
      */
     fun getPreferenceIcon(icon: IIcon): Drawable {
-        val color = ContextCompat
-                .getColor(context, android.R.color.white)
+        val color = themeHelper
+                .getThemeAttrColor(context, R.attr.kute_preferences__setting__default_icon_color)
         return getIcon(icon, color = color, sizeDp = 36)
     }
 

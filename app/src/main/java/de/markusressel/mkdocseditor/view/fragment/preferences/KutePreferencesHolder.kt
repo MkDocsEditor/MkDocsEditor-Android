@@ -34,7 +34,6 @@ class KutePreferencesHolder @Inject constructor(private val context: Context, pr
             Bus
                     .send(HostChangedEvent(new))
         })
-
     }
 
     val basicAuthUserPreference by lazy {
