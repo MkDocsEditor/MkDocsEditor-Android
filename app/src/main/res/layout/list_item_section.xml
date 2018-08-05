@@ -6,11 +6,11 @@
 
         <variable
             name="item"
-            type="de.markusressel.mkdocsrestclient.section.SectionModel" />
+            type="de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity" />
 
         <variable
             name="presenter"
-            type="de.markusressel.mkdocseditor.view.fragment.DocumentsFragment" />
+            type="de.markusressel.mkdocseditor.view.fragment.FileBrowserFragment" />
     </data>
 
     <LinearLayout

@@ -23,7 +23,7 @@ import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.Settings
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.Tree
 import de.markusressel.mkdocseditor.navigation.DrawerMenuItem
 import de.markusressel.mkdocseditor.navigation.Navigator
-import de.markusressel.mkdocseditor.view.fragment.DocumentsFragment
+import de.markusressel.mkdocseditor.view.fragment.FileBrowserFragment
 import de.markusressel.mkdocseditor.view.fragment.preferences.PreferencesFragment
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.view_toolbar.*
@@ -248,7 +248,7 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
         }
 
         // special case for list
-        if (currentFragment is DocumentsFragment && currentFragment.isVisible) {
+        if (currentFragment is FileBrowserFragment && currentFragment.isVisible) {
             if (currentFragment.onBackPressed()) {
                 return
             }

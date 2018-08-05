@@ -6,11 +6,11 @@
 
         <variable
             name="item"
-            type="de.markusressel.mkdocsrestclient.resource.ResourceModel" />
+            type="de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity" />
 
         <variable
             name="presenter"
-            type="de.markusressel.mkdocseditor.view.fragment.DocumentsFragment" />
+            type="de.markusressel.mkdocseditor.view.fragment.FileBrowserFragment" />
     </data>
 
     <LinearLayout

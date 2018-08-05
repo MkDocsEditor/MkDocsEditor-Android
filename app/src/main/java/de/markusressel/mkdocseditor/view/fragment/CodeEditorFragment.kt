@@ -39,7 +39,7 @@ import javax.inject.Inject
  *
  * Created by Markus on 07.01.2018.
  */
-class EditorFragment : DaggerSupportFragmentBase() {
+class CodeEditorFragment : DaggerSupportFragmentBase() {
 
     override val layoutRes: Int
         get() = R.layout.fragment_editor
@@ -321,8 +321,8 @@ class EditorFragment : DaggerSupportFragmentBase() {
 
         private const val KEY_ID = "KEY_ID"
 
-        fun newInstance(id: String): EditorFragment {
-            val fragment = EditorFragment()
+        fun newInstance(id: String): CodeEditorFragment {
+            val fragment = CodeEditorFragment()
             val bundle = Bundle()
             bundle
                     .putString(KEY_ID, id)

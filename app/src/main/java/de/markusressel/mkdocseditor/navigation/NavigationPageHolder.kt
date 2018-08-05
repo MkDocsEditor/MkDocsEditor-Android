@@ -1,7 +1,7 @@
 package de.markusressel.mkdocseditor.navigation
 
 import de.markusressel.mkdocseditor.view.activity.MainActivity
-import de.markusressel.mkdocseditor.view.fragment.DocumentsFragment
+import de.markusressel.mkdocseditor.view.fragment.FileBrowserFragment
 import de.markusressel.mkdocseditor.view.fragment.preferences.PreferencesFragment
 
 /**
@@ -11,7 +11,7 @@ object NavigationPageHolder {
 
     val Main: NavigationPage = NavigationPage(activityClass = MainActivity::class.java)
 
-    val Tree: NavigationPage = NavigationPage(fragment = ::DocumentsFragment, tag = "DocumentsFragment")
+    val Tree: NavigationPage = NavigationPage(fragment = ::FileBrowserFragment, tag = "DocumentsFragment")
 
     val Settings = NavigationPage(fragment = ::PreferencesFragment, tag = "PreferencesFragment")
     //    val Settings = NavigationPage(activityClass = PreferenceOverviewActivity::class.java)

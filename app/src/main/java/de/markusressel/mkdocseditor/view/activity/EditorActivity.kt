@@ -5,7 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.view.activity.base.DaggerSupportActivityBase
-import de.markusressel.mkdocseditor.view.fragment.EditorFragment
+import de.markusressel.mkdocseditor.view.fragment.CodeEditorFragment
 import javax.inject.Inject
 
 class EditorActivity : DaggerSupportActivityBase() {
@@ -32,7 +32,7 @@ class EditorActivity : DaggerSupportActivityBase() {
 
         val existingFragment = supportFragmentManager
                 .findFragmentByTag("editor")
-        val fragment = existingFragment ?: EditorFragment.newInstance(id)
+        val fragment = existingFragment ?: CodeEditorFragment.newInstance(id)
 
         supportFragmentManager
                 .beginTransaction()

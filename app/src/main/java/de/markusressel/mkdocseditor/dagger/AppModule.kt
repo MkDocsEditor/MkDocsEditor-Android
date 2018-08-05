@@ -13,8 +13,8 @@ import de.markusressel.mkdocseditor.data.persistence.entity.MyObjectBox
 import de.markusressel.mkdocseditor.view.activity.EditorActivity
 import de.markusressel.mkdocseditor.view.activity.MainActivity
 import de.markusressel.mkdocseditor.view.activity.base.DaggerSupportActivityBase
-import de.markusressel.mkdocseditor.view.fragment.DocumentsFragment
-import de.markusressel.mkdocseditor.view.fragment.EditorFragment
+import de.markusressel.mkdocseditor.view.fragment.CodeEditorFragment
+import de.markusressel.mkdocseditor.view.fragment.FileBrowserFragment
 import de.markusressel.mkdocseditor.view.fragment.preferences.PreferencesFragment
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import de.markusressel.mkdocsrestclient.websocket.diff.diff_match_patch
@@ -37,13 +37,13 @@ abstract class AppModule {
     internal abstract fun MainActivity(): MainActivity
 
     @ContributesAndroidInjector
-    internal abstract fun DocumentsFragment(): DocumentsFragment
+    internal abstract fun DocumentsFragment(): FileBrowserFragment
 
     @ContributesAndroidInjector
     internal abstract fun EditorActivity(): EditorActivity
 
     @ContributesAndroidInjector
-    internal abstract fun EditorFragment(): EditorFragment
+    internal abstract fun EditorFragment(): CodeEditorFragment
 
     @ContributesAndroidInjector
     internal abstract fun PreferencesFragment(): PreferencesFragment
