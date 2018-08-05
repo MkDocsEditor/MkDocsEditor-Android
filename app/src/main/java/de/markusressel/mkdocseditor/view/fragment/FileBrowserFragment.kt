@@ -6,7 +6,6 @@ import android.view.View
 import android.widget.Toast
 import com.github.ajalt.timberkt.Timber
 import com.github.nitrico.lastadapter.LastAdapter
-import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import de.markusressel.mkdocseditor.BR
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
@@ -20,7 +19,6 @@ import de.markusressel.mkdocseditor.databinding.ListItemResourceBinding
 import de.markusressel.mkdocseditor.databinding.ListItemSectionBinding
 import de.markusressel.mkdocseditor.extensions.isWifiEnabled
 import de.markusressel.mkdocseditor.view.activity.EditorActivity
-import de.markusressel.mkdocseditor.view.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragmentBase
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import de.markusressel.mkdocsrestclient.document.DocumentModel
@@ -151,11 +149,11 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                 }
     }
 
-    override fun getRightFabs(): List<FabConfig.Fab> {
-        return listOf(FabConfig.Fab(description = R.string.add, icon = MaterialDesignIconic.Icon.gmi_plus, onClick = {
-            openAddDialog()
-        }))
-    }
+    //    override fun getRightFabs(): List<FabConfig.Fab> {
+    //        return listOf(FabConfig.Fab(description = R.string.add, icon = MaterialDesignIconic.Icon.gmi_plus, onClick = {
+    //            openAddDialog()
+    //        }))
+    //    }
 
     private fun openDocumentEditor(document: DocumentEntity) {
         Timber
