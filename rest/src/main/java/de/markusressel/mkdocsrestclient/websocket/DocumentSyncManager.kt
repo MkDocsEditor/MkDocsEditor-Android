@@ -2,6 +2,7 @@ package de.markusressel.mkdocsrestclient.websocket
 
 import android.os.AsyncTask
 import android.util.Log
+import com.github.ajalt.timberkt.Timber
 import com.github.salomonbrys.kotson.jsonObject
 import com.google.gson.Gson
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
@@ -28,6 +29,8 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
             }
             .build()
 
+    private var isConnected = false
+
     private var webSocket: WebSocket? = null
     private var isInitialMessage = true
 
@@ -38,12 +41,27 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
      * Connect to the given URL
      */
     fun connect() {
+        if (isConnected) {
+            Timber
+                    .w { "Already connected" }
+            return
+        }
+
+        isInitialMessage = true
+
         val request = Request
                 .Builder()
                 .url(url)
                 .build()
 
         val listener = object : EchoWebSocketListenerBase() {
+
+            override fun onOpen(webSocket: WebSocket, response: Response?) {
+                super
+                        .onOpen(webSocket, response)
+                isConnected = true
+            }
+
             override fun onMessage(webSocket: WebSocket, text: String?) {
                 super
                         .onMessage(webSocket, text)
@@ -64,15 +82,24 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
                 }
             }
 
+            override fun onClosed(webSocket: WebSocket?, code: Int, reason: String?) {
+                super
+                        .onClosed(webSocket, code, reason)
+                isConnected = false
+            }
+
             override fun onFailure(webSocket: WebSocket, t: Throwable?, response: Response?) {
                 super
                         .onFailure(webSocket, t, response)
+                isConnected = false
+
                 Log
                         .e(TAG, "Websocket error", t)
                 callListenerAsync {
                     onError(response?.code(), t)
                 }
             }
+
         }
 
         webSocket = client
@@ -123,6 +150,13 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
         webSocket
                 ?.close(code, reason)
         isInitialMessage = true
+    }
+
+    /**
+     * @return true if a there is an open connection to the server, false otherwise
+     */
+    fun isConnected(): Boolean {
+        return isConnected
     }
 
     /**

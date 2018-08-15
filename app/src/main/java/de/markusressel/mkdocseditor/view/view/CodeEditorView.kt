@@ -2,10 +2,13 @@ package de.markusressel.mkdocseditor.view.view
 
 import android.content.Context
 import android.graphics.Rect
+import android.graphics.drawable.Drawable
 import android.support.annotation.StringRes
+import android.support.v4.view.ViewCompat
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.MotionEvent
+import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -56,10 +59,28 @@ class CodeEditorView : ZoomLayout {
         setListeners()
 
         editTextView
+                .setViewBackgroundWithoutResettingPadding(null)
+
+        editTextView
                 .post {
                     editTextView
                             .setSelection(0)
                 }
+    }
+
+    private fun View.setViewBackgroundWithoutResettingPadding(background: Drawable?) {
+        val paddingBottom = this
+                .paddingBottom
+        val paddingStart = ViewCompat
+                .getPaddingStart(this)
+        val paddingEnd = ViewCompat
+                .getPaddingEnd(this)
+        val paddingTop = this
+                .paddingTop
+        ViewCompat
+                .setBackground(this, background)
+        ViewCompat
+                .setPaddingRelative(this, paddingStart, paddingTop, paddingEnd, paddingBottom)
     }
 
 
@@ -188,6 +209,14 @@ class CodeEditorView : ZoomLayout {
         lineNumberView
                 .text = sb
                 .toString()
+    }
+
+    /**
+     * @param editable true = user can type, false otherwise
+     */
+    fun setEditable(editable: Boolean) {
+        editTextView
+                .isEnabled = editable
     }
 
     /**

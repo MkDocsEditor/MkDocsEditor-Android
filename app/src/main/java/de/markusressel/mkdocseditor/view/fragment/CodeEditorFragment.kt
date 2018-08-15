@@ -81,8 +81,17 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         }, onOptionsMenuItemClicked = {
             when {
                 it.itemId == R.id.refresh -> {
-
-                    // TODO: disconnect and reconnect
+                    loadingComponent
+                            .showLoading()
+                    if (syncManager.isConnected()) {
+                        syncManager
+                                .disconnect(1100, "Editor want's to refresh connection")
+                        syncManager
+                                .connect()
+                    } else {
+                        syncManager
+                                .connect()
+                    }
 
                     true
                 }
@@ -127,12 +136,18 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                     .sleep(1000)
 
             runOnUiThread {
+                activity!!
+                        .toast("Connected", Toast.LENGTH_SHORT)
+
                 loadingComponent
                         .showContent()
 
                 currentText = it
                 codeEditorView
                         .setText(it)
+
+                codeEditorView
+                        .setEditable(true)
 
                 val zoom = currentZoom ?: 1F
                 codeEditorView
@@ -146,8 +161,14 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
             throwable
                     ?.let {
                         runOnUiThread {
-                            loadingComponent
-                                    .showError(it)
+                            context!!
+                                    .toast("Disconnected", Toast.LENGTH_SHORT)
+
+                            codeEditorView
+                                    .setEditable(false)
+
+                            //                            loadingComponent
+                            //                                    .showError(it)
                         }
                         Timber
                                 .e(throwable) { "Websocket error code: $code" }

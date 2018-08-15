@@ -1,6 +1,9 @@
 package de.markusressel.mkdocsrestclient
 
+import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Method
+import com.github.kittinunf.fuel.core.Response
+import com.github.kittinunf.result.Result
 import de.markusressel.mkdocsrestclient.document.DocumentApi
 import de.markusressel.mkdocsrestclient.document.DocumentApiImpl
 import de.markusressel.mkdocsrestclient.resource.ResourceApi
@@ -19,10 +22,20 @@ class MkDocsRestClient(private val requestManager: RequestManager = RequestManag
 
     /**
      * Set the hostname for this client
+     *
+     * @param hostname the new hostname
      */
     fun setHostname(hostname: String) {
         requestManager
                 .hostname = hostname
+    }
+
+    /**
+     * @return the hostname for this client
+     */
+    fun getHostname(): String {
+        return requestManager
+                .hostname
     }
 
     /**
@@ -47,6 +60,14 @@ class MkDocsRestClient(private val requestManager: RequestManager = RequestManag
     fun setBasicAuthConfig(basicAuthConfig: BasicAuthConfig) {
         requestManager
                 .basicAuthConfig = basicAuthConfig
+    }
+
+    /**
+     * Check if the server is alive and reachable
+     */
+    fun isHostAlive(): Single<Pair<Response, Result<ByteArray, FuelError>>> {
+        return requestManager
+                .doRequest("/alive/", Method.GET)
     }
 
     /**

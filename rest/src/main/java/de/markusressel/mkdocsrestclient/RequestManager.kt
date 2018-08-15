@@ -85,8 +85,9 @@ class RequestManager(hostname: String = "localhost", apiResource: String = "", v
      * @param urlParameters query parameters
      * @param method the request type (f.ex. GET)
      */
-    private fun createRequest(url: String, urlParameters: List<Pair<String, Any?>> = emptyList(), method: Method): Request {
+    private fun createRequest(url: String, urlParameters: List<Pair<String, Any?>> = emptyList(), method: Method, timeout: Int = DEFAULT_TIMEOUT): Request {
         return getAuthenticatedRequest(fuelManager.request(method, url, urlParameters))
+                .timeout(timeout = timeout)
     }
 
     /**
@@ -196,6 +197,7 @@ class RequestManager(hostname: String = "localhost", apiResource: String = "", v
 
     companion object {
         val HEADER_CONTENT_TYPE_JSON = "Content-Type" to "application/json"
+        const val DEFAULT_TIMEOUT = 3000
     }
 
 }

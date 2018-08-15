@@ -1,8 +1,6 @@
 package de.markusressel.mkdocseditor.view.fragment
 
 import android.content.Context
-import android.os.Bundle
-import android.view.View
 import android.widget.Toast
 import com.github.ajalt.timberkt.Timber
 import com.github.nitrico.lastadapter.LastAdapter
@@ -17,10 +15,8 @@ import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
 import de.markusressel.mkdocseditor.databinding.ListItemDocumentBinding
 import de.markusressel.mkdocseditor.databinding.ListItemResourceBinding
 import de.markusressel.mkdocseditor.databinding.ListItemSectionBinding
-import de.markusressel.mkdocseditor.extensions.isWifiEnabled
 import de.markusressel.mkdocseditor.view.activity.EditorActivity
 import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragmentBase
-import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import de.markusressel.mkdocsrestclient.document.DocumentModel
 import de.markusressel.mkdocsrestclient.resource.ResourceModel
 import de.markusressel.mkdocsrestclient.section.SectionModel
@@ -68,18 +64,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     }
 
     override fun getLoadDataFromSourceFunction(): Single<Any> {
-        val dummyDocument1 = DocumentModel("document", "2358329473448408384", "Automatic updates.md", 456, Date())
-        val dummyDocument2 = DocumentModel("document", "2", "Android Studio", 50, Date())
-        val dummySubsectionSoftware = SectionModel("1", "Software", subsections = emptyList(), documents = listOf(dummyDocument1, dummyDocument2), resources = emptyList())
-
-        val dummyDocument3 = DocumentModel("document", "3", "CPU", 50, Date())
-        val dummySubsectionHardware = SectionModel("2", "Hardware", subsections = emptyList(), documents = listOf(dummyDocument3), resources = emptyList())
-        val dummySection = SectionModel("0", "root", subsections = listOf(dummySubsectionSoftware, dummySubsectionHardware), documents = listOf(), resources = emptyList())
-
-        return when {
-            context!!.isWifiEnabled() -> restClient.getItemTree() as Single<Any>
-            else -> Single.just(dummySection)
-        }
+        return restClient.getItemTree() as Single<Any>
     }
 
     override fun mapToEntity(it: Any): IdentifiableListItem {
@@ -111,9 +96,6 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                 .standardOperation()
                 .all
     }
-
-    @Inject
-    lateinit var restClient: MkDocsRestClient
 
     override fun createAdapter(): LastAdapter {
         return LastAdapter(listValues, BR.item)
@@ -174,12 +156,6 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     private fun openAddDialog() {
 
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super
-                .onViewCreated(view, savedInstanceState)
-        reloadDataFromSource()
     }
 
     /**

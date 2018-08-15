@@ -26,6 +26,7 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
+import androidx.core.widget.toast
 import com.github.ajalt.timberkt.Timber
 import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
@@ -33,8 +34,12 @@ import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
+import de.markusressel.mkdocseditor.extensions.doAsync
+import de.markusressel.mkdocseditor.extensions.runOnUiThread
+import de.markusressel.mkdocseditor.network.ServerConnectivityManager
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.SectionBackstackItem
+import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -43,12 +48,19 @@ import io.reactivex.schedulers.Schedulers
 import java.util.*
 import java.util.concurrent.CancellationException
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
 
 /**
  * Created by Markus on 29.01.2018.
  */
 abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
+
+    @Inject
+    lateinit var connectivityManager: ServerConnectivityManager
+
+    @Inject
+    lateinit var restClient: MkDocsRestClient
 
     protected val listValues: MutableList<IdentifiableListItem> = ArrayList()
 
@@ -78,7 +90,7 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
                                 .subscribeBy(onNext = {
                                     currentSearchFilter = it
                                             .toString()
-                                    updateListFromPersistence()
+                                    realoadDataFromPersistence()
                                 }, onError = {
                                     Timber
                                             .e(it) { "Error filtering list" }
@@ -88,7 +100,7 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
         }, onOptionsMenuItemClicked = {
             when {
                 it.itemId == R.id.refresh -> {
-                    reloadDataFromSource()
+                    reload()
                     true
                 }
                 else -> false
@@ -121,13 +133,46 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
         super
                 .onViewCreated(view, savedInstanceState)
 
-        reloadDataFromSource()
+        reload()
+    }
+
+    private fun reload() {
+        setRefreshing(true)
+
+        doAsync {
+            if (connectivityManager.isInternetConnected()) {
+                restClient
+                        .isHostAlive()
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .bindUntilEvent(this, Lifecycle.Event.ON_STOP)
+                        .subscribeBy(onSuccess = {
+                            activity!!
+                                    .toast("Online :)")
+                            reloadDataFromSource()
+                        }, onError = {
+                            if (it is CancellationException) {
+                                setRefreshing(false)
+                            } else {
+                                activity!!
+                                        .toast("Server unavailable :(")
+                                realoadDataFromPersistence()
+                            }
+                        })
+            } else {
+                runOnUiThread {
+                    activity!!
+                            .toast("No Internet")
+                    realoadDataFromPersistence()
+                }
+            }
+        }
     }
 
     /**
      * Loads the data using {@link loadListDataFromPersistence()}
      */
-    protected fun updateListFromPersistence() {
+    protected fun realoadDataFromPersistence() {
         setRefreshing(true)
 
         Observable
