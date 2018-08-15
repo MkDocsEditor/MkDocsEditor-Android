@@ -34,8 +34,6 @@ import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.extensions.doAsync
-import de.markusressel.mkdocseditor.extensions.runOnUiThread
 import de.markusressel.mkdocseditor.network.ServerConnectivityManager
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.SectionBackstackItem
@@ -139,34 +137,24 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
     private fun reload() {
         setRefreshing(true)
 
-        doAsync {
-            if (connectivityManager.isInternetConnected()) {
-                restClient
-                        .isHostAlive()
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .bindUntilEvent(this, Lifecycle.Event.ON_STOP)
-                        .subscribeBy(onSuccess = {
-                            activity!!
-                                    .toast("Online :)")
-                            reloadDataFromSource()
-                        }, onError = {
-                            if (it is CancellationException) {
-                                setRefreshing(false)
-                            } else {
-                                activity!!
-                                        .toast("Server unavailable :(")
-                                realoadDataFromPersistence()
-                            }
-                        })
-            } else {
-                runOnUiThread {
+        restClient
+                .isHostAlive()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .bindUntilEvent(this, Lifecycle.Event.ON_STOP)
+                .subscribeBy(onSuccess = {
                     activity!!
-                            .toast("No Internet")
-                    realoadDataFromPersistence()
-                }
-            }
-        }
+                            .toast("Online :)")
+                    reloadDataFromSource()
+                }, onError = {
+                    if (it is CancellationException) {
+                        setRefreshing(false)
+                    } else {
+                        activity!!
+                                .toast("Server unavailable :(")
+                        realoadDataFromPersistence()
+                    }
+                })
     }
 
     /**

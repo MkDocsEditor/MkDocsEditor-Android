@@ -67,7 +67,7 @@ class MkDocsRestClient(private val requestManager: RequestManager = RequestManag
      */
     fun isHostAlive(): Single<Pair<Response, Result<ByteArray, FuelError>>> {
         return requestManager
-                .doRequest("/alive/", Method.GET)
+                .doRequest("/tree/", Method.GET)
     }
 
     /**
