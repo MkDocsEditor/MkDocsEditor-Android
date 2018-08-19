@@ -38,7 +38,6 @@ import de.markusressel.mkdocseditor.network.ServerConnectivityManager
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.SectionBackstackItem
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
-import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
@@ -163,11 +162,24 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
     protected fun reloadDataFromPersistence() {
         setRefreshing(true)
 
-        Observable
-                .fromIterable(loadListDataFromPersistence())
-                .toList()
-                .map { filterAndSortList(it) }
-                .map { createListDiff(listValues, it) to it }
+        Single
+                .fromCallable { loadListDataFromPersistence() }
+                .map {
+                    backstack
+                            .clear()
+                    backstack
+                            .push(SectionBackstackItem(it as SectionEntity))
+                    it
+                }
+                .map {
+                    sectionToList(it as SectionEntity)
+                }
+                .map {
+                    filterAndSortList(it)
+                }
+                .map {
+                    createListDiff(listValues, it) to it
+                }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindUntilEvent(this, Lifecycle.Event.ON_STOP)
@@ -347,6 +359,6 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
     /**
      * Load the data to be displayed in the list from the persistence
      */
-    abstract fun loadListDataFromPersistence(): List<IdentifiableListItem>
+    abstract fun loadListDataFromPersistence(): IdentifiableListItem?
 
 }

@@ -8,16 +8,14 @@ import de.markusressel.mkdocseditor.BR
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.*
 import de.markusressel.mkdocseditor.databinding.ListItemDocumentBinding
 import de.markusressel.mkdocseditor.databinding.ListItemResourceBinding
 import de.markusressel.mkdocseditor.databinding.ListItemSectionBinding
 import de.markusressel.mkdocseditor.view.activity.EditorActivity
 import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragmentBase
 import de.markusressel.mkdocsrestclient.section.SectionModel
+import io.objectbox.kotlin.query
 import io.reactivex.Single
 import java.util.*
 import javax.inject.Inject
@@ -79,18 +77,18 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
         val rootSection = data as SectionEntity
 
-        val allSections = rootSection
-                .getAllSubsections()
-
         persistenceManager
                 .standardOperation()
                 .put(rootSection)
     }
 
-    override fun loadListDataFromPersistence(): List<IdentifiableListItem> {
+    override fun loadListDataFromPersistence(): IdentifiableListItem? {
         return persistenceManager
                 .standardOperation()
-                .all
+                .query {
+                    equal(SectionEntity_.name, "docs")
+                }
+                .findFirst()
     }
 
     override fun createAdapter(): LastAdapter {

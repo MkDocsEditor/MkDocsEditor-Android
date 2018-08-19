@@ -17,13 +17,6 @@ class SectionEntity(entityId: Long = 0, id: String = "", name: String = "") : Se
     @Backlink
     lateinit var resources: ToMany<ResourceEntity>
 
-    fun getAllSubsections(): List<SectionEntity> {
-        return listOf(this) + subsections.map {
-            it
-                    .getAllSubsections()
-        }.flatMap { it }
-    }
-
 }
 
 fun SectionModel.asEntity(): SectionEntity {
