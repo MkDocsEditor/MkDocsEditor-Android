@@ -88,7 +88,7 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
                                 .subscribeBy(onNext = {
                                     currentSearchFilter = it
                                             .toString()
-                                    realoadDataFromPersistence()
+                                    reloadDataFromPersistence()
                                 }, onError = {
                                     Timber
                                             .e(it) { "Error filtering list" }
@@ -152,7 +152,7 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
                     } else {
                         activity!!
                                 .toast("Server unavailable :(")
-                        realoadDataFromPersistence()
+                        reloadDataFromPersistence()
                     }
                 })
     }
@@ -160,7 +160,7 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
     /**
      * Loads the data using {@link loadListDataFromPersistence()}
      */
-    protected fun realoadDataFromPersistence() {
+    protected fun reloadDataFromPersistence() {
         setRefreshing(true)
 
         Observable

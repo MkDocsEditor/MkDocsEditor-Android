@@ -17,8 +17,6 @@ import de.markusressel.mkdocseditor.databinding.ListItemResourceBinding
 import de.markusressel.mkdocseditor.databinding.ListItemSectionBinding
 import de.markusressel.mkdocseditor.view.activity.EditorActivity
 import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragmentBase
-import de.markusressel.mkdocsrestclient.document.DocumentModel
-import de.markusressel.mkdocsrestclient.resource.ResourceModel
 import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.reactivex.Single
 import java.util.*
@@ -70,8 +68,6 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     override fun mapToEntity(it: Any): IdentifiableListItem {
         return when (it) {
             is SectionModel -> it.asEntity()
-            is DocumentModel -> it.asEntity()
-            is ResourceModel -> it.asEntity()
             else -> throw IllegalArgumentException("Cant compare object of type ${it.javaClass}!")
         }
     }
@@ -88,7 +84,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
         persistenceManager
                 .standardOperation()
-                .put(allSections)
+                .put(rootSection)
     }
 
     override fun loadListDataFromPersistence(): List<IdentifiableListItem> {

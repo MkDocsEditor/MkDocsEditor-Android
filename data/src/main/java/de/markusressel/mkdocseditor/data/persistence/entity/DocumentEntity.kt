@@ -4,16 +4,24 @@ import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocsrestclient.document.DocumentModel
 import io.objectbox.annotation.Entity
 import io.objectbox.annotation.Id
+import io.objectbox.relation.ToOne
 import java.util.*
 
 /**
  * Created by Markus on 04.06.2018.
  */
 @Entity
-data class DocumentEntity(@Id var entityId: Long, val type: String, val id: String, val name: String, val filesize: Long, val modtime: Date) : IdentifiableListItem {
+data class DocumentEntity(@Id var entityId: Long = 0, val type: String = "Document", val id: String = "", val name: String = "", val filesize: Long = -1L, val modtime: Date = Date()) : IdentifiableListItem {
     override fun getItemId(): String = id
+
+    lateinit var parentSection: ToOne<SectionEntity>
+
 }
 
-fun DocumentModel.asEntity(): DocumentEntity {
-    return DocumentEntity(0, this.type, this.id, this.name, this.filesize, this.modtime)
+fun DocumentModel.asEntity(parentSection: SectionEntity): DocumentEntity {
+    val d = DocumentEntity(0, this.type, this.id, this.name, this.filesize, this.modtime)
+    d
+            .parentSection
+            .target = parentSection
+    return d
 }

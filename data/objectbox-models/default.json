@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:2926526248024942251",
-      "lastPropertyId": "6:682055277767430250",
+      "lastPropertyId": "7:7420037756201964866",
       "name": "DocumentEntity",
       "properties": [
         {
@@ -31,13 +31,18 @@
         {
           "id": "6:682055277767430250",
           "name": "modtime"
+        },
+        {
+          "id": "7:7420037756201964866",
+          "indexId": "1:7990348667738896496",
+          "name": "parentSectionId"
         }
       ],
       "relations": []
     },
     {
       "id": "2:8212061483126240332",
-      "lastPropertyId": "6:6856905628506227446",
+      "lastPropertyId": "7:4214694157379714336",
       "name": "ResourceEntity",
       "properties": [
         {
@@ -63,13 +68,18 @@
         {
           "id": "6:6856905628506227446",
           "name": "modtime"
+        },
+        {
+          "id": "7:4214694157379714336",
+          "indexId": "2:7773549802821406266",
+          "name": "parentSectionId"
         }
       ],
       "relations": []
     },
     {
       "id": "3:235719595631472099",
-      "lastPropertyId": "3:3447371683769506443",
+      "lastPropertyId": "4:5172956741253300140",
       "name": "SectionEntity",
       "properties": [
         {
@@ -89,27 +99,28 @@
         {
           "id": "1:6603448843579803239",
           "name": "subsections"
-        },
-        {
-          "id": "2:503771180738858818",
-          "name": "documents"
-        },
-        {
-          "id": "3:8530925730847970670",
-          "name": "resources"
         }
       ]
     }
   ],
   "lastEntityId": "3:235719595631472099",
-  "lastIndexId": "0:0",
-  "lastRelationId": "3:8530925730847970670",
+  "lastIndexId": "3:7384408086141472050",
+  "lastRelationId": "5:6680787238725584468",
   "lastSequenceId": "0:0",
   "modelVersion": 4,
   "modelVersionParserMinimum": 4,
   "retiredEntityUids": [],
-  "retiredIndexUids": [],
-  "retiredPropertyUids": [],
-  "retiredRelationUids": [],
+  "retiredIndexUids": [
+    7384408086141472050
+  ],
+  "retiredPropertyUids": [
+    5172956741253300140
+  ],
+  "retiredRelationUids": [
+    503771180738858818,
+    8530925730847970670,
+    297312641658732666,
+    6680787238725584468
+  ],
   "version": 1
 }
