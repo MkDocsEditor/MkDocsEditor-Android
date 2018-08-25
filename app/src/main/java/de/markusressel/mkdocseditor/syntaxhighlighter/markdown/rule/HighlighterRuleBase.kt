@@ -1,5 +1,0 @@
-package de.markusressel.mkdocseditor.syntaxhighlighter.markdown.rule
-
-import de.markusressel.mkdocseditor.syntaxhighlighter.SyntaxHighlighterRule
-
-abstract class HighlighterRuleBase : SyntaxHighlighterRule

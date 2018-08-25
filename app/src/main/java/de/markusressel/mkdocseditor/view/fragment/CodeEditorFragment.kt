@@ -13,6 +13,7 @@ import com.jakewharton.rxbinding2.widget.RxTextView
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindToLifecycle
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
+import de.markusressel.kodeeditor.library.view.CodeEditorView
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.extensions.prettyPrint
 import de.markusressel.mkdocseditor.extensions.runOnUiThread
@@ -20,7 +21,6 @@ import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
-import de.markusressel.mkdocseditor.view.view.CodeEditorView
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.websocket.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.websocket.EditRequestEntity

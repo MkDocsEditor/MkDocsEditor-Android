@@ -118,8 +118,11 @@ dependencies {
     // LastAdapter
     implementation 'com.github.nitrico.lastadapter:lastadapter:2.3.0'
 
-    // Zoom Layout Container
-    implementation 'com.otaliastudios:zoomlayout:1.3.0'
+    // Code editor
+    implementation('com.github.markusressel:KodeEditor:master-SNAPSHOT') {
+        exclude module: 'app'
+        transitive = true
+    }
 
     // AboutLibraries ("About" screen)
     implementation("com.mikepenz:aboutlibraries:$aboutlibrariesVersion@aar") {
