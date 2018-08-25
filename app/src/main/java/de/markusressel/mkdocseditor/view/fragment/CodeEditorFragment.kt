@@ -131,10 +131,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                 .persistedValue
 
         syncManager = DocumentSyncManager(documentId = documentId, url = "ws://$host/document/$documentId/ws", basicAuthConfig = BasicAuthConfig(preferencesHolder.basicAuthUserPreference.persistedValue, preferencesHolder.basicAuthPasswordPreference.persistedValue), onInitialText = {
-            // TODO: there has to be a better way to do this...
-            Thread
-                    .sleep(1000)
-
             runOnUiThread {
                 activity!!
                         .toast("Connected", Toast.LENGTH_SHORT)
