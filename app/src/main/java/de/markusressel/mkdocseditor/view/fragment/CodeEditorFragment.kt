@@ -15,8 +15,11 @@ import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindToLifecycle
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import de.markusressel.kodeeditor.library.view.CodeEditorView
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
 import de.markusressel.mkdocseditor.extensions.prettyPrint
 import de.markusressel.mkdocseditor.extensions.runOnUiThread
+import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
 import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
@@ -25,6 +28,7 @@ import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.websocket.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.websocket.EditRequestEntity
 import de.markusressel.mkdocsrestclient.websocket.diff.diff_match_patch
+import io.objectbox.kotlin.query
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
@@ -46,6 +50,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
     @Inject
     lateinit var preferencesHolder: KutePreferencesHolder
+
+    @Inject
+    lateinit var documentPersistenceManager: DocumentPersistenceManager
+
+    @Inject
+    lateinit var chromeCustomTabManager: ChromeCustomTabManager
 
     private lateinit var codeEditorView: CodeEditorView
 
@@ -78,6 +88,13 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
             menu
                     ?.findItem(R.id.refresh)
                     ?.icon = refreshIcon
+
+            // set open in browser icon
+            val openInBrowserIcon = iconHandler
+                    .getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_open_in_browser)
+            menu
+                    ?.findItem(R.id.open_in_browser)
+                    ?.icon = openInBrowserIcon
         }, onOptionsMenuItemClicked = {
             when {
                 it.itemId == R.id.refresh -> {
@@ -92,6 +109,27 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                         syncManager
                                 .connect()
                     }
+
+                    true
+                }
+                it.itemId == R.id.open_in_browser -> {
+                    val documentEntity = documentPersistenceManager
+                            .standardOperation()
+                            .query {
+                                equal(DocumentEntity_.id, documentId)
+                            }
+                            .findUnique()
+
+                    documentEntity
+                            ?.let { document ->
+                                val host = preferencesHolder
+                                        .connectionUriPreference
+                                        .persistedValue
+
+                                chromeCustomTabManager
+                                        .openChromeCustomTab("http://$host/${document.url}")
+                            }
+
 
                     true
                 }

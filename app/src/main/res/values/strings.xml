@@ -2,6 +2,7 @@
     <string name="app_name">MkDocsEditor</string>
 
     <string name="refresh">Refresh</string>
+    <string name="open_in_browser">Open in browser</string>
 
     <string name="error">Error</string>
     <string name="exception_raised">Exception raised</string>

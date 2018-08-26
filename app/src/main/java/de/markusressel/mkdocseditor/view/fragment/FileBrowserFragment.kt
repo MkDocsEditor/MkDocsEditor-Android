@@ -6,7 +6,9 @@ import com.github.ajalt.timberkt.Timber
 import com.github.nitrico.lastadapter.LastAdapter
 import de.markusressel.mkdocseditor.BR
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
+import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.entity.*
 import de.markusressel.mkdocseditor.databinding.ListItemDocumentBinding
@@ -29,7 +31,11 @@ import javax.inject.Inject
 class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     @Inject
-    lateinit var persistenceManager: SectionPersistenceManager
+    lateinit var sectionPersistenceManager: SectionPersistenceManager
+    @Inject
+    lateinit var documentPersistenceManager: DocumentPersistenceManager
+    @Inject
+    lateinit var resourcePersistenceManager: ResourcePersistenceManager
 
     override fun itemContainsCurrentSearchString(item: IdentifiableListItem): Boolean {
         return false
@@ -71,19 +77,25 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     }
 
     override fun persistListData(data: IdentifiableListItem) {
-        persistenceManager
+        resourcePersistenceManager
+                .standardOperation()
+                .removeAll()
+        documentPersistenceManager
+                .standardOperation()
+                .removeAll()
+        sectionPersistenceManager
                 .standardOperation()
                 .removeAll()
 
         val rootSection = data as SectionEntity
 
-        persistenceManager
+        sectionPersistenceManager
                 .standardOperation()
                 .put(rootSection)
     }
 
     override fun loadListDataFromPersistence(): IdentifiableListItem? {
-        return persistenceManager
+        return sectionPersistenceManager
                 .standardOperation()
                 .query {
                     equal(SectionEntity_.name, "docs")
