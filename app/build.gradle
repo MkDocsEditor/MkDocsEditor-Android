@@ -119,9 +119,10 @@ dependencies {
     implementation 'com.github.nitrico.lastadapter:lastadapter:2.3.0'
 
     // Code editor
-    implementation('com.github.markusressel.KodeEditor:library:v0.9')
-    implementation('com.github.markusressel.KodeEditor:markdown:v0.9')
-    implementation('com.github.markusressel.KodeEditor:syntaxhighlighter:v0.9')
+    def codeEditorVersion = "v0.5.0"
+    implementation("com.github.markusressel.KodeEditor:library:${codeEditorVersion}")
+    implementation("com.github.markusressel.KodeEditor:markdown:${codeEditorVersion}")
+    implementation("com.github.markusressel.KodeEditor:syntaxhighlighter:${codeEditorVersion}")
 
     // AboutLibraries ("About" screen)
     implementation("com.mikepenz:aboutlibraries:$aboutlibrariesVersion@aar") {
