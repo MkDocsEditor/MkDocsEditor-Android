@@ -8,6 +8,7 @@
     android:fadeScrollbars="true"
     android:focusableInTouchMode="true"
     android:scrollbars="vertical|horizontal"
+    app:cev_divider="false"
     app:hasClickableChildren="true"
     app:maxZoom="10.0"
     app:maxZoomType="realZoom"
