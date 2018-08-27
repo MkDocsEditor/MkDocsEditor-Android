@@ -61,8 +61,7 @@ dependencies {
     api "com.github.ajalt:timberkt:${rootProject.ext.timberKtVersion}"
 
     // my own preference stuff
-    api('com.github.markusressel:KutePreferences:v1.2.0') {
-        exclude module: 'app'
+    api("com.github.markusressel.KutePreferences:library:v1.2.2") {
         transitive = true
     }
 
