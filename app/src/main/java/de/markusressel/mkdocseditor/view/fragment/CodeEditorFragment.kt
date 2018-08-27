@@ -13,6 +13,7 @@ import com.jakewharton.rxbinding2.widget.RxTextView
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindToLifecycle
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
+import de.markusressel.kodeeditor.library.markdown.MarkdownSyntaxHighlighter
 import de.markusressel.kodeeditor.library.view.CodeEditorView
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
@@ -36,7 +37,6 @@ import io.reactivex.schedulers.Schedulers
 import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-
 
 /**
  * Server Status fragment
@@ -201,8 +201,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                             codeEditorView
                                     .setEditable(false)
 
-                            //                            loadingComponent
-                            //                                    .showError(it)
+                            loadingComponent
+                                    .showContent(true)
                         }
                         Timber
                                 .e(throwable) { "Websocket error code: $code" }
@@ -303,6 +303,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
         codeEditorView = view
                 .findViewById(R.id.codeEditorView)
+        codeEditorView
+                .setSyntaxHighlighter(MarkdownSyntaxHighlighter())
 
         RxTextView
                 .textChanges(codeEditorView.editTextView)
