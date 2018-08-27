@@ -5,6 +5,7 @@ import android.arch.lifecycle.LifecycleOwner
 import android.content.Context
 import android.os.Bundle
 import android.support.annotation.CallSuper
+import android.support.design.widget.Snackbar
 import android.view.*
 import android.widget.Toast
 import androidx.core.widget.toast
@@ -18,8 +19,9 @@ import de.markusressel.kodeeditor.library.view.CodeEditorView
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
-import de.markusressel.mkdocseditor.extensions.prettyPrint
-import de.markusressel.mkdocseditor.extensions.runOnUiThread
+import de.markusressel.mkdocseditor.extensions.common.android.gui.snack
+import de.markusressel.mkdocseditor.extensions.common.android.runOnUiThread
+import de.markusressel.mkdocseditor.extensions.common.prettyPrint
 import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
 import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
@@ -97,21 +99,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                     ?.icon = openInBrowserIcon
         }, onOptionsMenuItemClicked = {
             when {
-                it.itemId == R.id.refresh -> {
-                    loadingComponent
-                            .showLoading()
-                    if (syncManager.isConnected()) {
-                        syncManager
-                                .disconnect(1100, "Editor want's to refresh connection")
-                        syncManager
-                                .connect()
-                    } else {
-                        syncManager
-                                .connect()
-                    }
-
-                    true
-                }
                 it.itemId == R.id.open_in_browser -> {
                     val documentEntity = documentPersistenceManager
                             .standardOperation()
@@ -170,8 +157,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
         syncManager = DocumentSyncManager(documentId = documentId, url = "ws://$host/document/$documentId/ws", basicAuthConfig = BasicAuthConfig(preferencesHolder.basicAuthUserPreference.persistedValue, preferencesHolder.basicAuthPasswordPreference.persistedValue), onInitialText = {
             runOnUiThread {
-                activity!!
-                        .toast("Connected", Toast.LENGTH_SHORT)
+                codeEditorView
+                        .snack("Connected :)", Snackbar.LENGTH_SHORT)
 
                 loadingComponent
                         .showContent()
@@ -195,19 +182,34 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
             throwable
                     ?.let {
                         runOnUiThread {
-                            context!!
-                                    .toast("Disconnected", Toast.LENGTH_SHORT)
-
                             codeEditorView
                                     .setEditable(false)
-
                             loadingComponent
                                     .showContent(true)
+
+                            codeEditorView
+                                    .snack(text = "Connection dropped :(", duration = Snackbar.LENGTH_INDEFINITE, actionTitle = "Reconnect", action = { _ ->
+                                        reconnectToServer()
+                                    })
                         }
                         Timber
                                 .e(throwable) { "Websocket error code: $code" }
                     }
         })
+    }
+
+    private fun reconnectToServer() {
+        loadingComponent
+                .showLoading()
+        if (syncManager.isConnected()) {
+            syncManager
+                    .disconnect(1000, "Editor want's to refresh connection")
+            syncManager
+                    .connect()
+        } else {
+            syncManager
+                    .connect()
+        }
     }
 
     @Synchronized

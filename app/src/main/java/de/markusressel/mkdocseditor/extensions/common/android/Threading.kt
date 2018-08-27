@@ -1,13 +1,25 @@
-package de.markusressel.mkdocseditor.extensions
+package de.markusressel.mkdocseditor.extensions.common.android
 
+import android.os.AsyncTask
 import android.os.Handler
 import android.os.Looper
+
+fun Any.doAsync(handler: () -> Unit) {
+    object : AsyncTask<Void, Void, Void?>() {
+        override fun doInBackground(vararg p0: Void?): Void? {
+            handler()
+            return null
+        }
+    }
+            .execute()
+}
 
 fun runOnUiThread(action: () -> Unit) {
     if (isMainLooperAlive()) {
         action()
     } else {
-        Handler(Looper.getMainLooper()).post(Runnable(action))
+        Handler(Looper.getMainLooper())
+                .post(Runnable(action))
     }
 }
 

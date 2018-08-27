@@ -16,7 +16,7 @@ import com.mikepenz.materialdrawer.model.SecondaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IProfile
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.extensions.isTablet
+import de.markusressel.mkdocseditor.extensions.common.android.isTablet
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.About
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.Settings

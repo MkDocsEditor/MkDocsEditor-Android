@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.extensions
+package de.markusressel.mkdocseditor.extensions.common.android
 
 import android.content.res.Resources
 import android.util.TypedValue

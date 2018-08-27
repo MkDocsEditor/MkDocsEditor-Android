@@ -149,6 +149,8 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
     fun disconnect(code: Int, reason: String) {
         webSocket
                 ?.close(code, reason)
+
+        webSocket = null
         isInitialMessage = true
     }
 

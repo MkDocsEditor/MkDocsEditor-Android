@@ -16,7 +16,7 @@ import com.github.ajalt.timberkt.Timber
 import com.jakewharton.rxbinding2.view.RxView
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.extensions.prettyPrint
+import de.markusressel.mkdocseditor.extensions.common.prettyPrint
 import de.markusressel.mkdocseditor.view.fragment.base.LifecycleFragmentBase
 
 /**
