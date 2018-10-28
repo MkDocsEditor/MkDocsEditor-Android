@@ -20,8 +20,8 @@ package de.markusressel.mkdocseditor.view.fragment.base
 
 import android.content.Context
 import android.os.Bundle
-import android.support.annotation.LayoutRes
-import android.support.v4.app.Fragment
+import androidx.annotation.LayoutRes
+import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -42,7 +42,7 @@ import javax.inject.Inject
 abstract class DaggerSupportFragmentBase : LifecycleFragmentBase(), HasSupportFragmentInjector {
 
     @Inject
-    lateinit var childFragmentInjector: DispatchingAndroidInjector<Fragment>
+    lateinit var childFragmentInjector: DispatchingAndroidInjector<androidx.fragment.app.Fragment>
 
     override fun onAttach(context: Context) {
         AndroidSupportInjection
@@ -51,7 +51,7 @@ abstract class DaggerSupportFragmentBase : LifecycleFragmentBase(), HasSupportFr
                 .onAttach(context)
     }
 
-    override fun supportFragmentInjector(): AndroidInjector<Fragment> {
+    override fun supportFragmentInjector(): AndroidInjector<androidx.fragment.app.Fragment> {
         return childFragmentInjector
     }
 

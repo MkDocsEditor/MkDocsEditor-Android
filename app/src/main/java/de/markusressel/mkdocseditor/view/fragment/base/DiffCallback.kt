@@ -17,7 +17,7 @@
 
 package de.markusressel.mkdocseditor.view.fragment.base
 
-import android.support.v7.util.DiffUtil
+import androidx.recyclerview.widget.DiffUtil
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 
 /**

@@ -1,17 +1,17 @@
 package de.markusressel.mkdocseditor.view.fragment
 
 import android.annotation.SuppressLint
-import android.arch.lifecycle.LifecycleOwner
 import android.content.Context
 import android.os.Bundle
-import android.support.annotation.CallSuper
-import android.support.design.widget.Snackbar
 import android.view.*
 import android.widget.Toast
-import androidx.core.widget.toast
+import androidx.annotation.CallSuper
+import androidx.lifecycle.LifecycleOwner
 import com.github.ajalt.timberkt.Timber
 import com.jakewharton.rxbinding2.widget.RxTextView
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
+import com.trello.rxlifecycle2.LifecycleProvider
+import com.trello.rxlifecycle2.android.FragmentEvent
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindToLifecycle
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import de.markusressel.kodeeditor.library.markdown.MarkdownSyntaxHighlighter
@@ -20,6 +20,7 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
 import de.markusressel.mkdocseditor.extensions.common.android.gui.snack
+import de.markusressel.mkdocseditor.extensions.common.android.gui.toast
 import de.markusressel.mkdocseditor.extensions.common.android.runOnUiThread
 import de.markusressel.mkdocseditor.extensions.common.prettyPrint
 import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
@@ -158,7 +159,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         syncManager = DocumentSyncManager(documentId = documentId, url = "ws://$host/document/$documentId/ws", basicAuthConfig = BasicAuthConfig(preferencesHolder.basicAuthUserPreference.persistedValue, preferencesHolder.basicAuthPasswordPreference.persistedValue), onInitialText = {
             runOnUiThread {
                 codeEditorView
-                        .snack("Connected :)", Snackbar.LENGTH_SHORT)
+                        .snack("Connected :)", com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
 
                 loadingComponent
                         .showContent()
@@ -188,7 +189,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                                     .showContent(true)
 
                             codeEditorView
-                                    .snack(text = "Connection dropped :(", duration = Snackbar.LENGTH_INDEFINITE, actionTitle = "Reconnect", action = { _ ->
+                                    .snack(text = "Connection dropped :(", duration = com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE, actionTitle = "Reconnect", action = { _ ->
                                         reconnectToServer()
                                     })
                         }
@@ -314,7 +315,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                 .debounce(100, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .bindToLifecycle(this as LifecycleOwner)
+                .bindToLifecycle(this as LifecycleProvider<FragmentEvent>)
                 .subscribeBy(onNext = {
                     sendPatchIfChanged(it)
                 }, onError = {

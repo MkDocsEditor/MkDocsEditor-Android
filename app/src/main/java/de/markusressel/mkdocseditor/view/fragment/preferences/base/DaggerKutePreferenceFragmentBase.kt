@@ -1,12 +1,11 @@
 package de.markusressel.mkdocseditor.view.fragment.preferences.base
 
 import android.content.Context
-import android.support.v4.app.Fragment
 import dagger.android.AndroidInjector
 import dagger.android.DispatchingAndroidInjector
 import dagger.android.support.AndroidSupportInjection
 import dagger.android.support.HasSupportFragmentInjector
-import de.markusressel.kutepreferences.library.view.KutePreferencesMainFragment
+import de.markusressel.kutepreferences.core.view.KutePreferencesMainFragment
 import javax.inject.Inject
 
 
@@ -18,7 +17,7 @@ import javax.inject.Inject
 abstract class DaggerKutePreferenceFragmentBase : KutePreferencesMainFragment(), HasSupportFragmentInjector {
 
     @Inject
-    lateinit var childFragmentInjector: DispatchingAndroidInjector<Fragment>
+    lateinit var childFragmentInjector: DispatchingAndroidInjector<androidx.fragment.app.Fragment>
 
     override fun onAttach(context: Context) {
         AndroidSupportInjection
@@ -27,7 +26,7 @@ abstract class DaggerKutePreferenceFragmentBase : KutePreferencesMainFragment(),
                 .onAttach(context)
     }
 
-    override fun supportFragmentInjector(): AndroidInjector<Fragment> {
+    override fun supportFragmentInjector(): AndroidInjector<androidx.fragment.app.Fragment> {
         return childFragmentInjector
     }
 

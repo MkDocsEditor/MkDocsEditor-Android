@@ -2,8 +2,8 @@ package de.markusressel.mkdocseditor.view.component
 
 import android.content.Context
 import android.os.Bundle
-import android.support.annotation.CallSuper
-import android.support.annotation.StringRes
+import androidx.annotation.CallSuper
+import androidx.annotation.StringRes
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -182,12 +182,12 @@ class LoadingComponent(hostFragment: LifecycleFragmentBase, val onShowContent: (
                         message + "\n\n\n" + throwable.prettyPrint()
                     } ?: message
 
-                    MaterialDialog
-                            .Builder(context as Context)
-                            .title(R.string.error)
-                            .content(contentText)
-                            .positiveText(android.R.string.ok)
-                            .show()
+                    MaterialDialog(context as Context)
+                            .show {
+                                title(R.string.error)
+                                message(text = contentText)
+                                positiveButton(res = android.R.string.ok)
+                            }
                 }
 
         setViewVisibility(errorLayout, View.VISIBLE)

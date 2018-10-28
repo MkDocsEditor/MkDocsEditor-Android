@@ -2,10 +2,10 @@ package de.markusressel.mkdocseditor.navigation
 
 import android.content.Context
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v4.app.FragmentTransaction
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AppCompatActivity
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentTransaction
+import androidx.core.content.ContextCompat
+import androidx.appcompat.app.AppCompatActivity
 import com.mikepenz.aboutlibraries.Libs
 import com.mikepenz.aboutlibraries.LibsBuilder
 import com.mikepenz.aboutlibraries.util.Colors
@@ -53,13 +53,13 @@ class Navigator @Inject constructor(private val kutePreferencesHolder: KutePrefe
      * Navigate to a specific page
      */
     fun navigateTo(drawerMenuItem: DrawerMenuItem, bundle: Bundle? = null): String {
-        val newFragment: Fragment
+        val newFragment: androidx.fragment.app.Fragment
 
         // page tag HAS to be set
         drawerMenuItem.navigationPage.tag!!
 
         // initiate transaction
-        var transaction: FragmentTransaction = activity
+        var transaction: androidx.fragment.app.FragmentTransaction = activity
                 .supportFragmentManager
                 .beginTransaction()
 

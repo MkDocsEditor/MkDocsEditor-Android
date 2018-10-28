@@ -20,8 +20,8 @@ package de.markusressel.mkdocseditor.view.fragment.base
 
 import android.content.Context
 import android.os.Bundle
-import android.support.annotation.CallSuper
-import android.support.annotation.CheckResult
+import androidx.annotation.CallSuper
+import androidx.annotation.CheckResult
 import android.view.View
 import com.eightbitlab.rxbus.Bus
 import com.trello.rxlifecycle2.LifecycleProvider

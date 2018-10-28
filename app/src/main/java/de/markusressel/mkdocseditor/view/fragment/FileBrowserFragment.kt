@@ -2,18 +2,18 @@ package de.markusressel.mkdocseditor.view.fragment
 
 import android.content.Context
 import android.widget.Toast
+import com.airbnb.epoxy.EpoxyController
+import com.airbnb.epoxy.Typed3EpoxyController
 import com.github.ajalt.timberkt.Timber
-import com.github.nitrico.lastadapter.LastAdapter
-import de.markusressel.mkdocseditor.BR
-import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.entity.*
-import de.markusressel.mkdocseditor.databinding.ListItemDocumentBinding
-import de.markusressel.mkdocseditor.databinding.ListItemResourceBinding
-import de.markusressel.mkdocseditor.databinding.ListItemSectionBinding
+import de.markusressel.mkdocseditor.extensions.common.filterByExpectedType
+import de.markusressel.mkdocseditor.listItemDocument
+import de.markusressel.mkdocseditor.listItemResource
+import de.markusressel.mkdocseditor.listItemSection
 import de.markusressel.mkdocseditor.view.activity.EditorActivity
 import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragmentBase
 import de.markusressel.mkdocsrestclient.section.SectionModel
@@ -103,38 +103,49 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                 .findFirst()
     }
 
-    override fun createAdapter(): LastAdapter {
-        return LastAdapter(listValues, BR.item)
-                .map<SectionEntity, ListItemSectionBinding>(R.layout.list_item_section) {
-                    onCreate {
-                        it
-                                .binding
-                                .presenter = this@FileBrowserFragment
-                    }
-                    onClick {
-                        openSection(it.binding.item!!)
-                    }
-                }
-                .map<DocumentEntity, ListItemDocumentBinding>(R.layout.list_item_document) {
-                    onCreate {
-                        it
-                                .binding
-                                .presenter = this@FileBrowserFragment
-                    }
-                    onClick {
-                        openDocumentEditor(it.binding.item!!)
+    override fun createEpoxyController(): EpoxyController {
+        return object : Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>>() {
+            override fun buildModels(sections: List<SectionEntity>, documents: List<DocumentEntity>, resources: List<ResourceEntity>) {
+                sections.forEach {
+                    listItemSection {
+                        id(it.id)
+                        item(it)
+                        onclick { model, parentView, clickedView, position ->
+                            openSection(model.item())
+                        }
                     }
                 }
-                .map<ResourceEntity, ListItemResourceBinding>(R.layout.list_item_resource) {
-                    onCreate {
-                        it
-                                .binding
-                                .presenter = this@FileBrowserFragment
-                    }
-                    onClick {
-                        openResourceDetailPage(it.binding.item!!)
+
+                documents.forEach {
+                    listItemDocument {
+                        id(it.id)
+                        item(it)
+                        onclick { model, parentView, clickedView, position ->
+                            openDocumentEditor(model.item())
+                        }
                     }
                 }
+
+                resources.forEach {
+                    listItemResource {
+                        id(it.id)
+                        item(it)
+                        onclick { model, parentView, clickedView, position ->
+                            openResourceDetailPage(model.item())
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    override fun updateControllerData(newData: List<IdentifiableListItem>) {
+        val typed3EpoxyController = epoxyController as Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>>
+        typed3EpoxyController.setData(
+                newData.filterByExpectedType(),
+                newData.filterByExpectedType(),
+                newData.filterByExpectedType()
+        )
     }
 
     //    override fun getRightFabs(): List<FabConfig.Fab> {

@@ -3,12 +3,12 @@ package de.markusressel.mkdocseditor.view.fragment.preferences
 import android.content.Context
 import com.eightbitlab.rxbus.Bus
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
-import de.markusressel.kutepreferences.library.persistence.KutePreferenceDataProvider
-import de.markusressel.kutepreferences.library.preference.category.KuteCategory
-import de.markusressel.kutepreferences.library.preference.category.KuteDivider
-import de.markusressel.kutepreferences.library.preference.select.KuteSingleSelectPreference
-import de.markusressel.kutepreferences.library.preference.text.KutePasswordPreference
-import de.markusressel.kutepreferences.library.preference.text.KuteTextPreference
+import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
+import de.markusressel.kutepreferences.core.preference.category.KuteCategory
+import de.markusressel.kutepreferences.core.preference.category.KuteDivider
+import de.markusressel.kutepreferences.preference.selection.single.KuteSingleSelectStringPreference
+import de.markusressel.kutepreferences.preference.text.KutePasswordPreference
+import de.markusressel.kutepreferences.preference.text.KuteTextPreference
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.event.BasicAuthPasswordChangedEvent
 import de.markusressel.mkdocseditor.event.BasicAuthUserChangedEvent
@@ -51,7 +51,7 @@ class KutePreferencesHolder @Inject constructor(private val context: Context, pr
     }
 
     val themePreference by lazy {
-        KuteSingleSelectPreference(context = context, key = R.string.theme_key, icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_colorize), title = context.getString(R.string.theme_title), possibleValues = mapOf(R.string.theme_dark_value to R.string.theme_dark_value_name, R.string.theme_light_value to R.string.theme_light_value_name), defaultValue = R.string.theme_dark_value, dataProvider = dataProvider, onPreferenceChangedListener = { old, new ->
+        KuteSingleSelectStringPreference(context = context, key = R.string.theme_key, icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_colorize), title = context.getString(R.string.theme_title), possibleValues = mapOf(R.string.theme_dark_value to R.string.theme_dark_value_name, R.string.theme_light_value to R.string.theme_light_value_name), defaultValue = R.string.theme_dark_value, dataProvider = dataProvider, onPreferenceChangedListener = { old, new ->
             Bus
                     .send(ThemeChangedEvent(new))
         })

@@ -20,10 +20,10 @@ package de.markusressel.mkdocseditor.view
 
 import android.app.Activity
 import android.content.Context
-import android.support.annotation.AttrRes
-import android.support.annotation.ColorInt
-import android.support.annotation.StyleRes
-import android.support.v4.content.ContextCompat
+import androidx.annotation.AttrRes
+import androidx.annotation.ColorInt
+import androidx.annotation.StyleRes
+import androidx.core.content.ContextCompat
 import android.util.TypedValue
 import de.markusressel.mkdocseditor.R
 import javax.inject.Inject

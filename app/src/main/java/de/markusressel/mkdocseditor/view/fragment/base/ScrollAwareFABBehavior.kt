@@ -1,13 +1,11 @@
 package de.markusressel.mkdocseditor.view.fragment.base
 
-import android.support.design.widget.CoordinatorLayout
-import android.support.design.widget.FloatingActionButton
-import android.support.v4.view.ViewCompat
-import android.support.v4.view.ViewPropertyAnimatorListener
-import android.support.v4.view.animation.FastOutSlowInInterpolator
+import androidx.core.view.ViewCompat
+import androidx.core.view.ViewPropertyAnimatorListener
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import android.view.View
 
-class ScrollAwareFABBehavior : FloatingActionButton.Behavior() {
+class ScrollAwareFABBehavior : com.google.android.material.floatingactionbutton.FloatingActionButton.Behavior() {
     private var mIsAnimatingOut = false
 
 
@@ -18,7 +16,7 @@ class ScrollAwareFABBehavior : FloatingActionButton.Behavior() {
      * @param floatingActionButton FAB
      */
     //
-    private fun animateIn(floatingActionButton: FloatingActionButton) {
+    private fun animateIn(floatingActionButton: com.google.android.material.floatingactionbutton.FloatingActionButton) {
         floatingActionButton
                 .visibility = View
                 .VISIBLE
@@ -59,7 +57,7 @@ class ScrollAwareFABBehavior : FloatingActionButton.Behavior() {
      *
      * @param floatingActionButton FAB
      */
-    private fun animateOut(floatingActionButton: FloatingActionButton) {
+    private fun animateOut(floatingActionButton: com.google.android.material.floatingactionbutton.FloatingActionButton) {
         ViewCompat
                 .animate(floatingActionButton)
                 .scaleX(0.0f)
@@ -90,11 +88,11 @@ class ScrollAwareFABBehavior : FloatingActionButton.Behavior() {
                 .start()
     }
 
-    override fun onStartNestedScroll(coordinatorLayout: CoordinatorLayout, child: FloatingActionButton, directTargetChild: View, target: View, axes: Int, type: Int): Boolean {
+    override fun onStartNestedScroll(coordinatorLayout: androidx.coordinatorlayout.widget.CoordinatorLayout, child: com.google.android.material.floatingactionbutton.FloatingActionButton, directTargetChild: View, target: View, axes: Int, type: Int): Boolean {
         return axes == ViewCompat.SCROLL_AXIS_VERTICAL || super.onStartNestedScroll(coordinatorLayout, child, directTargetChild, target, axes, type)
     }
 
-    override fun onNestedScroll(coordinatorLayout: CoordinatorLayout, child: FloatingActionButton, target: View, dxConsumed: Int, dyConsumed: Int, dxUnconsumed: Int, dyUnconsumed: Int, type: Int) {
+    override fun onNestedScroll(coordinatorLayout: androidx.coordinatorlayout.widget.CoordinatorLayout, child: com.google.android.material.floatingactionbutton.FloatingActionButton, target: View, dxConsumed: Int, dyConsumed: Int, dxUnconsumed: Int, dyUnconsumed: Int, type: Int) {
         super
                 .onNestedScroll(coordinatorLayout, child, target, dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, type)
 

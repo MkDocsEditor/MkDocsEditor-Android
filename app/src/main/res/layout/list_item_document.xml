@@ -9,13 +9,15 @@
             type="de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity" />
 
         <variable
-            name="presenter"
-            type="de.markusressel.mkdocseditor.view.fragment.FileBrowserFragment" />
+            name="onclick"
+            type="android.view.View.OnClickListener" />
+
     </data>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:onClick="@{onclick}"
         android:orientation="vertical">
 
         <LinearLayout

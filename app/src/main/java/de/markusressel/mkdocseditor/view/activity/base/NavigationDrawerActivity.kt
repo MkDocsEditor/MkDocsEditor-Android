@@ -2,7 +2,7 @@ package de.markusressel.mkdocseditor.view.activity.base
 
 import android.content.Intent
 import android.os.Bundle
-import android.support.v4.app.Fragment
+import androidx.fragment.app.Fragment
 import android.view.View
 import com.github.ajalt.timberkt.Timber
 import com.mikepenz.materialdrawer.AccountHeader
@@ -239,7 +239,7 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
         }
 
         // special case for preferences
-        val currentFragment: Fragment? = supportFragmentManager
+        val currentFragment: androidx.fragment.app.Fragment? = supportFragmentManager
                 .findFragmentByTag(navigator.currentState.drawerMenuItem.navigationPage.tag)
         if (currentFragment is PreferencesFragment && currentFragment.isVisible) {
             if (currentFragment.onBackPressed()) {

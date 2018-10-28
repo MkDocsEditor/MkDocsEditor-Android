@@ -17,23 +17,26 @@
 
 package de.markusressel.mkdocseditor.view.fragment.base
 
-import android.arch.lifecycle.Lifecycle
+import androidx.lifecycle.Lifecycle
 import android.content.Context
 import android.os.Bundle
-import android.support.v7.util.DiffUtil
-import android.support.v7.widget.SearchView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.appcompat.widget.SearchView
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
-import androidx.core.widget.toast
+import com.airbnb.epoxy.EpoxyController
+import com.airbnb.epoxy.TypedEpoxyController
 import com.github.ajalt.timberkt.Timber
 import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
+import com.trello.rxlifecycle2.kotlin.bindUntilEvent
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
+import de.markusressel.mkdocseditor.extensions.common.android.gui.toast
 import de.markusressel.mkdocseditor.network.ServerConnectivityManager
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.SectionBackstackItem
@@ -42,6 +45,7 @@ import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
+import kotlinx.android.synthetic.main.fragment_recyclerview.*
 import java.util.*
 import java.util.concurrent.CancellationException
 import java.util.concurrent.TimeUnit
@@ -177,14 +181,11 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
                 .map {
                     filterAndSortList(it)
                 }
-                .map {
-                    createListDiff(listValues, it) to it
-                }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindUntilEvent(this, Lifecycle.Event.ON_STOP)
                 .subscribeBy(onSuccess = {
-                    updateAdapterList(it.first, it.second)
+                    updateAdapterList(it)
                     scrollToItemPosition(lastScrollPosition)
                 }, onError = {
                     if (it is CancellationException) {
@@ -211,16 +212,10 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
      */
     abstract fun itemContainsCurrentSearchString(item: IdentifiableListItem): Boolean
 
-    protected fun createListDiff(oldData: List<IdentifiableListItem>, newData: List<IdentifiableListItem>): DiffUtil.DiffResult {
-        val diffCallback = DiffCallback(oldData, newData)
-        return DiffUtil
-                .calculateDiff(diffCallback)
-    }
-
     /**
      * Updates the content of the adapter behind the recyclerview
      */
-    protected fun updateAdapterList(diffResult: DiffUtil.DiffResult, newData: List<IdentifiableListItem>) {
+    protected fun updateAdapterList(newData: List<IdentifiableListItem>) {
         listValues
                 .clear()
         listValues
@@ -233,11 +228,10 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
         }
         setRefreshing(false)
 
-        diffResult
-                .dispatchUpdatesTo(recyclerViewAdapter)
-        recyclerViewAdapter
-                .notifyDataSetChanged()
+        updateControllerData(newData)
     }
+
+    abstract fun updateControllerData(newData: List<IdentifiableListItem>)
 
     /**
      * Filters and sorts the given list by the currently active filter and sort options
@@ -285,15 +279,12 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
                 .map {
                     filterAndSortList(it)
                 }
-                .map {
-                    createListDiff(listValues, it) to it
-                }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindUntilEvent(this, Lifecycle.Event.ON_STOP)
                 .subscribeBy(onSuccess = {
                     updateLastUpdatedFromSource()
-                    updateAdapterList(it.first, it.second)
+                    updateAdapterList(it)
                     scrollToItemPosition(lastScrollPosition)
                 }, onError = {
                     if (it is CancellationException) {
@@ -325,11 +316,10 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
         listValues
                 .addAll(sectionToList(section))
 
+        updateControllerData(sectionToList(section))
+
         loadingComponent
                 .showContent()
-
-        recyclerViewAdapter
-                .notifyDataSetChanged()
     }
 
     /**

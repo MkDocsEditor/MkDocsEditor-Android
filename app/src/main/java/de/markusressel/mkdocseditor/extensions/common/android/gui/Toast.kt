@@ -1,7 +1,7 @@
 package de.markusressel.mkdocseditor.extensions.common.android.gui
 
 import android.content.Context
-import android.support.annotation.StringRes
+import androidx.annotation.StringRes
 import android.widget.Toast
 
 /**

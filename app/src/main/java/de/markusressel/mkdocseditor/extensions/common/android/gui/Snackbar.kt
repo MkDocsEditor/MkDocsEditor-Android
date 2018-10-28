@@ -1,7 +1,7 @@
 package de.markusressel.mkdocseditor.extensions.common.android.gui
 
-import android.support.annotation.StringRes
-import android.support.design.widget.Snackbar
+import androidx.annotation.StringRes
+import com.google.android.material.snackbar.Snackbar
 import android.view.View
 
 /**
@@ -12,8 +12,8 @@ import android.view.View
  * @param actionTitle the title of the action button (or null)
  * @param action the action for the action button
  */
-fun View.snack(text: String, duration: Int = Snackbar.LENGTH_SHORT, actionTitle: String? = null, action: ((View) -> Unit)? = null) {
-    val snackbar = Snackbar
+fun View.snack(text: String, duration: Int = com.google.android.material.snackbar.Snackbar.LENGTH_SHORT, actionTitle: String? = null, action: ((View) -> Unit)? = null) {
+    val snackbar = com.google.android.material.snackbar.Snackbar
             .make(this, text, duration)
     if (actionTitle != null && action != null) {
         snackbar
@@ -31,7 +31,7 @@ fun View.snack(text: String, duration: Int = Snackbar.LENGTH_SHORT, actionTitle:
  * @param actionTitle the title of the action button (or null)
  * @param action the action for the action button
  */
-fun View.snack(@StringRes text: Int, duration: Int = Snackbar.LENGTH_SHORT, actionTitle: String? = null, action: ((View) -> Unit)? = null) {
+fun View.snack(@StringRes text: Int, duration: Int = com.google.android.material.snackbar.Snackbar.LENGTH_SHORT, actionTitle: String? = null, action: ((View) -> Unit)? = null) {
     snack(context.getString(text), duration, actionTitle, action)
 }
 
@@ -43,6 +43,6 @@ fun View.snack(@StringRes text: Int, duration: Int = Snackbar.LENGTH_SHORT, acti
  * @param actionTitle the title of the action button
  * @param action the action for the action button
  */
-fun View.snack(@StringRes text: Int, duration: Int = Snackbar.LENGTH_SHORT, @StringRes actionTitle: Int, action: ((View) -> Unit)) {
+fun View.snack(@StringRes text: Int, duration: Int = com.google.android.material.snackbar.Snackbar.LENGTH_SHORT, @StringRes actionTitle: Int, action: ((View) -> Unit)) {
     snack(context.getString(text), duration, context.getString(actionTitle), action)
 }

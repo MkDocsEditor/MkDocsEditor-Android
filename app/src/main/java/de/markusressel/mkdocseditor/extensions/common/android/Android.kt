@@ -3,7 +3,7 @@ package de.markusressel.mkdocseditor.extensions.common.android
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
-import android.support.v4.app.Fragment
+import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import de.markusressel.mkdocseditor.R
 
@@ -16,7 +16,7 @@ fun Context.isTablet(): Boolean {
             .getBoolean(R.bool.is_tablet)
 }
 
-fun Fragment.context(): Context {
+fun androidx.fragment.app.Fragment.context(): Context {
     return this.context as Context
 }
 

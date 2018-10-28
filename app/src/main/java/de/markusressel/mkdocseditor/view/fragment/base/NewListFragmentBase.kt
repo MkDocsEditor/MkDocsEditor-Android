@@ -19,17 +19,16 @@ package de.markusressel.mkdocseditor.view.fragment.base
 
 import android.content.Context
 import android.os.Bundle
-import android.support.annotation.CallSuper
-import android.support.design.widget.CoordinatorLayout
-import android.support.design.widget.FloatingActionButton
-import android.support.v4.content.ContextCompat
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.StaggeredGridLayoutManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import com.github.nitrico.lastadapter.LastAdapter
+import androidx.annotation.CallSuper
+import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.StaggeredGridLayoutManager
+import com.airbnb.epoxy.EpoxyController
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.jakewharton.rxbinding2.view.RxView
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import de.markusressel.mkdocseditor.R
@@ -63,7 +62,7 @@ abstract class NewListFragmentBase : DaggerSupportFragmentBase() {
     protected open val fabConfig: FabConfig = FabConfig(left = mutableListOf(), right = mutableListOf())
     private val fabButtonViews = mutableListOf<FloatingActionButton>()
 
-    internal lateinit var recyclerViewAdapter: LastAdapter
+    internal val epoxyController by lazy { createEpoxyController() }
 
     internal var currentSearchFilter: String by savedInstanceState("")
 
@@ -89,10 +88,8 @@ abstract class NewListFragmentBase : DaggerSupportFragmentBase() {
         loadingComponent
                 .showContent()
 
-        recyclerViewAdapter = createAdapter()
+        recyclerView.setController(epoxyController)
 
-        recyclerView
-                .adapter = recyclerViewAdapter
         val layoutManager = StaggeredGridLayoutManager(resources.getInteger(R.integer.list_column_count), StaggeredGridLayoutManager.VERTICAL)
         recyclerView
                 .layoutManager = layoutManager
@@ -122,21 +119,22 @@ abstract class NewListFragmentBase : DaggerSupportFragmentBase() {
         val layoutManager = recyclerView
                 .layoutManager
         // this always returns 0 :(
-        if (itemPosition != RecyclerView.NO_POSITION && layoutManager.childCount > 0) {
-            layoutManager
-                    .scrollToPosition((itemPosition.coerceIn(0, layoutManager.childCount - 1)))
-        }
+//        if (itemPosition != androidx.recyclerview.widget.RecyclerView.NO_POSITION && layoutManager.childCount > 0) {
+//            layoutManager
+//                    .scrollToPosition((itemPosition.coerceIn(0, layoutManager.childCount - 1)))
+//        }
     }
+
+    /**
+     * Create the epoxy controller here.
+     * The epoxy controller defines what information is displayed.
+     */
+    abstract fun createEpoxyController(): EpoxyController
 
     /**
      * Reload list data from it's original source, persist it and display it to the user afterwards
      */
     abstract fun reloadDataFromSource()
-
-    /**
-     * Create the adapter used for the recyclerview
-     */
-    abstract fun createAdapter(): LastAdapter
 
     /**
      * Override this in subclasses if necessary
@@ -184,11 +182,11 @@ abstract class NewListFragmentBase : DaggerSupportFragmentBase() {
             false -> R.layout.view_fab_right
         }
 
+        @Suppress("CAST_NEVER_SUCCEEDS")
         val fabView: FloatingActionButton = inflater.inflate(layout, recyclerView.parent as ViewGroup, false) as FloatingActionButton
 
         // icon
-        fabView
-                .setImageDrawable(iconHandler.getFabIcon(fab.icon))
+        fabView.setImageDrawable(iconHandler.getFabIcon(fab.icon))
         // fab color
         fab
                 .color
@@ -199,8 +197,7 @@ abstract class NewListFragmentBase : DaggerSupportFragmentBase() {
                 }
 
         // behaviour
-        val params = CoordinatorLayout
-                .LayoutParams(fabView.layoutParams)
+        val params = CoordinatorLayout.LayoutParams(fabView.layoutParams)
         params
                 .behavior = ScrollAwareFABBehavior()
         fabView

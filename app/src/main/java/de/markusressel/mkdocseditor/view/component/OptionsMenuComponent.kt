@@ -1,7 +1,7 @@
 package de.markusressel.mkdocseditor.view.component
 
-import android.arch.lifecycle.Lifecycle
-import android.support.annotation.MenuRes
+import androidx.lifecycle.Lifecycle
+import androidx.annotation.MenuRes
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem

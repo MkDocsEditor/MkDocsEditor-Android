@@ -13,7 +13,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode rootProject.ext.versionCode
 
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
     }
 
@@ -52,7 +52,7 @@ dependencies {
     // Kotlin bindings for GSON
     implementation "com.github.salomonbrys.kotson:kotson:${rootProject.ext.kotsonVersion}"
     implementation "io.reactivex.rxjava2:rxkotlin:${rootProject.ext.rxKotlinVersion}"
-    implementation "com.android.support:support-annotations:${rootProject.ext.supportLibVersion}"
+    implementation 'androidx.annotation:annotation:1.0.0'
 
     // Android Architecture Components
     implementation "androidx.core:core-ktx:$aacAndroidKtxVersion"
@@ -60,16 +60,21 @@ dependencies {
     // Logging
     api "com.github.ajalt:timberkt:${rootProject.ext.timberKtVersion}"
 
-    // my own preference stuff
-    api("com.github.markusressel.KutePreferences:library:v1.2.2") {
-        transitive = true
-    }
+    // Preferences
+    def kutePreferencesVersion = "v1.4.0"
+    // choose the ones you need
+    api("com.github.markusressel.KutePreferences:bool:${kutePreferencesVersion}")
+    api("com.github.markusressel.KutePreferences:color:${kutePreferencesVersion}")
+    api("com.github.markusressel.KutePreferences:date:${kutePreferencesVersion}")
+    api("com.github.markusressel.KutePreferences:number:${kutePreferencesVersion}")
+    api("com.github.markusressel.KutePreferences:selection:${kutePreferencesVersion}")
+    api("com.github.markusressel.KutePreferences:text:${kutePreferencesVersion}")
 
     // ObjectBox
     api "io.objectbox:objectbox-android:$objectboxVersion"
     api "io.objectbox:objectbox-kotlin:$objectboxVersion"
 
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    androidTestImplementation 'androidx.test:runner:1.1.0-beta02'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0-beta02'
 }

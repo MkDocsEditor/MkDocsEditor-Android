@@ -5,7 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.support.annotation.CheckResult
+import androidx.annotation.CheckResult
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.view.ThemeHelper
 import java.util.*

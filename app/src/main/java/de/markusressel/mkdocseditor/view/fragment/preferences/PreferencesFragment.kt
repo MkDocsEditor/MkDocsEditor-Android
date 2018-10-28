@@ -1,6 +1,6 @@
 package de.markusressel.mkdocseditor.view.fragment.preferences
 
-import de.markusressel.kutepreferences.library.preference.KutePreferencesTree
+import de.markusressel.kutepreferences.core.preference.KutePreferencesTree
 import de.markusressel.mkdocseditor.view.fragment.preferences.base.LifecyclePreferenceFragmentBase
 import javax.inject.Inject
 

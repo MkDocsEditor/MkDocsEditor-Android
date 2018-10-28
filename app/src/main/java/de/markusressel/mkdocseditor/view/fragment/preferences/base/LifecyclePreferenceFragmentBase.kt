@@ -2,8 +2,8 @@ package de.markusressel.mkdocseditor.view.fragment.preferences.base
 
 import android.content.Context
 import android.os.Bundle
-import android.support.annotation.CallSuper
-import android.support.annotation.CheckResult
+import androidx.annotation.CallSuper
+import androidx.annotation.CheckResult
 import android.view.View
 import com.trello.rxlifecycle2.LifecycleProvider
 import com.trello.rxlifecycle2.LifecycleTransformer
