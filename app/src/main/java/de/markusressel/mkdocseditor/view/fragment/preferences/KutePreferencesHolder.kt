@@ -5,10 +5,10 @@ import com.eightbitlab.rxbus.Bus
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.kutepreferences.core.preference.category.KuteCategory
-import de.markusressel.kutepreferences.core.preference.category.KuteDivider
+import de.markusressel.kutepreferences.core.preference.section.KuteSection
 import de.markusressel.kutepreferences.preference.selection.single.KuteSingleSelectStringPreference
-import de.markusressel.kutepreferences.preference.text.KutePasswordPreference
 import de.markusressel.kutepreferences.preference.text.KuteTextPreference
+import de.markusressel.kutepreferences.preference.text.password.KutePasswordPreference
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.event.BasicAuthPasswordChangedEvent
 import de.markusressel.mkdocseditor.event.BasicAuthUserChangedEvent
@@ -26,7 +26,23 @@ import javax.inject.Singleton
 class KutePreferencesHolder @Inject constructor(private val context: Context, private val iconHelper: IconHandler, private val dataProvider: KutePreferenceDataProvider) {
 
     val connectionCategory by lazy {
-        KuteCategory(key = R.string.category_connection_key, icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_wifi), title = context.getString(R.string.category_connection_title), description = context.getString(R.string.category_connection_description), children = listOf(connectionUriPreference, KuteDivider(key = R.string.divider_basic_auth_key, title = context.getString(R.string.divider_basic_auth_title)), basicAuthUserPreference, basicAuthPasswordPreference))
+        KuteCategory(
+                key = R.string.category_connection_key,
+                icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_wifi),
+                title = context.getString(R.string.category_connection_title),
+                description = context.getString(R.string.category_connection_description),
+                children = listOf(
+                        connectionUriPreference,
+                        KuteSection(
+                                key = R.string.divider_basic_auth_key,
+                                title = context.getString(R.string.divider_basic_auth_title),
+                                children = listOf(
+                                        basicAuthUserPreference,
+                                        basicAuthPasswordPreference
+                                )
+                        )
+                )
+        )
     }
 
     val connectionUriPreference by lazy {
