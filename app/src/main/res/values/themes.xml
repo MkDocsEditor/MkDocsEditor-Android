@@ -60,7 +60,7 @@
 
         <!-- KutePreferences -->
         <item name="kute_preferences__menu__icon_color">#fff</item>
-        <item name="kute_preferences__search__highlighted_text_color">#8ff0</item>
+        <item name="kute_preferences__search__highlighted_text_color">#ff0</item>
         <item name="kute_preferences__setting__default_icon_color">
             @color/preference_item__default_icon_colorLight
         </item>
@@ -125,6 +125,7 @@
 
         <!-- KutePreferences -->
         <item name="kute_preferences__menu__icon_color">#fff</item>
+        <item name="kute_preferences__search__highlighted_text_color">#8ff0</item>
         <item name="kute_preferences__setting__default_icon_color">
             @color/preference_item__default_icon_colorDark
         </item>
