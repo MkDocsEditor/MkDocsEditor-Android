@@ -55,6 +55,11 @@ dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
+    implementation("com.github.markusressel.commons:commons_core:master-SNAPSHOT")
+    implementation("com.github.markusressel.commons:commons_logging:master-SNAPSHOT")
+    implementation("com.github.markusressel.commons:commons_android_core:master-SNAPSHOT")
+    implementation("com.github.markusressel.commons:commons_android_material:master-SNAPSHOT")
+
     implementation 'androidx.appcompat:appcompat:1.0.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.0-alpha2'
     implementation 'androidx.cardview:cardview:1.0.0'

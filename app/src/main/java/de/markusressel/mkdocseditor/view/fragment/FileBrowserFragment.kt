@@ -5,12 +5,12 @@ import android.widget.Toast
 import com.airbnb.epoxy.EpoxyController
 import com.airbnb.epoxy.Typed3EpoxyController
 import com.github.ajalt.timberkt.Timber
+import de.markusressel.commons.core.filterByExpectedType
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.entity.*
-import de.markusressel.mkdocseditor.extensions.common.filterByExpectedType
 import de.markusressel.mkdocseditor.listItemDocument
 import de.markusressel.mkdocseditor.listItemResource
 import de.markusressel.mkdocseditor.listItemSection

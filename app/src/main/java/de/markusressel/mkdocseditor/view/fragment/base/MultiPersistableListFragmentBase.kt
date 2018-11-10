@@ -17,26 +17,22 @@
 
 package de.markusressel.mkdocseditor.view.fragment.base
 
-import androidx.lifecycle.Lifecycle
 import android.content.Context
 import android.os.Bundle
-import androidx.recyclerview.widget.DiffUtil
-import androidx.appcompat.widget.SearchView
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
-import com.airbnb.epoxy.EpoxyController
-import com.airbnb.epoxy.TypedEpoxyController
+import androidx.appcompat.widget.SearchView
+import androidx.lifecycle.Lifecycle
 import com.github.ajalt.timberkt.Timber
 import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
-import com.trello.rxlifecycle2.kotlin.bindUntilEvent
+import de.markusressel.commons.android.material.toast
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.extensions.common.android.gui.toast
 import de.markusressel.mkdocseditor.network.ServerConnectivityManager
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.SectionBackstackItem
@@ -45,7 +41,6 @@ import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
-import kotlinx.android.synthetic.main.fragment_recyclerview.*
 import java.util.*
 import java.util.concurrent.CancellationException
 import java.util.concurrent.TimeUnit

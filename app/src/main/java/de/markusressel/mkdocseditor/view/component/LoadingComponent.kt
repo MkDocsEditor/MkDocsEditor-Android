@@ -2,8 +2,6 @@ package de.markusressel.mkdocseditor.view.component
 
 import android.content.Context
 import android.os.Bundle
-import androidx.annotation.CallSuper
-import androidx.annotation.StringRes
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,12 +9,14 @@ import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
 import android.widget.FrameLayout
 import android.widget.TextView
+import androidx.annotation.CallSuper
+import androidx.annotation.StringRes
 import com.afollestad.materialdialogs.MaterialDialog
 import com.github.ajalt.timberkt.Timber
 import com.jakewharton.rxbinding2.view.RxView
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
+import de.markusressel.commons.logging.prettyPrint
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.extensions.common.prettyPrint
 import de.markusressel.mkdocseditor.view.fragment.base.LifecycleFragmentBase
 
 /**
