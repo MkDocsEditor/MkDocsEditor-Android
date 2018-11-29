@@ -20,11 +20,11 @@ package de.markusressel.mkdocseditor.view.fragment.base
 
 import android.content.Context
 import android.os.Bundle
-import androidx.annotation.LayoutRes
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.LayoutRes
+import androidx.databinding.ViewDataBinding
 import dagger.android.AndroidInjector
 import dagger.android.DispatchingAndroidInjector
 import dagger.android.support.AndroidSupportInjection
@@ -68,17 +68,23 @@ abstract class DaggerSupportFragmentBase : LifecycleFragmentBase(), HasSupportFr
     protected abstract val layoutRes: Int
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val newContainer = inflater.inflate(layoutRes, container, false) as ViewGroup
+        val viewModel = createViewDataBinding(inflater, container, savedInstanceState)
+        return if (viewModel != null) {
+            viewModel.root
+        } else {
+            val newContainer = inflater.inflate(layoutRes, container, false) as ViewGroup
 
-        val alternative = super
-                .onCreateView(inflater, newContainer, savedInstanceState)
+            val alternative = super
+                    .onCreateView(inflater, newContainer, savedInstanceState)
 
-        return alternative ?: newContainer
+            alternative
+                    ?: newContainer
+        }
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super
-                .onViewCreated(view, savedInstanceState)
-    }
+    /**
+     * Optionally create and setup your ViewDataBinding and ViewModel in this method
+     */
+    open fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? = null
 
 }

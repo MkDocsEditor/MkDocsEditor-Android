@@ -84,9 +84,9 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
                                 .debounce(300, TimeUnit.MILLISECONDS)
                                 .observeOn(AndroidSchedulers.mainThread())
                                 .subscribeBy(onNext = {
-                                    currentSearchFilter = it
-                                            .toString()
-                                    reloadDataFromPersistence()
+                                    currentSearchFilter = it.toString()
+
+                                    // TODO: implement search
                                 }, onError = {
                                     Timber
                                             .e(it) { "Error filtering list" }
@@ -150,46 +150,6 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
                     } else {
                         activity!!
                                 .toast("Server unavailable :(")
-                        reloadDataFromPersistence()
-                    }
-                })
-    }
-
-    /**
-     * Loads the data using {@link loadListDataFromPersistence()}
-     */
-    protected fun reloadDataFromPersistence() {
-        setRefreshing(true)
-
-        Single
-                .fromCallable { loadListDataFromPersistence() }
-                .map {
-                    backstack
-                            .clear()
-                    backstack
-                            .push(SectionBackstackItem(it as SectionEntity))
-                    it
-                }
-                .map {
-                    sectionToList(it as SectionEntity)
-                }
-                .map {
-                    filterAndSortList(it)
-                }
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .bindUntilEvent(this, Lifecycle.Event.ON_STOP)
-                .subscribeBy(onSuccess = {
-                    updateAdapterList(it)
-                    scrollToItemPosition(lastScrollPosition)
-                }, onError = {
-                    if (it is CancellationException) {
-                        Timber
-                                .d { "reload from persistence cancelled" }
-                    } else {
-                        loadingComponent
-                                .showError(it)
-                        setRefreshing(false)
                     }
                 })
     }
@@ -340,10 +300,5 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
     private fun updateLastUpdatedFromSource() {
         // TODO:
     }
-
-    /**
-     * Load the data to be displayed in the list from the persistence
-     */
-    abstract fun loadListDataFromPersistence(): IdentifiableListItem?
 
 }

@@ -60,7 +60,7 @@ dependencies {
     implementation("com.github.markusressel.commons:commons_android_core:master-SNAPSHOT")
     implementation("com.github.markusressel.commons:commons_android_material:master-SNAPSHOT")
 
-    implementation 'androidx.appcompat:appcompat:1.0.0'
+    implementation 'androidx.appcompat:appcompat:1.0.2'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.0-alpha2'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.0.0'
@@ -98,6 +98,7 @@ dependencies {
 
     // Android Architecture Components
     implementation "androidx.core:core-ktx:$aacAndroidKtxVersion"
+    implementation "android.arch.lifecycle:extensions:2.0.0"
 
     // Logging
     api "com.github.ajalt:timberkt:${rootProject.ext.timberKtVersion}"
@@ -117,13 +118,14 @@ dependencies {
     implementation 'com.eightbitlab:rxbus:1.0.2'
 
     // Material Drawer
-    implementation("com.mikepenz:materialdrawer:6.0.7@aar") {
+    implementation("com.mikepenz:materialdrawer:6.1.1@aar") {
         transitive = true
     }
 
     // Epoxy - Recyclerview for dummies
     implementation "com.airbnb.android:epoxy:$epoxyVersion"
     implementation "com.airbnb.android:epoxy-databinding:$epoxyVersion"
+    implementation "com.airbnb.android:epoxy-paging:$epoxyVersion"
     kapt "com.airbnb.android:epoxy-processor:$epoxyVersion"
 
     // Code editor
@@ -138,12 +140,10 @@ dependencies {
     }
 
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'androidx.test:runner:1.1.0-beta02'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0-beta02'
+    androidTestImplementation 'androidx.test:runner:1.1.1-alpha01'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1-alpha01'
+    implementation 'android.arch.navigation:navigation-fragment:1.0.0-alpha07'
 }
 
 configurations.all {
-    resolutionStrategy.force "com.android.support:support-v4:$supportLibVersion"
-    resolutionStrategy.force "com.android.support:appcompat-v7:$supportLibVersion"
-    resolutionStrategy.force "com.android.support:design:$supportLibVersion"
 }

@@ -1,25 +1,34 @@
 package de.markusressel.mkdocseditor.view.fragment
 
 import android.content.Context
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.ViewGroup
 import android.widget.Toast
-import com.airbnb.epoxy.EpoxyController
+import androidx.databinding.ViewDataBinding
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProviders
+import com.airbnb.epoxy.EpoxyModel
 import com.airbnb.epoxy.Typed3EpoxyController
+import com.airbnb.epoxy.paging.PagedListEpoxyController
 import com.github.ajalt.timberkt.Timber
 import de.markusressel.commons.core.filterByExpectedType
+import de.markusressel.mkdocseditor.ListItemDocumentBindingModel_
+import de.markusressel.mkdocseditor.ListItemLoadingBindingModel_
+import de.markusressel.mkdocseditor.ListItemResourceBindingModel_
+import de.markusressel.mkdocseditor.ListItemSectionBindingModel_
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.entity.*
-import de.markusressel.mkdocseditor.listItemDocument
-import de.markusressel.mkdocseditor.listItemResource
-import de.markusressel.mkdocseditor.listItemSection
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
 import de.markusressel.mkdocseditor.view.activity.EditorActivity
 import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragmentBase
 import de.markusressel.mkdocsrestclient.section.SectionModel
-import io.objectbox.kotlin.query
 import io.reactivex.Single
-import java.util.*
 import javax.inject.Inject
 
 
@@ -37,32 +46,22 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     @Inject
     lateinit var resourcePersistenceManager: ResourcePersistenceManager
 
+    override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
+        val viewModel = ViewModelProviders.of(this).get(SectionListViewModel::class.java)
+        viewModel.getListLiveData2(sectionPersistenceManager).observe(this, Observer {
+            epoxyController.submitList(it)
+        })
+
+        return super.createViewDataBinding(inflater, container, savedInstanceState)
+    }
+
     override fun itemContainsCurrentSearchString(item: IdentifiableListItem): Boolean {
         return false
     }
 
     override fun sortListData(listData: List<IdentifiableListItem>): List<IdentifiableListItem> {
-        val typeComparator = Comparator<IdentifiableListItem> { a, b ->
-            val typePrioA = when (a) {
-                is SectionEntity -> 0
-                is DocumentEntity -> 1
-                is ResourceEntity -> 2
-                else -> throw IllegalArgumentException("Cant compare object of type ${a.javaClass}!")
-            }
-
-            val typePrioB = when (b) {
-                is SectionEntity -> 0
-                is DocumentEntity -> 1
-                is ResourceEntity -> 2
-                else -> throw IllegalArgumentException("Cant compare object of type ${b.javaClass}!")
-            }
-
-            typePrioA
-                    .compareTo(typePrioB)
-        }
-
+        // TODO: remove this
         return listData
-                .sortedWith(typeComparator)
     }
 
     override fun getLoadDataFromSourceFunction(): Single<Any> {
@@ -94,45 +93,37 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                 .put(rootSection)
     }
 
-    override fun loadListDataFromPersistence(): IdentifiableListItem? {
-        return sectionPersistenceManager
-                .standardOperation()
-                .query {
-                    equal(SectionEntity_.name, "docs")
-                }
-                .findFirst()
-    }
-
-    override fun createEpoxyController(): EpoxyController {
-        return object : Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>>() {
-            override fun buildModels(sections: List<SectionEntity>, documents: List<DocumentEntity>, resources: List<ResourceEntity>) {
-                sections.forEach {
-                    listItemSection {
-                        id(it.id)
-                        item(it)
-                        onclick { model, parentView, clickedView, position ->
-                            openSection(model.item())
-                        }
+    override fun createEpoxyController(): PagedListEpoxyController<IdentifiableListItem> {
+        return object : PagedListEpoxyController<IdentifiableListItem>() {
+            override fun buildItemModel(currentPosition: Int, item: IdentifiableListItem?): EpoxyModel<*> {
+                return when (item) {
+                    is SectionEntity -> {
+                        ListItemSectionBindingModel_()
+                                .id(item.id)
+                                .item(item)
+                                .onclick { model, parentView, clickedView, position ->
+                                    openSection(model.item())
+                                }
                     }
-                }
-
-                documents.forEach {
-                    listItemDocument {
-                        id(it.id)
-                        item(it)
-                        onclick { model, parentView, clickedView, position ->
-                            openDocumentEditor(model.item())
-                        }
+                    is DocumentEntity -> {
+                        ListItemDocumentBindingModel_()
+                                .id(item.id)
+                                .item(item)
+                                .onclick { model, parentView, clickedView, position ->
+                                    openDocumentEditor(model.item())
+                                }
                     }
-                }
-
-                resources.forEach {
-                    listItemResource {
-                        id(it.id)
-                        item(it)
-                        onclick { model, parentView, clickedView, position ->
-                            openResourceDetailPage(model.item())
-                        }
+                    is ResourceEntity -> {
+                        ListItemResourceBindingModel_()
+                                .id(item.id)
+                                .item(item)
+                                .onclick { model, parentView, clickedView, position ->
+                                    openResourceDetailPage(model.item())
+                                }
+                    }
+                    else -> {
+                        ListItemLoadingBindingModel_()
+                                .id(-currentPosition)
                     }
                 }
             }

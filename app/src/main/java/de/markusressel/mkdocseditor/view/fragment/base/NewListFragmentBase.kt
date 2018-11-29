@@ -27,11 +27,12 @@ import androidx.annotation.CallSuper
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
-import com.airbnb.epoxy.EpoxyController
+import com.airbnb.epoxy.paging.PagedListEpoxyController
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.jakewharton.rxbinding2.view.RxView
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.fragment.SectionBackstackItem
 import kotlinx.android.synthetic.main.fragment_recyclerview.*
@@ -129,9 +130,9 @@ abstract class NewListFragmentBase : DaggerSupportFragmentBase() {
      * Create the epoxy controller here.
      * The epoxy controller defines what information is displayed.
      */
-    abstract fun createEpoxyController(): EpoxyController
+    abstract fun createEpoxyController(): PagedListEpoxyController<IdentifiableListItem>
 
-    /**
+    /**EntityType
      * Reload list data from it's original source, persist it and display it to the user afterwards
      */
     abstract fun reloadDataFromSource()
