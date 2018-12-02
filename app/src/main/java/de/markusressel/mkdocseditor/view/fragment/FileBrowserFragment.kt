@@ -8,15 +8,8 @@ import android.widget.Toast
 import androidx.databinding.ViewDataBinding
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
-import com.airbnb.epoxy.EpoxyModel
 import com.airbnb.epoxy.Typed3EpoxyController
-import com.airbnb.epoxy.paging.PagedListEpoxyController
 import com.github.ajalt.timberkt.Timber
-import de.markusressel.commons.core.filterByExpectedType
-import de.markusressel.mkdocseditor.ListItemDocumentBindingModel_
-import de.markusressel.mkdocseditor.ListItemLoadingBindingModel_
-import de.markusressel.mkdocseditor.ListItemResourceBindingModel_
-import de.markusressel.mkdocseditor.ListItemSectionBindingModel_
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
@@ -25,6 +18,9 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
+import de.markusressel.mkdocseditor.listItemDocument
+import de.markusressel.mkdocseditor.listItemResource
+import de.markusressel.mkdocseditor.listItemSection
 import de.markusressel.mkdocseditor.view.activity.EditorActivity
 import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragmentBase
 import de.markusressel.mkdocsrestclient.section.SectionModel
@@ -33,8 +29,6 @@ import javax.inject.Inject
 
 
 /**
- * Server Status fragment
- *
  * Created by Markus on 07.01.2018.
  */
 class FileBrowserFragment : MultiPersistableListFragmentBase() {
@@ -46,22 +40,24 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     @Inject
     lateinit var resourcePersistenceManager: ResourcePersistenceManager
 
+    private val fileBrowserViewModel: FileBrowserViewModel by lazy {
+        ViewModelProviders.of(this).get(FileBrowserViewModel::class.java)
+    }
+
     override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
-        val viewModel = ViewModelProviders.of(this).get(SectionListViewModel::class.java)
-        viewModel.getListLiveData2(sectionPersistenceManager).observe(this, Observer {
-            epoxyController.submitList(it)
+        fileBrowserViewModel.getSectionLiveData(sectionPersistenceManager).observe(this, Observer {
+            if (it.isNotEmpty()) {
+                it.first().let {
+                    epoxyController.setData(it.subsections, it.documents, it.resources)
+                }
+            }
         })
 
         return super.createViewDataBinding(inflater, container, savedInstanceState)
     }
 
-    override fun itemContainsCurrentSearchString(item: IdentifiableListItem): Boolean {
-        return false
-    }
-
-    override fun sortListData(listData: List<IdentifiableListItem>): List<IdentifiableListItem> {
-        // TODO: remove this
-        return listData
+    private fun sectionToList(section: SectionEntity): List<IdentifiableListItem> {
+        return listOf(*section.subsections.toTypedArray(), *section.documents.toTypedArray(), *section.resources.toTypedArray())
     }
 
     override fun getLoadDataFromSourceFunction(): Single<Any> {
@@ -71,7 +67,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     override fun mapToEntity(it: Any): IdentifiableListItem {
         return when (it) {
             is SectionModel -> it.asEntity()
-            else -> throw IllegalArgumentException("Cant compare object of type ${it.javaClass}!")
+            else -> throw IllegalArgumentException("Cant map object of type ${it.javaClass}!")
         }
     }
 
@@ -93,50 +89,73 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                 .put(rootSection)
     }
 
-    override fun createEpoxyController(): PagedListEpoxyController<IdentifiableListItem> {
-        return object : PagedListEpoxyController<IdentifiableListItem>() {
-            override fun buildItemModel(currentPosition: Int, item: IdentifiableListItem?): EpoxyModel<*> {
-                return when (item) {
-                    is SectionEntity -> {
-                        ListItemSectionBindingModel_()
-                                .id(item.id)
-                                .item(item)
-                                .onclick { model, parentView, clickedView, position ->
-                                    openSection(model.item())
-                                }
+    override fun createEpoxyController(): Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>> {
+        return object : Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>>() {
+            override fun buildModels(sections: List<SectionEntity>, documents: List<DocumentEntity>, resources: List<ResourceEntity>) {
+                sections.forEach {
+                    listItemSection {
+                        id(it.id)
+                        item(it)
+                        onclick { model, parentView, clickedView, position ->
+                            fileBrowserViewModel.openSection(model.item())
+                        }
                     }
-                    is DocumentEntity -> {
-                        ListItemDocumentBindingModel_()
-                                .id(item.id)
-                                .item(item)
-                                .onclick { model, parentView, clickedView, position ->
-                                    openDocumentEditor(model.item())
-                                }
+                }
+
+                documents.forEach {
+                    listItemDocument {
+                        id(it.id)
+                        item(it)
+                        onclick { model, parentView, clickedView, position ->
+                            openDocumentEditor(model.item())
+                        }
                     }
-                    is ResourceEntity -> {
-                        ListItemResourceBindingModel_()
-                                .id(item.id)
-                                .item(item)
-                                .onclick { model, parentView, clickedView, position ->
-                                    openResourceDetailPage(model.item())
-                                }
-                    }
-                    else -> {
-                        ListItemLoadingBindingModel_()
-                                .id(-currentPosition)
+                }
+
+                resources.forEach {
+                    listItemResource {
+                        id(it.id)
+                        item(it)
+                        onclick { model, parentView, clickedView, position ->
+                            openResourceDetailPage(model.item())
+                        }
                     }
                 }
             }
         }
-    }
 
-    override fun updateControllerData(newData: List<IdentifiableListItem>) {
-        val typed3EpoxyController = epoxyController as Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>>
-        typed3EpoxyController.setData(
-                newData.filterByExpectedType(),
-                newData.filterByExpectedType(),
-                newData.filterByExpectedType()
-        )
+//            override fun buildItemModel(currentPosition: Int, item: IdentifiableListItem?): EpoxyModel<*> {
+//                return when (item) {
+//                    is SectionEntity -> {
+//                        ListItemSectionBindingModel_()
+//                                .id(item.id)
+//                                .item(item)
+//                                .onclick { model, parentView, clickedView, position ->
+//                                    fileBrowserViewModel.openSection(model.item())
+//                                }
+//                    }
+//                    is DocumentEntity -> {
+//                        ListItemDocumentBindingModel_()
+//                                .id(item.id)
+//                                .item(item)
+//                                .onclick { model, parentView, clickedView, position ->
+//                                    openDocumentEditor(model.item())
+//                                }
+//                    }
+//                    is ResourceEntity -> {
+//                        ListItemResourceBindingModel_()
+//                                .id(item.id)
+//                                .item(item)
+//                                .onclick { model, parentView, clickedView, position ->
+//                                    openResourceDetailPage(model.item())
+//                                }
+//                    }
+//                    else -> {
+//                        ListItemLoadingBindingModel_()
+//                                .id(-currentPosition)
+//                    }
+//                }
+//            }
     }
 
     //    override fun getRightFabs(): List<FabConfig.Fab> {
@@ -172,14 +191,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
      * @return true, if the back button event was consumed, false otherwise
      */
     fun onBackPressed(): Boolean {
-        if (backstack.size > 1) {
-            backstack
-                    .pop()
-            openSection(backstack.peek().section, false)
-            return true
-        }
-
-        return false
+        return fileBrowserViewModel.navigateUp()
     }
 
 }

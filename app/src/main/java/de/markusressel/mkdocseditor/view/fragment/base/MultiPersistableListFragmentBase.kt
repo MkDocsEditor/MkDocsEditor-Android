@@ -32,16 +32,13 @@ import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
 import de.markusressel.commons.android.material.toast
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.network.ServerConnectivityManager
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
-import de.markusressel.mkdocseditor.view.fragment.SectionBackstackItem
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
-import java.util.*
 import java.util.concurrent.CancellationException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -57,8 +54,6 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
 
     @Inject
     lateinit var restClient: MkDocsRestClient
-
-    protected val listValues: MutableList<IdentifiableListItem> = ArrayList()
 
     private val optionsMenuComponent: OptionsMenuComponent by lazy {
         OptionsMenuComponent(hostFragment = this, optionsMenuRes = R.menu.options_menu_list, onCreateOptionsMenu = { menu: Menu?, menuInflater: MenuInflater? ->
@@ -133,8 +128,6 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
     }
 
     private fun reload() {
-        setRefreshing(true)
-
         restClient
                 .isHostAlive()
                 .subscribeOn(Schedulers.io())
@@ -146,8 +139,9 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
                     reloadDataFromSource()
                 }, onError = {
                     if (it is CancellationException) {
-                        setRefreshing(false)
+                        Timber.d { "Reload cancelled" }
                     } else {
+                        Timber.e(it)
                         activity!!
                                 .toast("Server unavailable :(")
                     }
@@ -155,64 +149,9 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
     }
 
     /**
-     * Filter list items that don't match this function from the visible list
-     * @return true, if the item is ok, false if it should be filtered
-     */
-    internal open fun filterListItem(item: IdentifiableListItem): Boolean {
-        return true
-    }
-
-    /**
-     * @return true, if a match was found, false otherwise
-     */
-    abstract fun itemContainsCurrentSearchString(item: IdentifiableListItem): Boolean
-
-    /**
-     * Updates the content of the adapter behind the recyclerview
-     */
-    protected fun updateAdapterList(newData: List<IdentifiableListItem>) {
-        listValues
-                .clear()
-        listValues
-                .addAll(newData)
-
-        if (listValues.isEmpty()) {
-            showEmpty()
-        } else {
-            hideEmpty()
-        }
-        setRefreshing(false)
-
-        updateControllerData(newData)
-    }
-
-    abstract fun updateControllerData(newData: List<IdentifiableListItem>)
-
-    /**
-     * Filters and sorts the given list by the currently active filter and sort options
-     * Remember to call this before using {@link updateAdapterList }
-     */
-    private fun filterAndSortList(newData: List<IdentifiableListItem>): List<IdentifiableListItem> {
-        val filteredNewData = newData
-                .filter {
-                    currentSearchFilter.isEmpty() || itemContainsCurrentSearchString(it)
-                }
-                .filter { filterListItem(it) }
-                .toList()
-        return sortListData(filteredNewData)
-    }
-
-    /**
-     * Sorts a list by the currently selected SortOptions
-     */
-    abstract fun sortListData(listData: List<IdentifiableListItem>): List<IdentifiableListItem>
-
-    /**
      * Reload list data from it's original source, persist it and display it to the user afterwards
      */
     override fun reloadDataFromSource() {
-        setRefreshing(true)
-
         getLoadDataFromSourceFunction()
                 .map {
                     mapToEntity(it)
@@ -221,66 +160,22 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
                     persistListData(it)
                     it
                 }
-                .map {
-                    backstack
-                            .clear()
-                    backstack
-                            .push(SectionBackstackItem(it as SectionEntity))
-                    it
-                }
-                .map {
-                    sectionToList(it as SectionEntity)
-                }
-                .map {
-                    filterAndSortList(it)
-                }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindUntilEvent(this, Lifecycle.Event.ON_STOP)
                 .subscribeBy(onSuccess = {
                     updateLastUpdatedFromSource()
-                    updateAdapterList(it)
-                    scrollToItemPosition(lastScrollPosition)
                 }, onError = {
                     if (it is CancellationException) {
-                        Timber
-                                .d { "reload from source cancelled" }
-                    } else {
-                        loadingComponent
-                                .showError(it)
-                        setRefreshing(false)
+                        Timber.d { "reload from source cancelled" }
                     }
                 })
-    }
-
-    private fun sectionToList(section: SectionEntity): List<IdentifiableListItem> {
-        return listOf(*section.subsections.toTypedArray(), *section.documents.toTypedArray(), *section.resources.toTypedArray())
-    }
-
-    internal fun openSection(section: SectionEntity, addToBackstack: Boolean = true) {
-        Timber
-                .d { "Opening Section '${section.name}'" }
-
-        if (addToBackstack) {
-            backstack
-                    .push(SectionBackstackItem(section))
-        }
-
-        listValues
-                .clear()
-        listValues
-                .addAll(sectionToList(section))
-
-        updateControllerData(sectionToList(section))
-
-        loadingComponent
-                .showContent()
     }
 
     /**
      * Define a Single that returns the complete list of data from the (server) source
      */
-    abstract internal fun getLoadDataFromSourceFunction(): Single<Any>
+    internal abstract fun getLoadDataFromSourceFunction(): Single<Any>
 
     /**
      * Map the source object to the persistence object
@@ -290,7 +185,7 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
     /**
      * Persist the current list data
      */
-    abstract internal fun persistListData(data: IdentifiableListItem)
+    internal abstract fun persistListData(data: IdentifiableListItem)
 
     private fun getLastUpdatedFromSource(): Long {
         // TODO:

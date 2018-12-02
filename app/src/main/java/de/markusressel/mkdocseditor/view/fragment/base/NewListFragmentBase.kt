@@ -27,17 +27,16 @@ import androidx.annotation.CallSuper
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
-import com.airbnb.epoxy.paging.PagedListEpoxyController
+import com.airbnb.epoxy.Typed3EpoxyController
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.jakewharton.rxbinding2.view.RxView
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
-import de.markusressel.mkdocseditor.view.component.LoadingComponent
-import de.markusressel.mkdocseditor.view.fragment.SectionBackstackItem
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import kotlinx.android.synthetic.main.fragment_recyclerview.*
 import kotlinx.android.synthetic.main.layout_empty_list.*
-import java.util.*
 
 
 /**
@@ -48,16 +47,6 @@ abstract class NewListFragmentBase : DaggerSupportFragmentBase() {
     override val layoutRes: Int
         get() = R.layout.fragment_recyclerview
 
-    protected val loadingComponent by lazy {
-        LoadingComponent(this, onShowContent = {
-            updateFabVisibility(View.VISIBLE)
-        }, onShowError = { message: String, throwable: Throwable? ->
-            hideEmpty()
-            setRefreshing(false)
-            updateFabVisibility(View.INVISIBLE)
-        })
-    }
-
     protected var lastScrollPosition by savedInstanceState(0)
 
     protected open val fabConfig: FabConfig = FabConfig(left = mutableListOf(), right = mutableListOf())
@@ -67,27 +56,10 @@ abstract class NewListFragmentBase : DaggerSupportFragmentBase() {
 
     internal var currentSearchFilter: String by savedInstanceState("")
 
-    internal val backstack: Stack<SectionBackstackItem> by savedInstanceState(Stack())
-
-    override fun initComponents(context: Context) {
-        super
-                .initComponents(context)
-        loadingComponent
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val parent = super.onCreateView(inflater, container, savedInstanceState) as ViewGroup
-        return loadingComponent
-                .onCreateView(inflater, parent, savedInstanceState)
-    }
-
     @CallSuper
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super
                 .onViewCreated(view, savedInstanceState)
-
-        loadingComponent
-                .showContent()
 
         recyclerView.setController(epoxyController)
 
@@ -130,7 +102,7 @@ abstract class NewListFragmentBase : DaggerSupportFragmentBase() {
      * Create the epoxy controller here.
      * The epoxy controller defines what information is displayed.
      */
-    abstract fun createEpoxyController(): PagedListEpoxyController<IdentifiableListItem>
+    abstract fun createEpoxyController(): Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>>
 
     /**EntityType
      * Reload list data from it's original source, persist it and display it to the user afterwards
@@ -285,16 +257,6 @@ abstract class NewListFragmentBase : DaggerSupportFragmentBase() {
         layoutEmpty
                 .visibility = View
                 .INVISIBLE
-    }
-
-    fun setRefreshing(refreshing: Boolean) {
-        if (refreshing) {
-            loadingComponent
-                    .showLoading()
-        } else {
-            loadingComponent
-                    .showContent(true)
-        }
     }
 
 }

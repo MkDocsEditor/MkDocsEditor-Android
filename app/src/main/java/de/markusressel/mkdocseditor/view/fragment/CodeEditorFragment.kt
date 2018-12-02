@@ -40,8 +40,6 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 /**
- * Server Status fragment
- *
  * Created by Markus on 07.01.2018.
  */
 class CodeEditorFragment : DaggerSupportFragmentBase() {
