@@ -123,39 +123,6 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                 }
             }
         }
-
-//            override fun buildItemModel(currentPosition: Int, item: IdentifiableListItem?): EpoxyModel<*> {
-//                return when (item) {
-//                    is SectionEntity -> {
-//                        ListItemSectionBindingModel_()
-//                                .id(item.id)
-//                                .item(item)
-//                                .onclick { model, parentView, clickedView, position ->
-//                                    fileBrowserViewModel.openSection(model.item())
-//                                }
-//                    }
-//                    is DocumentEntity -> {
-//                        ListItemDocumentBindingModel_()
-//                                .id(item.id)
-//                                .item(item)
-//                                .onclick { model, parentView, clickedView, position ->
-//                                    openDocumentEditor(model.item())
-//                                }
-//                    }
-//                    is ResourceEntity -> {
-//                        ListItemResourceBindingModel_()
-//                                .id(item.id)
-//                                .item(item)
-//                                .onclick { model, parentView, clickedView, position ->
-//                                    openResourceDetailPage(model.item())
-//                                }
-//                    }
-//                    else -> {
-//                        ListItemLoadingBindingModel_()
-//                                .id(-currentPosition)
-//                    }
-//                }
-//            }
     }
 
     //    override fun getRightFabs(): List<FabConfig.Fab> {
