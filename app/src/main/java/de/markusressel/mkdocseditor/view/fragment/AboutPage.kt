@@ -29,7 +29,6 @@ import com.mikepenz.aboutlibraries.util.Colors
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
-import kotlinx.android.synthetic.main.fragment_about_page.*
 import javax.inject.Inject
 
 /**
@@ -49,7 +48,6 @@ class AboutPage : DaggerSupportFragmentBase() {
     protected lateinit var preferencesHolder: KutePreferencesHolder
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-
         val view = super.onCreateView(inflater, container, savedInstanceState)
 
         val context = context!!
@@ -60,13 +58,9 @@ class AboutPage : DaggerSupportFragmentBase() {
 
         val aboutLibTheme: Libs.ActivityStyle
         aboutLibTheme = if (themeVal == context.getString(R.string.theme_light_value)) {
-            Libs
-                    .ActivityStyle
-                    .LIGHT_DARK_TOOLBAR
+            Libs.ActivityStyle.LIGHT_DARK_TOOLBAR
         } else {
-            Libs
-                    .ActivityStyle
-                    .DARK
+            Libs.ActivityStyle.DARK
         }
 
         val fragment = LibsBuilder()

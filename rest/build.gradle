@@ -24,7 +24,6 @@ android {
 }
 
 dependencies {
-
     //for JVM
     implementation "com.github.kittinunf.fuel:fuel:${rootProject.ext.fuelVersion}"
     //for RxJava support
