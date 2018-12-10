@@ -29,6 +29,7 @@ import com.mikepenz.aboutlibraries.util.Colors
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
+import kotlinx.android.synthetic.main.fragment_about_page.*
 import javax.inject.Inject
 
 /**
@@ -42,12 +43,14 @@ import javax.inject.Inject
 class AboutPage : DaggerSupportFragmentBase() {
 
     override val layoutRes: Int
-        get() = R.layout.fragment_editor
+        get() = R.layout.fragment_about_page
 
     @Inject
     protected lateinit var preferencesHolder: KutePreferencesHolder
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+
+        val view = super.onCreateView(inflater, container, savedInstanceState)
 
         val context = context!!
 
@@ -74,7 +77,11 @@ class AboutPage : DaggerSupportFragmentBase() {
                 .withActivityTitle(context.getString(R.string.menu_item_about))
                 .supportFragment()
 
-        return fragment.view
+        val t = childFragmentManager.beginTransaction()
+        t.replace(R.id.contentLayout, fragment)
+        t.commit()
+
+        return view
     }
 
 }
