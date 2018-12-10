@@ -3,6 +3,7 @@ package de.markusressel.mkdocseditor.navigation
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import androidx.annotation.DrawableRes
+import androidx.annotation.IdRes
 import androidx.annotation.StringRes
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.typeface.IIcon
@@ -12,11 +13,7 @@ import java.util.concurrent.atomic.AtomicLong
 /**
  * Created by Markus on 08.01.2018.
  */
-data class DrawerMenuItem(@StringRes val title: Int, val icon: IIcon? = null, @DrawableRes val drawableRes: Int? = null, val selectable: Boolean, val navigationPage: NavigationPage) {
-
-    val identifier: Long = Companion
-            .identifier
-            .getAndAdd(1)
+data class DrawerMenuItem(@IdRes val id: Int, @StringRes val title: Int, val icon: IIcon? = null, @DrawableRes val drawableRes: Int? = null, val selectable: Boolean) {
 
     /**
      * Get the icon for this DrawerMenuItem

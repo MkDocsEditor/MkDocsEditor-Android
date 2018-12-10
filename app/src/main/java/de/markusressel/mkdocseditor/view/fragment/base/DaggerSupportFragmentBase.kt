@@ -29,7 +29,6 @@ import dagger.android.AndroidInjector
 import dagger.android.DispatchingAndroidInjector
 import dagger.android.support.AndroidSupportInjection
 import dagger.android.support.HasSupportFragmentInjector
-import de.markusressel.mkdocseditor.navigation.Navigator
 import de.markusressel.mkdocseditor.view.IconHandler
 import javax.inject.Inject
 
@@ -54,9 +53,6 @@ abstract class DaggerSupportFragmentBase : LifecycleFragmentBase(), HasSupportFr
     override fun supportFragmentInjector(): AndroidInjector<androidx.fragment.app.Fragment> {
         return childFragmentInjector
     }
-
-    @Inject
-    internal lateinit var navigator: Navigator
 
     @Inject
     protected lateinit var iconHandler: IconHandler

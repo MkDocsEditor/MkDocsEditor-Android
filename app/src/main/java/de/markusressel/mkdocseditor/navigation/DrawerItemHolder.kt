@@ -9,17 +9,29 @@ import de.markusressel.mkdocseditor.R
  */
 object DrawerItemHolder {
 
-    val Tree = DrawerMenuItem(title = R.string.menu_item_tree, icon = MaterialDesignIconic.Icon.gmi_home, selectable = true, navigationPage = NavigationPageHolder.Tree)
+    val FileBrowser = DrawerMenuItem(
+            id = R.id.fileBrowserPage,
+            title = R.string.menu_item_file_browser,
+            icon = MaterialDesignIconic.Icon.gmi_home,
+            selectable = true)
 
-    val Settings = DrawerMenuItem(title = R.string.menu_item_settings, icon = MaterialDesignIconic.Icon.gmi_settings, selectable = false, navigationPage = NavigationPageHolder.Settings)
+    val Settings = DrawerMenuItem(
+            id = R.id.preferencesPage,
+            title = R.string.menu_item_settings,
+            icon = MaterialDesignIconic.Icon.gmi_settings,
+            selectable = false)
 
-    val About = DrawerMenuItem(title = R.string.menu_item_about, icon = MaterialDesignIconic.Icon.gmi_info, selectable = false, navigationPage = NavigationPageHolder.About)
+    val About = DrawerMenuItem(
+            id = R.id.aboutPage,
+            title = R.string.menu_item_about,
+            icon = MaterialDesignIconic.Icon.gmi_info,
+            selectable = false)
 
-    fun fromId(drawerItemIdentifier: Long): DrawerMenuItem? {
+    fun fromId(drawerItemIdentifier: Int): DrawerMenuItem? {
         return when (drawerItemIdentifier) {
-            Tree.identifier -> Tree
-            Settings.identifier -> Settings
-            About.identifier -> About
+            FileBrowser.id -> FileBrowser
+            Settings.id -> Settings
+            About.id -> About
             else -> {
                 Timber
                         .w { "Unknown menu item identifier: $drawerItemIdentifier" }

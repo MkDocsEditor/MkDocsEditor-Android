@@ -1,9 +1,10 @@
 package de.markusressel.mkdocseditor.view.activity.base
 
-import android.content.Intent
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.View
+import androidx.navigation.Navigation
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.setupActionBarWithNavController
 import com.github.ajalt.timberkt.Timber
 import com.mikepenz.materialdrawer.AccountHeader
 import com.mikepenz.materialdrawer.AccountHeaderBuilder
@@ -19,12 +20,9 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.extensions.common.android.isTablet
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.About
+import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.FileBrowser
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.Settings
-import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.Tree
 import de.markusressel.mkdocseditor.navigation.DrawerMenuItem
-import de.markusressel.mkdocseditor.navigation.Navigator
-import de.markusressel.mkdocseditor.view.fragment.FileBrowserFragment
-import de.markusressel.mkdocseditor.view.fragment.preferences.PreferencesFragment
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.view_toolbar.*
 import java.util.*
@@ -39,12 +37,12 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
     override val layoutRes: Int
         get() = R.layout.activity_main
 
+    protected val navController by lazy { Navigation.findNavController(this, R.id.navHostFragment) }
+    protected lateinit var navigationDrawer: Drawer
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super
                 .onCreate(savedInstanceState)
-
-        navigator
-                .activity = this
 
         val menuItemList = initDrawerMenuItems()
         val accountHeader = initAccountHeader()
@@ -57,7 +55,6 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
                 .withToolbar(toolbar)
                 .withSavedInstance(savedInstanceState)
 
-        val navigationDrawer: Drawer
         if (isTablet()) {
             navigationDrawer = builder
                     .buildView()
@@ -83,13 +80,10 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
                     .build()
         }
 
-        navigator
-                .drawer = navigationDrawer
-
-        if (savedInstanceState == null) {
-            navigator
-                    .initDrawer()
-        }
+        val appBarConfiguration = AppBarConfiguration(
+                navGraph = navController.graph,
+                drawerLayout = navigationDrawer.drawerLayout)
+        setupActionBarWithNavController(navController, appBarConfiguration)
     }
 
     override fun onStart() {
@@ -105,10 +99,11 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
     }
 
     private fun restartActivity() {
-        navigator
-                .startActivity(this, Navigator.NavigationPages.Main, Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-        navigator
-                .navigateTo(DrawerItemHolder.Settings)
+        // TODO: replace this with navController stuff
+//        navigator
+//                .startActivity(this, Navigator.NavigationPages.Main, Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+//        navigator
+//                .navigateTo(DrawerItemHolder.Settings)
     }
 
     private fun initAccountHeader(): AccountHeader {
@@ -135,11 +130,15 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
 
         // TODO: implement different servers as profiles
 
-        profiles
-                .add(ProfileDrawerItem().withName("Markus Ressel").withEmail("mail@markusressel.de").withIcon(R.mipmap.ic_launcher))
+        profiles.add(ProfileDrawerItem()
+                .withName("Markus Ressel")
+                .withEmail("mail@markusressel.de")
+                .withIcon(R.mipmap.ic_launcher))
 
-        profiles
-                .add(ProfileDrawerItem().withName("Iris Haderer").withEmail("").withIcon(R.mipmap.ic_launcher))
+        profiles.add(ProfileDrawerItem()
+                .withName("Max Mustermann")
+                .withEmail("")
+                .withIcon(R.mipmap.ic_launcher))
 
         return profiles
     }
@@ -149,52 +148,27 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
 
         val clickListener = Drawer
                 .OnDrawerItemClickListener { _, _, drawerItem ->
+                    val drawerMenuItem = DrawerItemHolder
+                            .fromId(drawerItem.identifier.toInt())
 
-                    if (drawerItem.identifier == navigator.currentState.drawerMenuItem.identifier) {
-                        Timber
-                                .d { "Closing navigationDrawer because the clicked item (${drawerItem.identifier}) is the currently active page" }
+                    drawerMenuItem?.let {
+                        navController.navigate(it.id)
+
+                        if (drawerItem.isSelectable) {
+                            // set new title
+                            setTitle(drawerMenuItem.title)
+                        }
+
                         if (!isTablet()) {
-
-                            navigator
-                                    .drawer
-                                    .closeDrawer()
+                            navigationDrawer.closeDrawer()
                         }
                         return@OnDrawerItemClickListener true
                     }
 
-                    val drawerMenuItem = DrawerItemHolder
-                            .fromId(drawerItem.identifier)
-
-                    drawerMenuItem
-                            ?.navigationPage
-                            ?.let {
-                                if (it.fragment != null) {
-                                    navigator
-                                            .navigateTo(drawerMenuItem)
-                                } else {
-                                    navigator
-                                            .startActivity(this, it)
-                                }
-
-                                if (drawerItem.isSelectable) {
-                                    // set new title
-                                    setTitle(drawerMenuItem.title)
-                                }
-
-                                if (!isTablet()) {
-                                    navigator
-                                            .drawer
-                                            .closeDrawer()
-                                }
-                                return@OnDrawerItemClickListener true
-                            }
-
                     false
                 }
 
-
-
-        listOf(Tree)
+        listOf(FileBrowser)
                 .forEach {
                     menuItemList
                             .add(createPrimaryMenuItem(it, clickListener))
@@ -215,7 +189,7 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
     private fun createPrimaryMenuItem(menuItem: DrawerMenuItem, clickListener: Drawer.OnDrawerItemClickListener): PrimaryDrawerItem {
         return PrimaryDrawerItem()
                 .withName(menuItem.title)
-                .withIdentifier(menuItem.identifier)
+                .withIdentifier(menuItem.id.toLong())
                 .withIcon(menuItem.getIcon(iconHandler))
                 .withSelectable(menuItem.selectable)
                 .withOnDrawerItemClickListener(clickListener)
@@ -224,47 +198,42 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
     private fun createSecondaryMenuItem(menuItem: DrawerMenuItem, clickListener: Drawer.OnDrawerItemClickListener): SecondaryDrawerItem {
         return SecondaryDrawerItem()
                 .withName(menuItem.title)
-                .withIdentifier(menuItem.identifier)
+                .withIdentifier(menuItem.id.toLong())
                 .withIcon(menuItem.getIcon(iconHandler))
                 .withSelectable(menuItem.selectable)
                 .withOnDrawerItemClickListener(clickListener)
     }
 
     override fun onBackPressed() {
-        if (navigator.drawer.isDrawerOpen) {
-            navigator
-                    .drawer
-                    .closeDrawer()
+        if (navigationDrawer.isDrawerOpen) {
+            navigationDrawer.closeDrawer()
             return
         }
 
         // special case for preferences
-        val currentFragment: androidx.fragment.app.Fragment? = supportFragmentManager
-                .findFragmentByTag(navigator.currentState.drawerMenuItem.navigationPage.tag)
-        if (currentFragment is PreferencesFragment && currentFragment.isVisible) {
-            if (currentFragment.onBackPressed()) {
-                return
-            }
-        }
+//        val currentFragment: androidx.fragment.app.Fragment? = supportFragmentManager
+//                .findFragmentByTag(navigator.currentState.drawerMenuItem.navigationPage.tag)
+//        if (currentFragment is PreferencesFragment && currentFragment.isVisible) {
+//            if (currentFragment.onBackPressed()) {
+//                return
+//            }
+//        }
 
         // special case for list
-        if (currentFragment is FileBrowserFragment && currentFragment.isVisible) {
-            if (currentFragment.onBackPressed()) {
-                return
-            }
-        }
+//        if (currentFragment is FileBrowserFragment && currentFragment.isVisible) {
+//            if (currentFragment.onBackPressed()) {
+//                return
+//            }
+//        }
 
-        val previousPage = navigator
-                .navigateBack()
-        if (previousPage != null) {
+        navController.navigateUp()
 
-            navigator
-                    .drawer
-                    .setSelection(previousPage.drawerMenuItem.identifier, false)
-            return
-        }
+        // TODO: update drawer selection on back press
+//        if (previousPage != null) {
+//            navigationDrawer.setSelection(previousPage.drawerMenuItem.identifier, false)
+//            return
+//        }
 
-        super
-                .onBackPressed()
+        super.onBackPressed()
     }
 }

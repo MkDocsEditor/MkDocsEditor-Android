@@ -14,7 +14,6 @@ import dagger.android.HasFragmentInjector
 import dagger.android.support.HasSupportFragmentInjector
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.navigation.Navigator
 import de.markusressel.mkdocseditor.view.IconHandler
 import de.markusressel.mkdocseditor.view.ThemeHelper
 import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
@@ -33,9 +32,6 @@ abstract class DaggerSupportActivityBase : LifecycleActivityBase(), HasFragmentI
     internal lateinit var supportFragmentInjector: DispatchingAndroidInjector<Fragment>
     @Inject
     internal lateinit var frameworkFragmentInjector: DispatchingAndroidInjector<android.app.Fragment>
-
-    @Inject
-    internal lateinit var navigator: Navigator
 
     @Inject
     lateinit var iconHandler: IconHandler
