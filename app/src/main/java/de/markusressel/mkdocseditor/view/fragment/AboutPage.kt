@@ -64,6 +64,10 @@ class AboutPage : DaggerSupportFragmentBase() {
         }
 
         val fragment = LibsBuilder()
+                .withAboutIconShown(true)
+                .withAboutVersionShown(true)
+                .withAboutAppName(getString(R.string.app_name))
+                .withAboutDescription(getString(R.string.app_description))
                 .withActivityStyle(aboutLibTheme)
                 .withActivityColor(
                         Colors(ContextCompat.getColor(context, R.color.primary),
