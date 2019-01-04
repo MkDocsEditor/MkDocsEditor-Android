@@ -1,13 +1,12 @@
 package de.markusressel.mkdocsrestclient.websocket
 
 import android.os.AsyncTask
-import android.util.Log
-import com.github.ajalt.timberkt.Timber
 import com.github.salomonbrys.kotson.jsonObject
 import com.google.gson.Gson
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.websocket.diff.diff_match_patch
 import okhttp3.*
+import timber.log.Timber
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -42,8 +41,7 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
      */
     fun connect() {
         if (isConnected) {
-            Timber
-                    .w { "Already connected" }
+            Timber.w("Already connected")
             return
         }
 
@@ -82,19 +80,16 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
                 }
             }
 
-            override fun onClosed(webSocket: WebSocket?, code: Int, reason: String?) {
-                super
-                        .onClosed(webSocket, code, reason)
+            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                super.onClosed(webSocket, code, reason)
                 isConnected = false
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable?, response: Response?) {
-                super
-                        .onFailure(webSocket, t, response)
+                super.onFailure(webSocket, t, response)
                 isConnected = false
 
-                Log
-                        .e(TAG, "Websocket error", t)
+                Timber.e(t, "Websocket error")
                 callListenerAsync {
                     onError(response?.code(), t)
                 }
@@ -123,22 +118,20 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
      */
     fun sendPatch(previousText: String, newText: String): String {
         // compute diff
-        val diffs = diffMatchPatch
-                .diff_main(previousText, newText)
+        val diffs = diffMatchPatch.diff_main(previousText, newText)
 
         // create path from diffs
-        val patches = diffMatchPatch
-                .patch_make(diffs)
+        val patches = diffMatchPatch.patch_make(diffs)
 
         // parse to json
-        val requestId = UUID
-                .randomUUID()
-                .toString()
-        val editRequestModel = jsonObject("requestId" to requestId, "documentId" to documentId, "patches" to diffMatchPatch.patch_toText(patches))
+        val requestId = UUID.randomUUID().toString()
+        val editRequestModel = jsonObject(
+                "requestId" to requestId,
+                "documentId" to documentId,
+                "patches" to diffMatchPatch.patch_toText(patches))
 
         // send to server
-        webSocket
-                ?.send(editRequestModel.toString())
+        webSocket?.send(editRequestModel.toString())
 
         return requestId
     }
@@ -147,8 +140,7 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
      * Disconnect a websocket
      */
     fun disconnect(code: Int, reason: String) {
-        webSocket
-                ?.close(code, reason)
+        webSocket?.close(code, reason)
 
         webSocket = null
         isInitialMessage = true
@@ -165,8 +157,7 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
      * Shutdown the websocket client (and all websockets)
      */
     fun shutdown() {
-        client
-                .dispatcher()
+        client.dispatcher()
                 .executorService()
                 .shutdown()
     }
