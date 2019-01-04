@@ -32,7 +32,6 @@ import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
 import de.markusressel.commons.android.material.toast
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
-import de.markusressel.mkdocseditor.network.ServerConnectivityManager
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import io.reactivex.Single
@@ -48,9 +47,6 @@ import javax.inject.Inject
  * Created by Markus on 29.01.2018.
  */
 abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
-
-    @Inject
-    lateinit var connectivityManager: ServerConnectivityManager
 
     @Inject
     lateinit var restClient: MkDocsRestClient
@@ -134,16 +130,14 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindUntilEvent(this, Lifecycle.Event.ON_STOP)
                 .subscribeBy(onSuccess = {
-                    activity!!
-                            .toast("Online :)")
+                    activity?.toast("Online :)")
                     reloadDataFromSource()
                 }, onError = {
                     if (it is CancellationException) {
                         Timber.d { "Reload cancelled" }
                     } else {
                         Timber.e(it)
-                        activity!!
-                                .toast("Server unavailable :(")
+                        activity?.toast("Server unavailable :(")
                     }
                 })
     }

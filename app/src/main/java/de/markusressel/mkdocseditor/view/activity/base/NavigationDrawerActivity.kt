@@ -23,6 +23,8 @@ import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.About
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.FileBrowser
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.Settings
 import de.markusressel.mkdocseditor.navigation.DrawerMenuItem
+import de.markusressel.mkdocseditor.view.fragment.FileBrowserFragment
+import de.markusressel.mkdocseditor.view.fragment.preferences.PreferencesFragment
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.view_toolbar.*
 import java.util.*
@@ -210,30 +212,31 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
             return
         }
 
-        // special case for preferences
-//        val currentFragment: androidx.fragment.app.Fragment? = supportFragmentManager
-//                .findFragmentByTag(navigator.currentState.drawerMenuItem.navigationPage.tag)
-//        if (currentFragment is PreferencesFragment && currentFragment.isVisible) {
-//            if (currentFragment.onBackPressed()) {
-//                return
-//            }
-//        }
+        // pass onBack event to fragments
+        val navHost = supportFragmentManager.findFragmentById(R.id.navHostFragment)
+        val currentlyVisibleFragment = navHost?.childFragmentManager?.primaryNavigationFragment
+        when (currentlyVisibleFragment) {
+            is PreferencesFragment -> {
+                if (currentlyVisibleFragment.onBackPressed()) {
+                    return
+                }
+            }
+            is FileBrowserFragment -> {
+                if (currentlyVisibleFragment.onBackPressed()) {
+                    return
+                }
+            }
+        }
 
-        // special case for list
-//        if (currentFragment is FileBrowserFragment && currentFragment.isVisible) {
-//            if (currentFragment.onBackPressed()) {
-//                return
-//            }
-//        }
+//        navController.currentDestination?.id
 
         navController.navigateUp()
+        super.onBackPressed()
 
         // TODO: update drawer selection on back press
 //        if (previousPage != null) {
 //            navigationDrawer.setSelection(previousPage.drawerMenuItem.identifier, false)
 //            return
 //        }
-
-        super.onBackPressed()
     }
 }

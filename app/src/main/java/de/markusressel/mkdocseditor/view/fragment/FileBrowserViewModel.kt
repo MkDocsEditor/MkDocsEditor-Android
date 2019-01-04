@@ -1,7 +1,11 @@
 package de.markusressel.mkdocseditor.view.fragment
 
+import androidx.annotation.MainThread
+import androidx.arch.core.util.Function
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
 import androidx.paging.LivePagedListBuilder
 import androidx.paging.PagedList
 import com.github.ajalt.timberkt.Timber
@@ -21,26 +25,52 @@ class FileBrowserViewModel : EntityListViewModel() {
     private val backstack: Stack<SectionBackstackItem> = Stack()
     private val currentSearchFilter = MutableLiveData<String>()
 
-    var currentSectionId = "root"
+    var persistenceManager: PersistenceManagerBase<SectionEntity>? = null
 
-    private var listLiveData: LiveData<PagedList<SectionEntity>>? = null
+    private var currentSectionId = MutableLiveData<String>()
+
+    val currentSection = switchMapPaged<String, SectionEntity>(currentSectionId,
+            Function { sectionId ->
+                getSectionLiveData(sectionId)
+            })
+
+    @MainThread
+    fun <X, Y> switchMapPaged(
+            source: LiveData<X>,
+            switchMapFunction: Function<X, LiveData<PagedList<Y>>>): MediatorLiveData<PagedList<Y>> {
+        val result = MediatorLiveData<PagedList<Y>>()
+        result.addSource(source, object : Observer<X> {
+            var mSource: LiveData<PagedList<Y>>? = null
+
+            override fun onChanged(x: X?) {
+                val newLiveData = switchMapFunction.apply(x)
+                if (mSource === newLiveData) {
+                    return
+                }
+                if (mSource != null) {
+                    result.removeSource(mSource!!)
+                }
+                mSource = newLiveData
+                if (mSource != null) {
+                    result.addSource(mSource!!) { y -> result.setValue(y) }
+                }
+            }
+        })
+        return result
+    }
 
     /**
      * Get the LiveData object for this EntityListViewModel
      */
-    fun getSectionLiveData(persistenceManager: PersistenceManagerBase<SectionEntity>): LiveData<PagedList<SectionEntity>> {
-        if (listLiveData == null) {
-            listLiveData = LivePagedListBuilder(ObjectBoxDataSource.Factory(
-                    persistenceManager.standardOperation().query {
-                        equal(SectionEntity_.id, currentSectionId)
-                        // TODO: implement sorting with inhomogeneous types
-                        // sort(TYPE_COMPARATOR)
-                    }),
-                    getPageSize()
-            ).build()
-        }
-
-        return listLiveData!!
+    private fun getSectionLiveData(sectionId: String = "root"): LiveData<PagedList<SectionEntity>> {
+        return LivePagedListBuilder(ObjectBoxDataSource.Factory(
+                persistenceManager!!.standardOperation().query {
+                    equal(SectionEntity_.id, sectionId)
+                    // TODO: implement sorting with inhomogeneous types
+                    // sort(TYPE_COMPARATOR)
+                }),
+                getPageSize()
+        ).build()
     }
 
     /**
@@ -66,26 +96,46 @@ class FileBrowserViewModel : EntityListViewModel() {
         }
     }
 
-    internal fun openSection(section: SectionEntity, addToBackstack: Boolean = true) {
-        Timber
-                .d { "Opening Section '${section.name}'" }
+    /**
+     * Removes all items in the backstack
+     */
+    internal fun clearBackstack() {
+        backstack.clear()
+    }
 
+    /**
+     * Open a specific section
+     *
+     * @param section the section to open
+     * @param addToBackstack true, when the section should be added to backstack, false otherwise
+     */
+    internal fun openSection(sectionId: String, addToBackstack: Boolean = true) {
+        if (currentSectionId.value == sectionId) {
+            // ignore if already set
+            return
+        }
+
+        Timber.d { "Opening Section '${sectionId}'" }
         if (addToBackstack) {
-            backstack
-                    .push(SectionBackstackItem(section))
+            backstack.push(SectionBackstackItem(sectionId))
         }
 
         // set the section id on the ViewModel
-        // TODO: GUI responds automatically
-        currentSectionId = section.id
+        currentSectionId.value = sectionId
     }
 
+    /**
+     * Navigate up the section backstack
+     *
+     * @return true, when there was an item on the backstack and a navigation was done, false otherwise
+     */
     fun navigateUp(): Boolean {
-        if (backstack.size <= 1) {
+        if (currentSectionId.value == "root" || backstack.size <= 1) {
             return false
         }
 
-        openSection(backstack.peek().section, false)
+        backstack.pop()
+        openSection(backstack.peek().sectionId, false)
         return true
     }
 

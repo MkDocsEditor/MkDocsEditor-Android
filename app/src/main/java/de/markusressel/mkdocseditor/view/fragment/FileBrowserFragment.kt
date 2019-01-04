@@ -45,13 +45,16 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     }
 
     override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
-        fileBrowserViewModel.getSectionLiveData(sectionPersistenceManager).observe(this, Observer {
+        fileBrowserViewModel.persistenceManager = sectionPersistenceManager
+        fileBrowserViewModel.currentSection.observe(this, Observer {
             if (it.isNotEmpty()) {
                 it.first().let {
                     epoxyController.setData(it.subsections, it.documents, it.resources)
                 }
             }
         })
+
+        fileBrowserViewModel.openSection("root")
 
         return super.createViewDataBinding(inflater, container, savedInstanceState)
     }
@@ -97,7 +100,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                         id(it.id)
                         item(it)
                         onclick { model, parentView, clickedView, position ->
-                            fileBrowserViewModel.openSection(model.item())
+                            fileBrowserViewModel.openSection(model.item().id)
                         }
                     }
                 }
