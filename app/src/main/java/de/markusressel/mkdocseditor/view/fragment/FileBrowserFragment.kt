@@ -10,6 +10,8 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import com.airbnb.epoxy.Typed3EpoxyController
 import com.github.ajalt.timberkt.Timber
+import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
+import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
@@ -22,6 +24,7 @@ import de.markusressel.mkdocseditor.listItemDocument
 import de.markusressel.mkdocseditor.listItemResource
 import de.markusressel.mkdocseditor.listItemSection
 import de.markusressel.mkdocseditor.view.activity.EditorActivity
+import de.markusressel.mkdocseditor.view.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragmentBase
 import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.reactivex.Single
@@ -57,10 +60,6 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         fileBrowserViewModel.openSection("root")
 
         return super.createViewDataBinding(inflater, container, savedInstanceState)
-    }
-
-    private fun sectionToList(section: SectionEntity): List<IdentifiableListItem> {
-        return listOf(*section.subsections.toTypedArray(), *section.documents.toTypedArray(), *section.resources.toTypedArray())
     }
 
     override fun getLoadDataFromSourceFunction(): Single<Any> {
@@ -128,11 +127,11 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         }
     }
 
-    //    override fun getRightFabs(): List<FabConfig.Fab> {
-    //        return listOf(FabConfig.Fab(description = R.string.add, icon = MaterialDesignIconic.Icon.gmi_plus, onClick = {
-    //            openAddDialog()
-    //        }))
-    //    }
+    override fun getRightFabs(): List<FabConfig.Fab> {
+        return listOf(FabConfig.Fab(description = R.string.add, icon = MaterialDesignIconic.Icon.gmi_plus, onClick = {
+            openAddDialog()
+        }))
+    }
 
     private fun openDocumentEditor(document: DocumentEntity) {
         Timber

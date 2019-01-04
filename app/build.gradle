@@ -129,6 +129,9 @@ dependencies {
     implementation "com.airbnb.android:epoxy-paging:$epoxyVersion"
     kapt "com.airbnb.android:epoxy-processor:$epoxyVersion"
 
+    // Dialogs
+    implementation 'com.afollestad.material-dialogs:core:2.0.0-rc7'
+
     // Code editor
     def codeEditorVersion = "v0.5.0"
     implementation("com.github.markusressel.KodeEditor:library:${codeEditorVersion}")
