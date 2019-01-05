@@ -73,11 +73,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
     private lateinit var codeEditorView: CodeEditorView
 
-    private val documentId by lazy {
-        arguments?.getString(KEY_ID)!!
-    }
+    private val documentId: String
+        get() {
+            return arguments?.getString(KEY_ID)!!
+        }
 
-    private var currentText: String by savedInstanceState("")
+    private var currentText: String? by savedInstanceState()
 
     private var currentXPosition by savedInstanceState(0F)
     private var currentYPosition by savedInstanceState(0F)
@@ -181,7 +182,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     }
 
     private fun restoreEditorFromCache(entity: DocumentContentEntity? = null, text: String? = null, editable: Boolean) {
-        currentText = text ?: ""
+        currentText = text
         entity?.let {
             if (text != null) {
                 // when an entity exists and a new text is given update the entity
@@ -189,13 +190,15 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
             }
 
             // restore values from cache
-            currentText = entity.text
+            if (text == null) {
+                currentText = entity.text
+            }
             currentZoom = entity.zoomLevel
             currentXPosition = entity.panX
             currentYPosition = entity.panY
         }
 
-        codeEditorView.setText(currentText)
+        codeEditorView.setText(currentText ?: "")
         entity?.let { codeEditorView.editTextView.setSelection(entity.selection) }
         codeEditorView.setEditable(editable)
 
@@ -229,7 +232,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
         if (entity != null) {
             runOnUiThread {
-                restoreEditorFromCache(entity, editable = false)
+                restoreEditorFromCache(entity, entity.text, editable = false)
             }
         } else {
             MaterialDialog(context()).show {
@@ -252,7 +255,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
      */
     private fun getCachedEditorState(): DocumentContentEntity? {
         return documentContentPersistenceManager.standardOperation().query {
-            DocumentContentEntity_.documentId.eq(documentId)
+            equal(DocumentContentEntity_.documentId, documentId)
         }.findUnique()
     }
 
@@ -281,9 +284,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         }
 
         runOnUiThread {
-            val oldSelection = codeEditorView
-                    .editTextView
-                    .selectionStart
+            val oldSelection = codeEditorView.editTextView.selectionStart
 
             // parse and apply patches
             val patches: LinkedList<diff_match_patch.Patch> = diffMatchPatch.patch_fromText(editRequest.patches) as LinkedList<diff_match_patch.Patch>
@@ -292,35 +293,35 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
             // set new cursor position
             val newSelection = calculateNewSelectionIndex(oldSelection, patches)
-                    .coerceIn(0, currentText.length)
+                    .coerceIn(0, currentText?.length)
 
-            codeEditorView.setText(currentText)
+            codeEditorView.setText(currentText ?: "")
             codeEditorView.editTextView.setSelection(newSelection)
 
-            doAsync { updateEditorStateCache() }
+            doAsync { updateEditorStateCache(text = currentText) }
         }
     }
 
     /**
      * Saves the current text in a persistent cache
      */
-    private fun updateEditorStateCache(ignoreText: Boolean = false) {
-        val documentEntity = documentPersistenceManager.standardOperation().query {
-            equal(DocumentEntity_.id, documentId)
-        }.findUnique()
+    private fun updateEditorStateCache(text: String? = null) {
+        val documentContentEntity = getCachedEditorState() ?: DocumentContentEntity(0, documentId)
 
-        val documentContentEntity = documentContentPersistenceManager.standardOperation().query {
-            equal(DocumentContentEntity_.documentId, documentId)
-        }.findUnique() ?: DocumentContentEntity(0, documentId)
+        if (getCachedEditorState() == null && text == null) {
+            // skip if there is no text to save
+            return
+        }
 
         // attach parent if necessary
         if (documentContentEntity.documentEntity.isNull) {
+            val documentEntity = documentPersistenceManager.standardOperation().query {
+                equal(DocumentEntity_.id, documentId)
+            }.findUnique()
             documentContentEntity.documentEntity.target = documentEntity
         }
 
-        if (!ignoreText) {
-            documentContentEntity.text = currentText
-        }
+        documentContentEntity.text = text!!
 
         currentXPosition = codeEditorView.panX
         currentYPosition = codeEditorView.panY
@@ -343,9 +344,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
             val patch = it
             currentIndex = patch.start1
 
-            it.diffs.forEach {
-                val diff = it
-
+            it.diffs.forEach { diff ->
                 when (diff.operation) {
                     diff_match_patch.Operation.DELETE -> {
                         if (currentIndex < newSelection) {
@@ -379,7 +378,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
         Bus.observe<OfflineModeChangedEvent>()
                 .subscribe {
-                    codeEditorView.setEditable(!it.enabled)
+                    if (!it.enabled) {
+                        reconnectToServer()
+                    } else {
+                        codeEditorView.setEditable(false)
+                        syncManager.disconnect(1000, "Offline mode was activated")
+                    }
                 }
                 .registerInBus(this)
 
@@ -407,7 +411,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
     @Synchronized
     private fun sendPatchIfChanged(it: CharSequence) {
-        if (currentText.contentEquals(it)) {
+        if (currentText!!.contentEquals(it)) {
             Timber.e { "TEXT IST GLEICH" }
             return
         }
@@ -415,7 +419,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         val newText = it.toString()
 
         // TODO: only send patch if the change is coming from user input
-        val requestId = (syncManager.sendPatch(currentText, newText))
+        val requestId = (syncManager.sendPatch(currentText!!, newText))
         previouslySentPatches[requestId] = "sent"
         currentText = newText
     }
@@ -433,7 +437,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     override fun onPause() {
         super.onPause()
 
-        updateEditorStateCache(ignoreText = true)
+        updateEditorStateCache(text = currentText)
     }
 
     override fun onStop() {
