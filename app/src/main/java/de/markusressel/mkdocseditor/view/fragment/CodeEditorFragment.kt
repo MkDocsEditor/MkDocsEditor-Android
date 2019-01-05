@@ -231,24 +231,24 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     private fun loadTextFromPersistence() {
         val entity = getCachedEditorState()
 
-        if (entity != null) {
-            runOnUiThread {
+        runOnUiThread {
+            if (entity != null) {
                 restoreEditorFromCache(entity, entity.text, editable = false)
-            }
-        } else {
-            MaterialDialog(context()).show {
-                title(R.string.no_offline_version)
-                negativeButton(android.R.string.ok, click = {
-                    it.dismiss()
-                })
-                onDismiss {
-                    // TODO: somehow do this with navigation library
-                    requireActivity().finish()
+            } else {
+                MaterialDialog(context()).show {
+                    title(R.string.no_offline_version)
+                    negativeButton(android.R.string.ok, click = {
+                        it.dismiss()
+                    })
+                    onDismiss {
+                        // TODO: somehow do this with navigation library
+                        requireActivity().finish()
+                    }
                 }
             }
-        }
 
-        loadingComponent.showContent(animated = true)
+            loadingComponent.showContent(animated = true)
+        }
     }
 
     /**
