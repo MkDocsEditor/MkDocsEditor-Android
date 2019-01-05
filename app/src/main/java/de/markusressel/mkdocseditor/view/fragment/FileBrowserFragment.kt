@@ -8,6 +8,8 @@ import android.widget.Toast
 import androidx.databinding.ViewDataBinding
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
+import com.afollestad.materialdialogs.MaterialDialog
+import com.afollestad.materialdialogs.customview.customView
 import com.airbnb.epoxy.Typed3EpoxyController
 import com.github.ajalt.timberkt.Timber
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
@@ -21,6 +23,7 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
+import de.markusressel.mkdocseditor.extensions.common.android.context
 import de.markusressel.mkdocseditor.listItemDocument
 import de.markusressel.mkdocseditor.listItemResource
 import de.markusressel.mkdocseditor.listItemSection
@@ -148,7 +151,13 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     }
 
     private fun openAddDialog() {
-        context?.toast("Sorry, this not yet supported")
+        MaterialDialog(context()).show {
+            customView(R.layout.dialog__add_document)
+            positiveButton(android.R.string.ok, click = {
+                context.toast("Sorry, this not yet supported")
+            })
+            negativeButton(android.R.string.cancel)
+        }
     }
 
     /**
