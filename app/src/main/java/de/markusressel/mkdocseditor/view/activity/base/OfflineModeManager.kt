@@ -16,10 +16,17 @@ import javax.inject.Singleton
 class OfflineModeManager @Inject constructor(val context: Context,
                                              val preferencesHolder: KutePreferencesHolder) {
 
-    var isEnabled = MutableLiveData<Boolean>().apply { preferencesHolder.offlineModePreference.persistedValue }
+    var isEnabled = MutableLiveData<Boolean>().apply { value = preferencesHolder.offlineModePreference.persistedValue }
 
     val colorOn by lazy { ContextCompat.getColor(context, R.color.md_orange_800) }
     val colorOff by lazy { ContextCompat.getColor(context, R.color.textColorPrimary) }
+
+    /**
+     * @return true if the offline mode is active, false otherwise
+     */
+    fun isEnabled(): Boolean {
+        return isEnabled.value!!
+    }
 
     /**
      * Enable or disable offline mode
@@ -33,7 +40,7 @@ class OfflineModeManager @Inject constructor(val context: Context,
 
     @ColorInt
     fun getColor(): Int {
-        return if (isEnabled.value!!) {
+        return if (isEnabled()) {
             colorOn
         } else {
             colorOff

@@ -183,7 +183,7 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
                         createSecondaryMenuItem(About, clickListener),
                         DividerDrawerItem(),
                         createOfflineModeMenuItem(OfflineMode, clickListener,
-                                defaultValue = preferencesHolder.offlineModePreference.persistedValue)))
+                                defaultValue = offlineModeManager.isEnabled())))
 
         return menuItemList
     }
@@ -222,6 +222,10 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
                     iconView.setColorFilter(offlineModeManager.getColor())
                 }.withChecked(defaultValue)
                 .withIconColor(offlineModeManager.getColor())
+                .withPostOnBindViewListener { drawerItem, view ->
+                    val iconView = (view as ViewGroup)[0] as AppCompatImageView
+                    iconView.setColorFilter(offlineModeManager.getColor())
+                }
     }
 
     override fun onBackPressed() {

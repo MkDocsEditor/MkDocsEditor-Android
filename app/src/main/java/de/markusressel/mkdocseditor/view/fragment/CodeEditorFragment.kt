@@ -30,6 +30,7 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntit
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
 import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
 import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
+import de.markusressel.mkdocseditor.view.activity.base.OfflineModeManager
 import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
@@ -87,6 +88,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
     @Inject
     lateinit var diffMatchPatch: diff_match_patch
+
+    @Inject
+    lateinit var offlineModeManager: OfflineModeManager
 
     private val loadingComponent by lazy { LoadingComponent(this) }
 
@@ -337,9 +341,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                 .setSyntaxHighlighter(MarkdownSyntaxHighlighter())
 
         // disable user input in offline mode
-        if (preferencesHolder.offlineModePreference.persistedValue) {
-            codeEditorView.setEditable(false)
-        }
+        codeEditorView.setEditable(offlineModeManager.isEnabled())
 
         RxTextView
                 .textChanges(codeEditorView.editTextView)
@@ -394,7 +396,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     override fun onStart() {
         super.onStart()
 
-        if (preferencesHolder.offlineModePreference.persistedValue) {
+        if (offlineModeManager.isEnabled()) {
             loadTextFromPersistence()
         } else {
             reconnectToServer()
