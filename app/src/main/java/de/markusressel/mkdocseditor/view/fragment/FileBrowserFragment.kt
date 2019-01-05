@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModelProviders
 import com.airbnb.epoxy.Typed3EpoxyController
 import com.github.ajalt.timberkt.Timber
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
+import de.markusressel.commons.android.material.toast
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
@@ -134,8 +135,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     }
 
     private fun openDocumentEditor(document: DocumentEntity) {
-        Timber
-                .d { "Opening Document '${document.name}'" }
+        Timber.d { "Opening Document '${document.name}'" }
 
         val intent = EditorActivity
                 .getNewInstanceIntent(context as Context, document.id, document.name)
@@ -143,15 +143,12 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     }
 
     private fun openResourceDetailPage(resource: ResourceEntity) {
-        Timber
-                .d { "Opening Resource '${resource.name}'" }
-        Toast
-                .makeText(context as Context, "Resources are not yet supported :(", Toast.LENGTH_LONG)
-                .show()
+        Timber.d { "Opening Resource '${resource.name}'" }
+        context?.toast("Resources are not yet supported :(", Toast.LENGTH_LONG)
     }
 
     private fun openAddDialog() {
-
+        context?.toast("Sorry, this not yet supported")
     }
 
     /**

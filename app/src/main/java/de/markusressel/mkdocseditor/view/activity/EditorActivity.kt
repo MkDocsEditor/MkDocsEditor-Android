@@ -27,8 +27,7 @@ class EditorActivity : DaggerSupportActivityBase() {
         val name = intent
                 .getStringExtra(KEY_NAME)
 
-        supportActionBar
-                ?.title = name
+        supportActionBar?.title = name
 
         val existingFragment = supportFragmentManager
                 .findFragmentByTag("editor")

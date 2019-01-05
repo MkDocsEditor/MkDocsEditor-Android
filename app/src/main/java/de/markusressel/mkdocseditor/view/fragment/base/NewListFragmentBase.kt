@@ -19,6 +19,7 @@ package de.markusressel.mkdocseditor.view.fragment.base
 
 import android.content.Context
 import android.os.Bundle
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,11 +27,13 @@ import android.widget.Toast
 import androidx.annotation.CallSuper
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
+import androidx.core.view.setMargins
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.airbnb.epoxy.Typed3EpoxyController
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.jakewharton.rxbinding2.view.RxView
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
+import de.markusressel.commons.android.core.dpToPx
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
@@ -124,58 +127,42 @@ abstract class NewListFragmentBase : DaggerSupportFragmentBase() {
     }
 
     private fun setupFabs() {
-        fabConfig
-                .left
-                .addAll(getLeftFabs())
-        fabConfig
-                .right
-                .addAll(getRightFabs())
+        fabConfig.left.addAll(getLeftFabs())
+        fabConfig.right.addAll(getRightFabs())
 
         // setup fabs
-        fabConfig
-                .left
-                .forEach {
-                    addFab(true, it)
-                }
-        fabConfig
-                .right
-                .forEach {
-                    addFab(false, it)
-                }
+        fabConfig.left.forEach {
+            addFab(true, it)
+        }
+        fabConfig.right.forEach {
+            addFab(false, it)
+        }
 
         updateFabVisibility(View.VISIBLE)
     }
 
     private fun addFab(isLeft: Boolean, fab: FabConfig.Fab) {
-        val inflater = LayoutInflater
-                .from(context)
-
-        val layout = when (isLeft) {
-            true -> R.layout.view_fab_left
-            false -> R.layout.view_fab_right
-        }
+        val inflater = LayoutInflater.from(context)
 
         @Suppress("CAST_NEVER_SUCCEEDS")
-        val fabView: FloatingActionButton = inflater.inflate(layout, recyclerView.parent as ViewGroup, false) as FloatingActionButton
+        val fabView: FloatingActionButton = inflater.inflate(R.layout.view_fab,
+                recyclerView.parent as ViewGroup, false) as FloatingActionButton
 
         // icon
         fabView.setImageDrawable(iconHandler.getFabIcon(fab.icon))
         // fab color
-        fab
-                .color
-                ?.let {
-                    fabView
-                            .backgroundTintList = ContextCompat
-                            .getColorStateList(context as Context, it)
-                }
+        fab.color?.let {
+            fabView.backgroundTintList = ContextCompat.getColorStateList(context as Context, it)
+        }
 
         // behaviour
         val params = CoordinatorLayout.LayoutParams(fabView.layoutParams)
-        params
-                .behavior = ScrollAwareFABBehavior()
-        fabView
-                .layoutParams = params
-
+                .apply {
+                    behavior = ScrollAwareFABBehavior()
+                    gravity = Gravity.BOTTOM or (if (isLeft) Gravity.START else Gravity.END)
+                    setMargins(16.dpToPx())
+                }
+        fabView.layoutParams = params
 
         // listeners
         RxView
@@ -183,14 +170,11 @@ abstract class NewListFragmentBase : DaggerSupportFragmentBase() {
                 .bindToLifecycle(fabView)
                 .subscribe {
                     // execute defined action if it exists
-                    val clickAction = fab
-                            .onClick
+                    val clickAction = fab.onClick
                     if (clickAction != null) {
                         clickAction()
                     } else {
-                        Toast
-                                .makeText(context as Context, getString(fab.description), Toast.LENGTH_LONG)
-                                .show()
+                        Toast.makeText(context as Context, getString(fab.description), Toast.LENGTH_LONG).show()
                     }
                 }
 
@@ -199,22 +183,17 @@ abstract class NewListFragmentBase : DaggerSupportFragmentBase() {
                 .bindToLifecycle(fabView)
                 .subscribe {
                     // execute defined action if it exists
-                    val longClickAction = fab
-                            .onLongClick
+                    val longClickAction = fab.onLongClick
                     if (longClickAction != null) {
                         longClickAction()
                     } else {
-                        Toast
-                                .makeText(context as Context, getString(fab.description), Toast.LENGTH_LONG)
-                                .show()
+                        Toast.makeText(context as Context, getString(fab.description), Toast.LENGTH_LONG).show()
                     }
                 }
 
-        fabButtonViews
-                .add(fabView)
+        fabButtonViews.add(fabView)
         val parent = recyclerView.parent as ViewGroup
-        parent
-                .addView(fabView)
+        parent.addView(fabView)
     }
 
     /**
