@@ -5,6 +5,8 @@ import android.view.View
 import androidx.navigation.Navigation
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
+import com.eightbitlab.rxbus.Bus
+import com.eightbitlab.rxbus.registerInBus
 import com.github.ajalt.timberkt.Timber
 import com.mikepenz.materialdrawer.AccountHeader
 import com.mikepenz.materialdrawer.AccountHeaderBuilder
@@ -17,6 +19,7 @@ import com.mikepenz.materialdrawer.model.SecondaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IProfile
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.event.ThemeChangedEvent
 import de.markusressel.mkdocseditor.extensions.common.android.isTablet
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.About
@@ -40,7 +43,7 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
         get() = R.layout.activity_main
 
     protected val navController by lazy { Navigation.findNavController(this, R.id.navHostFragment) }
-    protected lateinit var navigationDrawer: Drawer
+    private lateinit var navigationDrawer: Drawer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super
@@ -92,20 +95,11 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
         super
                 .onStart()
 
-        //        Bus
-        //                .observe<ThemeChangedEvent>()
-        //                .subscribe {
-        //                    restartActivity()
-        //                }
-        //                .registerInBus(this)
-    }
-
-    private fun restartActivity() {
-        // TODO: replace this with navController stuff
-//        navigator
-//                .startActivity(this, Navigator.NavigationPages.Main, Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-//        navigator
-//                .navigateTo(DrawerItemHolder.Settings)
+        Bus.observe<ThemeChangedEvent>()
+                .subscribe {
+                    recreate()
+                }
+                .registerInBus(this)
     }
 
     private fun initAccountHeader(): AccountHeader {
@@ -129,8 +123,6 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
 
     private fun getProfiles(): MutableList<IProfile<*>> {
         val profiles: MutableList<IProfile<*>> = LinkedList()
-
-        // TODO: implement different servers as profiles
 
         profiles.add(ProfileDrawerItem()
                 .withName("Markus Ressel")
