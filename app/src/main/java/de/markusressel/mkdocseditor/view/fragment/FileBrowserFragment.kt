@@ -90,9 +90,6 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         sectionPersistenceManager
                 .standardOperation()
                 .removeAll()
-        documentContentPersistenceManager
-                .standardOperation()
-                .removeAll()
 
         val rootSection = data as SectionEntity
 

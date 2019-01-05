@@ -196,16 +196,17 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
             currentZoom = entity.zoomLevel
             currentXPosition = entity.panX
             currentYPosition = entity.panY
+
+            codeEditorView.post {
+                // zoom to last saved state
+                codeEditorView.moveTo(currentZoom, currentXPosition, currentYPosition, true)
+            }
         }
 
         codeEditorView.setText(currentText ?: "")
         entity?.let { codeEditorView.editTextView.setSelection(entity.selection) }
         codeEditorView.setEditable(editable)
 
-        codeEditorView.post {
-            // zoom to last saved state
-            codeEditorView.moveTo(currentZoom, currentXPosition, currentYPosition, true)
-        }
         initialTextLoaded = true
     }
 
