@@ -134,10 +134,11 @@ dependencies {
     implementation 'com.afollestad.material-dialogs:core:2.0.0-rc7'
 
     // Code editor
-    def codeEditorVersion = "v0.5.0"
-    implementation("com.github.markusressel.KodeEditor:library:${codeEditorVersion}")
-    implementation("com.github.markusressel.KodeEditor:markdown:${codeEditorVersion}")
-    implementation("com.github.markusressel.KodeEditor:syntaxhighlighter:${codeEditorVersion}")
+//    def codeEditorVersion = "v0.5.0"
+    def codeEditorVersion = "dev-SNAPSHOT"
+    implementation("com.github.markusressel.KodeEditor:library:${codeEditorVersion}") { changing = true}
+    implementation("com.github.markusressel.KodeEditor:markdown:${codeEditorVersion}") { changing = true}
+    implementation("com.github.markusressel.KodeEditor:syntaxhighlighter:${codeEditorVersion}") { changing = true}
 
     // AboutLibraries ("About" screen)
     implementation("com.mikepenz:aboutlibraries:$aboutlibrariesVersion@aar") {
@@ -150,5 +151,9 @@ dependencies {
     implementation 'android.arch.navigation:navigation-fragment:1.0.0-alpha09'
 }
 
-configurations.all {
+configurations.all() {
+    // Check for updates every build
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+//    resolutionStrategy.force "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+//    resolutionStrategy.force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }

@@ -6,6 +6,8 @@ import android.os.Bundle
 import android.view.*
 import android.widget.Toast
 import androidx.annotation.CallSuper
+import com.afollestad.materialdialogs.MaterialDialog
+import com.afollestad.materialdialogs.callbacks.onDismiss
 import com.eightbitlab.rxbus.Bus
 import com.eightbitlab.rxbus.registerInBus
 import com.github.ajalt.timberkt.Timber
@@ -16,6 +18,7 @@ import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import com.trello.rxlifecycle2.LifecycleProvider
 import com.trello.rxlifecycle2.android.FragmentEvent
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
+import de.markusressel.commons.android.core.doAsync
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.commons.android.material.snack
 import de.markusressel.commons.android.material.toast
@@ -29,6 +32,7 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntit
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
 import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
+import de.markusressel.mkdocseditor.extensions.common.android.context
 import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
 import de.markusressel.mkdocseditor.view.activity.base.OfflineModeManager
 import de.markusressel.mkdocseditor.view.component.LoadingComponent
@@ -40,7 +44,6 @@ import de.markusressel.mkdocsrestclient.websocket.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.websocket.EditRequestEntity
 import de.markusressel.mkdocsrestclient.websocket.diff.diff_match_patch
 import io.objectbox.kotlin.query
-import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
@@ -78,7 +81,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
     private var currentXPosition by savedInstanceState(0F)
     private var currentYPosition by savedInstanceState(0F)
-    private var currentZoom: Float? by savedInstanceState()
+    private var currentZoom: Float by savedInstanceState(1F)
 
     private var initialTextLoaded = false
 
@@ -152,24 +155,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
         syncManager = DocumentSyncManager(documentId = documentId, url = "ws://$host/document/$documentId/ws", basicAuthConfig = BasicAuthConfig(preferencesHolder.basicAuthUserPreference.persistedValue, preferencesHolder.basicAuthPasswordPreference.persistedValue), onInitialText = {
             runOnUiThread {
-                codeEditorView
-                        .snack("Connected :)", LENGTH_SHORT)
-
-                loadingComponent
-                        .showContent()
-
-                currentText = it
-                codeEditorView
-                        .setText(it)
-
-                codeEditorView
-                        .setEditable(true)
-
-                val zoom = currentZoom ?: 1F
-                codeEditorView
-                        .moveTo(zoom, currentXPosition, currentYPosition, false)
-
-                initialTextLoaded = true
+                codeEditorView.snack("Connected :)", LENGTH_SHORT)
+                loadingComponent.showContent()
+                restoreEditorFromCache(getCachedEditorState(), text = it, editable = true)
             }
         }, onPatchReceived = { editRequest ->
             processEditRequest(editRequest)
@@ -192,6 +180,32 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         })
     }
 
+    private fun restoreEditorFromCache(entity: DocumentContentEntity? = null, text: String? = null, editable: Boolean) {
+        currentText = text ?: ""
+        entity?.let {
+            if (text != null) {
+                // when an entity exists and a new text is given update the entity
+                it.text = text
+            }
+
+            // restore values from cache
+            currentText = entity.text
+            currentZoom = entity.zoomLevel
+            currentXPosition = entity.panX
+            currentYPosition = entity.panY
+        }
+
+        codeEditorView.setText(currentText)
+        entity?.let { codeEditorView.editTextView.setSelection(entity.selection) }
+        codeEditorView.setEditable(editable)
+
+        codeEditorView.post {
+            // zoom to last saved state
+            codeEditorView.moveTo(currentZoom, currentXPosition, currentYPosition, true)
+        }
+        initialTextLoaded = true
+    }
+
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
         super
                 .onCreateOptionsMenu(menu, inflater)
@@ -211,14 +225,35 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
      * Loads the last offline version of this page from persistence
      */
     private fun loadTextFromPersistence() {
-        documentContentPersistenceManager.standardOperation().query {
-            DocumentContentEntity_.documentId.eq(documentId)
-        }.findUnique()?.text?.let {
-            currentText = it
-            codeEditorView.setText(it)
+        val entity = getCachedEditorState()
+
+        if (entity != null) {
+            runOnUiThread {
+                restoreEditorFromCache(entity, editable = false)
+            }
+        } else {
+            MaterialDialog(context()).show {
+                title(R.string.no_offline_version)
+                negativeButton(android.R.string.ok, click = {
+                    it.dismiss()
+                })
+                onDismiss {
+                    // TODO: somehow do this with navigation library
+                    requireActivity().finish()
+                }
+            }
         }
 
         loadingComponent.showContent(animated = true)
+    }
+
+    /**
+     * Returns the cache entity for this editor and document
+     */
+    private fun getCachedEditorState(): DocumentContentEntity? {
+        return documentContentPersistenceManager.standardOperation().query {
+            DocumentContentEntity_.documentId.eq(documentId)
+        }.findUnique()
     }
 
     /**
@@ -241,8 +276,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         }
 
         if (previouslySentPatches.containsKey(editRequest.requestId)) {
-            previouslySentPatches
-                    .remove(editRequest.requestId)
+            previouslySentPatches.remove(editRequest.requestId)
             return
         }
 
@@ -256,34 +290,48 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
             currentText = diffMatchPatch.patch_apply(patches, currentText)[0] as String
 
-            cacheCurrentText(currentText)
-
             // set new cursor position
             val newSelection = calculateNewSelectionIndex(oldSelection, patches)
                     .coerceIn(0, currentText.length)
 
+            codeEditorView.setText(currentText)
+            codeEditorView.editTextView.setSelection(newSelection)
 
-            codeEditorView
-                    .setText(currentText)
-
-            codeEditorView
-                    .editTextView
-                    .setSelection(newSelection)
+            doAsync { updateEditorStateCache() }
         }
     }
 
     /**
      * Saves the current text in a persistent cache
      */
-    private fun cacheCurrentText(currentText: String) {
+    private fun updateEditorStateCache(ignoreText: Boolean = false) {
         val documentEntity = documentPersistenceManager.standardOperation().query {
-            DocumentEntity_.id.eq(documentId)
+            equal(DocumentEntity_.id, documentId)
         }.findUnique()
 
-        val entity = DocumentContentEntity(0, documentId, currentText)
-        entity.documentEntity.target = documentEntity
+        val documentContentEntity = documentContentPersistenceManager.standardOperation().query {
+            equal(DocumentContentEntity_.documentId, documentId)
+        }.findUnique() ?: DocumentContentEntity(0, documentId)
 
-        documentContentPersistenceManager.standardOperation().put(entity)
+        // attach parent if necessary
+        if (documentContentEntity.documentEntity.isNull) {
+            documentContentEntity.documentEntity.target = documentEntity
+        }
+
+        if (!ignoreText) {
+            documentContentEntity.text = currentText
+        }
+
+        currentXPosition = codeEditorView.panX
+        currentYPosition = codeEditorView.panY
+        currentZoom = codeEditorView.zoom
+
+        documentContentEntity.zoomLevel = currentZoom
+        documentContentEntity.selection = codeEditorView.editTextView.selectionStart
+        documentContentEntity.panX = currentXPosition
+        documentContentEntity.panY = currentYPosition
+
+        documentContentPersistenceManager.standardOperation().put(documentContentEntity)
     }
 
     private fun calculateNewSelectionIndex(oldSelection: Int, patches: LinkedList<diff_match_patch.Patch>): Int {
@@ -335,10 +383,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                 }
                 .registerInBus(this)
 
-        codeEditorView = view
-                .findViewById(R.id.codeEditorView)
-        codeEditorView
-                .setSyntaxHighlighter(MarkdownSyntaxHighlighter())
+        codeEditorView = view.findViewById(R.id.codeEditorView)
+        codeEditorView.setSyntaxHighlighter(MarkdownSyntaxHighlighter())
+        codeEditorView.mMoveWithCursorEnabled = false
 
         // disable user input in offline mode
         codeEditorView.setEditable(offlineModeManager.isEnabled())
@@ -356,26 +403,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                     context
                             ?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
                 })
-
-        // zoom in
-        codeEditorView
-                .post {
-                    // remember zoom and pan
-                    Observable
-                            .interval(500, TimeUnit.MILLISECONDS)
-                            .filter {
-                                initialTextLoaded
-                            }
-                            .bindToLifecycle(codeEditorView)
-                            .subscribeBy(onNext = {
-                                currentXPosition = codeEditorView
-                                        .panX
-                                currentYPosition = codeEditorView
-                                        .panY
-                                currentZoom = codeEditorView
-                                        .zoom
-                            })
-                }
     }
 
     @Synchronized
@@ -401,6 +428,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         } else {
             reconnectToServer()
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+
+        updateEditorStateCache(ignoreText = true)
     }
 
     override fun onStop() {

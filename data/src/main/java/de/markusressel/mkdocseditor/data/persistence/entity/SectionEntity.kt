@@ -22,25 +22,16 @@ class SectionEntity(entityId: Long = 0, id: String = "", name: String = "") : Se
 fun SectionModel.asEntity(): SectionEntity {
     val s = SectionEntity(0, this.id, this.name)
 
-    s
-            .subsections
-            .addAll(this.subsections.map {
-                it
-                        .asEntity()
-            })
+    s.subsections.addAll(this.subsections.map {
+        it.asEntity()
+    })
 
-    s
-            .documents
-            .addAll(this.documents.map {
-                it
-                        .asEntity(s)
-            })
-    s
-            .resources
-            .addAll(this.resources.map {
-                it
-                        .asEntity(s)
-            })
+    s.documents.addAll(this.documents.map {
+        it.asEntity(s)
+    })
+    s.resources.addAll(this.resources.map {
+        it.asEntity(s)
+    })
 
     return s
 }

@@ -10,8 +10,13 @@ import io.objectbox.relation.ToOne
 @Entity
 data class DocumentContentEntity(@Id var entityId: Long = 0,
                                  val documentId: String = "",
-                                 val text: String = "") {
+                                 var text: String = "",
+                                 var selection: Int = 0,
+                                 var zoomLevel: Float = 1F,
+                                 var panX: Float = 0F,
+                                 var panY: Float = 0F) {
 
     lateinit var documentEntity: ToOne<DocumentEntity>
+
 
 }

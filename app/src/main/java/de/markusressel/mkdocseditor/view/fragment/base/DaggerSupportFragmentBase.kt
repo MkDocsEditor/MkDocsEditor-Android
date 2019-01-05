@@ -25,10 +25,13 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.LayoutRes
 import androidx.databinding.ViewDataBinding
+import androidx.navigation.NavController
+import androidx.navigation.Navigation
 import dagger.android.AndroidInjector
 import dagger.android.DispatchingAndroidInjector
 import dagger.android.support.AndroidSupportInjection
 import dagger.android.support.HasSupportFragmentInjector
+import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.view.IconHandler
 import javax.inject.Inject
 
@@ -57,6 +60,8 @@ abstract class DaggerSupportFragmentBase : LifecycleFragmentBase(), HasSupportFr
     @Inject
     protected lateinit var iconHandler: IconHandler
 
+    protected lateinit var navController: NavController
+
     /**
      * The layout resource for this Activity
      */
@@ -76,6 +81,11 @@ abstract class DaggerSupportFragmentBase : LifecycleFragmentBase(), HasSupportFr
             alternative
                     ?: newContainer
         }
+    }
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        navController = Navigation.findNavController(requireActivity(), R.id.navHostFragment)
     }
 
     /**
