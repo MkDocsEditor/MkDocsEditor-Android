@@ -27,15 +27,10 @@ data class DrawerMenuItem(@IdRes val id: Int, @StringRes val title: Int, val ico
 
         drawableRes
                 ?.let {
-                    val drawable = iconHandler
-                            .context
-                            .getDrawable(drawableRes)
-                    val color = iconHandler
-                            .themeHelper
+                    val drawable = iconHandler.context.getDrawable(drawableRes)
+                    val color = iconHandler.themeHelper
                             .getThemeAttrColor(iconHandler.context, android.R.attr.textColorPrimary)
-                    drawable
-                            .setColorFilter(color, PorterDuff.Mode.SRC_ATOP)
-
+                    drawable.setColorFilter(color, PorterDuff.Mode.SRC_ATOP)
                     return drawable
                 }
 

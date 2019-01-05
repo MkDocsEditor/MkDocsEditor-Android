@@ -33,4 +33,8 @@
         android:name="de.markusressel.mkdocseditor.view.fragment.AboutPage"
         android:label="@string/menu_item_about" />
 
+    <fragment
+        android:id="@+id/none"
+        android:label="none" />
+
 </navigation>

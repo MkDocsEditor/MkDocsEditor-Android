@@ -105,10 +105,35 @@
           "name": "subsections"
         }
       ]
+    },
+    {
+      "id": "4:6020327021425912355",
+      "lastPropertyId": "4:9214835000721331869",
+      "name": "DocumentContentEntity",
+      "properties": [
+        {
+          "id": "1:4010330864444557434",
+          "name": "entityId"
+        },
+        {
+          "id": "2:4451967370208148517",
+          "name": "documentId"
+        },
+        {
+          "id": "3:8030643017582213184",
+          "name": "text"
+        },
+        {
+          "id": "4:9214835000721331869",
+          "indexId": "4:1862623307980537823",
+          "name": "documentEntityId"
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "3:235719595631472099",
-  "lastIndexId": "3:7384408086141472050",
+  "lastEntityId": "4:6020327021425912355",
+  "lastIndexId": "4:1862623307980537823",
   "lastRelationId": "5:6680787238725584468",
   "lastSequenceId": "0:0",
   "modelVersion": 4,

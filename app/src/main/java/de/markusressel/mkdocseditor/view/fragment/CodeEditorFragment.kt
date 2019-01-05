@@ -6,7 +6,11 @@ import android.os.Bundle
 import android.view.*
 import android.widget.Toast
 import androidx.annotation.CallSuper
+import com.eightbitlab.rxbus.Bus
+import com.eightbitlab.rxbus.registerInBus
 import com.github.ajalt.timberkt.Timber
+import com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE
+import com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
 import com.jakewharton.rxbinding2.widget.RxTextView
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import com.trello.rxlifecycle2.LifecycleProvider
@@ -19,8 +23,12 @@ import de.markusressel.commons.logging.prettyPrint
 import de.markusressel.kodeeditor.library.markdown.MarkdownSyntaxHighlighter
 import de.markusressel.kodeeditor.library.view.CodeEditorView
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
+import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
 import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
 import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
@@ -54,11 +62,14 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     lateinit var documentPersistenceManager: DocumentPersistenceManager
 
     @Inject
+    lateinit var documentContentPersistenceManager: DocumentContentPersistenceManager
+
+    @Inject
     lateinit var chromeCustomTabManager: ChromeCustomTabManager
 
     private lateinit var codeEditorView: CodeEditorView
 
-    val documentId by lazy {
+    private val documentId by lazy {
         arguments?.getString(KEY_ID)!!
     }
 
@@ -129,25 +140,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         optionsMenuComponent
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-        super
-                .onCreateOptionsMenu(menu, inflater)
-        optionsMenuComponent
-                .onCreateOptionsMenu(menu, inflater)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        if (super.onOptionsItemSelected(item)) {
-            return true
-        }
-        return optionsMenuComponent
-                .onOptionsItemSelected(item)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        super
-                .onCreate(savedInstanceState)
-
+        super.onCreate(savedInstanceState)
         val host = preferencesHolder
                 .connectionUriPreference
                 .persistedValue
@@ -155,7 +149,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         syncManager = DocumentSyncManager(documentId = documentId, url = "ws://$host/document/$documentId/ws", basicAuthConfig = BasicAuthConfig(preferencesHolder.basicAuthUserPreference.persistedValue, preferencesHolder.basicAuthPasswordPreference.persistedValue), onInitialText = {
             runOnUiThread {
                 codeEditorView
-                        .snack("Connected :)", com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
+                        .snack("Connected :)", LENGTH_SHORT)
 
                 loadingComponent
                         .showContent()
@@ -176,36 +170,63 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         }, onPatchReceived = { editRequest ->
             processEditRequest(editRequest)
         }, onError = { code, throwable ->
-            throwable
-                    ?.let {
-                        runOnUiThread {
-                            codeEditorView
-                                    .setEditable(false)
-                            loadingComponent
-                                    .showContent(true)
+            throwable?.let {
+                runOnUiThread {
+                    codeEditorView.setEditable(false)
+                    loadingComponent.showContent(true)
 
-                            codeEditorView
-                                    .snack(text = "Connection dropped :(", duration = com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE, actionTitle = "Reconnect", action = { _ ->
-                                        reconnectToServer()
-                                    })
-                        }
-                        Timber
-                                .e(throwable) { "Websocket error code: $code" }
-                    }
+                    codeEditorView.snack(
+                            text = "Connection dropped :(",
+                            duration = LENGTH_INDEFINITE,
+                            actionTitle = "Reconnect",
+                            action = {
+                                reconnectToServer()
+                            })
+                }
+                Timber.e(throwable) { "Websocket error code: $code" }
+            }
         })
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
+        super
+                .onCreateOptionsMenu(menu, inflater)
+        optionsMenuComponent
+                .onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        if (super.onOptionsItemSelected(item)) {
+            return true
+        }
+        return optionsMenuComponent
+                .onOptionsItemSelected(item)
+    }
+
+    /**
+     * Loads the last offline version of this page from persistence
+     */
+    private fun loadTextFromPersistence() {
+        documentContentPersistenceManager.standardOperation().query {
+            DocumentContentEntity_.documentId.eq(documentId)
+        }.findUnique()?.text?.let {
+            currentText = it
+            codeEditorView.setText(it)
+        }
+
+        loadingComponent.showContent(animated = true)
+    }
+
+    /**
+     * Disconnects from the server (if necessary) and tries to reestablish a connection
+     */
     private fun reconnectToServer() {
-        loadingComponent
-                .showLoading()
+        loadingComponent.showLoading()
         if (syncManager.isConnected()) {
-            syncManager
-                    .disconnect(1000, "Editor want's to refresh connection")
-            syncManager
-                    .connect()
+            syncManager.disconnect(1000, "Editor want's to refresh connection")
+            syncManager.connect()
         } else {
-            syncManager
-                    .connect()
+            syncManager.connect()
         }
     }
 
@@ -231,6 +252,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
             currentText = diffMatchPatch.patch_apply(patches, currentText)[0] as String
 
+            cacheCurrentText(currentText)
+
             // set new cursor position
             val newSelection = calculateNewSelectionIndex(oldSelection, patches)
                     .coerceIn(0, currentText.length)
@@ -245,65 +268,78 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         }
     }
 
+    /**
+     * Saves the current text in a persistent cache
+     */
+    private fun cacheCurrentText(currentText: String) {
+        val documentEntity = documentPersistenceManager.standardOperation().query {
+            DocumentEntity_.id.eq(documentId)
+        }.findUnique()
+
+        val entity = DocumentContentEntity(0, documentId, currentText)
+        entity.documentEntity.target = documentEntity
+
+        documentContentPersistenceManager.standardOperation().put(entity)
+    }
+
     private fun calculateNewSelectionIndex(oldSelection: Int, patches: LinkedList<diff_match_patch.Patch>): Int {
         var newSelection = oldSelection
 
         var currentIndex: Int
         // calculate how many characters have been inserted before the cursor
-        patches
-                .forEach {
-                    val patch = it
-                    currentIndex = patch
-                            .start1
+        patches.forEach {
+            val patch = it
+            currentIndex = patch.start1
 
-                    it
-                            .diffs
-                            .forEach {
-                                val diff = it
+            it.diffs.forEach {
+                val diff = it
 
-                                when (diff.operation) {
-                                    diff_match_patch.Operation.DELETE -> {
-                                        if (currentIndex < newSelection) {
-                                            newSelection -= diff
-                                                    .text
-                                                    .length
-                                        }
-                                    }
-                                    diff_match_patch.Operation.INSERT -> {
-                                        if (currentIndex < newSelection) {
-                                            newSelection += diff
-                                                    .text
-                                                    .length
-                                        }
-                                    }
-                                    else -> {
-                                        currentIndex += diff
-                                                .text
-                                                .length
-                                    }
-                                }
-                            }
+                when (diff.operation) {
+                    diff_match_patch.Operation.DELETE -> {
+                        if (currentIndex < newSelection) {
+                            newSelection -= diff.text.length
+                        }
+                    }
+                    diff_match_patch.Operation.INSERT -> {
+                        if (currentIndex < newSelection) {
+                            newSelection += diff.text.length
+                        }
+                    }
+                    else -> {
+                        currentIndex += diff.text.length
+                    }
                 }
+            }
+        }
 
         return newSelection
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val parent = super.onCreateView(inflater, container, savedInstanceState) as ViewGroup
-        return loadingComponent
-                .onCreateView(inflater, parent, savedInstanceState)
+        return loadingComponent.onCreateView(inflater, parent, savedInstanceState)
     }
 
     @SuppressLint("ClickableViewAccessibility")
     @CallSuper
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super
-                .onViewCreated(view, savedInstanceState)
+        super.onViewCreated(view, savedInstanceState)
+
+        Bus.observe<OfflineModeChangedEvent>()
+                .subscribe {
+                    codeEditorView.setEditable(!it.enabled)
+                }
+                .registerInBus(this)
 
         codeEditorView = view
                 .findViewById(R.id.codeEditorView)
         codeEditorView
                 .setSyntaxHighlighter(MarkdownSyntaxHighlighter())
+
+        // disable user input in offline mode
+        if (preferencesHolder.offlineModePreference.persistedValue) {
+            codeEditorView.setEditable(false)
+        }
 
         RxTextView
                 .textChanges(codeEditorView.editTextView)
@@ -343,13 +379,11 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     @Synchronized
     private fun sendPatchIfChanged(it: CharSequence) {
         if (currentText.contentEquals(it)) {
-            Timber
-                    .e { "TEXT IST GLEICH" }
+            Timber.e { "TEXT IST GLEICH" }
             return
         }
 
-        val newText = it
-                .toString()
+        val newText = it.toString()
 
         // TODO: only send patch if the change is coming from user input
         val requestId = (syncManager.sendPatch(currentText, newText))
@@ -358,19 +392,18 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     }
 
     override fun onStart() {
-        super
-                .onStart()
+        super.onStart()
 
-        syncManager
-                .connect()
+        if (preferencesHolder.offlineModePreference.persistedValue) {
+            loadTextFromPersistence()
+        } else {
+            reconnectToServer()
+        }
     }
 
     override fun onStop() {
-        syncManager
-                .disconnect(1000, "Editor was closed")
-
-        super
-                .onStop()
+        syncManager.disconnect(1000, "Editor was closed")
+        super.onStop()
     }
 
     companion object {
@@ -380,11 +413,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         fun newInstance(id: String): CodeEditorFragment {
             val fragment = CodeEditorFragment()
             val bundle = Bundle()
-            bundle
-                    .putString(KEY_ID, id)
-
-            fragment
-                    .arguments = bundle
+            bundle.putString(KEY_ID, id)
+            fragment.arguments = bundle
 
             return fragment
         }

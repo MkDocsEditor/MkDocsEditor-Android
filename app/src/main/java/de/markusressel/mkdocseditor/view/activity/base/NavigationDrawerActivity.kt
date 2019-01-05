@@ -2,6 +2,9 @@ package de.markusressel.mkdocseditor.view.activity.base
 
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
+import androidx.appcompat.widget.AppCompatImageView
+import androidx.core.view.get
 import androidx.navigation.Navigation
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
@@ -12,18 +15,18 @@ import com.mikepenz.materialdrawer.AccountHeader
 import com.mikepenz.materialdrawer.AccountHeaderBuilder
 import com.mikepenz.materialdrawer.Drawer
 import com.mikepenz.materialdrawer.DrawerBuilder
-import com.mikepenz.materialdrawer.model.DividerDrawerItem
-import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
-import com.mikepenz.materialdrawer.model.ProfileDrawerItem
-import com.mikepenz.materialdrawer.model.SecondaryDrawerItem
+import com.mikepenz.materialdrawer.model.*
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IProfile
+import de.markusressel.commons.android.material.toast
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
 import de.markusressel.mkdocseditor.event.ThemeChangedEvent
 import de.markusressel.mkdocseditor.extensions.common.android.isTablet
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.About
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.FileBrowser
+import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.OfflineMode
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.Settings
 import de.markusressel.mkdocseditor.navigation.DrawerMenuItem
 import de.markusressel.mkdocseditor.view.fragment.FileBrowserFragment
@@ -31,6 +34,7 @@ import de.markusressel.mkdocseditor.view.fragment.preferences.PreferencesFragmen
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.view_toolbar.*
 import java.util.*
+import javax.inject.Inject
 
 /**
  * A base activity that provides the full navigation navigationDrawer implementation
@@ -44,6 +48,9 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
 
     protected val navController by lazy { Navigation.findNavController(this, R.id.navHostFragment) }
     private lateinit var navigationDrawer: Drawer
+
+    @Inject
+    protected lateinit var offlineModeManager: OfflineModeManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super
@@ -98,6 +105,12 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
         Bus.observe<ThemeChangedEvent>()
                 .subscribe {
                     recreate()
+                }
+                .registerInBus(this)
+
+        Bus.observe<OfflineModeChangedEvent>()
+                .subscribe {
+                    toast(text = "Offline Mode: ${it.enabled}")
                 }
                 .registerInBus(this)
     }
@@ -162,20 +175,15 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
                     false
                 }
 
-        listOf(FileBrowser)
-                .forEach {
-                    menuItemList
-                            .add(createPrimaryMenuItem(it, clickListener))
-                }
-
-        menuItemList
-                .add(DividerDrawerItem())
-
-        menuItemList
-                .add(createPrimaryMenuItem(Settings, clickListener))
-
-        menuItemList
-                .add(createSecondaryMenuItem(About, clickListener))
+        menuItemList.addAll(
+                arrayOf(
+                        createPrimaryMenuItem(FileBrowser, clickListener),
+                        DividerDrawerItem(),
+                        createPrimaryMenuItem(Settings, clickListener),
+                        createSecondaryMenuItem(About, clickListener),
+                        DividerDrawerItem(),
+                        createOfflineModeMenuItem(OfflineMode, clickListener,
+                                defaultValue = preferencesHolder.offlineModePreference.persistedValue)))
 
         return menuItemList
     }
@@ -196,6 +204,24 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
                 .withIcon(menuItem.getIcon(iconHandler))
                 .withSelectable(menuItem.selectable)
                 .withOnDrawerItemClickListener(clickListener)
+    }
+
+    private fun createOfflineModeMenuItem(menuItem: DrawerMenuItem, clickListener: Drawer.OnDrawerItemClickListener, defaultValue: Boolean = false): IDrawerItem<*, *> {
+        return SwitchDrawerItem()
+                .withName(menuItem.title)
+                .withIdentifier(menuItem.id.toLong())
+                .withIcon(menuItem.getIcon(iconHandler))
+                .withSelectable(menuItem.selectable)
+                .withOnDrawerItemClickListener(clickListener)
+                .withOnCheckedChangeListener { drawerItem, buttonView, isChecked ->
+                    offlineModeManager.setEnabled(isChecked)
+
+                    val parentView = buttonView.parent as ViewGroup
+                    val iconView = parentView[0] as AppCompatImageView
+
+                    iconView.setColorFilter(offlineModeManager.getColor())
+                }.withChecked(defaultValue)
+                .withIconColor(offlineModeManager.getColor())
     }
 
     override fun onBackPressed() {

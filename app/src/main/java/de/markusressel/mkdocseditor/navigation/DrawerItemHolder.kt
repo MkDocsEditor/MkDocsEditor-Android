@@ -27,6 +27,12 @@ object DrawerItemHolder {
             icon = MaterialDesignIconic.Icon.gmi_info,
             selectable = false)
 
+    val OfflineMode = DrawerMenuItem(
+            id = R.id.none,
+            title = R.string.menu_item_offline_mode,
+            icon = MaterialDesignIconic.Icon.gmi_airplanemode_active,
+            selectable = false)
+
     fun fromId(drawerItemIdentifier: Int): DrawerMenuItem? {
         return when (drawerItemIdentifier) {
             FileBrowser.id -> FileBrowser
