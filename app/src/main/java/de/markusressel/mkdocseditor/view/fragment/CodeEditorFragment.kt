@@ -164,12 +164,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
             processEditRequest(editRequest)
         }, onError = { code, throwable ->
             throwable?.let {
-                runOnUiThread {
-                    codeEditorView.setEditable(false)
-                    loadingComponent.showContent(true)
+                // try to load from persistence
+                loadTextFromPersistence()
 
+                runOnUiThread {
                     codeEditorView.snack(
-                            text = "Connection dropped :(",
+                            text = "No connection :(",
                             duration = LENGTH_INDEFINITE,
                             actionTitle = "Reconnect",
                             action = {

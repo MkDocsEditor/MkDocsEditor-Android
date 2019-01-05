@@ -15,6 +15,7 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
     private val client: OkHttpClient = OkHttpClient
             .Builder()
             .readTimeout(0, TimeUnit.MILLISECONDS)
+            .connectTimeout(3, TimeUnit.SECONDS)
             //            .pingInterval(30, TimeUnit.SECONDS)
             .authenticator { route, response ->
                 val credential = Credentials
@@ -160,10 +161,6 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
         client.dispatcher()
                 .executorService()
                 .shutdown()
-    }
-
-    companion object {
-        const val TAG = "DocumentSyncManager"
     }
 
 }
