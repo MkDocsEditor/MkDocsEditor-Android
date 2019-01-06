@@ -39,6 +39,11 @@ dependencies {
     // okhttp (for websockets)
     implementation 'com.squareup.okhttp3:okhttp:3.11.0'
 
+    api "com.github.markusressel.commons:commons_core:master-SNAPSHOT"
+    api "com.github.markusressel.commons:commons_logging:master-SNAPSHOT"
+    api "com.github.markusressel.commons:commons_android_core:master-SNAPSHOT"
+    api "com.github.markusressel.commons:commons_android_material:master-SNAPSHOT"
+
     // Logging
     api 'com.jakewharton.timber:timber:4.7.1'
     api "com.github.ajalt:timberkt:${rootProject.ext.timberKtVersion}"

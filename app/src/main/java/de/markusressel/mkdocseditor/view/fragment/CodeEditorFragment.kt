@@ -193,19 +193,17 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
             if (text != null) {
                 // when an entity exists and a new text is given update the entity
                 it.text = text
-            }
-
-            // restore values from cache
-            if (text == null) {
+            } else {
+                // restore values from cache
                 currentText = entity.text
             }
+
             currentZoom = entity.zoomLevel
             codeEditorView.post {
                 // zoom to last saved state
                 val absolutePosition = computeAbsolutePosition(PointF(entity.panX, entity.panY))
                 currentPosition.set(absolutePosition.x, absolutePosition.y)
 
-                // reset position for animation
                 codeEditorView.moveTo(currentZoom, absolutePosition.x, absolutePosition.y, true)
             }
         }
@@ -360,8 +358,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
      */
     private fun computeAbsolutePosition(percentage: PointF): PointF {
         val engine = codeEditorView.engine
-        return PointF(-1 * percentage.x * engine.computeHorizontalScrollRange(),
-                -1 * percentage.y * engine.computeVerticalScrollRange()
+        return PointF(-1 * percentage.x * (engine.computeHorizontalScrollRange() / engine.realZoom),
+                -1 * percentage.y * (engine.computeVerticalScrollRange() / engine.realZoom)
         )
     }
 

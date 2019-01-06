@@ -1,8 +1,8 @@
 package de.markusressel.mkdocsrestclient.websocket
 
-import android.os.AsyncTask
 import com.github.salomonbrys.kotson.jsonObject
 import com.google.gson.Gson
+import de.markusressel.commons.android.core.doAsync
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.websocket.diff.diff_match_patch
 import okhttp3.*
@@ -98,18 +98,11 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
 
         }
 
-        webSocket = client
-                .newWebSocket(request, listener)
+        webSocket = client.newWebSocket(request, listener)
     }
 
     private fun callListenerAsync(listener: () -> Unit) {
-        object : AsyncTask<Void, Void, Void?>() {
-            override fun doInBackground(vararg p0: Void?): Void? {
-                listener()
-                return null
-            }
-        }
-                .execute()
+        doAsync { listener() }
     }
 
     /**
