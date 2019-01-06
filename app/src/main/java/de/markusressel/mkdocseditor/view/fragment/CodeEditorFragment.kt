@@ -2,6 +2,7 @@ package de.markusressel.mkdocseditor.view.fragment
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.PointF
 import android.os.Bundle
 import android.view.*
 import android.widget.Toast
@@ -80,8 +81,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
     private var currentText: String? by savedInstanceState()
 
-    private var currentXPosition by savedInstanceState(0F)
-    private var currentYPosition by savedInstanceState(0F)
+    private var currentPosition by savedInstanceState(PointF())
     private var currentZoom: Float by savedInstanceState(1F)
 
     private var initialTextLoaded = false
@@ -154,13 +154,19 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                 .connectionUriPreference
                 .persistedValue
 
-        syncManager = DocumentSyncManager(documentId = documentId, url = "ws://$host/document/$documentId/ws", basicAuthConfig = BasicAuthConfig(preferencesHolder.basicAuthUserPreference.persistedValue, preferencesHolder.basicAuthPasswordPreference.persistedValue), onInitialText = {
-            runOnUiThread {
-                codeEditorView.snack("Connected :)", LENGTH_SHORT)
-                loadingComponent.showContent()
-                restoreEditorFromCache(getCachedEditorState(), text = it, editable = true)
-            }
-        }, onPatchReceived = { editRequest ->
+        syncManager = DocumentSyncManager(
+                documentId = documentId,
+                url = "ws://$host/document/$documentId/ws",
+                basicAuthConfig = BasicAuthConfig(
+                        preferencesHolder.basicAuthUserPreference.persistedValue,
+                        preferencesHolder.basicAuthPasswordPreference.persistedValue),
+                onInitialText = {
+                    runOnUiThread {
+                        codeEditorView.snack("Connected :)", LENGTH_SHORT)
+                        loadingComponent.showContent()
+                        restoreEditorFromCache(getCachedEditorState(), text = it, editable = true)
+                    }
+                }, onPatchReceived = { editRequest ->
             processEditRequest(editRequest)
         }, onError = { code, throwable ->
             throwable?.let {
@@ -194,12 +200,13 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                 currentText = entity.text
             }
             currentZoom = entity.zoomLevel
-            currentXPosition = entity.panX
-            currentYPosition = entity.panY
-
             codeEditorView.post {
                 // zoom to last saved state
-                codeEditorView.moveTo(currentZoom, currentXPosition, currentYPosition, true)
+                val absolutePosition = computeAbsolutePosition(PointF(entity.panX, entity.panY))
+                currentPosition.set(absolutePosition.x, absolutePosition.y)
+
+                // reset position for animation
+                codeEditorView.moveTo(currentZoom, absolutePosition.x, absolutePosition.y, true)
             }
         }
 
@@ -211,18 +218,15 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-        super
-                .onCreateOptionsMenu(menu, inflater)
-        optionsMenuComponent
-                .onCreateOptionsMenu(menu, inflater)
+        super.onCreateOptionsMenu(menu, inflater)
+        optionsMenuComponent.onCreateOptionsMenu(menu, inflater)
     }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         if (super.onOptionsItemSelected(item)) {
             return true
         }
-        return optionsMenuComponent
-                .onOptionsItemSelected(item)
+        return optionsMenuComponent.onOptionsItemSelected(item)
     }
 
     /**
@@ -276,10 +280,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     @Synchronized
     private fun processEditRequest(editRequest: EditRequestEntity) {
         if (documentId != this.documentId) {
+            // ignore requests for other documents
             return
         }
 
         if (previouslySentPatches.containsKey(editRequest.requestId)) {
+            // remember if this edit request is the answer to a previously sent patch from us
             previouslySentPatches.remove(editRequest.requestId)
             return
         }
@@ -299,14 +305,14 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
             codeEditorView.setText(currentText ?: "")
             codeEditorView.editTextView.setSelection(newSelection)
 
-            doAsync { updateEditorStateCache(text = currentText) }
+            doAsync { saveEditorState(text = currentText) }
         }
     }
 
     /**
-     * Saves the current text in a persistent cache
+     * Saves the current editor state in a persistent cache
      */
-    private fun updateEditorStateCache(text: String? = null) {
+    private fun saveEditorState(text: String? = null) {
         val documentContentEntity = getCachedEditorState() ?: DocumentContentEntity(0, documentId)
 
         if (getCachedEditorState() == null && text == null) {
@@ -324,16 +330,39 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
         documentContentEntity.text = text!!
 
-        currentXPosition = codeEditorView.panX
-        currentYPosition = codeEditorView.panY
+        currentPosition.set(codeEditorView.panX, codeEditorView.panY)
         currentZoom = codeEditorView.zoom
 
         documentContentEntity.zoomLevel = currentZoom
         documentContentEntity.selection = codeEditorView.editTextView.selectionStart
-        documentContentEntity.panX = currentXPosition
-        documentContentEntity.panY = currentYPosition
+        val positioningPercentage = getCurrentPositionPercentage()
+        documentContentEntity.panX = positioningPercentage.x
+        documentContentEntity.panY = positioningPercentage.y
 
         documentContentPersistenceManager.standardOperation().put(documentContentEntity)
+    }
+
+    /**
+     * Calculates the positioning percentages for x and y axis
+     *
+     * @return a point with horizontal (x) and vertical (y) positioning percentages
+     */
+    private fun getCurrentPositionPercentage(): PointF {
+        val engine = codeEditorView.engine
+        return PointF(engine.computeHorizontalScrollOffset().toFloat() / engine.computeHorizontalScrollRange(),
+                engine.computeVerticalScrollOffset().toFloat() / engine.computeVerticalScrollRange())
+    }
+
+    /**
+     * Takes a point with percentage values and returns a point with the actual absolute coordinates
+     *
+     * @return a point with horizontal (x) and vertical (y) absolute, scale-independent, positioning coordinate values
+     */
+    private fun computeAbsolutePosition(percentage: PointF): PointF {
+        val engine = codeEditorView.engine
+        return PointF(-1 * percentage.x * engine.computeHorizontalScrollRange(),
+                -1 * percentage.y * engine.computeVerticalScrollRange()
+        )
     }
 
     private fun calculateNewSelectionIndex(oldSelection: Int, patches: LinkedList<diff_match_patch.Patch>): Int {
@@ -390,6 +419,26 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
         codeEditorView = view.findViewById(R.id.codeEditorView)
         codeEditorView.setSyntaxHighlighter(MarkdownSyntaxHighlighter())
+//        codeEditorView.engine.addListener(object : ZoomEngine.Listener {
+//            override fun onIdle(engine: ZoomEngine) {
+//            }
+//
+//            override fun onUpdate(engine: ZoomEngine, matrix: Matrix) {
+//                val totalWidth = codeEditorView.contentLayout.width
+//
+//                val panX = engine.panX
+//                val panY = engine.panY
+//
+//                val offsetX = engine.computeHorizontalScrollOffset()
+//                val totalRangeX = engine.computeHorizontalScrollRange()
+//                val percentage = engine.computeHorizontalScrollOffset().toFloat() / engine.computeHorizontalScrollRange()
+//
+//                val offsetXMaybe = totalRangeX * percentage
+//                val offsetFromPan = -panX
+//                val test = 1
+//            }
+//        })
+
         codeEditorView.mMoveWithCursorEnabled = false
 
         // disable user input in offline mode
@@ -438,7 +487,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     override fun onPause() {
         super.onPause()
 
-        updateEditorStateCache(text = currentText)
+        saveEditorState(text = currentText)
     }
 
     override fun onStop() {
