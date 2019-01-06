@@ -454,8 +454,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                 .subscribeBy(onNext = {
                     sendPatchIfChanged(it)
                 }, onError = {
-                    context
-                            ?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
+                    context?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
                 })
     }
 
