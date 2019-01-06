@@ -311,7 +311,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
      * Saves the current editor state in a persistent cache
      */
     private fun saveEditorState(text: String? = null) {
-        val documentContentEntity = getCachedEditorState() ?: DocumentContentEntity(0, documentId)
+        val documentContentEntity = getCachedEditorState()
+                ?: DocumentContentEntity(0, System.currentTimeMillis(), documentId)
 
         if (getCachedEditorState() == null && text == null) {
             // skip if there is no text to save
