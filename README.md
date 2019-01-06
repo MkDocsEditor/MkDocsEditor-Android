@@ -1,4 +1,8 @@
-# MkDocsEditor
+<p align="center" style="font-size: xx-large;">
+  <img alt="Logo" src="app/src/main/ic_launcher-web.png" width="144"/> </br>
+</p>
+
+# MkDocsEditor #
 
 A realtime collaborative editor for MkDocs projects.
 
