@@ -14,8 +14,6 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.callbacks.onDismiss
-import com.eightbitlab.rxbus.Bus
-import com.eightbitlab.rxbus.registerInBus
 import com.github.ajalt.timberkt.Timber
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE
@@ -41,7 +39,6 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntit
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
 import de.markusressel.mkdocseditor.databinding.FragmentEditorBinding
-import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
 import de.markusressel.mkdocseditor.extensions.common.android.context
 import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
 import de.markusressel.mkdocseditor.view.activity.base.OfflineModeManager
@@ -94,6 +91,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         }
 
     private var noConnectionSnackbar: Snackbar? = null
+
+    private val viewModel: CodeEditorViewModel by lazy { ViewModelProviders.of(this).get(CodeEditorViewModel::class.java) }
 
     private var currentText: String? by savedInstanceState()
 
@@ -175,12 +174,22 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
     override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
         val binding: FragmentEditorBinding = DataBindingUtil.inflate(layoutInflater, layoutRes, container, false)
-        val viewModel = getViewModel()
         viewModel.getEntity(documentPersistenceManager, documentId).observe(this, Observer<List<DocumentEntity>> {
 
             val entity = it.first()
             viewModel.documentId.value = entity.id
         })
+
+        // connect OfflineModeManager with ViewModel
+        offlineModeManager.isEnabled.observe(viewLifecycleOwner,
+                Observer { enabled ->
+                    viewModel.offlineModeEnabled.value = enabled
+                    if (enabled) {
+                        disconnect(reason = "Offline mode was activated")
+                    } else {
+                        reconnectToServer()
+                    }
+                })
 
         binding.let {
             it.setLifecycleOwner(this)
@@ -188,10 +197,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         }
 
         return binding
-    }
-
-    private fun getViewModel(): CodeEditorViewModel {
-        return ViewModelProviders.of(this).get(CodeEditorViewModel::class.java)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
@@ -247,16 +252,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     @CallSuper
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        Bus.observe<OfflineModeChangedEvent>()
-                .subscribe {
-                    if (it.enabled) {
-                        disconnect(reason = "Offline mode was activated")
-                    } else {
-                        reconnectToServer()
-                    }
-                }
-                .registerInBus(this)
 
         codeEditorView = view.findViewById(R.id.codeEditorView)
         codeEditorView.setSyntaxHighlighter(MarkdownSyntaxHighlighter())

@@ -67,6 +67,8 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                     epoxyController.setData(it.subsections, it.documents, it.resources)
                 }
             } else {
+                // in theory this will navigate back until a section is found
+                // or otherwise show the "empty" screen
                 if (!fileBrowserViewModel.navigateUp()) {
                     showEmpty()
                 }

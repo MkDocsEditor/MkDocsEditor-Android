@@ -9,6 +9,8 @@
     <string name="refresh">Refresh</string>
     <string name="open_in_browser">Open in browser</string>
 
+    <string name="offline">Offline</string>
+
     <string name="connected">📡 Connected</string>
     <string name="server_unavailable">☠ Server unavailable</string>
     <string name="error">☠ Error</string>

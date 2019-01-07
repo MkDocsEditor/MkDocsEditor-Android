@@ -25,6 +25,7 @@ class FileBrowserViewModel : EntityListViewModel() {
     private val backstack: Stack<SectionBackstackItem> = Stack()
         get() {
             if (field.size == 0) {
+                // root is always the first element in the backstack
                 field.add(SectionBackstackItem("root"))
             }
             return field
@@ -40,6 +41,9 @@ class FileBrowserViewModel : EntityListViewModel() {
                 getSectionLiveData(sectionId)
             })
 
+    /**
+     * Helper function to use switchMap with a PagedList
+     */
     @MainThread
     fun <X, Y> switchMapPaged(
             source: LiveData<X>,
