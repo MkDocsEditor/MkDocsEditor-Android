@@ -89,14 +89,13 @@ class LoadingComponent(hostFragment: LifecycleFragmentBase, val onShowContent: (
     fun showContent(animated: Boolean = true) {
         setViewVisibility(errorLayout, View.GONE)
 
-        contentView
-                ?.let {
-                    if (animated) {
-                        fadeView(it, 1f)
-                    } else {
-                        setViewVisibility(it, View.VISIBLE)
-                    }
-                }
+        contentView?.let {
+            if (animated) {
+                fadeView(it, 1f)
+            } else {
+                setViewVisibility(it, View.VISIBLE)
+            }
+        }
 
         if (animated) {
             fadeView(loadingLayout, 0f)
@@ -104,10 +103,9 @@ class LoadingComponent(hostFragment: LifecycleFragmentBase, val onShowContent: (
             setViewVisibility(loadingLayout, View.GONE)
         }
 
-        onShowContent
-                ?.let {
-                    it(animated)
-                }
+        onShowContent?.let {
+            it(animated)
+        }
     }
 
     /**

@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.*
 import android.widget.Toast
 import androidx.annotation.CallSuper
+import androidx.annotation.UiThread
 import androidx.databinding.DataBindingUtil
 import androidx.databinding.ViewDataBinding
 import androidx.lifecycle.Observer
@@ -175,12 +176,10 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
         val binding: FragmentEditorBinding = DataBindingUtil.inflate(layoutInflater, layoutRes, container, false)
         viewModel.getEntity(documentPersistenceManager, documentId).observe(this, Observer<List<DocumentEntity>> {
-
             val entity = it.first()
             viewModel.documentId.value = entity.id
         })
 
-        // connect OfflineModeManager with ViewModel
         offlineModeManager.isEnabled.observe(viewLifecycleOwner,
                 Observer { enabled ->
                     viewModel.offlineModeEnabled.value = enabled
@@ -225,7 +224,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                     runOnUiThread {
                         codeEditorView.snack(R.string.connected, LENGTH_SHORT)
                         loadingComponent.showContent()
-                        restoreEditorFromCache(getCachedEditorState(), text = it, editable = true)
+                        restoreEditorState(text = it, editable = true)
                     }
                 }, onPatchReceived = { editRequest ->
             processEditRequest(editRequest)
@@ -233,16 +232,13 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
             throwable?.let {
                 // try to load from persistence
                 loadTextFromPersistence()
-
-                runOnUiThread {
-                    noConnectionSnackbar = codeEditorView.snack(
-                            text = R.string.server_unavailable,
-                            duration = LENGTH_INDEFINITE,
-                            actionTitle = R.string.retry,
-                            action = {
-                                reconnectToServer()
-                            })
-                }
+                noConnectionSnackbar = codeEditorView.snack(
+                        text = R.string.server_unavailable,
+                        duration = LENGTH_INDEFINITE,
+                        actionTitle = R.string.retry,
+                        action = {
+                            reconnectToServer()
+                        })
                 Timber.e(throwable) { "Websocket error code: $code" }
             }
         })
@@ -295,7 +291,14 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                 })
     }
 
-    private fun restoreEditorFromCache(entity: DocumentContentEntity? = null, text: String? = null, editable: Boolean) {
+    /**
+     * Restores the editor state
+     *
+     * @param text the new text to use, or null
+     * @param editable when true the editor is editable, otherwise it is not
+     */
+    private fun restoreEditorState(text: String? = null, editable: Boolean) {
+        val entity = getCachedEditorState()
         if (entity != null) {
             if (text != null) {
                 // when an entity exists and a new text is given update the entity
@@ -327,28 +330,27 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     }
 
     /**
-     * Loads the last offline version of this page from persistence
+     * Loads the last offline version of this document from persistence
      */
+    @UiThread
     private fun loadTextFromPersistence() {
         val entity = getCachedEditorState()
 
-        runOnUiThread {
-            if (entity != null) {
-                restoreEditorFromCache(entity, entity.text, editable = false)
-            } else {
-                MaterialDialog(context()).show {
-                    title(R.string.no_offline_version)
-                    negativeButton(android.R.string.ok, click = {
-                        it.dismiss()
-                    })
-                    onDismiss {
-                        navController.navigateUp()
-                    }
+        if (entity != null) {
+            restoreEditorState(editable = false)
+        } else {
+            MaterialDialog(context()).show {
+                title(R.string.no_offline_version)
+                negativeButton(android.R.string.ok, click = {
+                    it.dismiss()
+                })
+                onDismiss {
+                    navController.navigateUp()
                 }
             }
-
-            loadingComponent.showContent(animated = true)
         }
+
+        loadingComponent.showContent(animated = true)
     }
 
     /**

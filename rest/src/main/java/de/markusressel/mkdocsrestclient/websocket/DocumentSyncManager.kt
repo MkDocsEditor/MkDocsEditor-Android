@@ -2,7 +2,9 @@ package de.markusressel.mkdocsrestclient.websocket
 
 import com.github.salomonbrys.kotson.jsonObject
 import com.google.gson.Gson
+import com.google.gson.JsonParseException
 import de.markusressel.commons.android.core.doAsync
+import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.websocket.diff.diff_match_patch
 import okhttp3.*
@@ -32,7 +34,6 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
     private var isConnected = false
 
     private var webSocket: WebSocket? = null
-    private var isInitialMessage = true
 
     private val diffMatchPatch = diff_match_patch()
     private var gson = Gson()
@@ -45,8 +46,6 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
             Timber.w("Already connected")
             return
         }
-
-        isInitialMessage = true
 
         val request = Request
                 .Builder()
@@ -62,22 +61,17 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
             }
 
             override fun onMessage(webSocket: WebSocket, text: String?) {
-                super
-                        .onMessage(webSocket, text)
+                super.onMessage(webSocket, text)
 
-                if (isInitialMessage) {
-                    callListenerAsync {
-                        onInitialText(text ?: "")
+                text?.let {
+                    doAsync {
+                        try {
+                            val editRequest = gson.fromJson(it, EditRequestEntity::class.java)
+                            onPatchReceived(editRequest)
+                        } catch (e: JsonParseException) {
+                            onInitialText(it)
+                        }
                     }
-
-                    isInitialMessage = false
-                } else {
-                    text
-                            ?.let {
-                                callListenerAsync {
-                                    onPatchReceived(gson.fromJson(it, EditRequestEntity::class.java))
-                                }
-                            }
                 }
             }
 
@@ -91,7 +85,7 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
                 isConnected = false
 
                 Timber.e(t, "Websocket error")
-                callListenerAsync {
+                runOnUiThread {
                     onError(response?.code(), t)
                 }
             }
@@ -99,10 +93,6 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
         }
 
         webSocket = client.newWebSocket(request, listener)
-    }
-
-    private fun callListenerAsync(listener: () -> Unit) {
-        doAsync { listener() }
     }
 
     /**
@@ -135,9 +125,7 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
      */
     fun disconnect(code: Int, reason: String) {
         webSocket?.close(code, reason)
-
         webSocket = null
-        isInitialMessage = true
     }
 
     /**
