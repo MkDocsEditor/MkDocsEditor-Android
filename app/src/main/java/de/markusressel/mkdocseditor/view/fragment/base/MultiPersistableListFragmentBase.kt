@@ -96,29 +96,21 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
     }
 
     override fun initComponents(context: Context) {
-        super
-                .initComponents(context)
+        super.initComponents(context)
         optionsMenuComponent
     }
 
     override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
-        super
-                .onCreateOptionsMenu(menu, inflater)
-        optionsMenuComponent
-                .onCreateOptionsMenu(menu, inflater)
+        super.onCreateOptionsMenu(menu, inflater)
+        optionsMenuComponent.onCreateOptionsMenu(menu, inflater)
     }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        if (super.onOptionsItemSelected(item)) {
-            return true
-        }
-        return optionsMenuComponent
-                .onOptionsItemSelected(item)
+        return super.onOptionsItemSelected(item) || optionsMenuComponent.onOptionsItemSelected(item)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super
-                .onViewCreated(view, savedInstanceState)
+        super.onViewCreated(view, savedInstanceState)
 
         reload()
     }

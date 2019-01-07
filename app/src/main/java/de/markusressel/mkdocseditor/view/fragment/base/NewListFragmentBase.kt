@@ -61,34 +61,29 @@ abstract class NewListFragmentBase : DaggerSupportFragmentBase() {
 
     @CallSuper
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super
-                .onViewCreated(view, savedInstanceState)
+        super.onViewCreated(view, savedInstanceState)
 
         recyclerView.setController(epoxyController)
-
-        val layoutManager = StaggeredGridLayoutManager(resources.getInteger(R.integer.list_column_count), StaggeredGridLayoutManager.VERTICAL)
-        recyclerView
-                .layoutManager = layoutManager
+        recyclerView.layoutManager = StaggeredGridLayoutManager(
+                resources.getInteger(R.integer.list_column_count),
+                StaggeredGridLayoutManager.VERTICAL
+        )
 
         setupFabs()
     }
 
     override fun onStop() {
-        val layoutManager = recyclerView
-                .layoutManager
+        val layoutManager = recyclerView.layoutManager
         if (layoutManager != null && layoutManager is StaggeredGridLayoutManager) {
-            val visibleItems = layoutManager
-                    .findFirstVisibleItemPositions(null)
+            val visibleItems = layoutManager.findFirstVisibleItemPositions(null)
             lastScrollPosition = if (visibleItems.isNotEmpty()) {
-                visibleItems
-                        .first()
+                visibleItems.first()
             } else {
                 0
             }
         }
 
-        super
-                .onStop()
+        super.onStop()
     }
 
     internal fun scrollToItemPosition(itemPosition: Int) {
@@ -221,21 +216,16 @@ abstract class NewListFragmentBase : DaggerSupportFragmentBase() {
      * Show the "empty" screen
      */
     internal fun showEmpty() {
-        recyclerView
-                .visibility = View
-                .INVISIBLE
-        layoutEmpty
-                .visibility = View
-                .VISIBLE
+        recyclerView.visibility = View.INVISIBLE
+        layoutEmpty.visibility = View.VISIBLE
     }
 
+    /**
+     * Hide the "empty" screen
+     */
     internal fun hideEmpty() {
-        recyclerView
-                .visibility = View
-                .VISIBLE
-        layoutEmpty
-                .visibility = View
-                .INVISIBLE
+        recyclerView.visibility = View.VISIBLE
+        layoutEmpty.visibility = View.INVISIBLE
     }
 
 }

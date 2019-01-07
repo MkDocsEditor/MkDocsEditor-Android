@@ -23,11 +23,17 @@ import java.util.*
 class FileBrowserViewModel : EntityListViewModel() {
 
     private val backstack: Stack<SectionBackstackItem> = Stack()
+        get() {
+            if (field.size == 0) {
+                field.add(SectionBackstackItem("root"))
+            }
+            return field
+        }
     private val currentSearchFilter = MutableLiveData<String>()
 
     var persistenceManager: PersistenceManagerBase<SectionEntity>? = null
 
-    private var currentSectionId = MutableLiveData<String>()
+    val currentSectionId = MutableLiveData<String>()
 
     val currentSection = switchMapPaged<String, SectionEntity>(currentSectionId,
             Function { sectionId ->

@@ -17,11 +17,11 @@ import com.github.ajalt.timberkt.Timber
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import de.markusressel.commons.android.material.toast
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.data.persistence.*
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
+import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
+import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.entity.*
 import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
 import de.markusressel.mkdocseditor.extensions.common.android.context
 import de.markusressel.mkdocseditor.listItemDocument
@@ -30,6 +30,7 @@ import de.markusressel.mkdocseditor.listItemSection
 import de.markusressel.mkdocseditor.view.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragmentBase
 import de.markusressel.mkdocsrestclient.section.SectionModel
+import io.objectbox.kotlin.query
 import io.reactivex.Single
 import javax.inject.Inject
 
@@ -44,9 +45,9 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     @Inject
     lateinit var documentPersistenceManager: DocumentPersistenceManager
     @Inject
-    lateinit var documentContentPersistenceManager: DocumentContentPersistenceManager
-    @Inject
     lateinit var resourcePersistenceManager: ResourcePersistenceManager
+
+    var currentSectionId: String by savedInstanceState("root")
 
     private val fileBrowserViewModel: FileBrowserViewModel by lazy {
         ViewModelProviders.of(this).get(FileBrowserViewModel::class.java)
@@ -54,6 +55,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
         fileBrowserViewModel.persistenceManager = sectionPersistenceManager
+        fileBrowserViewModel.currentSectionId.value = currentSectionId
         fileBrowserViewModel.currentSection.observe(this, Observer {
             if (it.isNotEmpty()) {
                 it.first().let {
@@ -61,8 +63,6 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                 }
             }
         })
-
-        fileBrowserViewModel.openSection("root")
 
         return super.createViewDataBinding(inflater, container, savedInstanceState)
     }
@@ -79,21 +79,118 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     }
 
     override fun persistListData(data: IdentifiableListItem) {
-        resourcePersistenceManager
-                .standardOperation()
-                .removeAll()
-        documentPersistenceManager
-                .standardOperation()
-                .removeAll()
-        sectionPersistenceManager
-                .standardOperation()
-                .removeAll()
-
+        // update existing entities
         val rootSection = data as SectionEntity
+        addOrUpdate(rootSection)
 
-        sectionPersistenceManager
-                .standardOperation()
-                .put(rootSection)
+        // remove data that is not on the server anymore
+        deleteMissing(rootSection)
+    }
+
+    private fun addOrUpdate(rootSection: SectionEntity) {
+        var rootEntity = sectionPersistenceManager.standardOperation().query {
+            equal(SectionEntity_.id, "root")
+        }.findUnique()
+
+        if (rootEntity != null) {
+            addOrUpdateEntityFields(rootEntity, rootSection)
+        } else {
+            rootEntity = rootSection
+        }
+
+        sectionPersistenceManager.standardOperation().put(rootEntity)
+    }
+
+    private fun addOrUpdateEntityFields(existingData: SectionEntity, newData: SectionEntity) {
+        // TODO: do we have to update the section itself? Currently I don't think so.
+
+        newData.documents.forEach { newDocument ->
+            val existingDocument = existingData.documents.firstOrNull { it.id == newDocument.id }
+
+            if (existingDocument != null) {
+                existingDocument.filesize = newDocument.filesize
+                existingDocument.modtime = newDocument.modtime
+            } else {
+                documentPersistenceManager.standardOperation().put(newDocument)
+            }
+        }
+
+        newData.resources.forEach { newResource ->
+            val existingResource = existingData.resources.firstOrNull { it.id == newResource.id }
+
+            if (existingResource != null) {
+                existingResource.filesize = newResource.filesize
+                existingResource.modtime = newResource.modtime
+            } else {
+                resourcePersistenceManager.standardOperation().put(newResource)
+            }
+        }
+
+        newData.subsections.forEach { newSection ->
+            val existingSection = existingData.subsections.firstOrNull { it.id == newSection.id }
+
+            if (existingSection != null) {
+                addOrUpdateEntityFields(existingSection, newSection)
+            } else {
+                sectionPersistenceManager.standardOperation().put(newSection)
+            }
+        }
+    }
+
+    private fun deleteMissing(newData: SectionEntity) {
+        val sectionIds = mutableSetOf<String>()
+        val documentIds = mutableSetOf<String>()
+        val resourceIds = mutableSetOf<String>()
+
+        findIds(newData, sectionIds, documentIds, resourceIds)
+
+        // remove stale sections
+        val existingSectionIds = sectionPersistenceManager.standardOperation().query {
+            `in`(SectionEntity_.id, sectionIds.toTypedArray())
+        }.findIds()
+
+        // find others
+        val missingSectionIds = sectionPersistenceManager.standardOperation().query {
+            notIn(SectionEntity_.entityId, existingSectionIds)
+        }.findIds()
+
+        sectionPersistenceManager.standardOperation().removeByKeys(missingSectionIds.toList())
+
+        // remove stale documents
+        val existingDocumentIds = documentPersistenceManager.standardOperation().query {
+            `in`(DocumentEntity_.id, documentIds.toTypedArray())
+        }.findIds()
+
+        // find others
+        val missingDocumentIds = documentPersistenceManager.standardOperation().query {
+            notIn(DocumentEntity_.entityId, existingDocumentIds)
+        }.findIds()
+
+        documentPersistenceManager.standardOperation().removeByKeys(missingDocumentIds.toList())
+
+        // remove stale resources
+        val existingResourceIds = resourcePersistenceManager.standardOperation().query {
+            `in`(ResourceEntity_.id, resourceIds.toTypedArray())
+        }.findIds()
+
+        // find others
+        val missingResourceIds = resourcePersistenceManager.standardOperation().query {
+            notIn(ResourceEntity_.entityId, existingResourceIds)
+        }.findIds()
+
+        resourcePersistenceManager.standardOperation().removeByKeys(missingResourceIds.toList())
+    }
+
+    /**
+     * Recursive method to find all section, document and resource ids
+     */
+    private fun findIds(section: SectionEntity, sectionIds: MutableSet<String>, documentIds: MutableSet<String>, resourceIds: MutableSet<String>) {
+        sectionIds.add(section.id)
+        documentIds.addAll(section.documents.map { it.id })
+        resourceIds.addAll(section.resources.map { it.id })
+        section.subsections.forEach {
+            findIds(it, sectionIds, documentIds, resourceIds)
+        }
     }
 
     override fun createEpoxyController(): Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>> {
@@ -104,7 +201,8 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                         id(it.id)
                         item(it)
                         onclick { model, parentView, clickedView, position ->
-                            fileBrowserViewModel.openSection(model.item().id)
+                            currentSectionId = model.item().id
+                            fileBrowserViewModel.openSection(currentSectionId)
                         }
                     }
                 }

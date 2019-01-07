@@ -35,14 +35,11 @@ class App : DaggerApplicationBase() {
         registerActivityLifecycleCallbacks(AppLifecycleTracker())
 
         // Clear DB entirely
-        //        BoxStore
-        //                .deleteAllFiles(applicationContext, null)
+//        BoxStore.deleteAllFiles(applicationContext, null)
 
         plantTimberTrees()
 
         createListeners()
-
-
     }
 
     private fun createListeners() {
@@ -79,8 +76,7 @@ class App : DaggerApplicationBase() {
 
     private fun plantTimberTrees() {
         if (BuildConfig.DEBUG) {
-            Timber
-                    .plant(Timber.DebugTree())
+            Timber.plant(Timber.DebugTree())
         }
     }
 

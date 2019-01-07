@@ -12,7 +12,14 @@ import java.util.*
  * Created by Markus on 04.06.2018.
  */
 @Entity
-data class DocumentEntity(@Id var entityId: Long = 0, val type: String = "Document", @Unique val id: String = "", val name: String = "", val filesize: Long = -1L, val modtime: Date = Date(), val url: String = "") : IdentifiableListItem {
+data class DocumentEntity(
+        @Id var entityId: Long = 0,
+        val type: String = "Document",
+        @Unique val id: String = "",
+        val name: String = "",
+        var filesize: Long = -1L,
+        var modtime: Date = Date(),
+        val url: String = "") : IdentifiableListItem {
     override fun getItemId(): String = id
 
     lateinit var parentSection: ToOne<SectionEntity>
