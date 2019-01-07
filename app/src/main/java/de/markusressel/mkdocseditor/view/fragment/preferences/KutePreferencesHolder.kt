@@ -33,16 +33,28 @@ class KutePreferencesHolder @Inject constructor(
                 title = context.getString(R.string.category_connection_title),
                 description = context.getString(R.string.category_connection_description),
                 children = listOf(
-                        restConnectionUriPreference,
                         KuteSection(
-                                key = R.string.divider_basic_auth_key,
-                                title = context.getString(R.string.divider_basic_auth_title),
+                                key = R.string.section_rest_server_key,
+                                title = context.getString(R.string.section_rest_server_title),
                                 children = listOf(
-                                        basicAuthUserPreference,
-                                        basicAuthPasswordPreference
+                                        restConnectionUriPreference,
+                                        KuteSection(
+                                                key = R.string.divider_basic_auth_key,
+                                                title = context.getString(R.string.divider_basic_auth_title),
+                                                children = listOf(
+                                                        basicAuthUserPreference,
+                                                        basicAuthPasswordPreference
+                                                )
+                                        )
                                 )
                         ),
-                        webUriPreference
+                        KuteSection(
+                                key = R.string.section_web_key,
+                                title = context.getString(R.string.section_web_title),
+                                children = listOf(
+                                        webUriPreference
+                                )
+                        )
                 )
         )
     }

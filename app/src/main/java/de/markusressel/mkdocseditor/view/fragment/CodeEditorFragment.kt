@@ -48,7 +48,6 @@ import io.objectbox.kotlin.query
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
-import java.net.URLEncoder
 import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -102,46 +101,50 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     private val optionsMenuComponent: OptionsMenuComponent by lazy {
         OptionsMenuComponent(this, optionsMenuRes = R.menu.options_menu_editor, onCreateOptionsMenu = { menu: Menu?, menuInflater: MenuInflater? ->
             // set refresh icon
-            val refreshIcon = iconHandler
-                    .getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_refresh)
-            menu?.findItem(R.id.refresh)?.icon = refreshIcon
+            menu?.findItem(R.id.refresh)?.apply {
+                val refreshIcon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_refresh)
+                icon = refreshIcon
+            }
 
             // set open in browser icon
-            val openInBrowserIcon = iconHandler
-                    .getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_open_in_browser)
-            menu?.findItem(R.id.open_in_browser)?.icon = openInBrowserIcon
+            menu?.findItem(R.id.open_in_browser)?.apply {
+                val openInBrowserIcon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_open_in_browser)
+                icon = openInBrowserIcon
+                if (preferencesHolder.webUriPreference.persistedValue.isBlank()) {
+                    isVisible = false
+                    isEnabled = false
+                }
 
-            if (preferencesHolder.restConnectionUriPreference.persistedValue.isEmpty()) {
-                menu?.findItem(R.id.open_in_browser)?.isVisible = false
             }
         }, onOptionsMenuItemClicked = {
+            val webBaseUri = preferencesHolder
+                    .webUriPreference
+                    .persistedValue
+
             when {
                 it.itemId == R.id.open_in_browser -> {
                     val documentEntity = documentPersistenceManager
                             .standardOperation()
                             .query {
                                 equal(DocumentEntity_.id, documentId)
-                            }
-                            .findUnique()
+                            }.findUnique()
 
-                    documentEntity
-                            ?.let { document ->
-                                val host = preferencesHolder
-                                        .webUriPreference
-                                        .persistedValue
+                    documentEntity?.let { document ->
+                        val host = preferencesHolder
+                                .webUriPreference.persistedValue
 
-                                val pagePath = when {
-                                    document.url == "index/" -> ""
-                                    else -> URLEncoder.encode(document.url, "UTF-8")
-                                }
+                        val pagePath = when {
+                            document.url == "index/" -> ""
+                            else -> document.url // this value is already url encoded
+                        }
 
-                                val url = "$host/$pagePath"
-                                chromeCustomTabManager.openChromeCustomTab(url)
-                            }
-
+                        val url = "$host/$pagePath"
+                        chromeCustomTabManager.openChromeCustomTab(url)
+                    }
 
                     true
                 }
+                webBaseUri.isBlank() -> false
                 else -> false
             }
         })
