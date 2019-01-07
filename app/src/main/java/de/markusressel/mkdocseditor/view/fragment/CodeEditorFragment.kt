@@ -316,7 +316,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         codeEditorView.setText(currentText ?: "")
         codeEditorView.setEditable(editable)
         entity?.let {
-            codeEditorView.editTextView.setSelection(entity.selection)
+            codeEditorView.editTextView.setSelection(entity.selection.coerceIn(0, currentText!!.length))
             codeEditorView.post {
                 // zoom to last saved state
                 val absolutePosition = computeAbsolutePosition(PointF(entity.panX, entity.panY))
