@@ -13,7 +13,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Handler for managing Chrome custom tabs
+ * Manager for Chrome custom tabs
  *
  * Created by Markus on 21.02.2016.
  */
@@ -27,13 +27,12 @@ class ChromeCustomTabManager @Inject constructor(val context: Context, val theme
      */
     fun openChromeCustomTab(url: String) {
         val intent = getIntent(url)
-        context
-                .startActivity(intent)
+        context.startActivity(intent)
     }
 
     @CheckResult
     private fun getIntent(url: String): Intent {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
         val accentColor = themeHelper
                 .getThemeAttrColor(context, R.attr.colorPrimary)

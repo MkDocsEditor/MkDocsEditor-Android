@@ -21,7 +21,10 @@ import javax.inject.Singleton
  * Holder for KutePreference items for easy access to preference values across the application
  */
 @Singleton
-class KutePreferencesHolder @Inject constructor(private val context: Context, private val iconHelper: IconHandler, private val dataProvider: KutePreferenceDataProvider) {
+class KutePreferencesHolder @Inject constructor(
+        private val context: Context,
+        private val iconHelper: IconHandler,
+        private val dataProvider: KutePreferenceDataProvider) {
 
     val connectionCategory by lazy {
         KuteCategory(
@@ -30,7 +33,7 @@ class KutePreferencesHolder @Inject constructor(private val context: Context, pr
                 title = context.getString(R.string.category_connection_title),
                 description = context.getString(R.string.category_connection_description),
                 children = listOf(
-                        connectionUriPreference,
+                        restConnectionUriPreference,
                         KuteSection(
                                 key = R.string.divider_basic_auth_key,
                                 title = context.getString(R.string.divider_basic_auth_title),
@@ -38,13 +41,14 @@ class KutePreferencesHolder @Inject constructor(private val context: Context, pr
                                         basicAuthUserPreference,
                                         basicAuthPasswordPreference
                                 )
-                        )
+                        ),
+                        webUriPreference
                 )
         )
     }
 
-    val connectionUriPreference by lazy {
-        KuteTextPreference(key = R.string.connection_host_key, icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_battery), title = context.getString(R.string.connection_host_title), defaultValue = "127.0.0.1", dataProvider = dataProvider, onPreferenceChangedListener = { old, new ->
+    val restConnectionUriPreference by lazy {
+        KuteTextPreference(key = R.string.connection_host_key, icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_battery), title = context.getString(R.string.connection_host_title), defaultValue = "", dataProvider = dataProvider, onPreferenceChangedListener = { old, new ->
             Bus.send(HostChangedEvent(new))
         })
     }
@@ -58,6 +62,12 @@ class KutePreferencesHolder @Inject constructor(private val context: Context, pr
     val basicAuthPasswordPreference by lazy {
         KutePasswordPreference(key = R.string.connection_basic_auth_password_key, title = context.getString(R.string.connection_basic_auth_password_title), defaultValue = "", dataProvider = dataProvider, onPreferenceChangedListener = { old, new ->
             Bus.send(BasicAuthPasswordChangedEvent(new))
+        })
+    }
+
+    val webUriPreference by lazy {
+        KuteTextPreference(key = R.string.connection_web_url_key, icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_battery), title = context.getString(R.string.connection_web_url_title), defaultValue = "", dataProvider = dataProvider, onPreferenceChangedListener = { old, new ->
+            Bus.send(HostChangedEvent(new))
         })
     }
 

@@ -48,6 +48,7 @@ import io.objectbox.kotlin.query
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
+import java.net.URLEncoder
 import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -103,16 +104,16 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
             // set refresh icon
             val refreshIcon = iconHandler
                     .getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_refresh)
-            menu
-                    ?.findItem(R.id.refresh)
-                    ?.icon = refreshIcon
+            menu?.findItem(R.id.refresh)?.icon = refreshIcon
 
             // set open in browser icon
             val openInBrowserIcon = iconHandler
                     .getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_open_in_browser)
-            menu
-                    ?.findItem(R.id.open_in_browser)
-                    ?.icon = openInBrowserIcon
+            menu?.findItem(R.id.open_in_browser)?.icon = openInBrowserIcon
+
+            if (preferencesHolder.restConnectionUriPreference.persistedValue.isEmpty()) {
+                menu?.findItem(R.id.open_in_browser)?.isVisible = false
+            }
         }, onOptionsMenuItemClicked = {
             when {
                 it.itemId == R.id.open_in_browser -> {
@@ -126,11 +127,16 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                     documentEntity
                             ?.let { document ->
                                 val host = preferencesHolder
-                                        .connectionUriPreference
+                                        .webUriPreference
                                         .persistedValue
 
-                                chromeCustomTabManager
-                                        .openChromeCustomTab("http://$host/${document.url}")
+                                val pagePath = when {
+                                    document.url == "index/" -> ""
+                                    else -> URLEncoder.encode(document.url, "UTF-8")
+                                }
+
+                                val url = "$host/$pagePath"
+                                chromeCustomTabManager.openChromeCustomTab(url)
                             }
 
 
@@ -150,13 +156,13 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val host = preferencesHolder
-                .connectionUriPreference
+        val restApiHost = preferencesHolder
+                .restConnectionUriPreference
                 .persistedValue
 
         syncManager = DocumentSyncManager(
                 documentId = documentId,
-                url = "ws://$host/document/$documentId/ws",
+                url = "ws://$restApiHost/document/$documentId/ws",
                 basicAuthConfig = BasicAuthConfig(
                         preferencesHolder.basicAuthUserPreference.persistedValue,
                         preferencesHolder.basicAuthPasswordPreference.persistedValue),

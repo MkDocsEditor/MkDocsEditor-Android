@@ -9,6 +9,9 @@
     <string name="connection_host_key" translatable="false">connection_host_key</string>
     <string name="connection_host_title">Host</string>
 
+    <string name="connection_web_url_key" translatable="false">connection_web_url_key</string>
+    <string name="connection_web_url_title">Web base URL</string>
+
 
     <string name="divider_basic_auth_key" translatable="false">divider_basic_auth_key</string>
     <string name="divider_basic_auth_title">Basic Auth</string>
