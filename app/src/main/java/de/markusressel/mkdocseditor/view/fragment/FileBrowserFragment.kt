@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.view.fragment
 
-import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -28,7 +27,6 @@ import de.markusressel.mkdocseditor.extensions.common.android.context
 import de.markusressel.mkdocseditor.listItemDocument
 import de.markusressel.mkdocseditor.listItemResource
 import de.markusressel.mkdocseditor.listItemSection
-import de.markusressel.mkdocseditor.view.activity.EditorActivity
 import de.markusressel.mkdocseditor.view.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragmentBase
 import de.markusressel.mkdocsrestclient.section.SectionModel
@@ -153,8 +151,9 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     private fun openDocumentEditor(document: DocumentEntity) {
         Timber.d { "Opening Document '${document.name}'" }
 
-        val intent = EditorActivity.getNewInstanceIntent(context as Context, document.id, document.name)
-        startActivity(intent)
+        navController.navigate(
+                FileBrowserFragmentDirections.actionFileBrowserPageToCodeEditorPage(document.id)
+        )
     }
 
     private fun openResourceDetailPage(resource: ResourceEntity) {

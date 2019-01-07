@@ -10,7 +10,6 @@ import de.markusressel.kutepreferences.core.persistence.DefaultKutePreferenceDat
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.mkdocseditor.application.App
 import de.markusressel.mkdocseditor.data.persistence.entity.MyObjectBox
-import de.markusressel.mkdocseditor.view.activity.EditorActivity
 import de.markusressel.mkdocseditor.view.activity.MainActivity
 import de.markusressel.mkdocseditor.view.activity.base.DaggerSupportActivityBase
 import de.markusressel.mkdocseditor.view.fragment.AboutPage
@@ -39,9 +38,6 @@ abstract class AppModule {
 
     @ContributesAndroidInjector
     internal abstract fun DocumentsFragment(): FileBrowserFragment
-
-    @ContributesAndroidInjector
-    internal abstract fun EditorActivity(): EditorActivity
 
     @ContributesAndroidInjector
     internal abstract fun EditorFragment(): CodeEditorFragment

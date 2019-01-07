@@ -7,6 +7,10 @@ import android.os.Bundle
 import android.view.*
 import android.widget.Toast
 import androidx.annotation.CallSuper
+import androidx.databinding.DataBindingUtil
+import androidx.databinding.ViewDataBinding
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProviders
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.callbacks.onDismiss
 import com.eightbitlab.rxbus.Bus
@@ -31,7 +35,9 @@ import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceM
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
+import de.markusressel.mkdocseditor.databinding.FragmentEditorBinding
 import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
 import de.markusressel.mkdocseditor.extensions.common.android.context
 import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
@@ -40,6 +46,7 @@ import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
+import de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.websocket.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.websocket.EditRequestEntity
@@ -74,9 +81,13 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
     private lateinit var codeEditorView: CodeEditorView
 
+    private val safeArgs: CodeEditorFragmentArgs by lazy {
+        CodeEditorFragmentArgs.fromBundle(arguments!!)
+    }
+
     private val documentId: String
         get() {
-            return arguments?.getString(KEY_ID)!!
+            return safeArgs.documentId
         }
 
     private var currentText: String? by savedInstanceState()
@@ -157,8 +168,30 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         optionsMenuComponent
     }
 
+    override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
+        val binding: FragmentEditorBinding = DataBindingUtil.inflate(layoutInflater, layoutRes, container, false)
+        val viewModel = getViewModel()
+        viewModel.getEntity(documentPersistenceManager, documentId).observe(this, Observer<List<DocumentEntity>> {
+
+            val entity = it.first()
+            viewModel.documentId.value = entity.id
+        })
+
+        binding.let {
+            it.setLifecycleOwner(this)
+            it.viewModel = viewModel
+        }
+
+        return binding
+    }
+
+    private fun getViewModel(): CodeEditorViewModel {
+        return ViewModelProviders.of(this).get(CodeEditorViewModel::class.java)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         val restApiHost = preferencesHolder
                 .restConnectionUriPreference
                 .persistedValue
@@ -196,6 +229,63 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         })
     }
 
+    @SuppressLint("ClickableViewAccessibility")
+    @CallSuper
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        Bus.observe<OfflineModeChangedEvent>()
+                .subscribe {
+                    if (!it.enabled) {
+                        reconnectToServer()
+                    } else {
+                        codeEditorView.setEditable(false)
+                        syncManager.disconnect(1000, "Offline mode was activated")
+                    }
+                }
+                .registerInBus(this)
+
+        codeEditorView = view.findViewById(R.id.codeEditorView)
+        codeEditorView.setSyntaxHighlighter(MarkdownSyntaxHighlighter())
+//        codeEditorView.engine.addListener(object : ZoomEngine.Listener {
+//            override fun onIdle(engine: ZoomEngine) {
+//            }
+//
+//            override fun onUpdate(engine: ZoomEngine, matrix: Matrix) {
+//                val totalWidth = codeEditorView.contentLayout.width
+//
+//                val panX = engine.panX
+//                val panY = engine.panY
+//
+//                val offsetX = engine.computeHorizontalScrollOffset()
+//                val totalRangeX = engine.computeHorizontalScrollRange()
+//                val percentage = engine.computeHorizontalScrollOffset().toFloat() / engine.computeHorizontalScrollRange()
+//
+//                val offsetXMaybe = totalRangeX * percentage
+//                val offsetFromPan = -panX
+//                val test = 1
+//            }
+//        })
+
+        codeEditorView.mMoveWithCursorEnabled = false
+
+        // disable user input in offline mode
+        codeEditorView.setEditable(offlineModeManager.isEnabled())
+
+        RxTextView
+                .textChanges(codeEditorView.editTextView)
+                .skipInitialValue()
+                .debounce(100, TimeUnit.MILLISECONDS)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .bindToLifecycle(this as LifecycleProvider<FragmentEvent>)
+                .subscribeBy(onNext = {
+                    sendPatchIfChanged(it)
+                }, onError = {
+                    context?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
+                })
+    }
+
     private fun restoreEditorFromCache(entity: DocumentContentEntity? = null, text: String? = null, editable: Boolean) {
         currentText = text
         entity?.let {
@@ -230,10 +320,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        if (super.onOptionsItemSelected(item)) {
-            return true
-        }
-        return optionsMenuComponent.onOptionsItemSelected(item)
+        return super.onOptionsItemSelected(item) || optionsMenuComponent.onOptionsItemSelected(item)
     }
 
     /**
@@ -409,63 +496,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         return loadingComponent.onCreateView(inflater, parent, savedInstanceState)
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    @CallSuper
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        Bus.observe<OfflineModeChangedEvent>()
-                .subscribe {
-                    if (!it.enabled) {
-                        reconnectToServer()
-                    } else {
-                        codeEditorView.setEditable(false)
-                        syncManager.disconnect(1000, "Offline mode was activated")
-                    }
-                }
-                .registerInBus(this)
-
-        codeEditorView = view.findViewById(R.id.codeEditorView)
-        codeEditorView.setSyntaxHighlighter(MarkdownSyntaxHighlighter())
-//        codeEditorView.engine.addListener(object : ZoomEngine.Listener {
-//            override fun onIdle(engine: ZoomEngine) {
-//            }
-//
-//            override fun onUpdate(engine: ZoomEngine, matrix: Matrix) {
-//                val totalWidth = codeEditorView.contentLayout.width
-//
-//                val panX = engine.panX
-//                val panY = engine.panY
-//
-//                val offsetX = engine.computeHorizontalScrollOffset()
-//                val totalRangeX = engine.computeHorizontalScrollRange()
-//                val percentage = engine.computeHorizontalScrollOffset().toFloat() / engine.computeHorizontalScrollRange()
-//
-//                val offsetXMaybe = totalRangeX * percentage
-//                val offsetFromPan = -panX
-//                val test = 1
-//            }
-//        })
-
-        codeEditorView.mMoveWithCursorEnabled = false
-
-        // disable user input in offline mode
-        codeEditorView.setEditable(offlineModeManager.isEnabled())
-
-        RxTextView
-                .textChanges(codeEditorView.editTextView)
-                .skipInitialValue()
-                .debounce(100, TimeUnit.MILLISECONDS)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .bindToLifecycle(this as LifecycleProvider<FragmentEvent>)
-                .subscribeBy(onNext = {
-                    sendPatchIfChanged(it)
-                }, onError = {
-                    context?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
-                })
-    }
-
     @Synchronized
     private fun sendPatchIfChanged(it: CharSequence) {
         if (currentText!!.contentEquals(it)) {
@@ -502,17 +532,4 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         super.onStop()
     }
 
-    companion object {
-
-        private const val KEY_ID = "KEY_ID"
-
-        fun newInstance(id: String): CodeEditorFragment {
-            val fragment = CodeEditorFragment()
-            val bundle = Bundle()
-            bundle.putString(KEY_ID, id)
-            fragment.arguments = bundle
-
-            return fragment
-        }
-    }
 }
