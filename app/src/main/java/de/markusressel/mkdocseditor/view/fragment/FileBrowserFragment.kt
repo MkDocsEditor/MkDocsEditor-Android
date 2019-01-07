@@ -59,7 +59,16 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         fileBrowserViewModel.currentSection.observe(this, Observer {
             if (it.isNotEmpty()) {
                 it.first().let {
+                    if (it.subsections.isEmpty() and it.documents.isEmpty() and it.resources.isEmpty()) {
+                        showEmpty()
+                    } else {
+                        hideEmpty()
+                    }
                     epoxyController.setData(it.subsections, it.documents, it.resources)
+                }
+            } else {
+                if (!fileBrowserViewModel.navigateUp()) {
+                    showEmpty()
                 }
             }
         })
