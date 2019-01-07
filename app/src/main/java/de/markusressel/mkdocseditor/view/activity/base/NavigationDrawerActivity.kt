@@ -18,9 +18,7 @@ import com.mikepenz.materialdrawer.DrawerBuilder
 import com.mikepenz.materialdrawer.model.*
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IProfile
-import de.markusressel.commons.android.material.toast
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
 import de.markusressel.mkdocseditor.event.ThemeChangedEvent
 import de.markusressel.mkdocseditor.extensions.common.android.isTablet
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder
@@ -112,12 +110,6 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
         Bus.observe<ThemeChangedEvent>()
                 .subscribe {
                     recreate()
-                }
-                .registerInBus(this)
-
-        Bus.observe<OfflineModeChangedEvent>()
-                .subscribe {
-                    toast(text = "Offline Mode: ${it.enabled}")
                 }
                 .registerInBus(this)
     }

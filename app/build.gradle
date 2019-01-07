@@ -67,6 +67,9 @@ dependencies {
     implementation 'androidx.browser:browser:1.0.0'
     implementation 'com.google.android.material:material:1.0.0'
 
+    implementation 'androidx.emoji:emoji:1.0.0'
+    implementation 'androidx.emoji:emoji-bundled:1.0.0'
+
     implementation "android.arch.navigation:navigation-fragment-ktx:1.0.0-alpha09"
     implementation "android.arch.navigation:navigation-ui-ktx:1.0.0-alpha09"
 
@@ -153,6 +156,4 @@ dependencies {
 configurations.all() {
     // Check for updates every build
     resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-//    resolutionStrategy.force "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-//    resolutionStrategy.force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }

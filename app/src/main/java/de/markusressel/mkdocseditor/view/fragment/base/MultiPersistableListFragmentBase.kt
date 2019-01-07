@@ -26,10 +26,11 @@ import android.view.View
 import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.Lifecycle
 import com.github.ajalt.timberkt.Timber
+import com.google.android.material.snackbar.Snackbar
 import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
-import de.markusressel.commons.android.material.toast
+import de.markusressel.commons.android.material.snack
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
@@ -38,6 +39,7 @@ import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
+import kotlinx.android.synthetic.main.fragment_recyclerview.*
 import java.util.concurrent.CancellationException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -50,6 +52,8 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
 
     @Inject
     lateinit var restClient: MkDocsRestClient
+
+    private var serverUnavailableSnackbar: Snackbar? = null
 
     private val optionsMenuComponent: OptionsMenuComponent by lazy {
         OptionsMenuComponent(hostFragment = this, optionsMenuRes = R.menu.options_menu_list, onCreateOptionsMenu = { menu: Menu?, menuInflater: MenuInflater? ->
@@ -122,14 +126,21 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindUntilEvent(this, Lifecycle.Event.ON_STOP)
                 .subscribeBy(onSuccess = {
-                    activity?.toast("Online :)")
                     reloadDataFromSource()
+                    serverUnavailableSnackbar?.dismiss()
                 }, onError = {
                     if (it is CancellationException) {
                         Timber.d { "Reload cancelled" }
                     } else {
                         Timber.e(it)
-                        activity?.toast("Server unavailable :(")
+                        serverUnavailableSnackbar?.dismiss()
+                        serverUnavailableSnackbar = recyclerView.snack(
+                                text = R.string.server_unavailable,
+                                duration = Snackbar.LENGTH_INDEFINITE,
+                                actionTitle = R.string.retry,
+                                action = {
+                                    reload()
+                                })
                     }
                 })
     }
