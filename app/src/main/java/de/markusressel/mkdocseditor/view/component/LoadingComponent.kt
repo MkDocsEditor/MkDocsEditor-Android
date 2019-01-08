@@ -59,15 +59,12 @@ class LoadingComponent(hostFragment: LifecycleFragmentBase, val onShowContent: (
         val baseLayout = FrameLayout(context)
 
         // attach the original content view
-        contentView
-                ?.let {
-                    baseLayout
-                            .addView(contentView)
-                }
+        contentView?.let {
+            baseLayout.addView(contentView)
+        }
 
         // inflate "layout_loading" and "layout_error" layouts and attach it to a newly created layout
-        val layoutInflater = LayoutInflater
-                .from(context)
+        val layoutInflater = LayoutInflater.from(context)
         layoutInflater.inflate(R.layout.layout_error, baseLayout, true) as ViewGroup
         layoutInflater.inflate(R.layout.layout_loading, baseLayout, true) as ViewGroup
 

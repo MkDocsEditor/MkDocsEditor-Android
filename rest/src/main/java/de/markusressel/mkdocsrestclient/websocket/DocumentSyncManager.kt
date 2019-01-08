@@ -12,10 +12,15 @@ import timber.log.Timber
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-class DocumentSyncManager(private val url: String, private val basicAuthConfig: BasicAuthConfig, private val documentId: String, private val onInitialText: ((initialText: String) -> Unit), private val onPatchReceived: ((editRequest: EditRequestEntity) -> Unit), private val onError: ((code: Int?, throwable: Throwable?) -> Unit)) {
+class DocumentSyncManager(
+        private val url: String,
+        private val basicAuthConfig: BasicAuthConfig,
+        private val documentId: String,
+        private val onInitialText: ((initialText: String) -> Unit),
+        private val onPatchReceived: ((editRequest: EditRequestEntity) -> Unit),
+        private val onError: ((code: Int?, throwable: Throwable?) -> Unit)) {
 
-    private val client: OkHttpClient = OkHttpClient
-            .Builder()
+    private val client: OkHttpClient = OkHttpClient.Builder()
             .readTimeout(0, TimeUnit.MILLISECONDS)
             .connectTimeout(3, TimeUnit.SECONDS)
             //            .pingInterval(30, TimeUnit.SECONDS)
@@ -47,16 +52,12 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
             return
         }
 
-        val request = Request
-                .Builder()
-                .url(url)
-                .build()
+        val request = Request.Builder().url(url).build()
 
         val listener = object : EchoWebSocketListenerBase() {
 
             override fun onOpen(webSocket: WebSocket, response: Response?) {
-                super
-                        .onOpen(webSocket, response)
+                super.onOpen(webSocket, response)
                 isConnected = true
             }
 
@@ -139,9 +140,7 @@ class DocumentSyncManager(private val url: String, private val basicAuthConfig: 
      * Shutdown the websocket client (and all websockets)
      */
     fun shutdown() {
-        client.dispatcher()
-                .executorService()
-                .shutdown()
+        client.dispatcher().executorService().shutdown()
     }
 
 }
