@@ -8,9 +8,11 @@ import dagger.android.AndroidInjector
 import dagger.android.DaggerApplication
 import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.dagger.DaggerAppComponent
+import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.event.BasicAuthPasswordChangedEvent
 import de.markusressel.mkdocseditor.event.BasicAuthUserChangedEvent
 import de.markusressel.mkdocseditor.event.HostChangedEvent
+import de.markusressel.mkdocseditor.view.activity.base.OfflineModeManager
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import timber.log.Timber
@@ -23,6 +25,11 @@ class App : DaggerApplicationBase() {
 
     @Inject
     internal lateinit var restClient: MkDocsRestClient
+
+    @Inject
+    internal lateinit var offlineModeManager: OfflineModeManager
+    @Inject
+    internal lateinit var documentPersistenceManager: DocumentPersistenceManager
 
     override fun applicationInjector(): AndroidInjector<out DaggerApplication> {
         return DaggerAppComponent.builder().create(this)
@@ -42,6 +49,14 @@ class App : DaggerApplicationBase() {
         createListeners()
 
         initializeEmojiCompat()
+
+        initOfflineMode()
+
+
+    }
+
+    private fun initOfflineMode() {
+        offlineModeManager.scheduleOfflineCacheUpdate()
     }
 
     private fun plantTimberTrees() {

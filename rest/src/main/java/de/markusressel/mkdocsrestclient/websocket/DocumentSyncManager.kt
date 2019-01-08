@@ -16,9 +16,9 @@ class DocumentSyncManager(
         private val url: String,
         private val basicAuthConfig: BasicAuthConfig,
         private val documentId: String,
+        private val onConnectionStatusChanged: ((connected: Boolean, errorCode: Int?, throwable: Throwable?) -> Unit),
         private val onInitialText: ((initialText: String) -> Unit),
-        private val onPatchReceived: ((editRequest: EditRequestEntity) -> Unit),
-        private val onError: ((code: Int?, throwable: Throwable?) -> Unit)) {
+        private val onTextChanged: ((newText: String, patches: LinkedList<diff_match_patch.Patch>) -> Unit)) {
 
     private val client: OkHttpClient = OkHttpClient.Builder()
             .readTimeout(0, TimeUnit.MILLISECONDS)
@@ -37,10 +37,73 @@ class DocumentSyncManager(
             .build()
 
     private var isConnected = false
-
     private var webSocket: WebSocket? = null
+    private val listener = object : EchoWebSocketListenerBase() {
+
+        override fun onOpen(webSocket: WebSocket, response: Response?) {
+            super.onOpen(webSocket, response)
+            isConnected = true
+            onConnectionStatusChanged(isConnected, null, null)
+        }
+
+        override fun onMessage(webSocket: WebSocket, text: String?) {
+            super.onMessage(webSocket, text)
+
+            if (text == null) {
+                return
+            }
+
+            doAsync {
+                try {
+                    val editRequest = gson.fromJson(text, EditRequestEntity::class.java)
+
+                    if (editRequest.documentId != documentId) {
+                        // ignore requests for other documents
+                        return@doAsync
+                    }
+
+                    if (previouslySentPatches.containsKey(editRequest.requestId)) {
+                        // remember if this edit request is the answer to a previously sent patch from us
+                        previouslySentPatches.remove(editRequest.requestId)
+                        return@doAsync
+                    }
+
+                    // parse and apply patches
+                    val patches: LinkedList<diff_match_patch.Patch> = diffMatchPatch.patch_fromText(editRequest.patches) as LinkedList<diff_match_patch.Patch>
+                    currentText = diffMatchPatch.patch_apply(patches, currentText)[0] as String
+
+                    onTextChanged(currentText!!, patches)
+                } catch (e: JsonParseException) {
+                    currentText = text
+                    onInitialText(text)
+                }
+            }
+        }
+
+        override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+            super.onClosed(webSocket, code, reason)
+            isConnected = false
+            onConnectionStatusChanged(isConnected, null, null)
+        }
+
+        override fun onFailure(webSocket: WebSocket, t: Throwable?, response: Response?) {
+            super.onFailure(webSocket, t, response)
+
+            // we dont call onConnectionStatusChanged(false) here because
+            isConnected = false
+
+            Timber.e(t, "Websocket error")
+            runOnUiThread {
+                onConnectionStatusChanged(isConnected, response?.code(), t)
+            }
+        }
+    }
 
     private val diffMatchPatch = diff_match_patch()
+    private var previouslySentPatches: MutableMap<String, String> = mutableMapOf()
+
+    var currentText: String? = null
+
     private var gson = Gson()
 
     /**
@@ -53,46 +116,6 @@ class DocumentSyncManager(
         }
 
         val request = Request.Builder().url(url).build()
-
-        val listener = object : EchoWebSocketListenerBase() {
-
-            override fun onOpen(webSocket: WebSocket, response: Response?) {
-                super.onOpen(webSocket, response)
-                isConnected = true
-            }
-
-            override fun onMessage(webSocket: WebSocket, text: String?) {
-                super.onMessage(webSocket, text)
-
-                text?.let {
-                    doAsync {
-                        try {
-                            val editRequest = gson.fromJson(it, EditRequestEntity::class.java)
-                            onPatchReceived(editRequest)
-                        } catch (e: JsonParseException) {
-                            onInitialText(it)
-                        }
-                    }
-                }
-            }
-
-            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                super.onClosed(webSocket, code, reason)
-                isConnected = false
-            }
-
-            override fun onFailure(webSocket: WebSocket, t: Throwable?, response: Response?) {
-                super.onFailure(webSocket, t, response)
-                isConnected = false
-
-                Timber.e(t, "Websocket error")
-                runOnUiThread {
-                    onError(response?.code(), t)
-                }
-            }
-
-        }
-
         webSocket = client.newWebSocket(request, listener)
     }
 
@@ -104,7 +127,6 @@ class DocumentSyncManager(
     fun sendPatch(previousText: String, newText: String): String {
         // compute diff
         val diffs = diffMatchPatch.diff_main(previousText, newText)
-
         // create path from diffs
         val patches = diffMatchPatch.patch_make(diffs)
 
@@ -117,6 +139,9 @@ class DocumentSyncManager(
 
         // send to server
         webSocket?.send(editRequestModel.toString())
+
+        // remember that this request has been sent
+        previouslySentPatches[requestId] = "sent"
 
         return requestId
     }

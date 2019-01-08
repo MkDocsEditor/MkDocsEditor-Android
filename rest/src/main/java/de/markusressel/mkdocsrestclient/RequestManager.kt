@@ -133,7 +133,7 @@ class RequestManager(hostname: String = "localhost", apiResource: String = "", v
      * @param method the request type (f.ex. GET)
      * @param deserializer a deserializer for the response json body
      */
-    fun <T : Any> doRequest(url: String, method: Method, deserializer: ResponseDeserializable<T>): Single<T> {
+    fun <T : Any> doRequest(url: String, method: Method, deserializer: Deserializable<T>): Single<T> {
         return createRequest(url = url, method = method)
                 .rx_object(deserializer)
                 .map {
@@ -149,7 +149,7 @@ class RequestManager(hostname: String = "localhost", apiResource: String = "", v
      * @param method the request type (f.ex. GET)
      * @param deserializer a deserializer for the <b>response</b> json body
      */
-    fun <T : Any> doRequest(url: String, urlParameters: List<Pair<String, Any?>>, method: Method, deserializer: ResponseDeserializable<T>): Single<T> {
+    fun <T : Any> doRequest(url: String, urlParameters: List<Pair<String, Any?>>, method: Method, deserializer: Deserializable<T>): Single<T> {
         return createRequest(url = url, urlParameters = urlParameters, method = method)
                 .rx_object(deserializer)
                 .map {
@@ -165,7 +165,7 @@ class RequestManager(hostname: String = "localhost", apiResource: String = "", v
      * @param jsonData an Object that will be serialized to json
      * @param deserializer a deserializer for the <b>response</b> json body
      */
-    fun <T : Any> doJsonRequest(url: String, method: Method, jsonData: Any, deserializer: ResponseDeserializable<T>): Single<T> {
+    fun <T : Any> doJsonRequest(url: String, method: Method, jsonData: Any, deserializer: Deserializable<T>): Single<T> {
         val json = Gson()
                 .toJson(jsonData)
 

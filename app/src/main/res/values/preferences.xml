@@ -2,9 +2,18 @@
 <resources>
 
     <string name="category_connection_key" translatable="false">category_connection_key</string>
-
     <string name="category_connection_title">Connection</string>
-    <string name="category_connection_description">Connection Desctiption</string>
+    <string name="category_connection_description">Connection Description</string>
+
+    <string name="category_offline_cache_key" translatable="false">category_offline_cache_key</string>
+    <string name="category_offline_cache_title">Offline Cache</string>
+    <string name="category_offline_cache_description">Offline Cache update conditions</string>
+
+    <string name="section_background_sync_key">section_background_sync_key</string>
+    <string name="section_background_sync_title">Background Sync</string>
+
+    <string name="action_force_offline_cache_update_key">action_force_offline_cache_update_key</string>
+    <string name="action_force_offline_cache_update_title">Schedule update now</string>
 
     <string name="connection_host_key" translatable="false">connection_host_key</string>
     <string name="connection_host_title">Host</string>

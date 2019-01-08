@@ -10,7 +10,11 @@ class PreferencesFragment : LifecyclePreferenceFragmentBase() {
     lateinit var preferenceHolder: KutePreferencesHolder
 
     override fun initPreferenceTree(): Array<KutePreferenceListItem> {
-        return arrayOf(preferenceHolder.connectionCategory, preferenceHolder.themePreference)
+        return arrayOf(
+                preferenceHolder.connectionCategory,
+                preferenceHolder.offlineCacheCategory,
+                preferenceHolder.themePreference
+        )
     }
 
 }

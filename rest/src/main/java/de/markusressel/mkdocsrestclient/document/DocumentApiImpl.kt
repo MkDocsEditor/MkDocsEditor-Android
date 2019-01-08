@@ -21,6 +21,7 @@ package de.markusressel.mkdocsrestclient.document
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Method
 import com.github.kittinunf.fuel.core.Response
+import com.github.kittinunf.fuel.core.deserializers.StringDeserializer
 import com.github.kittinunf.result.Result
 import com.github.salomonbrys.kotson.jsonObject
 import de.markusressel.mkdocsrestclient.RequestManager
@@ -32,19 +33,16 @@ import io.reactivex.Single
 class DocumentApiImpl(private val requestManager: RequestManager) : DocumentApi {
 
     override fun getDocument(id: String): Single<DocumentModel> {
-        return requestManager
-                .doRequest("/document/$id/", Method.GET, DocumentModel.SingleDeserializer())
+        return requestManager.doRequest("/document/$id/", Method.GET, DocumentModel.SingleDeserializer())
     }
 
     override fun getDocumentContent(id: String): Single<String> {
-        return Single
-                .just("# Main\n\nThis is just a dummy value")
+        return requestManager.doRequest("/document/$id/content", Method.GET, StringDeserializer())
     }
 
     override fun createDocument(parentId: String, name: String): Single<DocumentModel> {
         val data = jsonObject("parent" to parentId, "name" to name)
-        return requestManager
-                .doJsonRequest("/document/", Method.POST, data, DocumentModel.SingleDeserializer())
+        return requestManager.doJsonRequest("/document/", Method.POST, data, DocumentModel.SingleDeserializer())
     }
 
     override fun updateDocumentContent(id: String, newContent: String): Single<String> {

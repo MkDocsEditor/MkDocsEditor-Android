@@ -4,6 +4,7 @@ import android.content.Context
 import com.eightbitlab.rxbus.Bus
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
+import de.markusressel.kutepreferences.core.preference.action.KuteAction
 import de.markusressel.kutepreferences.core.preference.category.KuteCategory
 import de.markusressel.kutepreferences.core.preference.section.KuteSection
 import de.markusressel.kutepreferences.preference.bool.KuteBooleanPreference
@@ -13,6 +14,7 @@ import de.markusressel.kutepreferences.preference.text.password.KutePasswordPref
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.event.*
 import de.markusressel.mkdocseditor.view.IconHandler
+import de.markusressel.mkdocseditor.view.activity.base.OfflineModeManager
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,7 +26,8 @@ import javax.inject.Singleton
 class KutePreferencesHolder @Inject constructor(
         private val context: Context,
         private val iconHelper: IconHandler,
-        private val dataProvider: KutePreferenceDataProvider) {
+        private val dataProvider: KutePreferenceDataProvider,
+        private val offlineModeManager: OfflineModeManager) {
 
     val connectionCategory by lazy {
         KuteCategory(
@@ -32,22 +35,21 @@ class KutePreferencesHolder @Inject constructor(
                 icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_wifi),
                 title = context.getString(R.string.category_connection_title),
                 description = context.getString(R.string.category_connection_description),
-                children = listOf(
-                        KuteSection(
-                                key = R.string.section_rest_server_key,
-                                title = context.getString(R.string.section_rest_server_title),
-                                children = listOf(
-                                        restConnectionUriPreference,
-                                        KuteSection(
-                                                key = R.string.divider_basic_auth_key,
-                                                title = context.getString(R.string.divider_basic_auth_title),
-                                                children = listOf(
-                                                        basicAuthUserPreference,
-                                                        basicAuthPasswordPreference
-                                                )
+                children = listOf(KuteSection(
+                        key = R.string.section_rest_server_key,
+                        title = context.getString(R.string.section_rest_server_title),
+                        children = listOf(
+                                restConnectionUriPreference,
+                                KuteSection(
+                                        key = R.string.divider_basic_auth_key,
+                                        title = context.getString(R.string.divider_basic_auth_title),
+                                        children = listOf(
+                                                basicAuthUserPreference,
+                                                basicAuthPasswordPreference
                                         )
                                 )
-                        ),
+                        )
+                ),
                         KuteSection(
                                 key = R.string.section_web_key,
                                 title = context.getString(R.string.section_web_title),
@@ -57,6 +59,27 @@ class KutePreferencesHolder @Inject constructor(
                         )
                 )
         )
+    }
+
+    val offlineCacheCategory by lazy {
+        KuteCategory(
+                key = R.string.category_offline_cache_key,
+                icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_airplane),
+                title = context.getString(R.string.category_offline_cache_title),
+                description = context.getString(R.string.category_offline_cache_description),
+                children = listOf(KuteSection(
+                        key = R.string.section_background_sync_key,
+                        title = context.getString(R.string.section_background_sync_title),
+                        children = listOf(
+                                KuteAction(
+                                        key = R.string.action_force_offline_cache_update_key,
+                                        title = context.getString(R.string.action_force_offline_cache_update_title),
+                                        onClickAction = { context, action ->
+                                            offlineModeManager.scheduleOfflineCacheUpdate(evenInOfflineMode = true)
+                                        }
+                                )
+                        )
+                )))
     }
 
     val restConnectionUriPreference by lazy {
