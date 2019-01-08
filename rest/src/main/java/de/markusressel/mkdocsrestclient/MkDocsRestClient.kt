@@ -26,16 +26,14 @@ class MkDocsRestClient(private val requestManager: RequestManager = RequestManag
      * @param hostname the new hostname
      */
     fun setHostname(hostname: String) {
-        requestManager
-                .hostname = hostname
+        requestManager.hostname = hostname
     }
 
     /**
      * @return the hostname for this client
      */
     fun getHostname(): String {
-        return requestManager
-                .hostname
+        return requestManager.hostname
     }
 
     /**
@@ -50,24 +48,21 @@ class MkDocsRestClient(private val requestManager: RequestManager = RequestManag
      * Set the BasicAuthConfig for this client
      */
     fun getBasicAuthConfig(): BasicAuthConfig? {
-        return requestManager
-                .basicAuthConfig
+        return requestManager.basicAuthConfig
     }
 
     /**
      * Set the BasicAuthConfig for this client
      */
     fun setBasicAuthConfig(basicAuthConfig: BasicAuthConfig) {
-        requestManager
-                .basicAuthConfig = basicAuthConfig
+        requestManager.basicAuthConfig = basicAuthConfig
     }
 
     /**
      * Check if the server is alive and reachable
      */
     fun isHostAlive(): Single<Pair<Response, Result<ByteArray, FuelError>>> {
-        return requestManager
-                .doRequest("/tree/", Method.GET)
+        return requestManager.doRequest("/alive/", Method.GET)
     }
 
     /**

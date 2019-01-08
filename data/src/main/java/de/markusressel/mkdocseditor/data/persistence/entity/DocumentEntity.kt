@@ -8,6 +8,12 @@ import io.objectbox.annotation.Unique
 import io.objectbox.relation.ToOne
 import java.util.*
 
+fun DocumentModel.asEntity(parentSection: SectionEntity): DocumentEntity {
+    val d = DocumentEntity(0, this.type, this.id, this.name, this.filesize, this.modtime, this.url)
+    d.parentSection.target = parentSection
+    return d
+}
+
 /**
  * Created by Markus on 04.06.2018.
  */
@@ -24,10 +30,4 @@ data class DocumentEntity(
 
     lateinit var parentSection: ToOne<SectionEntity>
 
-}
-
-fun DocumentModel.asEntity(parentSection: SectionEntity): DocumentEntity {
-    val d = DocumentEntity(0, this.type, this.id, this.name, this.filesize, this.modtime, this.url)
-    d.parentSection.target = parentSection
-    return d
 }
