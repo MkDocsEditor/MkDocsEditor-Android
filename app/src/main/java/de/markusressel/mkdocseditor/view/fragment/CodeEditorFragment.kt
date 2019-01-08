@@ -41,6 +41,7 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
 import de.markusressel.mkdocseditor.databinding.FragmentEditorBinding
 import de.markusressel.mkdocseditor.extensions.common.android.context
 import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
+import de.markusressel.mkdocseditor.network.NetworkManager
 import de.markusressel.mkdocseditor.view.activity.base.OfflineModeManager
 import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
@@ -77,6 +78,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
     @Inject
     lateinit var chromeCustomTabManager: ChromeCustomTabManager
+
+    @Inject
+    lateinit var networkManager: NetworkManager
 
     private lateinit var codeEditorView: CodeEditorView
 
@@ -261,10 +265,15 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
             }
         })
 
+        // TODO: currently causes issues with the initial moveTo animation from cached editor state
         codeEditorView.mMoveWithCursorEnabled = false
+        // disable user input by default, it will be enabled automatically once connected to the server
+        codeEditorView.setEditable(false)
 
-        // disable user input in offline mode
-        codeEditorView.setEditable(offlineModeManager.isEnabled())
+        networkManager.connectionStatus.observe(viewLifecycleOwner,
+                Observer { type ->
+
+                })
 
         RxTextView
                 .textChanges(codeEditorView.editTextView)
