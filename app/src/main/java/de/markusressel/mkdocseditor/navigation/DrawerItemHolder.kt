@@ -19,13 +19,13 @@ object DrawerItemHolder {
             id = R.id.preferencesPage,
             title = R.string.menu_item_settings,
             icon = MaterialDesignIconic.Icon.gmi_settings,
-            selectable = false)
+            selectable = true)
 
     val About = DrawerMenuItem(
             id = R.id.aboutPage,
             title = R.string.menu_item_about,
             icon = MaterialDesignIconic.Icon.gmi_info,
-            selectable = false)
+            selectable = true)
 
     val OfflineMode = DrawerMenuItem(
             id = R.id.none,

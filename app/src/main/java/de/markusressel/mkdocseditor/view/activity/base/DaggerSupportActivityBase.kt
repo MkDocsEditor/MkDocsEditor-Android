@@ -92,7 +92,7 @@ abstract class DaggerSupportActivityBase : LifecycleActivityBase(), HasFragmentI
                 .onCreate(savedInstanceState)
 
         restClient
-                .setHostname(preferencesHolder.connectionUriPreference.persistedValue)
+                .setHostname(preferencesHolder.restConnectionUriPreference.persistedValue)
         restClient
                 .setBasicAuthConfig(BasicAuthConfig(username = preferencesHolder.basicAuthUserPreference.persistedValue, password = preferencesHolder.basicAuthPasswordPreference.persistedValue))
 

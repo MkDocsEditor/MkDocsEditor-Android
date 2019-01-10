@@ -12,7 +12,12 @@ import java.util.*
  * Created by Markus on 05.06.2018.
  */
 @Entity
-data class ResourceEntity(@Id var entityId: Long = 0, val type: String = "Resource", @Unique val id: String = "", val name: String = "", val filesize: Long = -1L, val modtime: Date = Date()) : IdentifiableListItem {
+data class ResourceEntity(@Id var entityId: Long = 0,
+                          val type: String = "Resource",
+                          @Unique val id: String = "",
+                          val name: String = "",
+                          var filesize: Long = -1L,
+                          var modtime: Date = Date()) : IdentifiableListItem {
     override fun getItemId(): String = id
 
     lateinit var parentSection: ToOne<SectionEntity>

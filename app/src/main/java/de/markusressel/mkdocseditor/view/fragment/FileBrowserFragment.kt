@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.view.fragment
 
-import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -18,7 +17,10 @@ import com.github.ajalt.timberkt.Timber
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import de.markusressel.commons.android.material.toast
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.data.persistence.*
+import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
+import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
@@ -28,7 +30,6 @@ import de.markusressel.mkdocseditor.extensions.common.android.context
 import de.markusressel.mkdocseditor.listItemDocument
 import de.markusressel.mkdocseditor.listItemResource
 import de.markusressel.mkdocseditor.listItemSection
-import de.markusressel.mkdocseditor.view.activity.EditorActivity
 import de.markusressel.mkdocseditor.view.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragmentBase
 import de.markusressel.mkdocsrestclient.section.SectionModel
@@ -46,9 +47,9 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     @Inject
     lateinit var documentPersistenceManager: DocumentPersistenceManager
     @Inject
-    lateinit var documentContentPersistenceManager: DocumentContentPersistenceManager
-    @Inject
     lateinit var resourcePersistenceManager: ResourcePersistenceManager
+
+    var currentSectionId: String by savedInstanceState("root")
 
     private val fileBrowserViewModel: FileBrowserViewModel by lazy {
         ViewModelProviders.of(this).get(FileBrowserViewModel::class.java)
@@ -56,15 +57,25 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
         fileBrowserViewModel.persistenceManager = sectionPersistenceManager
+        fileBrowserViewModel.currentSectionId.value = currentSectionId
         fileBrowserViewModel.currentSection.observe(this, Observer {
             if (it.isNotEmpty()) {
                 it.first().let {
+                    if (it.subsections.isEmpty() and it.documents.isEmpty() and it.resources.isEmpty()) {
+                        showEmpty()
+                    } else {
+                        hideEmpty()
+                    }
                     epoxyController.setData(it.subsections, it.documents, it.resources)
+                }
+            } else {
+                // in theory this will navigate back until a section is found
+                // or otherwise show the "empty" screen
+                if (!fileBrowserViewModel.navigateUp()) {
+                    showEmpty()
                 }
             }
         })
-
-        fileBrowserViewModel.openSection("root")
 
         return super.createViewDataBinding(inflater, container, savedInstanceState)
     }
@@ -81,21 +92,10 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     }
 
     override fun persistListData(data: IdentifiableListItem) {
-        resourcePersistenceManager
-                .standardOperation()
-                .removeAll()
-        documentPersistenceManager
-                .standardOperation()
-                .removeAll()
-        sectionPersistenceManager
-                .standardOperation()
-                .removeAll()
-
+        // update existing entities
         val rootSection = data as SectionEntity
 
-        sectionPersistenceManager
-                .standardOperation()
-                .put(rootSection)
+        sectionPersistenceManager.insertOrUpdateRoot(rootSection)
     }
 
     override fun createEpoxyController(): Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>> {
@@ -106,7 +106,8 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                         id(it.id)
                         item(it)
                         onclick { model, parentView, clickedView, position ->
-                            fileBrowserViewModel.openSection(model.item().id)
+                            currentSectionId = model.item().id
+                            fileBrowserViewModel.openSection(currentSectionId)
                         }
                     }
                 }
@@ -153,8 +154,9 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     private fun openDocumentEditor(document: DocumentEntity) {
         Timber.d { "Opening Document '${document.name}'" }
 
-        val intent = EditorActivity.getNewInstanceIntent(context as Context, document.id, document.name)
-        startActivity(intent)
+        navController.navigate(
+                FileBrowserFragmentDirections.actionFileBrowserPageToCodeEditorPage(document.id)
+        )
     }
 
     private fun openResourceDetailPage(resource: ResourceEntity) {

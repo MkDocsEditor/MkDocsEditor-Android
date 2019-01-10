@@ -1,19 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-<de.markusressel.kodeeditor.library.view.CodeEditorView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/codeEditorView"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fadeScrollbars="true"
-    android:focusableInTouchMode="true"
-    android:scrollbars="vertical|horizontal"
-    app:cev_divider="false"
-    app:hasClickableChildren="true"
-    app:maxZoom="10.0"
-    app:maxZoomType="realZoom"
-    app:minZoom="1"
-    app:minZoomType="zoom"
-    app:overPinchable="true"
-    app:overScrollHorizontal="false"
-    app:overScrollVertical="false" />
+    <data>
+
+        <variable
+            name="viewModel"
+            type="de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel" />
+    </data>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:animateLayoutChanges="true"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="24dp"
+            android:background="@color/md_orange_900"
+            android:gravity="center"
+            android:text="@string/offline"
+            android:visibility="@{viewModel.offlineModeBannerVisibility}" />
+
+
+        <de.markusressel.kodeeditor.library.view.CodeEditorView
+            android:id="@+id/codeEditorView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fadeScrollbars="true"
+            android:focusableInTouchMode="true"
+            android:scrollbars="vertical|horizontal"
+            app:cev_divider="false"
+            app:hasClickableChildren="true"
+            app:maxZoom="10.0"
+            app:maxZoomType="realZoom"
+            app:minZoom="1"
+            app:minZoomType="zoom"
+            app:overPinchable="true"
+            app:overScrollHorizontal="false"
+            app:overScrollVertical="false" />
+
+    </LinearLayout>
+
+</layout>

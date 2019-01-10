@@ -18,9 +18,7 @@ import com.mikepenz.materialdrawer.DrawerBuilder
 import com.mikepenz.materialdrawer.model.*
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IProfile
-import de.markusressel.commons.android.material.toast
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
 import de.markusressel.mkdocseditor.event.ThemeChangedEvent
 import de.markusressel.mkdocseditor.extensions.common.android.isTablet
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder
@@ -47,14 +45,14 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
         get() = R.layout.activity_main
 
     protected val navController by lazy { Navigation.findNavController(this, R.id.navHostFragment) }
+
     private lateinit var navigationDrawer: Drawer
 
     @Inject
     protected lateinit var offlineModeManager: OfflineModeManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super
-                .onCreate(savedInstanceState)
+        super.onCreate(savedInstanceState)
 
         val menuItemList = initDrawerMenuItems()
         val accountHeader = initAccountHeader()
@@ -96,6 +94,13 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
                 navGraph = navController.graph,
                 drawerLayout = navigationDrawer.drawerLayout)
         setupActionBarWithNavController(navController, appBarConfiguration)
+
+        navController.addOnDestinationChangedListener { controller, destination, arguments ->
+            // update selected drawer item accordingly
+            DrawerItemHolder.fromId(destination.id)?.let {
+                navigationDrawer.setSelection(it.id.toLong(), false)
+            }
+        }
     }
 
     override fun onStart() {
@@ -105,12 +110,6 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
         Bus.observe<ThemeChangedEvent>()
                 .subscribe {
                     recreate()
-                }
-                .registerInBus(this)
-
-        Bus.observe<OfflineModeChangedEvent>()
-                .subscribe {
-                    toast(text = "Offline Mode: ${it.enabled}")
                 }
                 .registerInBus(this)
     }
@@ -159,6 +158,10 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
                             .fromId(drawerItem.identifier.toInt())
 
                     drawerMenuItem?.let {
+                        if (it.id == R.id.none) {
+                            return@let
+                        }
+
                         navController.navigate(it.id)
 
                         if (drawerItem.isSelectable) {
@@ -250,15 +253,10 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
             }
         }
 
-//        navController.currentDestination?.id
+        if (navController.navigateUp()) {
+            return
+        }
 
-        navController.navigateUp()
         super.onBackPressed()
-
-        // TODO: update drawer selection on back press
-//        if (previousPage != null) {
-//            navigationDrawer.setSelection(previousPage.drawerMenuItem.identifier, false)
-//            return
-//        }
     }
 }

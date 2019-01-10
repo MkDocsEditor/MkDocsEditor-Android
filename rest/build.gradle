@@ -39,6 +39,19 @@ dependencies {
     // okhttp (for websockets)
     implementation 'com.squareup.okhttp3:okhttp:3.11.0'
 
+    api("com.github.markusressel.commons:commons_core:master-SNAPSHOT") {
+        changing = true
+    }
+    api("com.github.markusressel.commons:commons_logging:master-SNAPSHOT") {
+        changing = true
+    }
+    api("com.github.markusressel.commons:commons_android_core:master-SNAPSHOT") {
+        changing = true
+    }
+    api("com.github.markusressel.commons:commons_android_material:master-SNAPSHOT") {
+        changing = true
+    }
+
     // Logging
     api 'com.jakewharton.timber:timber:4.7.1'
     api "com.github.ajalt:timberkt:${rootProject.ext.timberKtVersion}"
@@ -46,4 +59,9 @@ dependencies {
 //    testImplementation 'junit:junit:4.12'
 //    androidTestImplementation 'androidx.test:runner:1.1.1-alpha01'
 //    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1-alpha01'
+}
+
+configurations.all() {
+    // Check for updates every build
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
 }

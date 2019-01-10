@@ -9,6 +9,7 @@ import io.objectbox.relation.ToOne
  */
 @Entity
 data class DocumentContentEntity(@Id var entityId: Long = 0,
+                                 var date: Long = 0,
                                  val documentId: String = "",
                                  var text: String = "",
                                  var selection: Int = 0,
@@ -17,6 +18,5 @@ data class DocumentContentEntity(@Id var entityId: Long = 0,
                                  var panY: Float = 0F) {
 
     lateinit var documentEntity: ToOne<DocumentEntity>
-
 
 }

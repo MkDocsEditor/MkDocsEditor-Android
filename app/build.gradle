@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
+apply plugin: 'androidx.navigation.safeargs'
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
@@ -35,6 +36,8 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    dataBinding.enabled true
+
     packagingOptions {
         pickFirst 'META-INF/core_release.kotlin_module'
         pickFirst 'META-INF/library_release.kotlin_module'
@@ -56,17 +59,16 @@ dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
-    implementation("com.github.markusressel.commons:commons_core:master-SNAPSHOT")
-    implementation("com.github.markusressel.commons:commons_logging:master-SNAPSHOT")
-    implementation("com.github.markusressel.commons:commons_android_core:master-SNAPSHOT")
-    implementation("com.github.markusressel.commons:commons_android_material:master-SNAPSHOT")
-
     implementation 'androidx.appcompat:appcompat:1.0.2'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.0-alpha3'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.0.0'
     implementation 'androidx.annotation:annotation:1.0.1'
+    implementation 'androidx.browser:browser:1.0.0'
     implementation 'com.google.android.material:material:1.0.0'
+
+    implementation 'androidx.emoji:emoji:1.0.0'
+    implementation 'androidx.emoji:emoji-bundled:1.0.0'
 
     implementation "android.arch.navigation:navigation-fragment-ktx:1.0.0-alpha09"
     implementation "android.arch.navigation:navigation-ui-ktx:1.0.0-alpha09"
@@ -154,6 +156,4 @@ dependencies {
 configurations.all() {
     // Check for updates every build
     resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
-//    resolutionStrategy.force "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-//    resolutionStrategy.force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }
