@@ -24,7 +24,7 @@
             android:visibility="@{viewModel.offlineModeBannerVisibility}" />
 
 
-        <de.markusressel.kodeeditor.library.view.CodeEditorView
+        <de.markusressel.kodeeditor.library.view.CodeEditorLayout
             android:id="@+id/codeEditorView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
