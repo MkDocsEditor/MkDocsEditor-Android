@@ -136,12 +136,12 @@ dependencies {
     implementation 'com.afollestad.material-dialogs:core:2.0.0-rc7'
 
     // Code editor
-//    def codeEditorVersion = "v0.5.0"
-    def codeEditorVersion = "dev-SNAPSHOT"
+    def codeEditorVersion = "v1.0.0"
+//    def codeEditorVersion = "dev-SNAPSHOT"
     implementation("com.github.markusressel:KodeEditor:${codeEditorVersion}") { changing = true}
 
     // Syntax Highlighting
-    def codeHighlighterVersion = "v1.0.0"
+    def codeHighlighterVersion = "v1.2.2"
     implementation("com.github.markusressel.KodeHighlighter:markdown:${codeHighlighterVersion}") { changing = true}
 
     // AboutLibraries ("About" screen)
