@@ -136,7 +136,7 @@ dependencies {
     implementation 'com.afollestad.material-dialogs:core:2.0.0-rc7'
 
     // Code editor
-    def codeEditorVersion = "v1.0.0"
+    def codeEditorVersion = "v2.0.0"
 //    def codeEditorVersion = "dev-SNAPSHOT"
     implementation("com.github.markusressel:KodeEditor:${codeEditorVersion}") { changing = true}
 

@@ -23,10 +23,10 @@
         <item name="listItem_dividerColor">@color/listItem_dividerColorLight</item>
 
         <!-- KodeEditor -->
-        <item name="cev_editor_backgroundColor">@color/editor_backgroundLight</item>
-        <item name="cev_lineNumbers_backgroundColor">@color/editor_lineNumbers_backgroundLight
+        <item name="ke_editor_backgroundColor">@color/editor_backgroundLight</item>
+        <item name="ke_lineNumbers_backgroundColor">@color/editor_lineNumbers_backgroundLight
         </item>
-        <item name="cev_lineNumbers_textColor">@color/textColorSecondaryInverse</item>
+        <item name="ke_lineNumbers_textColor">@color/textColorSecondaryInverse</item>
 
         <!--About Libraries-->
         <!--<item name="about_libraries_window_background">@color/windowBackgroundColorInverse</item>-->
@@ -89,9 +89,9 @@
         <item name="listItem_dividerColor">@color/listItem_dividerColorDark</item>
 
         <!-- KodeEditor -->
-        <item name="cev_editor_backgroundColor">@color/editor_backgroundDark</item>
-        <item name="cev_lineNumbers_backgroundColor">@color/editor_lineNumbers_backgroundDark</item>
-        <item name="cev_lineNumbers_textColor">@color/textColorSecondary</item>
+        <item name="ke_editor_backgroundColor">@color/editor_backgroundDark</item>
+        <item name="ke_lineNumbers_backgroundColor">@color/editor_lineNumbers_backgroundDark</item>
+        <item name="ke_lineNumbers_textColor">@color/textColorSecondary</item>
 
         <!-- About Libraries -->
         <!--<item name="about_libraries_window_background">@color/windowBackgroundColor</item>-->

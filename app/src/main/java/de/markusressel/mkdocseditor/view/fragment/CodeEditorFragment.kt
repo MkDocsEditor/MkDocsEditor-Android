@@ -243,8 +243,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         super.onViewCreated(view, savedInstanceState)
 
         codeEditorLayout = view.findViewById(R.id.codeEditorView)
-        codeEditorLayout.setSyntaxHighlighter(MarkdownSyntaxHighlighter())
-        codeEditorLayout.codeEditorZoomLayout.engine.addListener(object : ZoomEngine.Listener {
+        codeEditorLayout.syntaxHighlighter = MarkdownSyntaxHighlighter()
+        codeEditorLayout.codeEditorView.engine.addListener(object : ZoomEngine.Listener {
             override fun onIdle(engine: ZoomEngine) {
                 saveEditorState()
             }
@@ -266,7 +266,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         })
 
         // disable user input by default, it will be enabled automatically once connected to the server
-        codeEditorLayout.setEditable(false)
+        codeEditorLayout.editable = false
 
         networkManager.connectionStatus.observe(viewLifecycleOwner,
                 Observer { type ->
@@ -274,7 +274,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                 })
 
         RxTextView
-                .textChanges(codeEditorLayout.codeEditorZoomLayout.codeEditText)
+                .textChanges(codeEditorLayout.codeEditorView.codeEditText)
                 .skipInitialValue()
                 .debounce(100, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
@@ -311,16 +311,16 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
             currentText = text
         }
 
-        codeEditorLayout.setText(currentText ?: "")
-        codeEditorLayout.setEditable(editable)
+        codeEditorLayout.text = currentText ?: ""
+        codeEditorLayout.editable = editable
         entity?.let {
-            codeEditorLayout.codeEditorZoomLayout.codeEditText.setSelection(entity.selection.coerceIn(0, currentText!!.length))
+            codeEditorLayout.codeEditorView.codeEditText.setSelection(entity.selection.coerceIn(0, currentText!!.length))
             codeEditorLayout.post {
                 // zoom to last saved state
                 val absolutePosition = computeAbsolutePosition(PointF(entity.panX, entity.panY))
                 currentPosition.set(absolutePosition.x, absolutePosition.y)
 
-                codeEditorLayout.moveTo(currentZoom, absolutePosition.x, absolutePosition.y, true)
+                codeEditorLayout.codeEditorView.moveTo(currentZoom, absolutePosition.x, absolutePosition.y, true)
             }
         }
 
@@ -376,15 +376,15 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     @Synchronized
     private fun onTextChanged(newText: String, patches: LinkedList<diff_match_patch.Patch>) {
         runOnUiThread {
-            val oldSelection = codeEditorLayout.codeEditorZoomLayout.codeEditText.selectionStart
+            val oldSelection = codeEditorLayout.codeEditorView.codeEditText.selectionStart
             currentText = newText
 
             // set new cursor position
             val newSelection = calculateNewSelectionIndex(oldSelection, patches)
                     .coerceIn(0, currentText?.length)
 
-            codeEditorLayout.setText(currentText ?: "")
-            codeEditorLayout.codeEditorZoomLayout.codeEditText.setSelection(newSelection)
+            codeEditorLayout.text = currentText ?: ""
+            codeEditorLayout.codeEditorView.codeEditText.setSelection(newSelection)
 
             saveEditorState()
         }
@@ -399,15 +399,15 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
             return
         }
 
-        currentPosition.set(codeEditorLayout.panX, codeEditorLayout.panY)
-        currentZoom = codeEditorLayout.zoom
+        currentPosition.set(codeEditorLayout.codeEditorView.panX, codeEditorLayout.codeEditorView.panY)
+        currentZoom = codeEditorLayout.codeEditorView.zoom
 
         val positioningPercentage = getCurrentPositionPercentage()
 
         documentContentPersistenceManager.insertOrUpdate(
                 documentId = documentId,
                 text = currentText,
-                selection = codeEditorLayout.codeEditorZoomLayout.codeEditText.selectionStart,
+                selection = codeEditorLayout.codeEditorView.codeEditText.selectionStart,
                 zoomLevel = currentZoom,
                 panX = positioningPercentage.x,
                 panY = positioningPercentage.y
@@ -420,7 +420,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
      * @return a point with horizontal (x) and vertical (y) positioning percentages
      */
     private fun getCurrentPositionPercentage(): PointF {
-        val engine = codeEditorLayout.codeEditorZoomLayout.engine
+        val engine = codeEditorLayout.codeEditorView.engine
         return PointF(engine.computeHorizontalScrollOffset().toFloat() / engine.computeHorizontalScrollRange(),
                 engine.computeVerticalScrollOffset().toFloat() / engine.computeVerticalScrollRange())
     }
@@ -431,7 +431,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
      * @return a point with horizontal (x) and vertical (y) absolute, scale-independent, positioning coordinate values
      */
     private fun computeAbsolutePosition(percentage: PointF): PointF {
-        val engine = codeEditorLayout.codeEditorZoomLayout.engine
+        val engine = codeEditorLayout.codeEditorView.engine
         return PointF(-1 * percentage.x * (engine.computeHorizontalScrollRange() / engine.realZoom),
                 -1 * percentage.y * (engine.computeVerticalScrollRange() / engine.realZoom)
         )
@@ -517,7 +517,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
     private fun disconnect(reason: String) {
         noConnectionSnackbar?.dismiss()
-        codeEditorLayout.setEditable(false)
+        codeEditorLayout.editable = false
         syncManager.disconnect(1000, reason)
     }
 
