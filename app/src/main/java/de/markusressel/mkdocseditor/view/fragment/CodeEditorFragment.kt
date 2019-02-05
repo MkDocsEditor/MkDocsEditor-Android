@@ -268,11 +268,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         // disable user input by default, it will be enabled automatically once connected to the server
         codeEditorLayout.editable = false
 
-        networkManager.connectionStatus.observe(viewLifecycleOwner,
-                Observer { type ->
-
-                })
-
         RxTextView
                 .textChanges(codeEditorLayout.codeEditorView.codeEditText)
                 .skipInitialValue()

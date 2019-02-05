@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.view.fragment
+package de.markusressel.mkdocseditor.view.viewmodel
 
 import androidx.annotation.MainThread
 import androidx.arch.core.util.Function
@@ -15,7 +15,7 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity_
-import de.markusressel.mkdocseditor.view.viewmodel.EntityListViewModel
+import de.markusressel.mkdocseditor.view.fragment.SectionBackstackItem
 import io.objectbox.android.ObjectBoxDataSource
 import io.objectbox.kotlin.query
 import java.util.*

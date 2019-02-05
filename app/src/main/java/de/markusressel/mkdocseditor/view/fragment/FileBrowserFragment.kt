@@ -32,6 +32,7 @@ import de.markusressel.mkdocseditor.listItemResource
 import de.markusressel.mkdocseditor.listItemSection
 import de.markusressel.mkdocseditor.view.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragmentBase
+import de.markusressel.mkdocseditor.view.viewmodel.FileBrowserViewModel
 import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.reactivex.Single
 import javax.inject.Inject
@@ -96,6 +97,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         val rootSection = data as SectionEntity
 
         sectionPersistenceManager.insertOrUpdateRoot(rootSection)
+        fileBrowserViewModel.currentSectionId.postValue(fileBrowserViewModel.currentSectionId.value)
     }
 
     override fun createEpoxyController(): Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>> {

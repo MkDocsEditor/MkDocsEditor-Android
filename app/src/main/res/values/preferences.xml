@@ -46,7 +46,9 @@
     <!-- Theme -->
     <string name="theme_key">theme</string>
 
-    <string name="offline_mode_key">offline_mode</string>
+    <string name="offline_mode_key" translatable="false">offline_mode</string>
+    <string name="clear_offline_cache_key" translatable="false">clear_offline_cache_key</string>
+    <string name="clear_offline_cache_title" translatable="false">Clear offline cache</string>
 
     <string name="theme_light_value">0</string>
     <string name="theme_dark_value">1</string>

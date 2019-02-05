@@ -136,8 +136,8 @@ dependencies {
     implementation 'com.afollestad.material-dialogs:core:2.0.0-rc7'
 
     // Code editor
-    def codeEditorVersion = "v2.0.0"
-//    def codeEditorVersion = "dev-SNAPSHOT"
+//    def codeEditorVersion = "v2.1.0"
+    def codeEditorVersion = "dev-SNAPSHOT"
     implementation("com.github.markusressel:KodeEditor:${codeEditorVersion}") { changing = true}
 
     // Syntax Highlighting
@@ -152,7 +152,7 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
-    implementation 'android.arch.navigation:navigation-fragment:1.0.0-alpha11'
+    implementation 'android.arch.navigation:navigation-fragment:1.0.0-beta01'
 }
 
 configurations.all() {

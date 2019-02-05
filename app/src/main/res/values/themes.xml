@@ -27,6 +27,7 @@
         <item name="ke_lineNumbers_backgroundColor">@color/editor_lineNumbers_backgroundLight
         </item>
         <item name="ke_lineNumbers_textColor">@color/textColorSecondaryInverse</item>
+        <item name="ke_minimap_borderColor">@color/textColorSecondaryInverse</item>
 
         <!--About Libraries-->
         <!--<item name="about_libraries_window_background">@color/windowBackgroundColorInverse</item>-->
@@ -92,6 +93,7 @@
         <item name="ke_editor_backgroundColor">@color/editor_backgroundDark</item>
         <item name="ke_lineNumbers_backgroundColor">@color/editor_lineNumbers_backgroundDark</item>
         <item name="ke_lineNumbers_textColor">@color/textColorSecondary</item>
+        <item name="ke_minimap_borderColor">@color/textColorSecondary</item>
 
         <!-- About Libraries -->
         <!--<item name="about_libraries_window_background">@color/windowBackgroundColor</item>-->

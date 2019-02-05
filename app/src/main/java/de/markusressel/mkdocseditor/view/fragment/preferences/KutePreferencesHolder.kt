@@ -3,6 +3,7 @@ package de.markusressel.mkdocseditor.view.fragment.preferences
 import android.content.Context
 import com.eightbitlab.rxbus.Bus
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
+import de.markusressel.commons.android.material.toast
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.kutepreferences.core.preference.action.KuteAction
 import de.markusressel.kutepreferences.core.preference.category.KuteCategory
@@ -12,6 +13,9 @@ import de.markusressel.kutepreferences.preference.selection.single.KuteSingleSel
 import de.markusressel.kutepreferences.preference.text.KuteTextPreference
 import de.markusressel.kutepreferences.preference.text.password.KutePasswordPreference
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
 import de.markusressel.mkdocseditor.event.*
 import de.markusressel.mkdocseditor.view.IconHandler
 import de.markusressel.mkdocseditor.view.activity.base.OfflineModeManager
@@ -27,6 +31,9 @@ class KutePreferencesHolder @Inject constructor(
         private val context: Context,
         private val iconHelper: IconHandler,
         private val dataProvider: KutePreferenceDataProvider,
+        private val sectionPersistenceManager: SectionPersistenceManager,
+        private val documentPersistenceManager: DocumentPersistenceManager,
+        private val resourcePersistenceManager: ResourcePersistenceManager,
         private val offlineModeManager: OfflineModeManager) {
 
     val connectionCategory by lazy {
@@ -71,15 +78,26 @@ class KutePreferencesHolder @Inject constructor(
                         key = R.string.section_background_sync_key,
                         title = context.getString(R.string.section_background_sync_title),
                         children = listOf(
-                                KuteAction(
-                                        key = R.string.action_force_offline_cache_update_key,
-                                        title = context.getString(R.string.action_force_offline_cache_update_title),
-                                        onClickAction = { context, action ->
-                                            offlineModeManager.scheduleOfflineCacheUpdate(evenInOfflineMode = true)
-                                        }
-                                )
+                                forceOfflineCacheUpdatePreference,
+                                clearOfflineCache
                         )
                 )))
+    }
+
+    val forceOfflineCacheUpdatePreference = KuteAction(
+            key = R.string.action_force_offline_cache_update_key,
+            title = context.getString(R.string.action_force_offline_cache_update_title),
+            onClickAction = { context, action ->
+                offlineModeManager.scheduleOfflineCacheUpdate(evenInOfflineMode = true)
+            })
+
+    val clearOfflineCache by lazy {
+        KuteAction(key = R.string.clear_offline_cache_key, icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_delete), title = context.getString(R.string.clear_offline_cache_title), onClickAction = { context, _ ->
+            sectionPersistenceManager.standardOperation().removeAll()
+            documentPersistenceManager.standardOperation().removeAll()
+            resourcePersistenceManager.standardOperation().removeAll()
+            context.toast("DB cleared")
+        })
     }
 
     val restConnectionUriPreference by lazy {

@@ -1,6 +1,6 @@
 package de.markusressel.mkdocsrestclient.websocket
 
-import com.github.salomonbrys.kotson.jsonObject
+import androidx.annotation.WorkerThread
 import com.google.gson.Gson
 import com.google.gson.JsonParseException
 import de.markusressel.commons.android.core.doAsync
@@ -55,27 +55,9 @@ class DocumentSyncManager(
 
             doAsync {
                 try {
-                    val editRequest = gson.fromJson(text, EditRequestEntity::class.java)
-
-                    if (editRequest.documentId != documentId) {
-                        // ignore requests for other documents
-                        return@doAsync
-                    }
-
-                    if (previouslySentPatches.containsKey(editRequest.requestId)) {
-                        // remember if this edit request is the answer to a previously sent patch from us
-                        previouslySentPatches.remove(editRequest.requestId)
-                        return@doAsync
-                    }
-
-                    // parse and apply patches
-                    val patches: LinkedList<diff_match_patch.Patch> = diffMatchPatch.patch_fromText(editRequest.patches) as LinkedList<diff_match_patch.Patch>
-                    currentText = diffMatchPatch.patch_apply(patches, currentText)[0] as String
-
-                    onTextChanged(currentText!!, patches)
-                } catch (e: JsonParseException) {
-                    currentText = text
-                    onInitialText(text)
+                    processIncomingMessage(text)
+                } catch (e: Exception) {
+                    Timber.e(e)
                 }
             }
         }
@@ -95,6 +77,40 @@ class DocumentSyncManager(
             Timber.e(t, "Websocket error")
             runOnUiThread {
                 onConnectionStatusChanged(isConnected, response?.code(), t)
+            }
+        }
+    }
+
+    @WorkerThread
+    private fun processIncomingMessage(text: String) {
+        val entity = gson.fromJson(text, SocketEntityBase::class.java)
+        if (entity.documentId != documentId) {
+            // ignore requests for other documents
+            return
+        }
+
+        when (entity.type) {
+            "initial-content" -> {
+                val initialContentEntity = gson.fromJson(text, InitialContentRequestEntity::class.java)
+
+                currentText = initialContentEntity.content
+                onInitialText(initialContentEntity.content)
+            }
+            "edit-request" -> {
+                val editRequest = gson.fromJson(text, EditRequestEntity::class.java)
+                        ?: throw JsonParseException("result was null!")
+
+                if (previouslySentPatches.containsKey(editRequest.requestId)) {
+                    // remember if this edit request is the answer to a previously sent patch from us
+                    previouslySentPatches.remove(editRequest.requestId)
+                    return
+                }
+
+                // parse and apply patches
+                val patches: LinkedList<diff_match_patch.Patch> = diffMatchPatch.patch_fromText(editRequest.patches) as LinkedList<diff_match_patch.Patch>
+                currentText = diffMatchPatch.patch_apply(patches, currentText)[0] as String
+
+                onTextChanged(currentText!!, patches)
             }
         }
     }
@@ -132,13 +148,13 @@ class DocumentSyncManager(
 
         // parse to json
         val requestId = UUID.randomUUID().toString()
-        val editRequestModel = jsonObject(
-                "requestId" to requestId,
-                "documentId" to documentId,
-                "patches" to diffMatchPatch.patch_toText(patches))
+        val editRequestModel = EditRequestEntity(
+                requestId = requestId,
+                documentId = documentId,
+                patches = diffMatchPatch.patch_toText(patches))
 
         // send to server
-        webSocket?.send(editRequestModel.toString())
+        webSocket?.send(gson.toJson(editRequestModel))
 
         // remember that this request has been sent
         previouslySentPatches[requestId] = "sent"
