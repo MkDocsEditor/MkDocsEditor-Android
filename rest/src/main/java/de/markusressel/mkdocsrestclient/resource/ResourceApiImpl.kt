@@ -18,10 +18,8 @@
 
 package de.markusressel.mkdocsrestclient.resource
 
-import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Method
 import com.github.kittinunf.fuel.core.Response
-import com.github.kittinunf.result.Result
 import de.markusressel.mkdocsrestclient.RequestManager
 import io.reactivex.Single
 
@@ -43,9 +41,8 @@ class ResourceApiImpl(private val requestManager: RequestManager) : ResourceApi 
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun deleteResource(id: String): Single<Pair<Response, Result<ByteArray, FuelError>>> {
-        return requestManager
-                .doRequest("/document/$id/", Method.DELETE)
+    override fun deleteResource(id: String): Single<Pair<Response, ByteArray>> {
+        return requestManager.doRequest("/document/$id/", Method.DELETE)
     }
 
 }

@@ -18,9 +18,7 @@
 
 package de.markusressel.mkdocsrestclient.document
 
-import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Response
-import com.github.kittinunf.result.Result
 import io.reactivex.Single
 
 /**
@@ -51,6 +49,6 @@ interface DocumentApi {
     /**
      * Delete an existing document
      */
-    fun deleteDocument(id: String): Single<Pair<Response, Result<ByteArray, FuelError>>>
+    fun deleteDocument(id: String): Single<Pair<Response, ByteArray>>
 
 }

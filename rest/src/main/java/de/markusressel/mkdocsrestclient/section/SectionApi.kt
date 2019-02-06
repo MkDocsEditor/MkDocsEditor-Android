@@ -18,9 +18,7 @@
 
 package de.markusressel.mkdocsrestclient.section
 
-import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Response
-import com.github.kittinunf.result.Result
 import io.reactivex.Single
 
 /**
@@ -41,6 +39,6 @@ interface SectionApi {
     /**
      * Deletes an ENTIRE section
      */
-    fun deleteSection(id: String): Single<Pair<Response, Result<ByteArray, FuelError>>>
+    fun deleteSection(id: String): Single<Pair<Response, ByteArray>>
 
 }

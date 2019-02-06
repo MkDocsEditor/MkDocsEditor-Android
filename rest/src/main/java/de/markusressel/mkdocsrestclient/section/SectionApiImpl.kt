@@ -18,10 +18,8 @@
 
 package de.markusressel.mkdocsrestclient.section
 
-import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Method
 import com.github.kittinunf.fuel.core.Response
-import com.github.kittinunf.result.Result
 import com.github.salomonbrys.kotson.jsonObject
 import de.markusressel.mkdocsrestclient.RequestManager
 import io.reactivex.Single
@@ -33,8 +31,7 @@ class SectionApiImpl(private val requestManager: RequestManager) : SectionApi {
 
     override
     fun getSection(id: String): Single<SectionModel> {
-        return requestManager
-                .doRequest("/section/$id/", Method.GET, SectionModel.SingleDeserializer())
+        return requestManager.doRequest("/section/$id/", Method.GET, SectionModel.SingleDeserializer())
     }
 
     override
@@ -49,9 +46,8 @@ class SectionApiImpl(private val requestManager: RequestManager) : SectionApi {
     }
 
     override
-    fun deleteSection(id: String): Single<Pair<Response, Result<ByteArray, FuelError>>> {
-        return requestManager
-                .doRequest("/section/$id/", Method.DELETE)
+    fun deleteSection(id: String): Single<Pair<Response, ByteArray>> {
+        return requestManager.doRequest("/section/$id/", Method.DELETE)
     }
 
 }
