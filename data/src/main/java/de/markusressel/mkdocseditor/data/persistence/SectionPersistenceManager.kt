@@ -20,27 +20,31 @@ class SectionPersistenceManager @Inject constructor(
      * updates any already existing entities,
      * and finally removes entities that are not present in the given dataset
      */
-    fun insertOrUpdateRoot(rootSection: SectionEntity) {
-        addOrUpdate(rootSection)
+    fun insertOrUpdateRoot(newData: SectionEntity) {
+        addOrUpdate(newData)
 
         // remove data that is not on the server anymore
-        deleteMissing(rootSection)
+        deleteMissing(newData)
     }
 
 
     private fun addOrUpdate(rootSection: SectionEntity) {
-        addOrUpdateEntityFields(rootSection)
+        addOrUpdateEntityFields(newData = rootSection)
     }
 
-    private fun addOrUpdateEntityFields(newData: SectionEntity) {
+    private fun addOrUpdateEntityFields(newData: SectionEntity): SectionEntity {
         // use existing section or insert new one
         val section = standardOperation().query {
             equal(SectionEntity_.id, newData.id)
         }.findUnique() ?: standardOperation().get(standardOperation().put(newData))
 
+        // clear old sections
+        section.subsections.clear()
         newData.subsections.forEach { newSection ->
-            addOrUpdateEntityFields(newSection)
+            section.subsections.add(addOrUpdateEntityFields(newSection))
         }
+        // insert updated section
+        standardOperation().put(section)
 
         newData.documents.forEach { newDocument ->
             val documentEntity = documentPersistenceManager.standardOperation().query {
@@ -65,6 +69,8 @@ class SectionPersistenceManager @Inject constructor(
 
             resourcePersistenceManager.standardOperation().put(resourceEntity)
         }
+
+        return section
     }
 
     private fun deleteMissing(newData: SectionEntity) {
