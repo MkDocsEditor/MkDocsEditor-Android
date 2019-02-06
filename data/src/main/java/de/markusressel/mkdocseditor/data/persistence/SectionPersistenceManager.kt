@@ -38,14 +38,6 @@ class SectionPersistenceManager @Inject constructor(
             equal(SectionEntity_.id, newData.id)
         }.findUnique() ?: standardOperation().get(standardOperation().put(newData))
 
-        // clear old sections
-        section.subsections.clear()
-        newData.subsections.forEach { newSection ->
-            section.subsections.add(addOrUpdateEntityFields(newSection))
-        }
-        // insert updated section
-        standardOperation().put(section)
-
         newData.documents.forEach { newDocument ->
             val documentEntity = documentPersistenceManager.standardOperation().query {
                 equal(DocumentEntity_.id, newDocument.id)
@@ -69,6 +61,14 @@ class SectionPersistenceManager @Inject constructor(
 
             resourcePersistenceManager.standardOperation().put(resourceEntity)
         }
+
+        // clear old sections
+        section.subsections.clear()
+        newData.subsections.forEach { newSection ->
+            section.subsections.add(addOrUpdateEntityFields(newSection))
+        }
+        // insert updated section
+        standardOperation().put(section)
 
         return section
     }
