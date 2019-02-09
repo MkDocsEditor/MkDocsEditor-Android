@@ -26,7 +26,7 @@ class FileBrowserViewModel : EntityListViewModel() {
         get() {
             if (field.size == 0) {
                 // root is always the first element in the backstack
-                field.add(SectionBackstackItem("root"))
+                field.add(SectionBackstackItem(ROOT_SECTION_ID))
             }
             return field
         }
@@ -72,7 +72,7 @@ class FileBrowserViewModel : EntityListViewModel() {
     /**
      * Get the LiveData object for this EntityListViewModel
      */
-    private fun getSectionLiveData(sectionId: String = "root"): LiveData<PagedList<SectionEntity>> {
+    private fun getSectionLiveData(sectionId: String = ROOT_SECTION_ID): LiveData<PagedList<SectionEntity>> {
         return LivePagedListBuilder(ObjectBoxDataSource.Factory(
                 persistenceManager!!.standardOperation().query {
                     equal(SectionEntity_.id, sectionId)
@@ -140,7 +140,7 @@ class FileBrowserViewModel : EntityListViewModel() {
      * @return true, when there was an item on the backstack and a navigation was done, false otherwise
      */
     fun navigateUp(): Boolean {
-        if (currentSectionId.value == "root" || backstack.size <= 1) {
+        if (currentSectionId.value == ROOT_SECTION_ID || backstack.size <= 1) {
             return false
         }
 
@@ -150,6 +150,10 @@ class FileBrowserViewModel : EntityListViewModel() {
     }
 
     companion object {
+
+        /** ID of the tree root section */
+        const val ROOT_SECTION_ID = "root"
+
         private val TYPE_COMPARATOR = Comparator<IdentifiableListItem> { a, b ->
             val typePrioA = when (a) {
                 is SectionEntity -> 0

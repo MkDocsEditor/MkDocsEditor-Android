@@ -49,15 +49,15 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     @Inject
     lateinit var resourcePersistenceManager: ResourcePersistenceManager
 
-    var currentSectionId: String by savedInstanceState("root")
-
     private val fileBrowserViewModel: FileBrowserViewModel by lazy {
         ViewModelProviders.of(this).get(FileBrowserViewModel::class.java)
     }
 
     override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
         fileBrowserViewModel.persistenceManager = sectionPersistenceManager
-        fileBrowserViewModel.currentSectionId.value = currentSectionId
+        if (fileBrowserViewModel.currentSectionId.value == null) {
+            fileBrowserViewModel.currentSectionId.value = FileBrowserViewModel.ROOT_SECTION_ID
+        }
         fileBrowserViewModel.currentSection.observe(this, Observer {
             if (it.isNotEmpty()) {
                 it.first().let {
@@ -107,8 +107,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                         id(it.id)
                         item(it)
                         onclick { model, parentView, clickedView, position ->
-                            currentSectionId = model.item().id
-                            fileBrowserViewModel.openSection(currentSectionId)
+                            fileBrowserViewModel.openSection(model.item().id)
                         }
                     }
                 }
