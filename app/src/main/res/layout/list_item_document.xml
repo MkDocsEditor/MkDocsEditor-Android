@@ -27,13 +27,27 @@
             android:orientation="horizontal"
             android:padding="8dp">
 
-            <com.mikepenz.iconics.view.IconicsImageView
+            <FrameLayout
                 android:layout_width="36dp"
                 android:layout_height="36dp"
-                android:layout_marginEnd="8dp"
                 android:layout_marginStart="8dp"
-                app:iiv_color="?attr/documentBackgroundColor"
-                app:iiv_icon="gmi-file" />
+                android:layout_marginEnd="8dp">
+
+                <com.mikepenz.iconics.view.IconicsImageView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    app:iiv_color="?attr/documentBackgroundColor"
+                    app:iiv_icon="gmi-file" />
+
+                <com.mikepenz.iconics.view.IconicsImageView
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_gravity="bottom|end"
+                    android:visibility="@{item.offlineAvailableVisibility}"
+                    app:iiv_color="?attr/documentOfflineAvailableColor"
+                    app:iiv_icon="gmi-save" />
+
+            </FrameLayout>
 
             <LinearLayout
                 android:layout_width="0dp"

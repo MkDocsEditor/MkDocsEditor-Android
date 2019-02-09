@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.data.persistence.entity
 
+import android.view.View
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocsrestclient.document.DocumentModel
 import io.objectbox.annotation.Entity
@@ -8,9 +9,12 @@ import io.objectbox.annotation.Unique
 import io.objectbox.relation.ToOne
 import java.util.*
 
-fun DocumentModel.asEntity(parentSection: SectionEntity): DocumentEntity {
+fun DocumentModel.asEntity(parentSection: SectionEntity, contentEntity: DocumentContentEntity?): DocumentEntity {
     val d = DocumentEntity(0, this.type, this.id, this.name, this.filesize, this.modtime, this.url)
     d.parentSection.target = parentSection
+    contentEntity?.let {
+        d.content.target = it
+    }
     return d
 }
 
@@ -29,5 +33,15 @@ data class DocumentEntity(
     override fun getItemId(): String = id
 
     lateinit var parentSection: ToOne<SectionEntity>
+    lateinit var content: ToOne<DocumentContentEntity?>
+
+    val offlineAvailableVisibility: Int
+        get() {
+            return if (content.target != null) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+        }
 
 }

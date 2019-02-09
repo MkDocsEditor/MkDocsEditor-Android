@@ -1,10 +1,7 @@
 package de.markusressel.mkdocseditor.data.persistence
 
 import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity_
+import de.markusressel.mkdocseditor.data.persistence.entity.*
 import io.objectbox.kotlin.query
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -12,6 +9,7 @@ import javax.inject.Singleton
 @Singleton
 class SectionPersistenceManager @Inject constructor(
         private val documentPersistenceManager: DocumentPersistenceManager,
+        private val documentContentPersistenceManager: DocumentContentPersistenceManager,
         private val resourcePersistenceManager: ResourcePersistenceManager
 ) : PersistenceManagerBase<SectionEntity>(SectionEntity::class) {
 
@@ -46,6 +44,11 @@ class SectionPersistenceManager @Inject constructor(
                 modtime = newDocument.modtime
             } ?: newDocument
             documentEntity.parentSection.target = section
+
+            val documentContentEntity = documentContentPersistenceManager.standardOperation().query {
+                equal(DocumentContentEntity_.documentId, documentEntity.id)
+            }.findUnique()
+            documentEntity.content.target = documentContentEntity
 
             documentPersistenceManager.standardOperation().put(documentEntity)
         }

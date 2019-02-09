@@ -33,6 +33,8 @@
     <color name="documentBackgroundColor">@color/colorPrimary</color>
     <color name="documentBackgroundColorInverse">@color/colorPrimary</color>
 
+    <color name="documentOfflineAvailableColor">@color/color_gray_800</color>
+
     <color name="resourceBackgroundColor">@color/md_grey_800</color>
     <color name="resourceBackgroundColorInverse">@color/md_grey_200</color>
 

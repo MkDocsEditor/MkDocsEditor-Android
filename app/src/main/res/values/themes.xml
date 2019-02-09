@@ -18,6 +18,7 @@
 
         <item name="sectionBackgroundColor">@color/sectionBackgroundColorInverse</item>
         <item name="documentBackgroundColor">@color/documentBackgroundColorInverse</item>
+        <item name="documentOfflineAvailableColor">@color/documentOfflineAvailableColor</item>
         <item name="resourceBackgroundColor">@color/resourceBackgroundColorInverse</item>
 
         <item name="listItem_dividerColor">@color/listItem_dividerColorLight</item>
@@ -85,6 +86,7 @@
 
         <item name="sectionBackgroundColor">@color/sectionBackgroundColor</item>
         <item name="documentBackgroundColor">@color/documentBackgroundColor</item>
+        <item name="documentOfflineAvailableColor">@color/documentOfflineAvailableColor</item>
         <item name="resourceBackgroundColor">@color/resourceBackgroundColor</item>
 
         <item name="listItem_dividerColor">@color/listItem_dividerColorDark</item>

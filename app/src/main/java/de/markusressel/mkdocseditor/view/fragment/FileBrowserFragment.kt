@@ -17,10 +17,7 @@ import com.github.ajalt.timberkt.Timber
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import de.markusressel.commons.android.material.toast
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
-import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.*
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
@@ -47,6 +44,8 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     lateinit var sectionPersistenceManager: SectionPersistenceManager
     @Inject
     lateinit var documentPersistenceManager: DocumentPersistenceManager
+    @Inject
+    lateinit var documentContentPersistenceManager: DocumentContentPersistenceManager
     @Inject
     lateinit var resourcePersistenceManager: ResourcePersistenceManager
 
@@ -87,7 +86,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     override fun mapToEntity(it: Any): IdentifiableListItem {
         return when (it) {
-            is SectionModel -> it.asEntity()
+            is SectionModel -> it.asEntity(documentContentPersistenceManager)
             else -> throw IllegalArgumentException("Cant map object of type ${it.javaClass}!")
         }
     }

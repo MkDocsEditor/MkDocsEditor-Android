@@ -27,6 +27,7 @@
 
     <declare-styleable name="CodeEditorListItem">
         <attr name="documentBackgroundColor" format="color" />
+        <attr name="documentOfflineAvailableColor" format="color" />
         <attr name="sectionBackgroundColor" format="color" />
         <attr name="resourceBackgroundColor" format="color" />
     </declare-styleable>

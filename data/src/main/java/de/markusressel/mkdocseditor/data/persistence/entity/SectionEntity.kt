@@ -1,8 +1,10 @@
 package de.markusressel.mkdocseditor.data.persistence.entity
 
+import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.objectbox.annotation.Backlink
 import io.objectbox.annotation.Entity
+import io.objectbox.kotlin.query
 import io.objectbox.relation.ToMany
 
 /**
@@ -19,15 +21,18 @@ class SectionEntity(entityId: Long = 0, id: String = "", name: String = "") : Se
 
 }
 
-fun SectionModel.asEntity(): SectionEntity {
+fun SectionModel.asEntity(documentContentPersistenceManager: DocumentContentPersistenceManager): SectionEntity {
     val s = SectionEntity(0, this.id, this.name)
 
     s.subsections.addAll(this.subsections.map {
-        it.asEntity()
+        it.asEntity(documentContentPersistenceManager)
     })
 
     s.documents.addAll(this.documents.map {
-        it.asEntity(s)
+        val contentEntity = documentContentPersistenceManager.standardOperation().query {
+            equal(DocumentContentEntity_.documentId, it.id)
+        }.findUnique()
+        it.asEntity(s, contentEntity)
     })
     s.resources.addAll(this.resources.map {
         it.asEntity(s)
