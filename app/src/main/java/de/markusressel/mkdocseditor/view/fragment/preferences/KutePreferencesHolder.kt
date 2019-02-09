@@ -13,6 +13,7 @@ import de.markusressel.kutepreferences.preference.selection.single.KuteSingleSel
 import de.markusressel.kutepreferences.preference.text.KuteTextPreference
 import de.markusressel.kutepreferences.preference.text.password.KutePasswordPreference
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
@@ -34,6 +35,7 @@ class KutePreferencesHolder @Inject constructor(
         private val dataProvider: KutePreferenceDataProvider,
         private val sectionPersistenceManager: SectionPersistenceManager,
         private val documentPersistenceManager: DocumentPersistenceManager,
+        private val documentContentPersistenceManager: DocumentContentPersistenceManager,
         private val resourcePersistenceManager: ResourcePersistenceManager,
         private val offlineModeManager: OfflineModeManager) {
 
@@ -97,6 +99,7 @@ class KutePreferencesHolder @Inject constructor(
         KuteAction(key = R.string.clear_offline_cache_key, icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_delete), title = context.getString(R.string.clear_offline_cache_title), onClickAction = { context, _ ->
             sectionPersistenceManager.standardOperation().removeAll()
             documentPersistenceManager.standardOperation().removeAll()
+            documentContentPersistenceManager.standardOperation().removeAll()
             resourcePersistenceManager.standardOperation().removeAll()
             context.toast("DB cleared")
         })

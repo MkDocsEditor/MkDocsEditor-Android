@@ -15,6 +15,7 @@ import de.markusressel.mkdocseditor.event.HostChangedEvent
 import de.markusressel.mkdocseditor.view.activity.base.OfflineModeManager
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
+import io.reactivex.plugins.RxJavaPlugins
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -46,6 +47,8 @@ class App : DaggerApplicationBase() {
 
         plantTimberTrees()
 
+        setupErrorHandlers()
+
         createListeners()
 
         initializeEmojiCompat()
@@ -53,6 +56,12 @@ class App : DaggerApplicationBase() {
         initOfflineMode()
 
 
+    }
+
+    private fun setupErrorHandlers() {
+        RxJavaPlugins.setErrorHandler {
+            Timber.e(it)
+        }
     }
 
     private fun initOfflineMode() {
