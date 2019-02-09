@@ -19,6 +19,7 @@ import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
 import de.markusressel.mkdocseditor.event.*
 import de.markusressel.mkdocseditor.view.IconHandler
 import de.markusressel.mkdocseditor.view.activity.base.OfflineModeManager
+import de.markusressel.mkdocseditor.view.preferences.LastOfflineCacheUpdatePreferenceItem
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -78,6 +79,7 @@ class KutePreferencesHolder @Inject constructor(
                         key = R.string.section_background_sync_key,
                         title = context.getString(R.string.section_background_sync_title),
                         children = listOf(
+                                lastOfflineCacheUpdate,
                                 forceOfflineCacheUpdatePreference,
                                 clearOfflineCache
                         )
@@ -98,6 +100,10 @@ class KutePreferencesHolder @Inject constructor(
             resourcePersistenceManager.standardOperation().removeAll()
             context.toast("DB cleared")
         })
+    }
+
+    val lastOfflineCacheUpdate by lazy {
+        LastOfflineCacheUpdatePreferenceItem()
     }
 
     val restConnectionUriPreference by lazy {

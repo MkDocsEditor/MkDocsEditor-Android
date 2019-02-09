@@ -50,6 +50,8 @@
     <string name="clear_offline_cache_key" translatable="false">clear_offline_cache_key</string>
     <string name="clear_offline_cache_title" translatable="false">Clear offline cache</string>
 
+    <string name="last_offline_cache_update_key" translatable="false">last_offline_cache_update_key</string>
+
     <string name="theme_light_value">0</string>
     <string name="theme_dark_value">1</string>
     <string-array name="theme_values">
