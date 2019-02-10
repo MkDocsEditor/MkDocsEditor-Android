@@ -1,4 +1,4 @@
-package de.markusressel.mkdocsrestclient.websocket
+package de.markusressel.mkdocsrestclient.sync.websocket
 
 /**
  * Used to identify what this package should be used for

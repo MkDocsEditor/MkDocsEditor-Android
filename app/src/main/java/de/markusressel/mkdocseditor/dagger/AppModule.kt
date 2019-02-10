@@ -19,7 +19,7 @@ import de.markusressel.mkdocseditor.view.fragment.CodeEditorFragment
 import de.markusressel.mkdocseditor.view.fragment.FileBrowserFragment
 import de.markusressel.mkdocseditor.view.fragment.preferences.PreferencesFragment
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
-import de.markusressel.mkdocsrestclient.websocket.diff.diff_match_patch
+import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import io.objectbox.BoxStore
 import javax.inject.Singleton
 

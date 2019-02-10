@@ -49,8 +49,8 @@ import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
 import de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
-import de.markusressel.mkdocsrestclient.websocket.DocumentSyncManager
-import de.markusressel.mkdocsrestclient.websocket.diff.diff_match_patch
+import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
+import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import io.objectbox.kotlin.query
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
@@ -97,6 +97,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
     private val viewModel: CodeEditorViewModel by lazy { ViewModelProviders.of(this).get(CodeEditorViewModel::class.java) }
 
+    // TODO: this property should not exist. only the [DocumentSyncManager] should have this.
     private var currentText: String? by savedInstanceState()
 
     private var currentPosition by savedInstanceState(PointF())
@@ -104,7 +105,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
     private var initialTextLoaded = false
 
-    private lateinit var syncManager: DocumentSyncManager
+    private lateinit var documentSyncManager: DocumentSyncManager
 
     @Inject
     lateinit var offlineModeManager: OfflineModeManager
@@ -201,7 +202,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
                 .restConnectionUriPreference
                 .persistedValue
 
-        syncManager = DocumentSyncManager(
+        documentSyncManager = DocumentSyncManager(
                 documentId = documentId,
                 url = "ws://$restApiHost/document/$documentId/ws",
                 basicAuthConfig = BasicAuthConfig(
@@ -283,9 +284,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     }
 
     /**
-     * Restores the editor state
+     * Restores the editor state from persistence
      *
-     * @param text the new text to use, or null
+     * @param text the new text to use, or null to keep [currentText]
      * @param editable when true the editor is editable, otherwise it is not
      */
     private fun restoreEditorState(text: String? = null, editable: Boolean) {
@@ -360,26 +361,29 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
      */
     private fun reconnectToServer() {
         loadingComponent.showLoading()
-        if (syncManager.isConnected()) {
+        if (documentSyncManager.isConnected) {
             disconnect(reason = "Editor want's to refresh connection")
-            syncManager.connect()
+            documentSyncManager.connect()
         } else {
-            syncManager.connect()
+            documentSyncManager.connect()
         }
     }
 
     @Synchronized
     private fun onTextChanged(newText: String, patches: LinkedList<diff_match_patch.Patch>) {
         runOnUiThread {
-            val oldSelection = codeEditorLayout.codeEditorView.codeEditText.selectionStart
+            val oldSelectionStart = codeEditorLayout.codeEditorView.codeEditText.selectionStart
+            val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
             currentText = newText
 
             // set new cursor position
-            val newSelection = calculateNewSelectionIndex(oldSelection, patches)
+            val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, patches)
+                    .coerceIn(0, currentText?.length)
+            val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
                     .coerceIn(0, currentText?.length)
 
             codeEditorLayout.text = currentText ?: ""
-            codeEditorLayout.codeEditorView.codeEditText.setSelection(newSelection)
+            codeEditorLayout.codeEditorView.codeEditText.setSelection(newSelectionStart, newSelectionEnd)
 
             saveEditorState()
         }
@@ -437,19 +441,19 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 
         var currentIndex: Int
         // calculate how many characters have been inserted before the cursor
-        patches.forEach {
-            currentIndex = it.start1
+        patches.forEach { patch ->
+            currentIndex = patch.start1
 
-            it.diffs.forEach { diff ->
+            patch.diffs.forEach { diff ->
                 when (diff.operation) {
-                    diff_match_patch.Operation.DELETE -> {
-                        if (currentIndex < newSelection) {
-                            newSelection -= diff.text.length
-                        }
-                    }
                     diff_match_patch.Operation.INSERT -> {
                         if (currentIndex < newSelection) {
                             newSelection += diff.text.length
+                        }
+                    }
+                    diff_match_patch.Operation.DELETE -> {
+                        if (currentIndex < newSelection) {
+                            newSelection -= diff.text.length
                         }
                     }
                     else -> {
@@ -470,14 +474,13 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     @Synchronized
     private fun sendPatchIfChanged(text: CharSequence) {
         if (currentText!!.contentEquals(text)) {
-            Timber.e { "TEXT IST GLEICH" }
             return
         }
 
         val newText = text.toString()
 
         // TODO: only send patch if the change is coming from user input
-        syncManager.sendPatch(currentText!!, newText)
+        documentSyncManager.notifyTextChanged(newText)
         currentText = newText
     }
 
@@ -513,7 +516,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
     private fun disconnect(reason: String) {
         noConnectionSnackbar?.dismiss()
         codeEditorLayout.editable = false
-        syncManager.disconnect(1000, reason)
+        documentSyncManager.disconnect(1000, reason)
     }
 
 }

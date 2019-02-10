@@ -1,4 +1,4 @@
-package de.markusressel.mkdocsrestclient.websocket
+package de.markusressel.mkdocsrestclient.sync
 
 /**
  * Entity holding information about the initial state of a document
