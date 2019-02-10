@@ -30,6 +30,7 @@ import de.markusressel.commons.android.material.snack
 import de.markusressel.commons.android.material.toast
 import de.markusressel.commons.logging.prettyPrint
 import de.markusressel.kodeeditor.library.view.CodeEditorLayout
+import de.markusressel.kodeeditor.library.view.SelectionChangedListener
 import de.markusressel.kodehighlighter.language.markdown.MarkdownSyntaxHighlighter
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
@@ -62,7 +63,7 @@ import javax.inject.Inject
 /**
  * Created by Markus on 07.01.2018.
  */
-class CodeEditorFragment : DaggerSupportFragmentBase() {
+class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener {
 
     override val layoutRes: Int
         get() = R.layout.fragment_editor
@@ -265,6 +266,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
 //                val test = 1
             }
         })
+        codeEditorLayout.codeEditorView.selectionChangedListener = this
 
         // disable user input by default, it will be enabled automatically once connected to the server
         codeEditorLayout.editable = false
@@ -307,7 +309,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
             currentText = text
         }
 
-        codeEditorLayout.text = currentText ?: ""
+        setEditorText(currentText ?: "")
         codeEditorLayout.editable = editable
         entity?.let {
             codeEditorLayout.codeEditorView.codeEditText.setSelection(entity.selection.coerceIn(0, currentText!!.length))
@@ -321,6 +323,27 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
         }
 
         initialTextLoaded = true
+    }
+
+    /**
+     * Set the editor content to the specified text.
+     *
+     * @param text the text to set
+     * @param selectionStart optional selection start index
+     * @param selectionEnd optional selection end index
+     */
+    private fun setEditorText(text: String, selectionStart: Int? = null, selectionEnd: Int? = null) {
+        // we don't listen to selection changes when the text is changed via code
+        // because the selection will be restored from persistence anyway
+        // and the listener would override this
+        val editor = codeEditorLayout.codeEditorView
+        editor.selectionChangedListener = null
+        editor.text = text
+        if (selectionStart != null) {
+            val endIndex = selectionEnd ?: selectionStart
+            editor.codeEditText.setSelection(selectionStart.coerceIn(0, text.length), endIndex.coerceIn(0, text.length))
+        }
+        editor.selectionChangedListener = this
     }
 
     /**
@@ -382,11 +405,13 @@ class CodeEditorFragment : DaggerSupportFragmentBase() {
             val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
                     .coerceIn(0, currentText?.length)
 
-            codeEditorLayout.text = currentText ?: ""
-            codeEditorLayout.codeEditorView.codeEditText.setSelection(newSelectionStart, newSelectionEnd)
-
+            setEditorText(currentText ?: "", newSelectionStart, newSelectionEnd)
             saveEditorState()
         }
+    }
+
+    override fun onSelectionChanged(start: Int, end: Int, hasSelection: Boolean) {
+        saveEditorState()
     }
 
     /**
