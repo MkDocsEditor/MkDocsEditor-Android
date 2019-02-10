@@ -109,6 +109,7 @@ class WebsocketConnectionHandler(val url: String,
     fun disconnect(code: Int, reason: String) {
         webSocket?.close(code, reason)
         webSocket = null
+        isConnected = false
     }
 
     /**
