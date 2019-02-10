@@ -143,16 +143,26 @@ class DocumentSyncManager(
                 // parse and apply patches
                 val patches: LinkedList<diff_match_patch.Patch> = DIFF_MATCH_PATCH.patch_fromText(editRequest.patches) as LinkedList<diff_match_patch.Patch>
                 if (fragilePatchShadow(editRequest, patches)) {
-                    // if shadow patch was successful patch the actual text
-                    val patchResult = DIFF_MATCH_PATCH.patch_apply(patches, clientShadow)
-                    val patchedText = patchResult[0] as String
-
-                    currentText = patchedText
+                    val patchedText = fuzzyPatchCurrentText(patches)
+                    onTextChanged(patchedText, patches)
+                } else {
+                    Timber.e("Unrecoverable error while patching shadow. A syncronization restart is necessary.")
+                    resyncWithServer()
                 }
-
-                onTextChanged(currentText, patches)
             }
         }
+    }
+
+    /**
+     * Fuzzy patch the [currentText]
+     */
+    private fun fuzzyPatchCurrentText(patches: LinkedList<diff_match_patch.Patch>): String {
+        val patchResult = DIFF_MATCH_PATCH.patch_apply(patches, currentText)
+        val patchedText = patchResult[0] as String
+
+        // we don't update the clientShadow here, this is only done when the text is changed from the client
+        currentText = patchedText
+        return currentText
     }
 
     /**
@@ -167,13 +177,7 @@ class DocumentSyncManager(
         val patchesApplied = patchResult[1] as BooleanArray
 
         // make sure current shadow matches the server shadow before the patch
-        return when {
-            patchedText.hashCode() != editRequest.shadowChecksum -> {
-                resyncWithServer()
-                false
-            }
-            else -> true
-        }
+        return patchedText.hashCode() == editRequest.shadowChecksum
     }
 
     private fun resyncWithServer() {
