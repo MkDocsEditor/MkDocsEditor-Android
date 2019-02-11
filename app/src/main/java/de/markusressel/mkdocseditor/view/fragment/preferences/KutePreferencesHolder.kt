@@ -2,7 +2,7 @@ package de.markusressel.mkdocseditor.view.fragment.preferences
 
 import android.content.Context
 import com.eightbitlab.rxbus.Bus
-import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
+import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.commons.android.material.toast
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.kutepreferences.core.preference.action.KuteAction
