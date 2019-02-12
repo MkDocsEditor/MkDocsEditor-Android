@@ -14,7 +14,7 @@ import com.airbnb.epoxy.Typed3EpoxyController
 import com.eightbitlab.rxbus.Bus
 import com.eightbitlab.rxbus.registerInBus
 import com.github.ajalt.timberkt.Timber
-import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
+import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import de.markusressel.commons.android.material.toast
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.*

@@ -7,7 +7,7 @@ import androidx.annotation.ColorInt
 import androidx.core.content.ContextCompat
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.typeface.IIcon
-import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
+import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
 import javax.inject.Inject
 import javax.inject.Singleton
