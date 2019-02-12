@@ -93,8 +93,7 @@ dependencies {
     implementation "com.mikepenz:iconics-core:${iconicsVersion}@aar"
     //this adds all ui view widgets (IconicsButton, IconicsImageView, ...)
     implementation "com.mikepenz:iconics-views:${iconicsVersion}@aar"
-    //noinspection GradleDynamicVersion
-    implementation 'com.mikepenz:material-design-iconic-typeface:+@aar'
+    implementation 'com.mikepenz:material-design-iconic-typeface:2.2.0.5@aar'
 
     // RxLifecycle to prevent memory leaks
     def rxLifecycleVersion = rootProject.ext.rxLifecycleVersion
@@ -108,7 +107,7 @@ dependencies {
     implementation "android.arch.lifecycle:extensions:2.0.0"
 
     // RxJava (RxKotlin actually)
-    implementation "io.reactivex.rxjava2:rxjava:2.2.0"
+    implementation "io.reactivex.rxjava2:rxjava:2.2.3"
     implementation 'io.reactivex.rxjava2:rxandroid:2.0.2'
     implementation "io.reactivex.rxjava2:rxkotlin:${rootProject.ext.rxKotlinVersion}"
 
