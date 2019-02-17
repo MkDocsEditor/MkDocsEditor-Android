@@ -54,6 +54,7 @@ import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import io.objectbox.kotlin.query
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import java.util.*
@@ -218,12 +219,18 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 }, onTextChanged = ::onTextChanged)
     }
 
+    private var textDisposable: Disposable? = null
+
     private fun handleConnectionStatusChange(connected: Boolean, errorCode: Int?, throwable: Throwable?) {
         if (connected) {
+            watchTextChanges()
+
             runOnUiThread {
                 codeEditorLayout.snack(R.string.connected, LENGTH_SHORT)
             }
         } else {
+            textDisposable?.dispose()
+
             throwable?.let {
                 // try to load from persistence
                 loadTextFromPersistence()
@@ -237,6 +244,22 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 Timber.e(throwable) { "Websocket error code: $errorCode" }
             }
         }
+    }
+
+    private fun watchTextChanges() {
+        textDisposable?.dispose()
+        textDisposable = RxTextView
+                .textChanges(codeEditorLayout.codeEditorView.codeEditText)
+                .skipInitialValue()
+                .debounce(100, TimeUnit.MILLISECONDS)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .bindToLifecycle(this as LifecycleProvider<FragmentEvent>)
+                .subscribeBy(onNext = {
+                    sendPatchIfChanged(it)
+                }, onError = {
+                    context?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
+                })
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -270,19 +293,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
         // disable user input by default, it will be enabled automatically once connected to the server
         codeEditorLayout.editable = false
-
-        RxTextView
-                .textChanges(codeEditorLayout.codeEditorView.codeEditText)
-                .skipInitialValue()
-                .debounce(100, TimeUnit.MILLISECONDS)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .bindToLifecycle(this as LifecycleProvider<FragmentEvent>)
-                .subscribeBy(onNext = {
-                    sendPatchIfChanged(it)
-                }, onError = {
-                    context?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
-                })
     }
 
     /**
@@ -542,6 +552,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         noConnectionSnackbar?.dismiss()
         codeEditorLayout.editable = false
         documentSyncManager.disconnect(1000, reason)
+        textDisposable?.dispose()
     }
 
 }
