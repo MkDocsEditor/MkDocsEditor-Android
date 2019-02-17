@@ -10,6 +10,8 @@ import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionHandle
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionListener
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import timber.log.Timber
+import java.math.BigInteger
+import java.security.MessageDigest
 import java.util.*
 
 /**
@@ -70,7 +72,7 @@ class DocumentSyncManager(
         // compute diff to current shadow
         val diffs = DIFF_MATCH_PATCH.diff_main(previousText, newText)
         // take a checksum of the client shadow before the diff has been applied
-        val clientShadowChecksumBeforePatch = clientShadow.hashCode()
+        val clientShadowChecksumBeforePatch = clientShadow.checksum()
         // update client shadow with the new text
         clientShadow = newText
 
@@ -134,7 +136,7 @@ class DocumentSyncManager(
                 val editRequest = GSON.fromJson(text, EditRequestEntity::class.java)
                         ?: throw JsonParseException("result was null!")
 
-                if (previouslySentPatches.containsKey(editRequest.requestId)) {
+                if (editRequest.requestId.isNotBlank() && previouslySentPatches.containsKey(editRequest.requestId)) {
                     // remember if this edit request is the answer to a previously sent patch from us
                     previouslySentPatches.remove(editRequest.requestId)
                     return
@@ -142,13 +144,14 @@ class DocumentSyncManager(
 
                 // parse and apply patches
                 val patches: LinkedList<diff_match_patch.Patch> = DIFF_MATCH_PATCH.patch_fromText(editRequest.patches) as LinkedList<diff_match_patch.Patch>
-                if (fragilePatchShadow(editRequest, patches)) {
-                    val patchedText = fuzzyPatchCurrentText(patches)
-                    onTextChanged(patchedText, patches)
-                } else {
-                    Timber.e("Unrecoverable error while patching shadow. A syncronization restart is necessary.")
-                    resyncWithServer()
-                }
+//                if (fragilePatchShadow(editRequest, patches)) {
+                val patchedText = fuzzyPatchCurrentText(patches)
+                clientShadow = patchedText
+                onTextChanged(patchedText, patches)
+//                } else {
+//                    Timber.e("Unrecoverable error while patching shadow. A syncronization restart is necessary.")
+//                    resyncWithServer()
+//                }
             }
         }
     }
@@ -168,6 +171,8 @@ class DocumentSyncManager(
     /**
      * Fragile patch the current shadow.
      *
+     * TODO: this shouldn't be necessary
+     *
      * @return true if the patch was successful, false otherwise
      */
     private fun fragilePatchShadow(editRequest: EditRequestEntity, patches: LinkedList<diff_match_patch.Patch>): Boolean {
@@ -177,7 +182,10 @@ class DocumentSyncManager(
         val patchesApplied = patchResult[1] as BooleanArray
 
         // make sure current shadow matches the server shadow before the patch
-        return patchedText.hashCode() == editRequest.shadowChecksum
+
+        // TODO: this shadow should not be required on client side, is it?
+        return true
+//        return patchedText.checksum() == editRequest.shadowChecksum
     }
 
     private fun resyncWithServer() {
@@ -197,4 +205,15 @@ class DocumentSyncManager(
         private var GSON = Gson()
     }
 
+}
+
+/**
+ * Calculates a checksum of this [String] with the given algorithm.
+ *
+ * @param algorithm algorithm to use
+ * @return the checksum
+ */
+private fun String.checksum(algorithm: String = "MD5"): String {
+    val md = MessageDigest.getInstance(algorithm)
+    return BigInteger(1, md.digest(toByteArray())).toString(16)
 }

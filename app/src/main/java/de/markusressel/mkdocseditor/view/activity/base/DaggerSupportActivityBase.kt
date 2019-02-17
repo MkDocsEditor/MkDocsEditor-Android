@@ -70,8 +70,7 @@ abstract class DaggerSupportActivityBase : LifecycleActivityBase(), HasFragmentI
 
     @CallSuper
     override fun onCreate(savedInstanceState: Bundle?) {
-        AndroidInjection
-                .inject(this)
+        AndroidInjection.inject(this)
 
         // apply forced locale (if set in developer options)
         //        initLocale()
@@ -88,35 +87,29 @@ abstract class DaggerSupportActivityBase : LifecycleActivityBase(), HasFragmentI
             supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
         }
 
-        super
-                .onCreate(savedInstanceState)
+        super.onCreate(savedInstanceState)
 
-        restClient
-                .setHostname(preferencesHolder.restConnectionUriPreference.persistedValue)
-        restClient
-                .setBasicAuthConfig(BasicAuthConfig(username = preferencesHolder.basicAuthUserPreference.persistedValue, password = preferencesHolder.basicAuthPasswordPreference.persistedValue))
+        restClient.setHostname(preferencesHolder.restConnectionUriPreference.persistedValue)
+        restClient.setBasicAuthConfig(BasicAuthConfig(
+                username = preferencesHolder.basicAuthUserPreference.persistedValue,
+                password = preferencesHolder.basicAuthPasswordPreference.persistedValue))
 
         // inflate view manually so it can be altered in plugins
-        val contentView = layoutInflater
-                .inflate(layoutRes, null)
+        val contentView = layoutInflater.inflate(layoutRes, null)
         setContentView(contentView)
 
         setSupportActionBar(toolbar)
 
-        supportActionBar
-                ?.setDisplayHomeAsUpEnabled(true)
-
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
     private fun initTheme() {
-        val theme = preferencesDataProvider
-                .getValueUnsafe(R.string.theme_key, getString(R.string.theme_dark_value))
+        val theme = preferencesDataProvider.getValueUnsafe(R.string.theme_key, getString(R.string.theme_dark_value))
 
         //        if (style == DIALOG) {
         //            themeHandler.applyDialogTheme(this, theme)
         //        } else {
-        themeHandler
-                .applyTheme(this, theme)
+        themeHandler.applyTheme(this, theme)
         //        }
     }
 
@@ -124,32 +117,26 @@ abstract class DaggerSupportActivityBase : LifecycleActivityBase(), HasFragmentI
      * Show the status bar
      */
     protected fun showStatusBar() {
-        window
-                .clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
     }
 
     /**
      * Hide the status bar
      */
     protected fun hideStatusBar() {
-        window
-                .setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN)
     }
 
     private fun setLocale(locale: Locale) {
         val res = resources
         // Change locale settings in the app.
-        val dm = res
-                .displayMetrics
-        val conf = res
-                .configuration
+        val dm = res.displayMetrics
+        val conf = res.configuration
 
-        conf
-                .locale = locale
-        conf
-                .setLocale(locale)
-        res
-                .updateConfiguration(conf, dm)
+        conf.locale = locale
+        conf.setLocale(locale)
+        res.updateConfiguration(conf, dm)
 
         onConfigurationChanged(conf)
     }

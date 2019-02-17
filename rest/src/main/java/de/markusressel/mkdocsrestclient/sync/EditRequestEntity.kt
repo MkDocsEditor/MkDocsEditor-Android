@@ -7,4 +7,4 @@ data class EditRequestEntity(val type: String = "edit-request",
                              val requestId: String,
                              val documentId: String,
                              val patches: String,
-                             val shadowChecksum: Int)
+                             val shadowChecksum: String)

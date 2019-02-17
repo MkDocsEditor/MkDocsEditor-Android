@@ -91,18 +91,23 @@ class KutePreferencesHolder @Inject constructor(
     val forceOfflineCacheUpdatePreference = KuteAction(
             key = R.string.action_force_offline_cache_update_key,
             title = context.getString(R.string.action_force_offline_cache_update_title),
+            description = "",
             onClickAction = { context, action ->
                 offlineModeManager.scheduleOfflineCacheUpdate(evenInOfflineMode = true)
             })
 
     val clearOfflineCache by lazy {
-        KuteAction(key = R.string.clear_offline_cache_key, icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_delete), title = context.getString(R.string.clear_offline_cache_title), onClickAction = { context, _ ->
-            sectionPersistenceManager.standardOperation().removeAll()
-            documentPersistenceManager.standardOperation().removeAll()
-            documentContentPersistenceManager.standardOperation().removeAll()
-            resourcePersistenceManager.standardOperation().removeAll()
-            context.toast("DB cleared")
-        })
+        KuteAction(key = R.string.clear_offline_cache_key,
+                icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_delete),
+                title = context.getString(R.string.clear_offline_cache_title),
+                description = "",
+                onClickAction = { context, _ ->
+                    sectionPersistenceManager.standardOperation().removeAll()
+                    documentPersistenceManager.standardOperation().removeAll()
+                    documentContentPersistenceManager.standardOperation().removeAll()
+                    resourcePersistenceManager.standardOperation().removeAll()
+                    context.toast("DB cleared")
+                })
     }
 
     val lastOfflineCacheUpdate by lazy {
@@ -110,39 +115,69 @@ class KutePreferencesHolder @Inject constructor(
     }
 
     val restConnectionUriPreference by lazy {
-        KuteTextPreference(key = R.string.connection_host_key, icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_battery), title = context.getString(R.string.connection_host_title), defaultValue = "", dataProvider = dataProvider, onPreferenceChangedListener = { old, new ->
-            Bus.send(HostChangedEvent(new))
-        })
+        KuteTextPreference(key = R.string.connection_host_key,
+                icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_battery),
+                title = context.getString(R.string.connection_host_title),
+                defaultValue = "",
+                dataProvider = dataProvider,
+                onPreferenceChangedListener = { old, new ->
+                    Bus.send(HostChangedEvent(new))
+                })
     }
 
     val basicAuthUserPreference by lazy {
-        KuteTextPreference(key = R.string.connection_basic_auth_user_key, title = context.getString(R.string.connection_basic_auth_user_title), defaultValue = "", dataProvider = dataProvider, onPreferenceChangedListener = { old, new ->
-            Bus.send(BasicAuthUserChangedEvent(new))
-        })
+        KuteTextPreference(key = R.string.connection_basic_auth_user_key,
+                title = context.getString(R.string.connection_basic_auth_user_title),
+                defaultValue = "",
+                dataProvider = dataProvider,
+                onPreferenceChangedListener = { old, new ->
+                    Bus.send(BasicAuthUserChangedEvent(new))
+                })
     }
 
     val basicAuthPasswordPreference by lazy {
-        KutePasswordPreference(key = R.string.connection_basic_auth_password_key, title = context.getString(R.string.connection_basic_auth_password_title), defaultValue = "", dataProvider = dataProvider, onPreferenceChangedListener = { old, new ->
-            Bus.send(BasicAuthPasswordChangedEvent(new))
-        })
+        KutePasswordPreference(key = R.string.connection_basic_auth_password_key,
+                title = context.getString(R.string.connection_basic_auth_password_title),
+                defaultValue = "",
+                dataProvider = dataProvider,
+                onPreferenceChangedListener = { old, new ->
+                    Bus.send(BasicAuthPasswordChangedEvent(new))
+                })
     }
 
     val webUriPreference by lazy {
-        KuteTextPreference(key = R.string.connection_web_url_key, icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_battery), title = context.getString(R.string.connection_web_url_title), defaultValue = "", dataProvider = dataProvider, onPreferenceChangedListener = { old, new ->
-            Bus.send(HostChangedEvent(new))
-        })
+        KuteTextPreference(key = R.string.connection_web_url_key,
+                icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_battery),
+                title = context.getString(R.string.connection_web_url_title),
+                defaultValue = "",
+                dataProvider = dataProvider,
+                onPreferenceChangedListener = { old, new ->
+                    Bus.send(HostChangedEvent(new))
+                })
     }
 
     val themePreference by lazy {
-        KuteSingleSelectStringPreference(context = context, key = R.string.theme_key, icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_colorize), title = context.getString(R.string.theme_title), possibleValues = mapOf(R.string.theme_dark_value to R.string.theme_dark_value_name, R.string.theme_light_value to R.string.theme_light_value_name), defaultValue = R.string.theme_dark_value, dataProvider = dataProvider, onPreferenceChangedListener = { old, new ->
-            Bus.send(ThemeChangedEvent(new))
-        })
+        KuteSingleSelectStringPreference(context = context,
+                key = R.string.theme_key,
+                icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_colorize),
+                title = context.getString(R.string.theme_title),
+                possibleValues = mapOf(R.string.theme_dark_value to R.string.theme_dark_value_name, R.string.theme_light_value to R.string.theme_light_value_name),
+                defaultValue = R.string.theme_dark_value,
+                dataProvider = dataProvider,
+                onPreferenceChangedListener = { old, new ->
+                    Bus.send(ThemeChangedEvent(new))
+                })
     }
 
     val offlineModePreference by lazy {
-        KuteBooleanPreference(key = R.string.offline_mode_key, icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_colorize), title = context.getString(R.string.theme_title), defaultValue = false, dataProvider = dataProvider, onPreferenceChangedListener = { old, new ->
-            Bus.send(OfflineModeChangedEvent(new))
-        })
+        KuteBooleanPreference(key = R.string.offline_mode_key,
+                icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_colorize),
+                title = context.getString(R.string.theme_title),
+                defaultValue = false,
+                dataProvider = dataProvider,
+                onPreferenceChangedListener = { old, new ->
+                    Bus.send(OfflineModeChangedEvent(new))
+                })
     }
 
 }
