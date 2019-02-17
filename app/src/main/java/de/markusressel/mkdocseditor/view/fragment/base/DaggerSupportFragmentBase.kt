@@ -60,7 +60,8 @@ abstract class DaggerSupportFragmentBase : LifecycleFragmentBase(), HasSupportFr
     @Inject
     protected lateinit var iconHandler: IconHandler
 
-    protected lateinit var navController: NavController
+    protected val navController: NavController
+        get() = Navigation.findNavController(requireActivity(), R.id.navHostFragment)
 
     /**
      * The layout resource for this Activity
@@ -81,11 +82,6 @@ abstract class DaggerSupportFragmentBase : LifecycleFragmentBase(), HasSupportFr
             alternative
                     ?: newContainer
         }
-    }
-
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-        navController = Navigation.findNavController(requireActivity(), R.id.navHostFragment)
     }
 
     /**

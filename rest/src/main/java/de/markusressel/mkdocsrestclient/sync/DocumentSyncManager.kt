@@ -10,8 +10,6 @@ import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionHandle
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionListener
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import timber.log.Timber
-import java.math.BigInteger
-import java.security.MessageDigest
 import java.util.*
 
 /**
@@ -214,6 +212,7 @@ class DocumentSyncManager(
  * @return the checksum
  */
 private fun String.checksum(algorithm: String = "MD5"): String {
-    val md = MessageDigest.getInstance(algorithm)
-    return BigInteger(1, md.digest(toByteArray())).toString(16)
+    return "$length"
+//    val md = MessageDigest.getInstance(algorithm)
+//    return BigInteger(1, md.digest(toByteArray())).toString(16)
 }
