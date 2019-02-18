@@ -120,7 +120,7 @@ class DocumentSyncManager(
                         ?: throw JsonParseException("result was null!")
 
                 // parse and apply patches
-                val patches: LinkedList<diff_match_patch.Patch> = DIFF_MATCH_PATCH.patch_fromText(editRequest.patches) as LinkedList<diff_match_patch.Patch>
+                val patches = DIFF_MATCH_PATCH.patch_fromText(editRequest.patches)
 //                if (fragilePatchShadow(editRequest, patches)) {
                 val patchedText = fuzzyPatchCurrentText(patches)
                 clientShadow = patchedText

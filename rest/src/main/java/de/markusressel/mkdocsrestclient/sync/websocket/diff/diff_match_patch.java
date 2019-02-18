@@ -2253,9 +2253,9 @@ public class diff_match_patch {
      * @return List of Patch objects.
      * @throws IllegalArgumentException If invalid input.
      */
-    public List<Patch> patch_fromText(String textline)
+    public LinkedList<Patch> patch_fromText(String textline)
             throws IllegalArgumentException {
-        List<Patch> patches = new LinkedList<Patch>();
+        LinkedList<Patch> patches = new LinkedList<Patch>();
         if (textline.length() == 0) {
             return patches;
         }
