@@ -49,25 +49,22 @@ class KutePreferencesHolder @Inject constructor(
                         key = R.string.section_rest_server_key,
                         title = context.getString(R.string.section_rest_server_title),
                         children = listOf(
-                                restConnectionUriPreference,
-                                KuteSection(
-                                        key = R.string.divider_basic_auth_key,
-                                        title = context.getString(R.string.divider_basic_auth_title),
-                                        children = listOf(
-                                                basicAuthUserPreference,
-                                                basicAuthPasswordPreference
-                                        )
-                                )
+                                restConnectionUriPreference
                         )
-                ),
-                        KuteSection(
-                                key = R.string.section_web_key,
-                                title = context.getString(R.string.section_web_title),
-                                children = listOf(
-                                        webUriPreference
-                                )
+                ), KuteSection(
+                        key = R.string.divider_basic_auth_key,
+                        title = context.getString(R.string.divider_basic_auth_title),
+                        children = listOf(
+                                basicAuthUserPreference,
+                                basicAuthPasswordPreference
                         )
-                )
+                ), KuteSection(
+                        key = R.string.section_web_key,
+                        title = context.getString(R.string.section_web_title),
+                        children = listOf(
+                                webUriPreference
+                        )
+                ))
         )
     }
 
