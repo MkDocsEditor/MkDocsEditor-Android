@@ -19,9 +19,10 @@ class DocumentSyncManager(
         url: String,
         basicAuthConfig: BasicAuthConfig,
         private val documentId: String,
-        private val onConnectionStatusChanged: ((connected: Boolean, errorCode: Int?, throwable: Throwable?) -> Unit),
-        private val onInitialText: ((initialText: String) -> Unit),
-        private val onTextChanged: ((newText: String, patches: LinkedList<diff_match_patch.Patch>) -> Unit)) : WebsocketConnectionListener {
+        private val onConnectionStatusChanged: (connected: Boolean, errorCode: Int?, throwable: Throwable?) -> Unit,
+        private val onInitialText: (initialText: String) -> Unit,
+        private val onTextChanged: (newText: String, patches: LinkedList<diff_match_patch.Patch>) -> Unit,
+        private val currentText: () -> String) : WebsocketConnectionListener {
 
     private val websocketConnectionHandler = WebsocketConnectionHandler(url, basicAuthConfig)
 
@@ -37,10 +38,7 @@ class DocumentSyncManager(
     val isConnected: Boolean
         get() = websocketConnectionHandler.isConnected
 
-    private var previouslySentPatches: MutableMap<String, String> = mutableMapOf()
-
     private var clientShadow: String = ""
-    private var currentText: String = ""
 
     /**
      * Connect to the given URL
@@ -51,22 +49,13 @@ class DocumentSyncManager(
     }
 
     /**
-     * Notify this manager that the text of the document has changed on this client
-     * and changes need to be synced with the server.
-     */
-    fun notifyTextChanged(newText: String) {
-        currentText = newText
-        sendPatch(newText = currentText)
-    }
-
-    /**
      * Send a patch to the server
      *
      * @param previousText the text to use as the previous version
      * @param newText the new and (presumably) changed text
      * @return id of the EditRequest sent to the server
      */
-    private fun sendPatch(previousText: String = clientShadow, newText: String): String {
+    fun sendPatch(previousText: String = clientShadow, newText: String = currentText()): String {
         // compute diff to current shadow
         val diffs = DIFF_MATCH_PATCH.diff_main(previousText, newText)
         // take a checksum of the client shadow before the diff has been applied
@@ -87,9 +76,6 @@ class DocumentSyncManager(
 
         // send to server
         websocketConnectionHandler.send(GSON.toJson(editRequestModel))
-
-        // remember that this request has been sent
-        previouslySentPatches[requestId] = "sent"
 
         return requestId
     }
@@ -125,7 +111,6 @@ class DocumentSyncManager(
             "initial-content" -> {
                 val initialContentEntity = GSON.fromJson(text, InitialContentRequestEntity::class.java)
 
-                currentText = initialContentEntity.content
                 clientShadow = initialContentEntity.content
 
                 onInitialText(initialContentEntity.content)
@@ -133,12 +118,6 @@ class DocumentSyncManager(
             "edit-request" -> {
                 val editRequest = GSON.fromJson(text, EditRequestEntity::class.java)
                         ?: throw JsonParseException("result was null!")
-
-                if (editRequest.requestId.isNotBlank() && previouslySentPatches.containsKey(editRequest.requestId)) {
-                    // remember if this edit request is the answer to a previously sent patch from us
-                    previouslySentPatches.remove(editRequest.requestId)
-                    return
-                }
 
                 // parse and apply patches
                 val patches: LinkedList<diff_match_patch.Patch> = DIFF_MATCH_PATCH.patch_fromText(editRequest.patches) as LinkedList<diff_match_patch.Patch>
@@ -158,12 +137,12 @@ class DocumentSyncManager(
      * Fuzzy patch the [currentText]
      */
     private fun fuzzyPatchCurrentText(patches: LinkedList<diff_match_patch.Patch>): String {
+        val currentText = currentText()
         val patchResult = DIFF_MATCH_PATCH.patch_apply(patches, currentText)
         val patchedText = patchResult[0] as String
 
         // we don't update the clientShadow here, this is only done when the text is changed from the client
-        currentText = patchedText
-        return currentText
+        return patchedText
     }
 
     /**

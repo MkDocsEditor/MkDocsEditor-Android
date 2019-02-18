@@ -19,7 +19,6 @@ import com.github.ajalt.timberkt.Timber
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE
 import com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
-import com.jakewharton.rxbinding2.widget.RxTextView
 import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import com.otaliastudios.zoom.ZoomEngine
 import com.trello.rxlifecycle2.LifecycleProvider
@@ -53,6 +52,7 @@ import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import io.objectbox.kotlin.query
+import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.subscribeBy
@@ -210,6 +210,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 basicAuthConfig = BasicAuthConfig(
                         preferencesHolder.basicAuthUserPreference.persistedValue,
                         preferencesHolder.basicAuthPasswordPreference.persistedValue),
+                currentText = {
+                    codeEditorLayout.codeEditorView.codeEditText.text?.toString() ?: ""
+                },
                 onConnectionStatusChanged = ::handleConnectionStatusChange,
                 onInitialText = {
                     runOnUiThread {
@@ -248,18 +251,30 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
     private fun watchTextChanges() {
         textDisposable?.dispose()
-        textDisposable = RxTextView
-                .textChanges(codeEditorLayout.codeEditorView.codeEditText)
-                .skipInitialValue()
-                .debounce(100, TimeUnit.MILLISECONDS)
+
+        textDisposable = Observable.interval(1, TimeUnit.SECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
+                .filter { codeEditorLayout.editable }
                 .bindToLifecycle(this as LifecycleProvider<FragmentEvent>)
                 .subscribeBy(onNext = {
-                    sendPatchIfChanged(it)
+                    sendPatchIfChanged()
                 }, onError = {
                     context?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
                 })
+
+//        textDisposable = RxTextView
+//                .textChanges(codeEditorLayout.codeEditorView.codeEditText)
+//                .skipInitialValue()
+//                .debounce(100, TimeUnit.MILLISECONDS)
+//                .subscribeOn(Schedulers.io())
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .bindToLifecycle(this as LifecycleProvider<FragmentEvent>)
+//                .subscribeBy(onNext = {
+//                    sendPatchIfChanged()
+//                }, onError = {
+//                    context?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
+//                })
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -507,15 +522,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     }
 
     @Synchronized
-    private fun sendPatchIfChanged(text: CharSequence) {
-        if (currentText!!.contentEquals(text)) {
-            return
-        }
-
-        val newText = text.toString()
-
-        // TODO: only send patch if the change is coming from user input
-        documentSyncManager.notifyTextChanged(newText)
+    private fun sendPatchIfChanged() {
+        val newText = codeEditorLayout.codeEditorView.codeEditText.toString()
+        documentSyncManager.sendPatch()
         currentText = newText
     }
 
