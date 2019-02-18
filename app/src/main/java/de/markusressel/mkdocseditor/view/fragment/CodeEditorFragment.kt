@@ -417,22 +417,19 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         }
     }
 
-    @Synchronized
     private fun onTextChanged(newText: String, patches: LinkedList<diff_match_patch.Patch>) {
-        runOnUiThread {
-            val oldSelectionStart = codeEditorLayout.codeEditorView.codeEditText.selectionStart
-            val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
-            currentText = newText
+        val oldSelectionStart = codeEditorLayout.codeEditorView.codeEditText.selectionStart
+        val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
+        currentText = newText
 
-            // set new cursor position
-            val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, patches)
-                    .coerceIn(0, currentText?.length)
-            val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
-                    .coerceIn(0, currentText?.length)
+        // set new cursor position
+        val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, patches)
+                .coerceIn(0, currentText?.length)
+        val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
+                .coerceIn(0, currentText?.length)
 
-            setEditorText(currentText ?: "", newSelectionStart, newSelectionEnd)
-            saveEditorState()
-        }
+        setEditorText(currentText ?: "", newSelectionStart, newSelectionEnd)
+        saveEditorState()
     }
 
     override fun onSelectionChanged(start: Int, end: Int, hasSelection: Boolean) {

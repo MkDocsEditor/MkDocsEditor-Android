@@ -4,6 +4,7 @@ import androidx.annotation.WorkerThread
 import com.google.gson.Gson
 import com.google.gson.JsonParseException
 import de.markusressel.commons.android.core.doAsync
+import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.websocket.SocketEntityBase
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionHandler
@@ -121,14 +122,18 @@ class DocumentSyncManager(
 
                 // parse and apply patches
                 val patches = DIFF_MATCH_PATCH.patch_fromText(editRequest.patches)
-//                if (fragilePatchShadow(editRequest, patches)) {
-                val patchedText = fuzzyPatchCurrentText(patches)
-                clientShadow = patchedText
-                onTextChanged(patchedText, patches)
-//                } else {
-//                    Timber.e("Unrecoverable error while patching shadow. A syncronization restart is necessary.")
-//                    resyncWithServer()
-//                }
+
+                runOnUiThread {
+                    //                    if (fragilePatchShadow(editRequest, patches)) {
+                    // patching has to be done on UI thread so the user can't type while the patch is applied
+                    val patchedText = fuzzyPatchCurrentText(patches)
+                    clientShadow = patchedText
+                    onTextChanged(patchedText, patches)
+//                    } else {
+//                        Timber.e("Unrecoverable error while patching shadow. A syncronization restart is necessary.")
+//                        resyncWithServer()
+//                    }
+                }
             }
         }
     }
