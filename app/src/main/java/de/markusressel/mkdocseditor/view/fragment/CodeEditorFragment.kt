@@ -200,16 +200,14 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val restApiHost = preferencesHolder
-                .restConnectionHostnamePreference
-                .persistedValue
-
         documentSyncManager = DocumentSyncManager(
-                documentId = documentId,
-                url = "ws://$restApiHost/document/$documentId/ws",
+                hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue,
+                port = preferencesHolder.restConnectionPortPreference.persistedValue.toInt(),
+                ssl = preferencesHolder.restConnectionSslPreference.persistedValue,
                 basicAuthConfig = BasicAuthConfig(
                         preferencesHolder.basicAuthUserPreference.persistedValue,
                         preferencesHolder.basicAuthPasswordPreference.persistedValue),
+                documentId = documentId,
                 currentText = {
                     codeEditorLayout.codeEditorView.codeEditText.text?.toString() ?: ""
                 },

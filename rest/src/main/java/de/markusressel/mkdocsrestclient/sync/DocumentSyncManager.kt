@@ -17,7 +17,9 @@ import java.util.*
  * Class used to manage document changes from client- and server.
  */
 class DocumentSyncManager(
-        url: String,
+        hostname: String,
+        port: Int,
+        ssl: Boolean,
         basicAuthConfig: BasicAuthConfig,
         private val documentId: String,
         private val onConnectionStatusChanged: (connected: Boolean, errorCode: Int?, throwable: Throwable?) -> Unit,
@@ -25,7 +27,12 @@ class DocumentSyncManager(
         private val onTextChanged: (newText: String, patches: LinkedList<diff_match_patch.Patch>) -> Unit,
         private val currentText: () -> String) : WebsocketConnectionListener {
 
-    private val websocketConnectionHandler = WebsocketConnectionHandler(url, basicAuthConfig)
+    val websocketUrl: String by lazy {
+        val protocol = if (ssl) "wss" else "ws"
+        "$protocol://$hostname:$port/document/$documentId/ws"
+    }
+
+    private val websocketConnectionHandler = WebsocketConnectionHandler(websocketUrl, basicAuthConfig)
 
     /**
      * The URL used for the websocket connection

@@ -26,16 +26,16 @@ class MkDocsRestClient(
         ResourceApi by resourceApi {
 
     /**
-     * Set the hostname for this client
+     * Set the url for this client
      *
-     * @param hostname the new hostname
+     * @param hostname the new url
      */
     fun setHostname(hostname: String) {
         requestManager.hostname = hostname
     }
 
     /**
-     * @return the hostname for this client
+     * @return the url for this client
      */
     fun getHostname(): String {
         return requestManager.hostname
