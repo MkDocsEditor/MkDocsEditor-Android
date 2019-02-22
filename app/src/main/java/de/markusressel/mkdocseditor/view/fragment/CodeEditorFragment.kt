@@ -201,7 +201,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         super.onCreate(savedInstanceState)
 
         val restApiHost = preferencesHolder
-                .restConnectionUriPreference
+                .restConnectionHostnamePreference
                 .persistedValue
 
         documentSyncManager = DocumentSyncManager(

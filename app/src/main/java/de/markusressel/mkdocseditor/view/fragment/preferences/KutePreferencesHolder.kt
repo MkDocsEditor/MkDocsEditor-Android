@@ -9,6 +9,7 @@ import de.markusressel.kutepreferences.core.preference.action.KuteAction
 import de.markusressel.kutepreferences.core.preference.category.KuteCategory
 import de.markusressel.kutepreferences.core.preference.section.KuteSection
 import de.markusressel.kutepreferences.preference.bool.KuteBooleanPreference
+import de.markusressel.kutepreferences.preference.number.KuteNumberPreference
 import de.markusressel.kutepreferences.preference.selection.single.KuteSingleSelectStringPreference
 import de.markusressel.kutepreferences.preference.text.KuteTextPreference
 import de.markusressel.kutepreferences.preference.text.password.KutePasswordPreference
@@ -49,7 +50,9 @@ class KutePreferencesHolder @Inject constructor(
                         key = R.string.section_rest_server_key,
                         title = context.getString(R.string.section_rest_server_title),
                         children = listOf(
-                                restConnectionUriPreference
+                                restConnectionHostnamePreference,
+                                restConnectionPortPreference,
+                                restConnectionSslPreference
                         )
                 ), KuteSection(
                         key = R.string.divider_basic_auth_key,
@@ -111,7 +114,7 @@ class KutePreferencesHolder @Inject constructor(
         LastOfflineCacheUpdatePreferenceItem()
     }
 
-    val restConnectionUriPreference by lazy {
+    val restConnectionHostnamePreference by lazy {
         KuteTextPreference(key = R.string.connection_host_key,
                 icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_battery),
                 title = context.getString(R.string.connection_host_title),
@@ -119,6 +122,27 @@ class KutePreferencesHolder @Inject constructor(
                 dataProvider = dataProvider,
                 onPreferenceChangedListener = { old, new ->
                     Bus.send(HostChangedEvent(new))
+                })
+    }
+
+    val restConnectionPortPreference by lazy {
+        KuteNumberPreference(key = R.string.connection_port_key,
+                title = context.getString(R.string.connection_port_title),
+                defaultValue = 8080,
+                minimum = 0,
+                maximum = 65535,
+                dataProvider = dataProvider,
+                onPreferenceChangedListener = { old, new ->
+                })
+    }
+
+    val restConnectionSslPreference by lazy {
+        KuteBooleanPreference(key = R.string.connection_ssl_key,
+                icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_lock),
+                title = context.getString(R.string.connection_ssl_title),
+                defaultValue = true,
+                dataProvider = dataProvider,
+                onPreferenceChangedListener = { old, new ->
                 })
     }
 

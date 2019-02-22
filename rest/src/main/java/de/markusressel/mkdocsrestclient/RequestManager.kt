@@ -29,21 +29,40 @@ import io.reactivex.Single
 /**
  * Created by Markus on 08.02.2018.
  */
-class RequestManager(hostname: String = "localhost", apiResource: String = "", var basicAuthConfig: BasicAuthConfig? = null) {
+class RequestManager(hostname: String = "localhost",
+                     port: Int = 8080,
+                     ssl: Boolean = true,
+                     var basicAuthConfig: BasicAuthConfig? = null) {
 
+    /**
+     * The hostname of the server
+     */
     var hostname: String = hostname
         set(value) {
             field = value
             updateBaseUrl()
         }
 
-    var apiResource: String = apiResource
+    /**
+     * The port to use
+     */
+    var port: Int = port
+        set(value) {
+            field = value
+            updateBaseUrl()
+        }
+
+    /**
+     * Whether to use https instead of http
+     */
+    var ssl: Boolean = ssl
         set(value) {
             field = value
             updateBaseUrl()
         }
 
     private val fuelManager = FuelManager()
+
 
     init {
         addLogger()
@@ -68,12 +87,8 @@ class RequestManager(hostname: String = "localhost", apiResource: String = "", v
      * Updates the base URL in Fuel client according to configuration parameters
      */
     private fun updateBaseUrl() {
-        fuelManager
-                .basePath = "http://$hostname"
-        if (apiResource.isNotEmpty()) {
-            fuelManager
-                    .basePath = fuelManager.basePath + "/$apiResource/"
-        }
+        val protocol = if (ssl) "https" else "http"
+        fuelManager.basePath = "$protocol://${hostname.substringBefore(':')}:$port"
     }
 
     /**
