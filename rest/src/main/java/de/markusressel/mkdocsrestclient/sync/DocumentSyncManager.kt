@@ -130,14 +130,19 @@ class DocumentSyncManager(
                 // parse and apply patches
                 val patches = DIFF_MATCH_PATCH.patch_fromText(editRequest.patches)
 
+                // patch the clientShadow
+                val patchResult = DIFF_MATCH_PATCH.patch_apply(patches, clientShadow)
+                val patchedText = patchResult[0] as String
+
                 runOnUiThread {
+                    clientShadow = patchedText
                     //                    if (fragilePatchShadow(editRequest, patches)) {
                     // patching has to be done on UI thread so the user can't type while the patch is applied
                     val patchedText = fuzzyPatchCurrentText(patches)
-                    clientShadow = patchedText
+//                    clientShadow = patchedText
                     onTextChanged(patchedText, patches)
 //                    } else {
-//                        Timber.e("Unrecoverable error while patching shadow. A syncronization restart is necessary.")
+//                        Timber.e("Unrecoverable error while patching shadow. A synchronization restart is necessary.")
 //                        resyncWithServer()
 //                    }
                 }
