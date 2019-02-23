@@ -13,6 +13,7 @@ import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionHandle
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionListener
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import timber.log.Timber
+import java.security.MessageDigest
 import java.util.*
 
 /**
@@ -217,17 +218,37 @@ class DocumentSyncManager(
     /**
      * Calculates a checksum of this [String].
      *
+     * Important notes:
+     * - The checksum must include leading zeros
+     * - all characters are lowercase
+     *
      * @return the checksum
      */
     private fun String.checksum(): String {
-        // this is currently a very simple checksum, but it should be sufficient for now
-        return "$length"
+        val md = MessageDigest.getInstance(CHECKSUM_ALGORITHM)
+        val checksumByteArray = md.digest(toByteArray())
+        return toHexString(checksumByteArray)
+    }
+
+    /**
+     * Converts a byte array to it's hex representation include leading zeros.
+     */
+    private fun toHexString(data: ByteArray): String {
+        val chars = CharArray(data.size * 2)
+        for (i in data.indices) {
+            chars[i * 2] = HEX_DIGITS[data[i].toInt() shr (4) and 0xf]
+            chars[i * 2 + 1] = HEX_DIGITS[data[i].toInt() and 0xf]
+        }
+        return String(chars)
     }
 
 
     companion object {
         private val DIFF_MATCH_PATCH = diff_match_patch()
-        private var GSON = Gson()
+        private val GSON = Gson()
+
+        private const val CHECKSUM_ALGORITHM = "MD5"
+        private val HEX_DIGITS = "0123456789abcdef".toLowerCase().toCharArray()
     }
 
 }

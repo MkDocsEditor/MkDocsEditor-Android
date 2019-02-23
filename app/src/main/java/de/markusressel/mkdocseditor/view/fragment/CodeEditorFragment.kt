@@ -6,7 +6,6 @@ import android.graphics.Matrix
 import android.graphics.PointF
 import android.os.Bundle
 import android.view.*
-import android.widget.Toast
 import androidx.annotation.CallSuper
 import androidx.annotation.UiThread
 import androidx.databinding.DataBindingUtil
@@ -26,7 +25,6 @@ import com.trello.rxlifecycle2.android.FragmentEvent
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.commons.android.material.snack
-import de.markusressel.commons.android.material.toast
 import de.markusressel.commons.logging.prettyPrint
 import de.markusressel.kodeeditor.library.view.CodeEditorLayout
 import de.markusressel.kodeeditor.library.view.SelectionChangedListener
@@ -263,7 +261,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 .subscribeBy(onNext = {
                     documentSyncManager.sync()
                 }, onError = {
-                    context?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
+                    // TODO: proper error handling for the user
+                    Timber.e(it)
+                    disconnect("Error in client sync code")
                 })
 
 //        textDisposable = RxTextView
