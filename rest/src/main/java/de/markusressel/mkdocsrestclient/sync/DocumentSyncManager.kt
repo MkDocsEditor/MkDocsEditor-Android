@@ -1,10 +1,12 @@
 package de.markusressel.mkdocsrestclient.sync
 
+import android.content.Context
 import androidx.annotation.WorkerThread
 import com.google.gson.Gson
 import com.google.gson.JsonParseException
 import de.markusressel.commons.android.core.doAsync
 import de.markusressel.commons.android.core.runOnUiThread
+import de.markusressel.commons.android.material.toast
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.websocket.SocketEntityBase
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionHandler
@@ -17,6 +19,7 @@ import java.util.*
  * Class used to manage document changes from client- and server.
  */
 class DocumentSyncManager(
+        val context: Context,
         hostname: String,
         port: Int,
         ssl: Boolean,
@@ -119,9 +122,10 @@ class DocumentSyncManager(
             "initial-content" -> {
                 val initialContentEntity = GSON.fromJson(text, InitialContentRequestEntity::class.java)
 
-                clientShadow = initialContentEntity.content
-
-                onInitialText(initialContentEntity.content)
+                runOnUiThread {
+                    clientShadow = initialContentEntity.content
+                    onInitialText(initialContentEntity.content)
+                }
             }
             "edit-request" -> {
                 val editRequest = GSON.fromJson(text, EditRequestEntity::class.java)
@@ -130,21 +134,18 @@ class DocumentSyncManager(
                 // parse and apply patches
                 val patches = DIFF_MATCH_PATCH.patch_fromText(editRequest.patches)
 
-                // patch the clientShadow
-                val patchResult = DIFF_MATCH_PATCH.patch_apply(patches, clientShadow)
-                val patchedText = patchResult[0] as String
-
+                // patching has to be done on UI thread so the user can't type while the patch is applied
                 runOnUiThread {
-                    clientShadow = patchedText
-                    //                    if (fragilePatchShadow(editRequest, patches)) {
-                    // patching has to be done on UI thread so the user can't type while the patch is applied
+                    // patch the clientShadow
+                    if (!fragilePatchShadow(editRequest, patches)) {
+                        Timber.e("The client shadow does not match the server shadow. A synchronization restart is necessary.")
+                        context.toast("Shadow out of sync")
+                        resyncWithServer()
+                        return@runOnUiThread
+                    }
+
                     val patchedText = fuzzyPatchCurrentText(patches)
-//                    clientShadow = patchedText
                     onTextChanged(patchedText, patches)
-//                    } else {
-//                        Timber.e("Unrecoverable error while patching shadow. A synchronization restart is necessary.")
-//                        resyncWithServer()
-//                    }
                 }
             }
         }
@@ -165,21 +166,21 @@ class DocumentSyncManager(
     /**
      * Fragile patch the current shadow.
      *
-     * TODO: this shouldn't be necessary
-     *
      * @return true if the patch was successful, false otherwise
      */
     private fun fragilePatchShadow(editRequest: EditRequestEntity, patches: LinkedList<diff_match_patch.Patch>): Boolean {
+        // make sure current shadow matches the server shadow before the patch
+        if (clientShadow.checksum() != editRequest.shadowChecksum) {
+            return false
+        }
+
         // fragile patch shadow
         val patchResult = DIFF_MATCH_PATCH.patch_apply(patches, clientShadow)
         val patchedText = patchResult[0] as String
         val patchesApplied = patchResult[1] as BooleanArray
 
-        // make sure current shadow matches the server shadow before the patch
-
-        // TODO: this shadow should not be required on client side, is it?
+        clientShadow = patchedText
         return true
-//        return patchedText.checksum() == editRequest.shadowChecksum
     }
 
     private fun resyncWithServer() {
@@ -194,21 +195,22 @@ class DocumentSyncManager(
         websocketConnectionHandler.shutdown()
     }
 
+    /**
+     * Calculates a checksum of this [String] with the given algorithm.
+     *
+     * @param algorithm algorithm to use
+     * @return the checksum
+     */
+    private fun String.checksum(algorithm: String = "MD5"): String {
+        return "$length"
+//      val md = MessageDigest.getInstance(algorithm)
+//      return BigInteger(1, md.digest(toByteArray())).toString(16)
+    }
+
+
     companion object {
         private val DIFF_MATCH_PATCH = diff_match_patch()
         private var GSON = Gson()
     }
 
-}
-
-/**
- * Calculates a checksum of this [String] with the given algorithm.
- *
- * @param algorithm algorithm to use
- * @return the checksum
- */
-private fun String.checksum(algorithm: String = "MD5"): String {
-    return "$length"
-//    val md = MessageDigest.getInstance(algorithm)
-//    return BigInteger(1, md.digest(toByteArray())).toString(16)
 }

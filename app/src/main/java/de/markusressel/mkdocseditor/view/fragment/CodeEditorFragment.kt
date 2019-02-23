@@ -201,6 +201,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         super.onCreate(savedInstanceState)
 
         documentSyncManager = DocumentSyncManager(
+                context = context(),
                 hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue,
                 port = preferencesHolder.restConnectionPortPreference.persistedValue.toInt(),
                 ssl = preferencesHolder.restConnectionSslPreference.persistedValue,
