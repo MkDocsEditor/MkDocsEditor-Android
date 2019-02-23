@@ -59,8 +59,7 @@ class WebsocketConnectionHandler(val url: String,
 
             override fun onOpen(webSocket: WebSocket, response: Response?) {
                 super.onOpen(webSocket, response)
-                isConnected = true
-                listener?.onConnectionChanged(isConnected)
+                onNewConnectionStatus(true)
             }
 
             override fun onMessage(webSocket: WebSocket, text: String?) {
@@ -75,13 +74,12 @@ class WebsocketConnectionHandler(val url: String,
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 super.onClosed(webSocket, code, reason)
-                isConnected = false
-                listener?.onConnectionChanged(isConnected)
+                onNewConnectionStatus(false)
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable?, response: Response?) {
                 super.onFailure(webSocket, t, response)
-                isConnected = false
+                onNewConnectionStatus(false)
 
                 Timber.e(t, "Websocket error")
                 runOnUiThread {
@@ -89,6 +87,16 @@ class WebsocketConnectionHandler(val url: String,
                 }
             }
         })
+    }
+
+    /**
+     * Notifies listeners of a connection state change
+     */
+    private fun onNewConnectionStatus(connected: Boolean) {
+        if (isConnected != connected) {
+            isConnected = connected
+            listener?.onConnectionChanged(isConnected)
+        }
     }
 
     /**

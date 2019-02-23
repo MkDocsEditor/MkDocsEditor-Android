@@ -25,7 +25,6 @@ import com.trello.rxlifecycle2.android.FragmentEvent
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.commons.android.material.snack
-import de.markusressel.commons.logging.prettyPrint
 import de.markusressel.kodeeditor.library.view.CodeEditorLayout
 import de.markusressel.kodeeditor.library.view.SelectionChangedListener
 import de.markusressel.kodehighlighter.language.markdown.MarkdownSyntaxHighlighter
@@ -229,13 +228,14 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 codeEditorLayout.snack(R.string.connected, LENGTH_SHORT)
             }
         } else {
-            disconnect()
+            noConnectionSnackbar?.dismiss()
+            codeEditorLayout.editable = false
+            textDisposable?.dispose()
 
-            throwable?.let {
-                codeEditorLayout.text = throwable.prettyPrint()
+            saveEditorState()
 
-                // try to load from persistence
-                loadTextFromPersistence()
+            if (throwable != null) {
+                Timber.e(throwable) { "Websocket error code: $errorCode" }
                 noConnectionSnackbar = codeEditorLayout.snack(
                         text = R.string.server_unavailable,
                         duration = LENGTH_INDEFINITE,
@@ -243,7 +243,14 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                         action = {
                             reconnectToServer()
                         })
-                Timber.e(throwable) { "Websocket error code: $errorCode" }
+            } else {
+                noConnectionSnackbar = codeEditorLayout.snack(
+                        text = R.string.not_connected,
+                        duration = LENGTH_INDEFINITE,
+                        actionTitle = R.string.connect,
+                        action = {
+                            reconnectToServer()
+                        })
             }
         }
 
