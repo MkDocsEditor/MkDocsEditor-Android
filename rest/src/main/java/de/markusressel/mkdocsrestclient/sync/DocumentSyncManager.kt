@@ -215,15 +215,13 @@ class DocumentSyncManager(
     }
 
     /**
-     * Calculates a checksum of this [String] with the given algorithm.
+     * Calculates a checksum of this [String].
      *
-     * @param algorithm algorithm to use
      * @return the checksum
      */
-    private fun String.checksum(algorithm: String = "MD5"): String {
+    private fun String.checksum(): String {
+        // this is currently a very simple checksum, but it should be sufficient for now
         return "$length"
-//      val md = MessageDigest.getInstance(algorithm)
-//      return BigInteger(1, md.digest(toByteArray())).toString(16)
     }
 
 
