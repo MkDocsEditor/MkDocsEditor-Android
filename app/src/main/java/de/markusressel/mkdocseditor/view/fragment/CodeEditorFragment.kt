@@ -261,7 +261,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 .filter { codeEditorLayout.editable }
                 .bindToLifecycle(this as LifecycleProvider<FragmentEvent>)
                 .subscribeBy(onNext = {
-                    sendPatchIfChanged()
+                    documentSyncManager.sync()
                 }, onError = {
                     context?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
                 })
@@ -519,13 +519,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val parent = super.onCreateView(inflater, container, savedInstanceState) as ViewGroup
         return loadingComponent.onCreateView(inflater, parent, savedInstanceState)
-    }
-
-    @Synchronized
-    private fun sendPatchIfChanged() {
-        val newText = codeEditorLayout.codeEditorView.codeEditText.toString()
-        documentSyncManager.sendPatch()
-        currentText = newText
     }
 
     private val offlineModeObserver = Observer<Boolean> { enabled ->

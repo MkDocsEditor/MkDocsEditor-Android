@@ -61,18 +61,25 @@ class DocumentSyncManager(
     }
 
     /**
+     * Trigger synchronization
+     */
+    fun sync() {
+        if (!clientShadowIsReady) {
+            context.toast("Shadow is not ready yet...")
+            return
+        }
+
+        sendPatch()
+    }
+
+    /**
      * Send a patch to the server
      *
      * @param previousText the text to use as the previous version
      * @param newText the new and (presumably) changed text
      * @return id of the EditRequest sent to the server
      */
-    fun sendPatch(previousText: String = clientShadow, newText: String = currentText()): String? {
-        if (!clientShadowIsReady) {
-            context.toast("Shadow is not ready yet...")
-            return null
-        }
-
+    private fun sendPatch(previousText: String = clientShadow, newText: String = currentText()): String {
         // compute diff to current shadow
         val diffs = DIFF_MATCH_PATCH.diff_main(previousText, newText)
         // take a checksum of the client shadow before the diff has been applied
