@@ -234,6 +234,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
             textDisposable?.dispose()
 
             throwable?.let {
+                codeEditorLayout.text = throwable.prettyPrint()
+
                 // try to load from persistence
                 loadTextFromPersistence()
                 noConnectionSnackbar = codeEditorLayout.snack(

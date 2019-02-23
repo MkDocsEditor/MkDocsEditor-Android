@@ -49,6 +49,7 @@ class DocumentSyncManager(
     val isConnected: Boolean
         get() = websocketConnectionHandler.isConnected
 
+    private var clientShadowIsReady = false
     private var clientShadow: String = ""
 
     /**
@@ -66,7 +67,12 @@ class DocumentSyncManager(
      * @param newText the new and (presumably) changed text
      * @return id of the EditRequest sent to the server
      */
-    fun sendPatch(previousText: String = clientShadow, newText: String = currentText()): String {
+    fun sendPatch(previousText: String = clientShadow, newText: String = currentText()): String? {
+        if (!clientShadowIsReady) {
+            context.toast("Shadow is not ready yet...")
+            return null
+        }
+
         // compute diff to current shadow
         val diffs = DIFF_MATCH_PATCH.diff_main(previousText, newText)
         // take a checksum of the client shadow before the diff has been applied
@@ -94,9 +100,13 @@ class DocumentSyncManager(
     /**
      * Disconnect a from the server
      */
-    fun disconnect(code: Int, reason: String) = websocketConnectionHandler.disconnect(code, reason)
+    fun disconnect(code: Int, reason: String) {
+        clientShadowIsReady = false
+        websocketConnectionHandler.disconnect(code, reason)
+    }
 
     override fun onConnectionChanged(connected: Boolean, errorCode: Int?, throwable: Throwable?) {
+        if (!connected) clientShadowIsReady = false
         onConnectionStatusChanged.invoke(connected, errorCode, throwable)
     }
 
@@ -126,6 +136,7 @@ class DocumentSyncManager(
                     clientShadow = initialContentEntity.content
                     onInitialText(initialContentEntity.content)
                 }
+                clientShadowIsReady = true
             }
             "edit-request" -> {
                 val editRequest = GSON.fromJson(text, EditRequestEntity::class.java)
@@ -192,6 +203,7 @@ class DocumentSyncManager(
      * Shutdown the websocket client (and all websockets)
      */
     fun shutdown() {
+        clientShadowIsReady = false
         websocketConnectionHandler.shutdown()
     }
 
