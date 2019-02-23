@@ -231,7 +231,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 codeEditorLayout.snack(R.string.connected, LENGTH_SHORT)
             }
         } else {
-            textDisposable?.dispose()
+            disconnect()
 
             throwable?.let {
                 codeEditorLayout.text = throwable.prettyPrint()
@@ -248,6 +248,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 Timber.e(throwable) { "Websocket error code: $errorCode" }
             }
         }
+
+        updateOfflineBanner()
     }
 
     private fun watchTextChanges() {
@@ -527,12 +529,18 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     }
 
     private val offlineModeObserver = Observer<Boolean> { enabled ->
-        viewModel.offlineModeEnabled.value = enabled
+        updateOfflineBanner()
         if (enabled) {
             disconnect(reason = "Offline mode was activated")
             loadTextFromPersistence()
         } else {
             reconnectToServer()
+        }
+    }
+
+    private fun updateOfflineBanner() {
+        runOnUiThread {
+            viewModel.offlineModeEnabled.value = !documentSyncManager.isConnected || offlineModeManager.isEnabled()
         }
     }
 
@@ -555,7 +563,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         super.onStop()
     }
 
-    private fun disconnect(reason: String) {
+    private fun disconnect(reason: String = "None") {
+        updateOfflineBanner()
         noConnectionSnackbar?.dismiss()
         codeEditorLayout.editable = false
         documentSyncManager.disconnect(1000, reason)

@@ -2,9 +2,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="de.markusressel.mkdocseditor">
 
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- needed to connect to the server -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- needed to react to connection changes -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <!-- needed for logs only -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:name=".application.App"

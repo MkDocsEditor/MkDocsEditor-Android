@@ -120,6 +120,9 @@ dependencies {
     // RxBus (event bus)
     implementation 'com.eightbitlab:rxbus:1.0.2'
 
+    // Permissions
+    implementation 'com.karumi:dexter:5.0.0'
+
     // Material Drawer
     implementation("com.mikepenz:materialdrawer:6.1.1@aar") {
         transitive = true

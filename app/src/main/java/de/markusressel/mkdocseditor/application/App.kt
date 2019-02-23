@@ -7,6 +7,7 @@ import com.eightbitlab.rxbus.registerInBus
 import dagger.android.AndroidInjector
 import dagger.android.DaggerApplication
 import de.markusressel.mkdocseditor.BuildConfig
+import de.markusressel.mkdocseditor.application.log.FileTree
 import de.markusressel.mkdocseditor.dagger.DaggerAppComponent
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.event.BasicAuthPasswordChangedEvent
@@ -37,8 +38,7 @@ class App : DaggerApplicationBase() {
     }
 
     override fun onCreate() {
-        super
-                .onCreate()
+        super.onCreate()
         // register app lifecycle
         registerActivityLifecycleCallbacks(AppLifecycleTracker())
 
@@ -54,8 +54,6 @@ class App : DaggerApplicationBase() {
         initializeEmojiCompat()
 
         initOfflineMode()
-
-
     }
 
     private fun setupErrorHandlers() {
@@ -71,6 +69,7 @@ class App : DaggerApplicationBase() {
     private fun plantTimberTrees() {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
+            Timber.plant(FileTree(this))
         }
     }
 
