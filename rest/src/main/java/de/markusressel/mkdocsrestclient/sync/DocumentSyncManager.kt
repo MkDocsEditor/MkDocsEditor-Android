@@ -13,6 +13,7 @@ import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionHandle
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionListener
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import timber.log.Timber
+import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.*
 
@@ -218,15 +219,17 @@ class DocumentSyncManager(
     /**
      * Calculates a checksum of this [String].
      *
-     * Important notes:
-     * - The checksum must include leading zeros
+     * Important notes for the implementation of this method:
+     * - the text that is hashed must be encoded using UTF-16LE without BOM
+     *   this will ensure the bytes are the same on all clients
+     * - the checksum must include leading zeros
      * - all characters are lowercase
      *
      * @return the checksum
      */
     private fun String.checksum(): String {
         val md = MessageDigest.getInstance(CHECKSUM_ALGORITHM)
-        val checksumByteArray = md.digest(toByteArray())
+        val checksumByteArray = md.digest(toByteArray(charset = StandardCharsets.UTF_16LE))
         return toHexString(checksumByteArray)
     }
 

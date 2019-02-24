@@ -229,7 +229,10 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
             }
         } else {
             noConnectionSnackbar?.dismiss()
-            codeEditorLayout.editable = false
+            runOnUiThread {
+                codeEditorLayout.editable = false
+            }
+
             textDisposable?.dispose()
 
             saveEditorState()
