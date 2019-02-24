@@ -119,7 +119,7 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
         reload()
     }
 
-    private fun reload() {
+    fun reload() {
         restClient
                 .isHostAlive()
                 .subscribeOn(Schedulers.io())

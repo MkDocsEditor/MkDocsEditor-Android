@@ -43,10 +43,6 @@ class DocumentApiImpl(private val requestManager: RequestManager) : DocumentApi 
         return requestManager.doJsonRequest("/document/", Method.POST, data, DocumentModel.SingleDeserializer())
     }
 
-    override fun updateDocumentContent(id: String, newContent: String): Single<String> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
     override fun deleteDocument(id: String): Single<Pair<Response, ByteArray>> {
         return requestManager.doRequest("/document/$id/", Method.DELETE)
     }

@@ -6,8 +6,9 @@
     android:padding="16dp">
 
     <EditText
+        android:id="@+id/newDocumentName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:hint="Enter new document name" />
+        android:hint="New Document" />
 
 </LinearLayout>

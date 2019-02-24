@@ -9,7 +9,7 @@ import io.objectbox.annotation.Unique
 import io.objectbox.relation.ToOne
 import java.util.*
 
-fun DocumentModel.asEntity(parentSection: SectionEntity, contentEntity: DocumentContentEntity?): DocumentEntity {
+fun DocumentModel.asEntity(parentSection: SectionEntity, contentEntity: DocumentContentEntity? = null): DocumentEntity {
     val d = DocumentEntity(0, this.type, this.id, this.name, this.filesize, this.modtime, this.url)
     d.parentSection.target = parentSection
     contentEntity?.let {

@@ -42,11 +42,6 @@ interface DocumentApi {
     fun createDocument(parentId: String, name: String): Single<DocumentModel>
 
     /**
-     * Update the content of a document
-     */
-    fun updateDocumentContent(id: String, newContent: String): Single<String>
-
-    /**
      * Delete an existing document
      */
     fun deleteDocument(id: String): Single<Pair<Response, ByteArray>>

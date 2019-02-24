@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.Toast
 import androidx.databinding.ViewDataBinding
 import androidx.lifecycle.Observer
@@ -32,6 +33,7 @@ import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragm
 import de.markusressel.mkdocseditor.view.viewmodel.FileBrowserViewModel
 import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.reactivex.Single
+import io.reactivex.rxkotlin.subscribeBy
 import javax.inject.Inject
 
 
@@ -117,7 +119,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                         id(it.id)
                         item(it)
                         onclick { model, parentView, clickedView, position ->
-                            openDocumentEditor(model.item())
+                            openDocumentEditor(model.item().id)
                         }
                     }
                 }
@@ -151,11 +153,11 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                 .registerInBus(this)
     }
 
-    private fun openDocumentEditor(document: DocumentEntity) {
-        Timber.d { "Opening Document '${document.name}'" }
+    private fun openDocumentEditor(documentId: String) {
+        Timber.d { "Opening Document '$documentId'" }
 
         navController.navigate(
-                FileBrowserFragmentDirections.actionFileBrowserPageToCodeEditorPage(document.id)
+                FileBrowserFragmentDirections.actionFileBrowserPageToCodeEditorPage(documentId)
         )
     }
 
@@ -168,10 +170,35 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         MaterialDialog(context()).show {
             customView(R.layout.dialog__add_document)
             positiveButton(android.R.string.ok, click = {
-                context.toast("Sorry, this not yet supported")
+                val editText: EditText = it.findViewById(R.id.newDocumentName)
+                createNewDocument(editText.text ?: "")
             })
             negativeButton(android.R.string.cancel)
         }
+    }
+
+    private fun createNewDocument(name: CharSequence) {
+        val documentName = if (name.isEmpty()) "New Document" else name
+        val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
+        val parentSection = sectionPersistenceManager.findById(currentSectionId)
+        if (parentSection == null) {
+            Timber.e { "Parent section could not be found in persistence while trying to create a new document in it" }
+            return
+        }
+
+        val d = restClient.createDocument(
+                fileBrowserViewModel.currentSectionId.value!!,
+                documentName.toString())
+                .subscribeBy(onSuccess = {
+                    // insert it into persistence
+                    documentPersistenceManager.standardOperation().put(
+                            it.asEntity(parentSection = parentSection))
+                    // and open the editor right away
+                    openDocumentEditor(it.id)
+                }, onError = { error ->
+                    Timber.e(error) { "Error creating document" }
+                    context().toast("There was an error :(")
+                })
     }
 
     /**

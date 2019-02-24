@@ -14,6 +14,15 @@ class SectionPersistenceManager @Inject constructor(
 ) : PersistenceManagerBase<SectionEntity>(SectionEntity::class) {
 
     /**
+     * Find a section by it's document id (not the database entity id)
+     */
+    fun findById(sectionId: String): SectionEntity? {
+        return standardOperation().query {
+            equal(SectionEntity_.id, sectionId)
+        }.findUnique()
+    }
+
+    /**
      * Inserts sections (and their contents) if missing,
      * updates any already existing entities,
      * and finally removes entities that are not present in the given dataset
