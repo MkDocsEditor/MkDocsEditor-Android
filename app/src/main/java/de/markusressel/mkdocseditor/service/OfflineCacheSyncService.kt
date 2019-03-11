@@ -3,6 +3,7 @@ package de.markusressel.mkdocseditor.service
 import android.app.job.JobParameters
 import android.os.Handler
 import com.github.ajalt.timberkt.Timber
+import de.markusressel.mkdocseditor.dagger.DaggerJobService
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import io.reactivex.android.schedulers.AndroidSchedulers

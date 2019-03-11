@@ -10,7 +10,6 @@ import de.markusressel.kutepreferences.core.persistence.DefaultKutePreferenceDat
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.mkdocseditor.application.App
 import de.markusressel.mkdocseditor.data.persistence.entity.MyObjectBox
-import de.markusressel.mkdocseditor.service.DaggerJobService
 import de.markusressel.mkdocseditor.service.OfflineCacheSyncService
 import de.markusressel.mkdocseditor.view.activity.MainActivity
 import de.markusressel.mkdocseditor.view.activity.base.DaggerSupportActivityBase
