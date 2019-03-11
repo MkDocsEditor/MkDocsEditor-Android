@@ -1,18 +1,19 @@
 package de.markusressel.mkdocseditor.view.activity.base
 
-import android.app.job.JobInfo
-import android.app.job.JobScheduler
-import android.content.ComponentName
 import android.content.Context
-import android.os.PersistableBundle
 import androidx.annotation.ColorInt
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.MutableLiveData
+import androidx.work.Data
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.github.ajalt.timberkt.Timber
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
-import de.markusressel.mkdocseditor.service.OfflineCacheSyncService
+import de.markusressel.mkdocseditor.service.OfflineSyncWorker
+import de.markusressel.mkdocseditor.service.OfflineSyncWorker.Companion.DOCUMENT_IDS_KEY
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -63,12 +64,6 @@ class OfflineModeManager @Inject constructor(
      * @param documentIds optionally specify a list of document id's to update
      */
     fun scheduleOfflineCacheUpdate(documentIds: Collection<String>? = null, evenInOfflineMode: Boolean = false) {
-        val jobScheduler = ContextCompat.getSystemService(context, JobScheduler::class.java)
-        if (jobScheduler == null) {
-            Timber.w { "JobScheduler service is not available, background offline cache update will not work!" }
-            return
-        }
-
         if (isEnabled() && !evenInOfflineMode) {
             Timber.d { "Offline mode is active, no offline cache update is scheduled." }
             return
@@ -81,17 +76,14 @@ class OfflineModeManager @Inject constructor(
             return
         }
 
-        val serviceComponent = ComponentName(context, OfflineCacheSyncService::class.java)
-        val builder = JobInfo.Builder(0, serviceComponent).apply {
-            setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY) // require any network connection
-//                setRequiresDeviceIdle(true) // device should be idle
-            setRequiresCharging(false) // we don't care if the device is charging or not
-            setExtras(PersistableBundle().apply {
-                putStringArray(OfflineCacheSyncService.DOCUMENT_IDS_KEY, documentsToUpdate.toSet().toTypedArray())
-            })
-        }
+        val workerData: Data = workDataOf(
+                DOCUMENT_IDS_KEY to documentsToUpdate
+        )
 
-        jobScheduler.schedule(builder.build())
+        val offlineSyncWorker = OneTimeWorkRequestBuilder<OfflineSyncWorker>()
+                .setInputData(workerData)
+                .build()
+        WorkManager.getInstance().enqueue(offlineSyncWorker)
     }
 
 }
