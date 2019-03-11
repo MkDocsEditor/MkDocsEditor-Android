@@ -52,7 +52,7 @@ dependencies {
     // Kotlin bindings for GSON
     implementation "com.github.salomonbrys.kotson:kotson:${rootProject.ext.kotsonVersion}"
     implementation "io.reactivex.rxjava2:rxkotlin:${rootProject.ext.rxKotlinVersion}"
-    implementation 'androidx.annotation:annotation:1.0.1'
+    implementation 'androidx.annotation:annotation:1.0.2'
 
     // Android Architecture Components
     implementation "androidx.core:core-ktx:$aacAndroidKtxVersion"

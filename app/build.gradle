@@ -63,15 +63,15 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.0.0-alpha3'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.0.0'
-    implementation 'androidx.annotation:annotation:1.0.1'
+    implementation 'androidx.annotation:annotation:1.0.2'
     implementation 'androidx.browser:browser:1.0.0'
     implementation 'com.google.android.material:material:1.0.0'
 
     implementation 'androidx.emoji:emoji:1.0.0'
     implementation 'androidx.emoji:emoji-bundled:1.0.0'
 
-    implementation "android.arch.navigation:navigation-fragment-ktx:1.0.0-beta01"
-    implementation "android.arch.navigation:navigation-ui-ktx:1.0.0-beta01"
+    implementation "android.arch.navigation:navigation-fragment-ktx:1.0.0-rc02"
+    implementation "android.arch.navigation:navigation-ui-ktx:1.0.0-rc02"
 
     // Android KTX
 
@@ -154,7 +154,7 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
-    implementation 'android.arch.navigation:navigation-fragment:1.0.0-beta01'
+    implementation 'android.arch.navigation:navigation-fragment:1.0.0-rc02'
 }
 
 configurations.all() {
