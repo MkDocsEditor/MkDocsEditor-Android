@@ -10,7 +10,6 @@ import de.markusressel.kutepreferences.core.persistence.DefaultKutePreferenceDat
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.mkdocseditor.application.App
 import de.markusressel.mkdocseditor.data.persistence.entity.MyObjectBox
-import de.markusressel.mkdocseditor.service.OfflineCacheSyncService
 import de.markusressel.mkdocseditor.view.activity.MainActivity
 import de.markusressel.mkdocseditor.view.activity.base.DaggerSupportActivityBase
 import de.markusressel.mkdocseditor.view.fragment.AboutPage
@@ -33,9 +32,6 @@ abstract class AppModule {
 
     @ContributesAndroidInjector
     internal abstract fun DaggerJobService(): DaggerJobService
-
-    @ContributesAndroidInjector
-    internal abstract fun OfflineCacheSyncService(): OfflineCacheSyncService
 
     @ContributesAndroidInjector
     internal abstract fun DaggerSupportActivityBase(): DaggerSupportActivityBase

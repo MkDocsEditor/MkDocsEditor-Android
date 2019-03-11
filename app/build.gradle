@@ -111,6 +111,14 @@ dependencies {
     implementation 'io.reactivex.rxjava2:rxandroid:2.0.2'
     implementation "io.reactivex.rxjava2:rxkotlin:${rootProject.ext.rxKotlinVersion}"
 
+    // WorkManager
+    def work_version = "1.0.0"
+    implementation "android.arch.work:work-runtime-ktx:$work_version"
+    // optional - RxJava2 support
+    implementation "android.arch.work:work-rxjava2:$work_version"
+    // optional - Test helpers
+    androidTestImplementation "android.arch.work:work-testing:$work_version"
+
     // RxBinding
     // RxJava binding APIs for Android UI widgets from the platform and support libraries.
     implementation "com.jakewharton.rxbinding2:rxbinding:${rootProject.ext.rxBindingVersion}"
@@ -140,11 +148,13 @@ dependencies {
     // Code editor
 //    def codeEditorVersion = "v2.1.0"
     def codeEditorVersion = "dev-SNAPSHOT"
-    implementation("com.github.markusressel:KodeEditor:${codeEditorVersion}") { changing = true}
+    implementation("com.github.markusressel:KodeEditor:${codeEditorVersion}") { changing = true }
 
     // Syntax Highlighting
     def codeHighlighterVersion = "v1.2.2"
-    implementation("com.github.markusressel.KodeHighlighter:markdown:${codeHighlighterVersion}") { changing = true}
+    implementation("com.github.markusressel.KodeHighlighter:markdown:${codeHighlighterVersion}") {
+        changing = true
+    }
 
     // AboutLibraries ("About" screen)
     implementation("com.mikepenz:aboutlibraries:$aboutlibrariesVersion@aar") {
