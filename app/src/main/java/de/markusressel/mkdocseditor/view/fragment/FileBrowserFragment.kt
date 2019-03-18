@@ -142,13 +142,13 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     override fun getRightFabs(): List<FabConfig.Fab> {
         return listOf(
                 FabConfig.Fab(id = 0,
-                        description = R.string.add,
-                        icon = MaterialDesignIconic.Icon.gmi_plus,
+                        description = R.string.speed_dial_create_document,
+                        icon = MaterialDesignIconic.Icon.gmi_file_add,
                         onClick = {
                             openCreateDocumentDialog()
                         }),
                 FabConfig.Fab(id = 1,
-                        description = R.string.add,
+                        description = R.string.speed_dial_create_section,
                         icon = MaterialDesignIconic.Icon.gmi_folder,
                         onClick = {
                             openCreateSectionDialog()
@@ -202,16 +202,20 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     private fun createNewSection(name: String) {
         val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
+        val parentSection = sectionPersistenceManager.findById(currentSectionId)
+        if (parentSection == null) {
+            Timber.e { "Parent section could not be found in persistence while trying to create a new section in it" }
+            return
+        }
 
         restClient.createSection(currentSectionId, name)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeBy(onSuccess = {
+                    val createdSection = it.asEntity(documentContentPersistenceManager)
+                    parentSection.subsections.add(createdSection)
                     // insert it into persistence
-                    sectionPersistenceManager.standardOperation().put(
-                            it.asEntity(documentContentPersistenceManager))
-                    // and open the editor right away
-                    openDocumentEditor(it.id)
+                    sectionPersistenceManager.standardOperation().put(parentSection)
                 }, onError = { error ->
                     Timber.e(error) { "Error creating section" }
                     context().toast("There was an error :(")

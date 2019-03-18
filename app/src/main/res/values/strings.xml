@@ -20,5 +20,7 @@
     <string name="connect">Connect</string>
 
     <string name="add">Add</string>
+    <string name="speed_dial_create_document">Create a document</string>
+    <string name="speed_dial_create_section">Create a section</string>
 
 </resources>

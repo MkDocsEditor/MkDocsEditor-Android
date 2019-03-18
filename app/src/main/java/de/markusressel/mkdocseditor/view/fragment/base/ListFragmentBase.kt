@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.airbnb.epoxy.Typed3EpoxyController
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.leinardi.android.speeddial.SpeedDialActionItem
+import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
@@ -112,20 +113,27 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
     }
 
     private fun setupFabs() {
-        val fabItems = (getLeftFabs() + getRightFabs()).map {
-            SpeedDialActionItem.Builder(it.id, iconHandler.getFabIcon(it.icon)).create()
-        }
-        speedDial.addAllActionItems(fabItems)
+        speedDial.apply {
+            setMainFabClosedDrawable(iconHandler.getFabIcon(MaterialDesignIconic.Icon.gmi_plus))
+            setMainFabOpenedDrawable(iconHandler.getFabIcon(MaterialDesignIconic.Icon.gmi_close))
 
-        speedDial.setOnActionSelectedListener { actionItem ->
-            val fabConfig = (getRightFabs() + getLeftFabs()).find { it.id == actionItem.id }
-            if (fabConfig != null) {
-                fabConfig.onClick?.invoke()
-                // close the speed dial
-                false
-            } else {
-                // keep the speed dial open
-                true
+            val fabItems = (getLeftFabs() + getRightFabs()).map {
+                SpeedDialActionItem.Builder(it.id, iconHandler.getFabIcon(it.icon))
+                        .setLabel(it.description)
+                        .create()
+            }
+            addAllActionItems(fabItems)
+
+            setOnActionSelectedListener { actionItem ->
+                val fabConfig = (getRightFabs() + getLeftFabs()).find { it.id == actionItem.id }
+                if (fabConfig != null) {
+                    fabConfig.onClick?.invoke()
+                    // close the speed dial
+                    false
+                } else {
+                    // keep the speed dial open
+                    true
+                }
             }
         }
     }
