@@ -35,7 +35,7 @@ import kotlinx.android.synthetic.main.layout_empty_list.*
 /**
  * List base class
  */
-abstract class NewListFragmentBase : DaggerSupportFragmentBase() {
+abstract class ListFragmentBase : DaggerSupportFragmentBase() {
 
     override val layoutRes: Int
         get() = R.layout.fragment_recyclerview
