@@ -134,6 +134,9 @@ dependencies {
     implementation "com.airbnb.android:epoxy-paging:$epoxyVersion"
     kapt "com.airbnb.android:epoxy-processor:$epoxyVersion"
 
+    // Multi-FABs
+    implementation "com.leinardi.android:speed-dial:2.0.1"
+
     // Dialogs
     implementation 'com.afollestad.material-dialogs:core:2.0.0-rc7'
 

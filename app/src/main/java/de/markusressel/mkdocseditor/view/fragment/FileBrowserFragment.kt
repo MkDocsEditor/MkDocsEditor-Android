@@ -33,7 +33,9 @@ import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragm
 import de.markusressel.mkdocseditor.view.viewmodel.FileBrowserViewModel
 import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
+import io.reactivex.schedulers.Schedulers
 import javax.inject.Inject
 
 
@@ -138,9 +140,19 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     }
 
     override fun getRightFabs(): List<FabConfig.Fab> {
-        return listOf(FabConfig.Fab(description = R.string.add, icon = MaterialDesignIconic.Icon.gmi_plus, onClick = {
-            openAddDialog()
-        }))
+        return listOf(
+                FabConfig.Fab(id = 0,
+                        description = R.string.add,
+                        icon = MaterialDesignIconic.Icon.gmi_plus,
+                        onClick = {
+                            openCreateDocumentDialog()
+                        }),
+                FabConfig.Fab(id = 1,
+                        description = R.string.add,
+                        icon = MaterialDesignIconic.Icon.gmi_folder,
+                        onClick = {
+                            openCreateSectionDialog()
+                        }))
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -166,18 +178,47 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         context?.toast("Resources are not yet supported :(", Toast.LENGTH_LONG)
     }
 
-    private fun openAddDialog() {
+    private fun openCreateSectionDialog() {
         MaterialDialog(context()).show {
             customView(R.layout.dialog__add_document)
             positiveButton(android.R.string.ok, click = {
                 val editText: EditText = it.findViewById(R.id.newDocumentName)
-                createNewDocument(editText.text ?: "")
+                createNewSection(editText.text?.toString() ?: "")
             })
             negativeButton(android.R.string.cancel)
         }
     }
 
-    private fun createNewDocument(name: CharSequence) {
+    private fun openCreateDocumentDialog() {
+        MaterialDialog(context()).show {
+            customView(R.layout.dialog__add_document)
+            positiveButton(android.R.string.ok, click = {
+                val editText: EditText = it.findViewById(R.id.newDocumentName)
+                createNewDocument(editText.text?.toString() ?: "")
+            })
+            negativeButton(android.R.string.cancel)
+        }
+    }
+
+    private fun createNewSection(name: String) {
+        val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
+
+        restClient.createSection(currentSectionId, name)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeBy(onSuccess = {
+                    // insert it into persistence
+                    sectionPersistenceManager.standardOperation().put(
+                            it.asEntity(documentContentPersistenceManager))
+                    // and open the editor right away
+                    openDocumentEditor(it.id)
+                }, onError = { error ->
+                    Timber.e(error) { "Error creating section" }
+                    context().toast("There was an error :(")
+                })
+    }
+
+    private fun createNewDocument(name: String) {
         val documentName = if (name.isEmpty()) "New Document" else name
         val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
         val parentSection = sectionPersistenceManager.findById(currentSectionId)
@@ -187,8 +228,9 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         }
 
         val d = restClient.createDocument(
-                fileBrowserViewModel.currentSectionId.value!!,
-                documentName.toString())
+                fileBrowserViewModel.currentSectionId.value!!, documentName)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribeBy(onSuccess = {
                     // insert it into persistence
                     documentPersistenceManager.standardOperation().put(
