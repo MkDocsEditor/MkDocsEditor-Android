@@ -20,23 +20,23 @@ This project is still a work in progress and is **not yet ready for productive u
 # What is this?
 
 MkDocsEditor aims to provide an easy way for you to manage your existing [MkDocs](https://www.mkdocs.org/) projects:
-* Subsection management (folders)
-  * create new sections
-  * rename existing sections
-  * move an entire section to another location
-  * delete a section and all the content inside it
-* Document management (`*.md` files)
-  * create new documents
-  * rename existing documents
-  * edit documents in a code-highlighted
-  * see the result on your hosted website right away
-  * move a document (and all resources that are referenced in it) to another location
-  * delete documents (and all resources that are referenced in it)
-* Resource file management (any file that is not a markdown file really)
-  * upload new resource files to use in a document
-  * download and open linked resources (if supported by another app on your device)
-  * delete resource files
-    * automatically replace any reference to this resource in a document with a "deleted" note
+* [ ] Subsection management (folders)
+  * [ ] create new sections
+  * [ ] rename existing sections
+  * [ ] move an entire section to another location
+  * [ ] delete a section and all the content inside it
+* [ ] Document management (`*.md` files)
+  * [ ] create new documents
+  * [ ] rename existing documents
+  * [ ] edit documents
+  * [ ] see the result on your hosted website right away
+  * [ ] move a document (and all resources that are referenced in it) to another location
+  * [ ] delete documents (and all resources that are referenced in it)
+* [ ] Resource file management (any file that is not a markdown file really)
+  * [ ] upload new resource files to use in a document
+  * [ ] download and open linked resources (if supported by another app on your device)
+  * [ ] delete resource files
+    * [ ] automatically replace any reference to this resource in a document with a "deleted" note
 
 ## Realtime collaborative editing
 
