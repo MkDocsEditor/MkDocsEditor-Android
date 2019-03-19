@@ -8,7 +8,7 @@ A realtime collaborative editor for MkDocs projects.
 
 # :warning: Work In Progress
 
-This project is still a work in progress and is **not yet ready for productive usage**.
+This project is still a work in progress and is **not yet ready for production**.
 
 # Build Status
 
@@ -28,7 +28,7 @@ MkDocsEditor aims to provide an easy way for you to manage your existing [MkDocs
 * [ ] Document management (`*.md` files)
   * [ ] create new documents
   * [ ] rename existing documents
-  * [ ] edit documents
+  * [x] edit documents
   * [ ] see the result on your hosted website right away
   * [ ] move a document (and all resources that are referenced in it) to another location
   * [ ] delete documents (and all resources that are referenced in it)
@@ -50,9 +50,9 @@ you to edit a document simultaniously while someone else is also editing.
 
 ## Server setup
 
-To use this app an instance of [mkdocseditor-rest]() needs to run on the server
+To use this app an instance of [MkDocsEditor-Backend](https://github.com/MkDocsEditor/MkDocsEditor-Backend) needs to run on the server
 where your [MkDocs](https://www.mkdocs.org/) project source files are located.
-Have a look at the documentation on it's [project site]() to learn more
+Have a look at the documentation on it's [project site](https://github.com/MkDocsEditor/MkDocsEditor-Backend) to learn more
 on how to do this.
 
 ## Client Setup
