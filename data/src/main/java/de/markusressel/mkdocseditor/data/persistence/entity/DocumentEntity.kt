@@ -1,5 +1,7 @@
 package de.markusressel.mkdocseditor.data.persistence.entity
 
+import android.content.Context
+import android.text.format.Formatter
 import android.view.View
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocsrestclient.document.DocumentModel
@@ -43,5 +45,12 @@ data class DocumentEntity(
                 View.GONE
             }
         }
+
+    /**
+     * Human readable representation of file size
+     */
+    fun formattedDocumentSize(context: Context): String {
+        return Formatter.formatFileSize(context, filesize)
+    }
 
 }

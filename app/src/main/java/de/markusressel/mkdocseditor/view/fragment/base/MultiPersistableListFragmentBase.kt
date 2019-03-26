@@ -48,7 +48,7 @@ import javax.inject.Inject
 /**
  * Created by Markus on 29.01.2018.
  */
-abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
+abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
 
     @Inject
     lateinit var restClient: MkDocsRestClient
