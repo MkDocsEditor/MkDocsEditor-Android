@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.service
+package de.markusressel.mkdocseditor.dagger
 
 import android.app.job.JobService
 import dagger.android.AndroidInjection

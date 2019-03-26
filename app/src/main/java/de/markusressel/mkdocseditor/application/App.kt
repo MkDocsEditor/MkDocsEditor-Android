@@ -7,6 +7,7 @@ import com.eightbitlab.rxbus.registerInBus
 import dagger.android.AndroidInjector
 import dagger.android.DaggerApplication
 import de.markusressel.mkdocseditor.BuildConfig
+import de.markusressel.mkdocseditor.application.log.FileTree
 import de.markusressel.mkdocseditor.dagger.DaggerAppComponent
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.event.BasicAuthPasswordChangedEvent
@@ -15,6 +16,7 @@ import de.markusressel.mkdocseditor.event.HostChangedEvent
 import de.markusressel.mkdocseditor.view.activity.base.OfflineModeManager
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
+import io.reactivex.plugins.RxJavaPlugins
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -36,8 +38,7 @@ class App : DaggerApplicationBase() {
     }
 
     override fun onCreate() {
-        super
-                .onCreate()
+        super.onCreate()
         // register app lifecycle
         registerActivityLifecycleCallbacks(AppLifecycleTracker())
 
@@ -46,13 +47,19 @@ class App : DaggerApplicationBase() {
 
         plantTimberTrees()
 
+        setupErrorHandlers()
+
         createListeners()
 
         initializeEmojiCompat()
 
         initOfflineMode()
+    }
 
-
+    private fun setupErrorHandlers() {
+        RxJavaPlugins.setErrorHandler {
+            Timber.e(it)
+        }
     }
 
     private fun initOfflineMode() {
@@ -62,6 +69,7 @@ class App : DaggerApplicationBase() {
     private fun plantTimberTrees() {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
+            Timber.plant(FileTree(this))
         }
     }
 

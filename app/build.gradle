@@ -63,15 +63,15 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.0.0-alpha3'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.0.0'
-    implementation 'androidx.annotation:annotation:1.0.1'
+    implementation 'androidx.annotation:annotation:1.0.2'
     implementation 'androidx.browser:browser:1.0.0'
     implementation 'com.google.android.material:material:1.0.0'
 
     implementation 'androidx.emoji:emoji:1.0.0'
     implementation 'androidx.emoji:emoji-bundled:1.0.0'
 
-    implementation "android.arch.navigation:navigation-fragment-ktx:1.0.0-alpha09"
-    implementation "android.arch.navigation:navigation-ui-ktx:1.0.0-alpha09"
+    implementation "android.arch.navigation:navigation-fragment-ktx:1.0.0-rc02"
+    implementation "android.arch.navigation:navigation-ui-ktx:1.0.0-rc02"
 
     // Android KTX
 
@@ -93,8 +93,7 @@ dependencies {
     implementation "com.mikepenz:iconics-core:${iconicsVersion}@aar"
     //this adds all ui view widgets (IconicsButton, IconicsImageView, ...)
     implementation "com.mikepenz:iconics-views:${iconicsVersion}@aar"
-    //noinspection GradleDynamicVersion
-    implementation 'com.mikepenz:material-design-iconic-typeface:+@aar'
+    implementation 'com.mikepenz:material-design-iconic-typeface:2.2.0.5@aar'
 
     // RxLifecycle to prevent memory leaks
     def rxLifecycleVersion = rootProject.ext.rxLifecycleVersion
@@ -108,7 +107,7 @@ dependencies {
     implementation "android.arch.lifecycle:extensions:2.0.0"
 
     // RxJava (RxKotlin actually)
-    implementation "io.reactivex.rxjava2:rxjava:2.2.0"
+    implementation "io.reactivex.rxjava2:rxjava:2.2.3"
     implementation 'io.reactivex.rxjava2:rxandroid:2.0.2'
     implementation "io.reactivex.rxjava2:rxkotlin:${rootProject.ext.rxKotlinVersion}"
 
@@ -121,6 +120,9 @@ dependencies {
     // RxBus (event bus)
     implementation 'com.eightbitlab:rxbus:1.0.2'
 
+    // Permissions
+    implementation 'com.karumi:dexter:5.0.0'
+
     // Material Drawer
     implementation("com.mikepenz:materialdrawer:6.1.1@aar") {
         transitive = true
@@ -132,15 +134,23 @@ dependencies {
     implementation "com.airbnb.android:epoxy-paging:$epoxyVersion"
     kapt "com.airbnb.android:epoxy-processor:$epoxyVersion"
 
+    // Multi-FABs
+    implementation "com.leinardi.android:speed-dial:2.0.1"
+
     // Dialogs
-    implementation 'com.afollestad.material-dialogs:core:2.0.0-rc7'
+    implementation 'com.afollestad.material-dialogs:core:2.6.0'
+    implementation 'com.afollestad.material-dialogs:input:2.6.0'
 
     // Code editor
-//    def codeEditorVersion = "v0.5.0"
+//    def codeEditorVersion = "v2.1.0"
     def codeEditorVersion = "dev-SNAPSHOT"
-    implementation("com.github.markusressel.KodeEditor:library:${codeEditorVersion}") { changing = true}
-    implementation("com.github.markusressel.KodeEditor:markdown:${codeEditorVersion}") { changing = true}
-    implementation("com.github.markusressel.KodeEditor:syntaxhighlighter:${codeEditorVersion}") { changing = true}
+    implementation("com.github.markusressel:KodeEditor:${codeEditorVersion}") { changing = true }
+
+    // Syntax Highlighting
+    def codeHighlighterVersion = "v1.2.2"
+    implementation("com.github.markusressel.KodeHighlighter:markdown:${codeHighlighterVersion}") {
+        changing = true
+    }
 
     // AboutLibraries ("About" screen)
     implementation("com.mikepenz:aboutlibraries:$aboutlibrariesVersion@aar") {
@@ -150,7 +160,7 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
-    implementation 'android.arch.navigation:navigation-fragment:1.0.0-alpha09'
+    implementation 'android.arch.navigation:navigation-fragment:1.0.0-rc02'
 }
 
 configurations.all() {

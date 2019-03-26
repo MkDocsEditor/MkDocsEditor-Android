@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package de.markusressel.mkdocsrestclient.websocket.diff;
+package de.markusressel.mkdocsrestclient.sync.websocket.diff;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -2073,10 +2073,11 @@ public class diff_match_patch {
      */
     public String patch_addPadding(LinkedList<Patch> patches) {
         short paddingLength = this.Patch_Margin;
-        String nullPadding = "";
+        StringBuilder nullPaddingBuilder = new StringBuilder();
         for (short x = 1; x <= paddingLength; x++) {
-            nullPadding += String.valueOf((char) x);
+            nullPaddingBuilder.append(String.valueOf((char) x));
         }
+        String nullPadding = nullPaddingBuilder.toString();
 
         // Bump all the patches forward.
         for (Patch aPatch : patches) {
@@ -2253,14 +2254,14 @@ public class diff_match_patch {
      * @return List of Patch objects.
      * @throws IllegalArgumentException If invalid input.
      */
-    public List<Patch> patch_fromText(String textline)
+    public LinkedList<Patch> patch_fromText(String textline)
             throws IllegalArgumentException {
-        List<Patch> patches = new LinkedList<Patch>();
+        LinkedList<Patch> patches = new LinkedList<>();
         if (textline.length() == 0) {
             return patches;
         }
         List<String> textList = Arrays.asList(textline.split("\n"));
-        LinkedList<String> text = new LinkedList<String>(textList);
+        LinkedList<String> text = new LinkedList<>(textList);
         Patch patch;
         Pattern patchHeader
                 = Pattern.compile("^@@ -(\\d+),?(\\d*) \\+(\\d+),?(\\d*) @@$");
@@ -2463,7 +2464,7 @@ public class diff_match_patch {
          * Constructor.  Initializes with an empty list of diffs.
          */
         public Patch() {
-            this.diffs = new LinkedList<Diff>();
+            this.diffs = new LinkedList<>();
         }
 
         /**

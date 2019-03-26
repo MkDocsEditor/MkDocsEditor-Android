@@ -52,7 +52,7 @@ dependencies {
     // Kotlin bindings for GSON
     implementation "com.github.salomonbrys.kotson:kotson:${rootProject.ext.kotsonVersion}"
     implementation "io.reactivex.rxjava2:rxkotlin:${rootProject.ext.rxKotlinVersion}"
-    implementation 'androidx.annotation:annotation:1.0.1'
+    implementation 'androidx.annotation:annotation:1.0.2'
 
     // Android Architecture Components
     implementation "androidx.core:core-ktx:$aacAndroidKtxVersion"
@@ -61,7 +61,7 @@ dependencies {
 //    def kutePreferencesVersion = "v1.5.2"
     def kutePreferencesVersion = "dev-SNAPSHOT"
     // choose the ones you need
-//    api("com.github.markusressel.KutePreferences:core:${kutePreferencesVersion}")
+    api("com.github.markusressel.KutePreferences:core:${kutePreferencesVersion}")
     api("com.github.markusressel.KutePreferences:bool:${kutePreferencesVersion}")
     api("com.github.markusressel.KutePreferences:color:${kutePreferencesVersion}")
     api("com.github.markusressel.KutePreferences:date:${kutePreferencesVersion}")

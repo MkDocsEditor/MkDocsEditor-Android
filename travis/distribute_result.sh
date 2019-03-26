@@ -18,10 +18,10 @@ EOF
     RESULT_EMOJI="🔥"
   fi 
   
-  COMMITS_INVOLVED=$(git log --oneline ${TRAVIS_COMMIT_RANGE})
+  COMMITS_INVOLVED=$(git --no-pager log --pretty=format:"%h: %B" ${TRAVIS_COMMIT_RANGE} | sed -E '/^$/d')
   
   MESSAGE=$(cat <<EOF
-${RESULT_EMOJI} *Travis Build* [#${TRAVIS_BUILD_NUMBER}](https://travis-ci.org/${TRAVIS_URL}/builds/${TRAVIS_BUILD_ID}) *(${TRAVIS_EVENT_TYPE})*
+${RESULT_EMOJI} *Travis Build* [#${TRAVIS_BUILD_NUMBER}](${TRAVIS_URL}/builds/${TRAVIS_BUILD_ID}) *(${TRAVIS_EVENT_TYPE})*
 
 Commits:
 \`${COMMITS_INVOLVED}\`

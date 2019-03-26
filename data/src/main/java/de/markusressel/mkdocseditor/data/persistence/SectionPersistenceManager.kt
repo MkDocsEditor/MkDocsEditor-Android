@@ -1,10 +1,7 @@
 package de.markusressel.mkdocseditor.data.persistence
 
 import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity_
+import de.markusressel.mkdocseditor.data.persistence.entity.*
 import io.objectbox.kotlin.query
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -12,70 +9,80 @@ import javax.inject.Singleton
 @Singleton
 class SectionPersistenceManager @Inject constructor(
         private val documentPersistenceManager: DocumentPersistenceManager,
+        private val documentContentPersistenceManager: DocumentContentPersistenceManager,
         private val resourcePersistenceManager: ResourcePersistenceManager
 ) : PersistenceManagerBase<SectionEntity>(SectionEntity::class) {
+
+    /**
+     * Find a section by it's document id (not the database entity id)
+     */
+    fun findById(sectionId: String): SectionEntity? {
+        return standardOperation().query {
+            equal(SectionEntity_.id, sectionId)
+        }.findUnique()
+    }
 
     /**
      * Inserts sections (and their contents) if missing,
      * updates any already existing entities,
      * and finally removes entities that are not present in the given dataset
      */
-    fun insertOrUpdateRoot(rootSection: SectionEntity) {
-        addOrUpdate(rootSection)
+    fun insertOrUpdateRoot(newData: SectionEntity) {
+        addOrUpdate(newData)
 
         // remove data that is not on the server anymore
-        deleteMissing(rootSection)
+        deleteMissing(newData)
     }
 
 
     private fun addOrUpdate(rootSection: SectionEntity) {
-        var rootEntity = standardOperation().query {
-            equal(SectionEntity_.id, "root")
-        }.findUnique()
-
-        if (rootEntity != null) {
-            addOrUpdateEntityFields(rootEntity, rootSection)
-        } else {
-            rootEntity = rootSection
-        }
-
-        standardOperation().put(rootEntity)
+        addOrUpdateEntityFields(newData = rootSection)
     }
 
-    private fun addOrUpdateEntityFields(existingData: SectionEntity, newData: SectionEntity) {
-        // TODO: do we have to update the section itself? Currently I don't think so.
+    private fun addOrUpdateEntityFields(newData: SectionEntity): SectionEntity {
+        // use existing section or insert new one
+        val section = standardOperation().query {
+            equal(SectionEntity_.id, newData.id)
+        }.findUnique() ?: standardOperation().get(standardOperation().put(newData))
 
         newData.documents.forEach { newDocument ->
-            val existingDocument = existingData.documents.firstOrNull { it.id == newDocument.id }
+            val documentEntity = documentPersistenceManager.standardOperation().query {
+                equal(DocumentEntity_.id, newDocument.id)
+            }.findUnique()?.apply {
+                filesize = newDocument.filesize
+                modtime = newDocument.modtime
+            } ?: newDocument
+            documentEntity.parentSection.target = section
 
-            if (existingDocument != null) {
-                existingDocument.filesize = newDocument.filesize
-                existingDocument.modtime = newDocument.modtime
-            } else {
-                documentPersistenceManager.standardOperation().put(newDocument)
-            }
+            val documentContentEntity = documentContentPersistenceManager.standardOperation().query {
+                equal(DocumentContentEntity_.documentId, documentEntity.id)
+            }.findUnique()
+            documentEntity.content.target = documentContentEntity
+
+            documentPersistenceManager.standardOperation().put(documentEntity)
         }
 
         newData.resources.forEach { newResource ->
-            val existingResource = existingData.resources.firstOrNull { it.id == newResource.id }
+            val resourceEntity = resourcePersistenceManager.standardOperation().query {
+                equal(ResourceEntity_.id, newResource.id)
+            }.findUnique()?.apply {
+                filesize = newResource.filesize
+                modtime = newResource.modtime
+            } ?: newResource
+            resourceEntity.parentSection.target = section
 
-            if (existingResource != null) {
-                existingResource.filesize = newResource.filesize
-                existingResource.modtime = newResource.modtime
-            } else {
-                resourcePersistenceManager.standardOperation().put(newResource)
-            }
+            resourcePersistenceManager.standardOperation().put(resourceEntity)
         }
 
+        // clear old sections
+        section.subsections.clear()
         newData.subsections.forEach { newSection ->
-            val existingSection = existingData.subsections.firstOrNull { it.id == newSection.id }
-
-            if (existingSection != null) {
-                addOrUpdateEntityFields(existingSection, newSection)
-            } else {
-                standardOperation().put(newSection)
-            }
+            section.subsections.add(addOrUpdateEntityFields(newSection))
         }
+        // insert updated section
+        standardOperation().put(section)
+
+        return section
     }
 
     private fun deleteMissing(newData: SectionEntity) {

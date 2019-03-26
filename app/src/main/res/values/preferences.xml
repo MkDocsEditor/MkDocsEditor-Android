@@ -16,7 +16,13 @@
     <string name="action_force_offline_cache_update_title">Schedule update now</string>
 
     <string name="connection_host_key" translatable="false">connection_host_key</string>
-    <string name="connection_host_title">Host</string>
+    <string name="connection_host_title">Hostname</string>
+
+    <string name="connection_port_key" translatable="false">connection_port_key</string>
+    <string name="connection_port_title">Port</string>
+
+    <string name="connection_ssl_key" translatable="false">connection_ssl_key</string>
+    <string name="connection_ssl_title" translatable="false">Use SSL</string>
 
     <string name="connection_web_url_key" translatable="false">connection_web_url_key</string>
     <string name="connection_web_url_title">Web base URL</string>
@@ -46,7 +52,11 @@
     <!-- Theme -->
     <string name="theme_key">theme</string>
 
-    <string name="offline_mode_key">offline_mode</string>
+    <string name="offline_mode_key" translatable="false">offline_mode</string>
+    <string name="clear_offline_cache_key" translatable="false">clear_offline_cache_key</string>
+    <string name="clear_offline_cache_title" translatable="false">Clear offline cache</string>
+
+    <string name="last_offline_cache_update_key" translatable="false">last_offline_cache_update_key</string>
 
     <string name="theme_light_value">0</string>
     <string name="theme_dark_value">1</string>

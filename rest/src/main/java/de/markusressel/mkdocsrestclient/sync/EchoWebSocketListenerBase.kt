@@ -1,4 +1,4 @@
-package de.markusressel.mkdocsrestclient.websocket
+package de.markusressel.mkdocsrestclient.sync
 
 import okhttp3.Response
 import okhttp3.WebSocket

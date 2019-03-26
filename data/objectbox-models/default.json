@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:2926526248024942251",
-      "lastPropertyId": "8:1739713704597877584",
+      "lastPropertyId": "9:1610102418278484175",
       "name": "DocumentEntity",
       "properties": [
         {
@@ -41,6 +41,11 @@
         {
           "id": "8:1739713704597877584",
           "name": "url"
+        },
+        {
+          "id": "9:1610102418278484175",
+          "indexId": "7:5786982190605967800",
+          "name": "contentId"
         }
       ],
       "relations": []
@@ -155,7 +160,7 @@
     }
   ],
   "lastEntityId": "4:6020327021425912355",
-  "lastIndexId": "6:9098769772210087060",
+  "lastIndexId": "7:5786982190605967800",
   "lastRelationId": "5:6680787238725584468",
   "lastSequenceId": "0:0",
   "modelVersion": 4,

@@ -1,9 +1,7 @@
 package de.markusressel.mkdocsrestclient
 
-import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Method
 import com.github.kittinunf.fuel.core.Response
-import com.github.kittinunf.result.Result
 import de.markusressel.mkdocsrestclient.document.DocumentApi
 import de.markusressel.mkdocsrestclient.document.DocumentApiImpl
 import de.markusressel.mkdocsrestclient.resource.ResourceApi
@@ -18,30 +16,47 @@ import io.reactivex.Single
  *
  * Created by Markus on 03.06.2018.
  */
-class MkDocsRestClient(private val requestManager: RequestManager = RequestManager(), sectionApi: SectionApi = SectionApiImpl(requestManager), documentApi: DocumentApi = DocumentApiImpl(requestManager), resourceApi: ResourceApi = ResourceApiImpl(requestManager)) : SectionApi by sectionApi, DocumentApi by documentApi, ResourceApi by resourceApi {
+class MkDocsRestClient(
+        private val requestManager: RequestManager = RequestManager(),
+        sectionApi: SectionApi = SectionApiImpl(requestManager),
+        documentApi: DocumentApi = DocumentApiImpl(requestManager),
+        resourceApi: ResourceApi = ResourceApiImpl(requestManager))
+    : SectionApi by sectionApi,
+        DocumentApi by documentApi,
+        ResourceApi by resourceApi {
 
     /**
-     * Set the hostname for this client
+     * Set the url for this client
      *
-     * @param hostname the new hostname
+     * @param hostname the new url
      */
     fun setHostname(hostname: String) {
         requestManager.hostname = hostname
     }
 
     /**
-     * @return the hostname for this client
+     * @return the url for this client
      */
     fun getHostname(): String {
         return requestManager.hostname
     }
 
     /**
-     * Set the api resource for this client (in case it is not the default "/")
+     * Specify whether to use SSL
+     *
+     * @param enabled true enables ssl, false disables it
      */
-    fun setApiResource(apiResource: String) {
-        requestManager
-                .apiResource = apiResource
+    fun setUseSSL(enabled: Boolean) {
+        requestManager.ssl = enabled
+    }
+
+    /**
+     * Specify the port to use
+     *
+     * @param port the port number
+     */
+    fun setPort(port: Int) {
+        requestManager.port = port
     }
 
     /**
@@ -61,7 +76,7 @@ class MkDocsRestClient(private val requestManager: RequestManager = RequestManag
     /**
      * Check if the server is alive and reachable
      */
-    fun isHostAlive(): Single<Pair<Response, Result<ByteArray, FuelError>>> {
+    fun isHostAlive(): Single<Pair<Response, ByteArray>> {
         return requestManager.doRequest("/alive/", Method.GET)
     }
 
@@ -69,8 +84,7 @@ class MkDocsRestClient(private val requestManager: RequestManager = RequestManag
      * Get the complete item tree
      */
     fun getItemTree(): Single<SectionModel> {
-        return requestManager
-                .doRequest("/tree/", Method.GET, SectionModel.SingleDeserializer())
+        return requestManager.doRequest("/tree/", Method.GET, SectionModel.SingleDeserializer())
     }
 
 }

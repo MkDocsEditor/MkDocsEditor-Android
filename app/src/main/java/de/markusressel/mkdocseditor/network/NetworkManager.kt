@@ -1,12 +1,8 @@
 package de.markusressel.mkdocseditor.network
 
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
-import androidx.lifecycle.MutableLiveData
 import timber.log.Timber
 import java.io.IOException
 import javax.inject.Inject
@@ -16,25 +12,6 @@ import javax.inject.Singleton
 @Singleton
 class NetworkManager @Inject constructor(
         private val context: Context) {
-
-    val connectionStatus = MutableLiveData<Int>().apply { value = getNetworkStatusType() }
-
-    private val connectivityChangeListener = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            connectionStatus.value = getNetworkStatusType()
-        }
-    }
-
-    init {
-        val intentFilter = IntentFilter("android.net.conn.CONNECTIVITY_CHANGE")
-        context.registerReceiver(connectivityChangeListener, intentFilter)
-    }
-
-    fun getNetworkStatusType(): Int {
-        val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val networkInfo = connMgr.activeNetworkInfo
-        return networkInfo.type
-    }
 
     /**
      * Checks if Internet access is connected

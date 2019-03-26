@@ -48,7 +48,7 @@ import javax.inject.Inject
 /**
  * Created by Markus on 29.01.2018.
  */
-abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
+abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
 
     @Inject
     lateinit var restClient: MkDocsRestClient
@@ -104,12 +104,12 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
         optionsMenuComponent
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
         optionsMenuComponent.onCreateOptionsMenu(menu, inflater)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return super.onOptionsItemSelected(item) || optionsMenuComponent.onOptionsItemSelected(item)
     }
 
@@ -119,7 +119,7 @@ abstract class MultiPersistableListFragmentBase : NewListFragmentBase() {
         reload()
     }
 
-    private fun reload() {
+    fun reload() {
         restClient
                 .isHostAlive()
                 .subscribeOn(Schedulers.io())

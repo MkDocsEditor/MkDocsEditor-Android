@@ -10,7 +10,6 @@ import de.markusressel.kutepreferences.core.persistence.DefaultKutePreferenceDat
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.mkdocseditor.application.App
 import de.markusressel.mkdocseditor.data.persistence.entity.MyObjectBox
-import de.markusressel.mkdocseditor.service.DaggerJobService
 import de.markusressel.mkdocseditor.service.OfflineCacheSyncService
 import de.markusressel.mkdocseditor.view.activity.MainActivity
 import de.markusressel.mkdocseditor.view.activity.base.DaggerSupportActivityBase
@@ -19,7 +18,7 @@ import de.markusressel.mkdocseditor.view.fragment.CodeEditorFragment
 import de.markusressel.mkdocseditor.view.fragment.FileBrowserFragment
 import de.markusressel.mkdocseditor.view.fragment.preferences.PreferencesFragment
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
-import de.markusressel.mkdocsrestclient.websocket.diff.diff_match_patch
+import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import io.objectbox.BoxStore
 import javax.inject.Singleton
 

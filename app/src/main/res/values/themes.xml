@@ -18,15 +18,19 @@
 
         <item name="sectionBackgroundColor">@color/sectionBackgroundColorInverse</item>
         <item name="documentBackgroundColor">@color/documentBackgroundColorInverse</item>
+        <item name="documentOfflineAvailableColor">@color/documentOfflineAvailableColor</item>
         <item name="resourceBackgroundColor">@color/resourceBackgroundColorInverse</item>
 
         <item name="listItem_dividerColor">@color/listItem_dividerColorLight</item>
 
+        <item name="speedDialOverlayColor">#55ffffff</item>
+
         <!-- KodeEditor -->
-        <item name="cev_editor_backgroundColor">@color/editor_backgroundLight</item>
-        <item name="cev_lineNumbers_backgroundColor">@color/editor_lineNumbers_backgroundLight
+        <item name="ke_editor_backgroundColor">@color/editor_backgroundLight</item>
+        <item name="ke_lineNumbers_backgroundColor">@color/editor_lineNumbers_backgroundLight
         </item>
-        <item name="cev_lineNumbers_textColor">@color/textColorSecondaryInverse</item>
+        <item name="ke_lineNumbers_textColor">@color/textColorSecondaryInverse</item>
+        <item name="ke_minimap_borderColor">@color/textColorSecondaryInverse</item>
 
         <!--About Libraries-->
         <!--<item name="about_libraries_window_background">@color/windowBackgroundColorInverse</item>-->
@@ -65,6 +69,12 @@
             @color/preference_item__default_icon_colorLight
         </item>
 
+        <item name="kute_preferences__category__title_text_color">?attr/colorAccent</item>
+
+        <item name="kute_preferences__section__text_color">?android:attr/textColorPrimaryInverse
+        </item>
+        <item name="kute_preferences__section__background">?attr/colorAccent</item>
+
     </style>
 
     <!-- Base application theme. -->
@@ -84,14 +94,18 @@
 
         <item name="sectionBackgroundColor">@color/sectionBackgroundColor</item>
         <item name="documentBackgroundColor">@color/documentBackgroundColor</item>
+        <item name="documentOfflineAvailableColor">@color/documentOfflineAvailableColor</item>
         <item name="resourceBackgroundColor">@color/resourceBackgroundColor</item>
 
         <item name="listItem_dividerColor">@color/listItem_dividerColorDark</item>
 
+        <item name="speedDialOverlayColor">#55000000</item>
+
         <!-- KodeEditor -->
-        <item name="cev_editor_backgroundColor">@color/editor_backgroundDark</item>
-        <item name="cev_lineNumbers_backgroundColor">@color/editor_lineNumbers_backgroundDark</item>
-        <item name="cev_lineNumbers_textColor">@color/textColorSecondary</item>
+        <item name="ke_editor_backgroundColor">@color/editor_backgroundDark</item>
+        <item name="ke_lineNumbers_backgroundColor">@color/editor_lineNumbers_backgroundDark</item>
+        <item name="ke_lineNumbers_textColor">@color/textColorSecondary</item>
+        <item name="ke_minimap_borderColor">@color/textColorSecondary</item>
 
         <!-- About Libraries -->
         <!--<item name="about_libraries_window_background">@color/windowBackgroundColor</item>-->
@@ -129,6 +143,11 @@
         <item name="kute_preferences__setting__default_icon_color">
             @color/preference_item__default_icon_colorDark
         </item>
+
+        <item name="kute_preferences__category__title_text_color">?attr/colorAccent</item>
+
+        <item name="kute_preferences__section__text_color">?android:attr/textColorPrimary</item>
+        <item name="kute_preferences__section__background">?attr/colorAccent</item>
 
     </style>
 

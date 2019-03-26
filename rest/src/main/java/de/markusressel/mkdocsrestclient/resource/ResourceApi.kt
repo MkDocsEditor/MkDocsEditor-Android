@@ -18,9 +18,7 @@
 
 package de.markusressel.mkdocsrestclient.resource
 
-import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Response
-import com.github.kittinunf.result.Result
 import io.reactivex.Single
 
 /**
@@ -46,6 +44,6 @@ interface ResourceApi {
     /**
      * Delete an existing resource
      */
-    fun deleteResource(id: String): Single<Pair<Response, Result<ByteArray, FuelError>>>
+    fun deleteResource(id: String): Single<Pair<Response, ByteArray>>
 
 }
