@@ -138,16 +138,19 @@ dependencies {
     implementation "com.leinardi.android:speed-dial:2.0.1"
 
     // Dialogs
-    implementation 'com.afollestad.material-dialogs:core:2.0.0-rc7'
+    implementation 'com.afollestad.material-dialogs:core:2.6.0'
+    implementation 'com.afollestad.material-dialogs:input:2.6.0'
 
     // Code editor
 //    def codeEditorVersion = "v2.1.0"
     def codeEditorVersion = "dev-SNAPSHOT"
-    implementation("com.github.markusressel:KodeEditor:${codeEditorVersion}") { changing = true}
+    implementation("com.github.markusressel:KodeEditor:${codeEditorVersion}") { changing = true }
 
     // Syntax Highlighting
     def codeHighlighterVersion = "v1.2.2"
-    implementation("com.github.markusressel.KodeHighlighter:markdown:${codeHighlighterVersion}") { changing = true}
+    implementation("com.github.markusressel.KodeHighlighter:markdown:${codeHighlighterVersion}") {
+        changing = true
+    }
 
     // AboutLibraries ("About" screen)
     implementation("com.mikepenz:aboutlibraries:$aboutlibrariesVersion@aar") {

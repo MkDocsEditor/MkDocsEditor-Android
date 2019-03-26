@@ -1,16 +1,19 @@
 package de.markusressel.mkdocseditor.view.fragment
 
 import android.os.Bundle
+import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import android.widget.Toast
 import androidx.databinding.ViewDataBinding
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import com.afollestad.materialdialogs.MaterialDialog
-import com.afollestad.materialdialogs.customview.customView
+import com.afollestad.materialdialogs.WhichButton
+import com.afollestad.materialdialogs.actions.setActionButtonEnabled
+import com.afollestad.materialdialogs.input.getInputField
+import com.afollestad.materialdialogs.input.input
 import com.airbnb.epoxy.Typed3EpoxyController
 import com.eightbitlab.rxbus.Bus
 import com.eightbitlab.rxbus.registerInBus
@@ -179,22 +182,62 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     }
 
     private fun openCreateSectionDialog() {
+        val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
+        val parentSection = sectionPersistenceManager.findById(currentSectionId)!!
+        val existingSections = parentSection.subsections.map { it.name }
+
         MaterialDialog(context()).show {
-            customView(R.layout.dialog__add_document)
+            title(R.string.speed_dial_create_section)
+            input(waitForPositiveButton = false,
+                    allowEmpty = false,
+                    hintRes = R.string.hint_new_section,
+                    inputType = InputType.TYPE_CLASS_TEXT) { dialog, text ->
+
+                val trimmedText = text.toString().trim()
+
+                val inputField = dialog.getInputField()
+                val isValid = !existingSections.contains(trimmedText)
+
+                inputField.error = when (isValid) {
+                    true -> null
+                    false -> getString(R.string.error_section_already_exists)
+                }
+                dialog.setActionButtonEnabled(WhichButton.POSITIVE, isValid)
+            }
+
             positiveButton(android.R.string.ok, click = {
-                val editText: EditText = it.findViewById(R.id.newDocumentName)
-                createNewSection(editText.text?.toString() ?: "")
+                createNewSection(getInputField().text.toString().trim())
             })
             negativeButton(android.R.string.cancel)
         }
     }
 
     private fun openCreateDocumentDialog() {
+        val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
+        val parentSection = sectionPersistenceManager.findById(currentSectionId)!!
+        val existingDocuments = parentSection.documents.map { it.name }
+
         MaterialDialog(context()).show {
-            customView(R.layout.dialog__add_document)
+            title(R.string.speed_dial_create_document)
+            input(waitForPositiveButton = false,
+                    allowEmpty = false,
+                    hintRes = R.string.hint_new_document,
+                    inputType = InputType.TYPE_CLASS_TEXT) { dialog, text ->
+
+                val trimmedText = text.toString().trim()
+
+                val inputField = dialog.getInputField()
+                val isValid = !existingDocuments.contains(trimmedText)
+
+                inputField.error = when (isValid) {
+                    true -> null
+                    false -> getString(R.string.error_document_already_exists)
+                }
+                dialog.setActionButtonEnabled(WhichButton.POSITIVE, isValid)
+            }
+
             positiveButton(android.R.string.ok, click = {
-                val editText: EditText = it.findViewById(R.id.newDocumentName)
-                createNewDocument(editText.text?.toString() ?: "")
+                createNewDocument(getInputField().text.toString().trim())
             })
             negativeButton(android.R.string.cancel)
         }
