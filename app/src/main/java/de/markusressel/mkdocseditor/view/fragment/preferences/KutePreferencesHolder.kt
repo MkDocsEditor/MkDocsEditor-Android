@@ -102,10 +102,10 @@ class KutePreferencesHolder @Inject constructor(
                 title = context.getString(R.string.clear_offline_cache_title),
                 description = "",
                 onClickAction = { context, _ ->
-                    sectionPersistenceManager.standardOperation().removeAll()
-                    documentPersistenceManager.standardOperation().removeAll()
                     documentContentPersistenceManager.standardOperation().removeAll()
                     resourcePersistenceManager.standardOperation().removeAll()
+                    documentPersistenceManager.standardOperation().removeAll()
+                    sectionPersistenceManager.standardOperation().removeAll()
                     context.toast("DB cleared")
                 })
     }

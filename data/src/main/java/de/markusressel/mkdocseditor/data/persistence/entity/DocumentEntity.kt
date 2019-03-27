@@ -11,15 +11,6 @@ import io.objectbox.annotation.Unique
 import io.objectbox.relation.ToOne
 import java.util.*
 
-fun DocumentModel.asEntity(parentSection: SectionEntity, contentEntity: DocumentContentEntity? = null): DocumentEntity {
-    val d = DocumentEntity(0, this.type, this.id, this.name, this.filesize, this.modtime, this.url)
-    d.parentSection.target = parentSection
-    contentEntity?.let {
-        d.content.target = it
-    }
-    return d
-}
-
 /**
  * Created by Markus on 04.06.2018.
  */
@@ -53,4 +44,13 @@ data class DocumentEntity(
         return Formatter.formatFileSize(context, filesize)
     }
 
+}
+
+fun DocumentModel.asEntity(parentSection: SectionEntity, contentEntity: DocumentContentEntity? = null): DocumentEntity {
+    val d = DocumentEntity(0, this.type, this.id, this.name, this.filesize, this.modtime, this.url)
+    d.parentSection.target = parentSection
+    contentEntity?.let {
+        d.content.target = it
+    }
+    return d
 }
