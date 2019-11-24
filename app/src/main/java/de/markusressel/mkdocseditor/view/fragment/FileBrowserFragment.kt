@@ -39,6 +39,7 @@ import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
+import java.util.*
 import javax.inject.Inject
 
 
@@ -109,7 +110,9 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     override fun createEpoxyController(): Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>> {
         return object : Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>>() {
             override fun buildModels(sections: List<SectionEntity>, documents: List<DocumentEntity>, resources: List<ResourceEntity>) {
-                sections.forEach {
+                sections.sortedBy {
+                    it.name.toLowerCase(Locale.getDefault())
+                }.forEach {
                     listItemSection {
                         id(it.id)
                         item(it)
@@ -119,7 +122,9 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                     }
                 }
 
-                documents.forEach {
+                documents.sortedBy {
+                    it.name.toLowerCase(Locale.getDefault())
+                }.forEach {
                     listItemDocument {
                         id(it.id)
                         item(it)
@@ -129,7 +134,9 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                     }
                 }
 
-                resources.forEach {
+                resources.sortedBy {
+                    it.name.toLowerCase(Locale.getDefault())
+                }.forEach {
                     listItemResource {
                         id(it.id)
                         item(it)

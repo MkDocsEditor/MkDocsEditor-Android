@@ -11,8 +11,6 @@ import androidx.paging.PagedList
 import com.github.ajalt.timberkt.Timber
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity_
 import de.markusressel.mkdocseditor.view.fragment.SectionBackstackItem
@@ -76,8 +74,6 @@ class FileBrowserViewModel : EntityListViewModel() {
         return LivePagedListBuilder(ObjectBoxDataSource.Factory(
                 persistenceManager!!.standardOperation().query {
                     equal(SectionEntity_.id, sectionId)
-                    // TODO: implement sorting with inhomogeneous types
-                    // sort(TYPE_COMPARATOR)
                 }),
                 getPageSize()
         ).build()
@@ -154,23 +150,5 @@ class FileBrowserViewModel : EntityListViewModel() {
         /** ID of the tree root section */
         const val ROOT_SECTION_ID = "root"
 
-        private val TYPE_COMPARATOR = Comparator<IdentifiableListItem> { a, b ->
-            val typePrioA = when (a) {
-                is SectionEntity -> 0
-                is DocumentEntity -> 1
-                is ResourceEntity -> 2
-                else -> throw IllegalArgumentException("Cant compare object of type ${a.javaClass}!")
-            }
-
-            val typePrioB = when (b) {
-                is SectionEntity -> 0
-                is DocumentEntity -> 1
-                is ResourceEntity -> 2
-                else -> throw IllegalArgumentException("Cant compare object of type ${b.javaClass}!")
-            }
-
-            typePrioA
-                    .compareTo(typePrioB)
-        }
     }
 }
