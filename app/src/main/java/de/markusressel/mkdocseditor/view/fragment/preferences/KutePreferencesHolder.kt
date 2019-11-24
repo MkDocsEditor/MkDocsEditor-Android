@@ -133,6 +133,7 @@ class KutePreferencesHolder @Inject constructor(
                 maximum = 65535,
                 dataProvider = dataProvider,
                 onPreferenceChangedListener = { old, new ->
+                    Bus.send(PortChangedEvent(new.toInt()))
                 })
     }
 
