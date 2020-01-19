@@ -23,7 +23,7 @@ buildscript {
 
         javaxAnnotationVersion = "10.0-b28"
         dagger2Version = "2.16"
-        aboutlibrariesVersion = "7.0.4"
+        aboutlibrariesVersion = "7.1.0"
         materialdrawerVersion = "7.0.0-rc08"
         iconicsVersion = "4.0.2"
 
