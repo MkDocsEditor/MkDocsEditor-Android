@@ -3,6 +3,7 @@ package de.markusressel.mkdocseditor.view.activity.base
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CompoundButton
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.view.get
 import androidx.navigation.Navigation
@@ -15,9 +16,11 @@ import com.mikepenz.materialdrawer.AccountHeader
 import com.mikepenz.materialdrawer.AccountHeaderBuilder
 import com.mikepenz.materialdrawer.Drawer
 import com.mikepenz.materialdrawer.DrawerBuilder
+import com.mikepenz.materialdrawer.interfaces.OnCheckedChangeListener
 import com.mikepenz.materialdrawer.model.*
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IProfile
+import com.mikepenz.materialdrawer.model.interfaces.OnPostBindViewListener
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.event.ThemeChangedEvent
 import de.markusressel.mkdocseditor.extensions.common.android.isTablet
@@ -117,6 +120,13 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
     private fun initAccountHeader(): AccountHeader {
         val profiles: MutableList<IProfile<*>> = getProfiles()
 
+        val headerListener = object : AccountHeader.OnAccountHeaderListener {
+            override fun onProfileChanged(view: View?, profile: IProfile<*>, current: Boolean): Boolean {
+                Timber.d { "Pressed profile: '$profile' with current: '$current'" }
+                return false
+            }
+        }
+
         return AccountHeaderBuilder()
                 .withActivity(this)
                 //                .withProfiles(profiles)
@@ -124,12 +134,7 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
                 //                .withCurrentProfileHiddenInList(true)
                 //                .withHeaderBackground()
                 .withDividerBelowHeader(true)
-                .withOnAccountHeaderListener { _, profile, current ->
-                    Timber
-                            .d { "Pressed profile: '$profile' with current: '$current'" }
-                    false
-                }
-
+                .withOnAccountHeaderListener(headerListener)
                 .build()
     }
 
@@ -149,34 +154,35 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
         return profiles
     }
 
-    private fun initDrawerMenuItems(): MutableList<IDrawerItem<*, *>> {
-        val menuItemList: MutableList<IDrawerItem<*, *>> = LinkedList()
+    private fun initDrawerMenuItems(): MutableList<IDrawerItem<*>> {
+        val menuItemList: MutableList<IDrawerItem<*>> = LinkedList()
 
-        val clickListener = Drawer
-                .OnDrawerItemClickListener { _, _, drawerItem ->
-                    val drawerMenuItem = DrawerItemHolder
-                            .fromId(drawerItem.identifier.toInt())
+        val clickListener = object : Drawer.OnDrawerItemClickListener {
+            override fun onItemClick(view: View?, position: Int, drawerItem: IDrawerItem<*>): Boolean {
+                val drawerMenuItem = DrawerItemHolder
+                        .fromId(drawerItem.identifier.toInt())
 
-                    drawerMenuItem?.let {
-                        if (it.id == R.id.none) {
-                            return@let
-                        }
-
-                        navController.navigate(it.id)
-
-                        if (drawerItem.isSelectable) {
-                            // set new title
-                            setTitle(drawerMenuItem.title)
-                        }
-
-                        if (!isTablet()) {
-                            navigationDrawer.closeDrawer()
-                        }
-                        return@OnDrawerItemClickListener true
+                drawerMenuItem?.let {
+                    if (it.id == R.id.none) {
+                        return@let
                     }
 
-                    false
+                    navController.navigate(it.id)
+
+                    if (drawerItem.isSelectable) {
+                        // set new title
+                        setTitle(drawerMenuItem.title)
+                    }
+
+                    if (!isTablet()) {
+                        navigationDrawer.closeDrawer()
+                    }
+                    return true
                 }
+
+                return false
+            }
+        }
 
         menuItemList.addAll(
                 arrayOf(
@@ -209,26 +215,36 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
                 .withOnDrawerItemClickListener(clickListener)
     }
 
-    private fun createOfflineModeMenuItem(menuItem: DrawerMenuItem, clickListener: Drawer.OnDrawerItemClickListener, defaultValue: Boolean = false): IDrawerItem<*, *> {
+    private fun createOfflineModeMenuItem(menuItem: DrawerMenuItem, clickListener: Drawer.OnDrawerItemClickListener, defaultValue: Boolean = false): IDrawerItem<*> {
+
+        val onCheckedChangeListener = object : OnCheckedChangeListener {
+            override fun onCheckedChanged(drawerItem: IDrawerItem<*>, buttonView: CompoundButton, isChecked: Boolean) {
+                offlineModeManager.setEnabled(isChecked)
+
+                val parentView = buttonView.parent as ViewGroup
+                val iconView = parentView[0] as AppCompatImageView
+
+                iconView.setColorFilter(offlineModeManager.getColor())
+            }
+        }
+
+        val onPostBindViewListener = object : OnPostBindViewListener {
+            override fun onBindView(drawerItem: IDrawerItem<*>, view: View) {
+                val iconView = (view as ViewGroup)[0] as AppCompatImageView
+                iconView.setColorFilter(offlineModeManager.getColor())
+            }
+        }
+
         return SwitchDrawerItem()
                 .withName(menuItem.title)
                 .withIdentifier(menuItem.id.toLong())
                 .withIcon(menuItem.getIcon(iconHandler))
                 .withSelectable(menuItem.selectable)
                 .withOnDrawerItemClickListener(clickListener)
-                .withOnCheckedChangeListener { drawerItem, buttonView, isChecked ->
-                    offlineModeManager.setEnabled(isChecked)
-
-                    val parentView = buttonView.parent as ViewGroup
-                    val iconView = parentView[0] as AppCompatImageView
-
-                    iconView.setColorFilter(offlineModeManager.getColor())
-                }.withChecked(defaultValue)
+                .withOnCheckedChangeListener(onCheckedChangeListener)
+                .withChecked(defaultValue)
                 .withIconColor(offlineModeManager.getColor())
-                .withPostOnBindViewListener { drawerItem, view ->
-                    val iconView = (view as ViewGroup)[0] as AppCompatImageView
-                    iconView.setColorFilter(offlineModeManager.getColor())
-                }
+                .withPostOnBindViewListener(onPostBindViewListener)
     }
 
     override fun onBackPressed() {

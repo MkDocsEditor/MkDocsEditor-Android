@@ -39,6 +39,7 @@ android {
     dataBinding.enabled true
 
     packagingOptions {
+        pickFirst 'META-INF/library-core_release.kotlin_module'
         pickFirst 'META-INF/core_release.kotlin_module'
         pickFirst 'META-INF/library_release.kotlin_module'
         exclude 'LICENSE.txt'
@@ -59,25 +60,16 @@ dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
-    implementation 'androidx.appcompat:appcompat:1.0.2'
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.0-alpha3'
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.0-beta4'
     implementation 'androidx.cardview:cardview:1.0.0'
-    implementation 'androidx.recyclerview:recyclerview:1.0.0'
-    implementation 'androidx.annotation:annotation:1.0.2'
-    implementation 'androidx.browser:browser:1.0.0'
+    implementation 'androidx.recyclerview:recyclerview:1.1.0'
+    implementation 'androidx.annotation:annotation:1.1.0'
+    implementation 'androidx.browser:browser:1.2.0'
     implementation 'com.google.android.material:material:1.0.0'
 
     implementation 'androidx.emoji:emoji:1.0.0'
     implementation 'androidx.emoji:emoji-bundled:1.0.0'
-
-    implementation "android.arch.navigation:navigation-fragment-ktx:1.0.0-rc02"
-    implementation "android.arch.navigation:navigation-ui-ktx:1.0.0-rc02"
-
-    // Android KTX
-
-    implementation "androidx.core:core-ktx:$androidKtxVersion"
-//    implementation "androidx.fragment:fragment-ktx:$androidKtxVersion"
-//    implementation "androidx.collection:collection-ktx:$androidKtxVersion"
 
     compileOnly "org.glassfish:javax.annotation:$javaxAnnotationVersion"
 
@@ -93,7 +85,7 @@ dependencies {
     implementation "com.mikepenz:iconics-core:${iconicsVersion}@aar"
     //this adds all ui view widgets (IconicsButton, IconicsImageView, ...)
     implementation "com.mikepenz:iconics-views:${iconicsVersion}@aar"
-    implementation 'com.mikepenz:material-design-iconic-typeface:2.2.0.5@aar'
+    implementation 'com.mikepenz:material-design-iconic-typeface:2.2.0.6-kotlin@aar'
 
     // RxLifecycle to prevent memory leaks
     def rxLifecycleVersion = rootProject.ext.rxLifecycleVersion
@@ -103,12 +95,19 @@ dependencies {
     implementation "com.trello.rxlifecycle2:rxlifecycle-android-lifecycle-kotlin:$rxLifecycleVersion"
 
     // Android Architecture Components
+    implementation "android.arch.navigation:navigation-fragment-ktx:1.0.0"
+    implementation "android.arch.navigation:navigation-ui-ktx:1.0.0"
+
+    // Android KTX
+
     implementation "androidx.core:core-ktx:$aacAndroidKtxVersion"
+//    implementation "androidx.fragment:fragment-ktx:$androidKtxVersion"
+//    implementation "androidx.collection:collection-ktx:$androidKtxVersion"
     implementation "android.arch.lifecycle:extensions:2.0.0"
 
     // RxJava (RxKotlin actually)
-    implementation "io.reactivex.rxjava2:rxjava:2.2.3"
-    implementation 'io.reactivex.rxjava2:rxandroid:2.0.2'
+    implementation "io.reactivex.rxjava2:rxjava:2.2.8"
+    implementation 'io.reactivex.rxjava2:rxandroid:2.1.0'
     implementation "io.reactivex.rxjava2:rxkotlin:${rootProject.ext.rxKotlinVersion}"
 
     // RxBinding
@@ -124,7 +123,7 @@ dependencies {
     implementation 'com.karumi:dexter:5.0.0'
 
     // Material Drawer
-    implementation("com.mikepenz:materialdrawer:6.1.1@aar") {
+    implementation("com.mikepenz:materialdrawer:${materialdrawerVersion}@aar") {
         transitive = true
     }
 
@@ -158,9 +157,9 @@ dependencies {
     }
 
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'androidx.test:runner:1.1.1'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
-    implementation 'android.arch.navigation:navigation-fragment:1.0.0-rc02'
+    androidTestImplementation 'androidx.test:runner:1.2.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    implementation 'android.arch.navigation:navigation-fragment:1.0.0'
 }
 
 configurations.all() {

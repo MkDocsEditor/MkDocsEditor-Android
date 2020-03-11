@@ -21,7 +21,7 @@ import com.eightbitlab.rxbus.Bus
 import com.eightbitlab.rxbus.registerInBus
 import com.github.ajalt.timberkt.Timber
 import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
-import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
+import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
 import de.markusressel.commons.android.material.toast
 import de.markusressel.mkdocseditor.R
@@ -43,7 +43,7 @@ import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
-import java.util.concurrent.TimeUnit
+import java.util.*
 import javax.inject.Inject
 
 
@@ -170,7 +170,9 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     override fun createEpoxyController(): Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>> {
         return object : Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>>() {
             override fun buildModels(sections: List<SectionEntity>, documents: List<DocumentEntity>, resources: List<ResourceEntity>) {
-                sections.forEach {
+                sections.sortedBy {
+                    it.name.toLowerCase(Locale.getDefault())
+                }.forEach {
                     listItemSection {
                         id(it.id)
                         item(it)
@@ -180,7 +182,9 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                     }
                 }
 
-                documents.forEach {
+                documents.sortedBy {
+                    it.name.toLowerCase(Locale.getDefault())
+                }.forEach {
                     listItemDocument {
                         id(it.id)
                         item(it)
@@ -190,7 +194,9 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                     }
                 }
 
-                resources.forEach {
+                resources.sortedBy {
+                    it.name.toLowerCase(Locale.getDefault())
+                }.forEach {
                     listItemResource {
                         id(it.id)
                         item(it)

@@ -13,6 +13,7 @@ import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.event.BasicAuthPasswordChangedEvent
 import de.markusressel.mkdocseditor.event.BasicAuthUserChangedEvent
 import de.markusressel.mkdocseditor.event.HostChangedEvent
+import de.markusressel.mkdocseditor.event.PortChangedEvent
 import de.markusressel.mkdocseditor.view.activity.base.OfflineModeManager
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
@@ -76,6 +77,10 @@ class App : DaggerApplicationBase() {
     private fun createListeners() {
         Bus.observe<HostChangedEvent>().subscribe {
             restClient.setHostname(it.host)
+        }.registerInBus(this)
+
+        Bus.observe<PortChangedEvent>().subscribe {
+            restClient.setPort(it.port)
         }.registerInBus(this)
 
         Bus.observe<BasicAuthUserChangedEvent>().subscribe {

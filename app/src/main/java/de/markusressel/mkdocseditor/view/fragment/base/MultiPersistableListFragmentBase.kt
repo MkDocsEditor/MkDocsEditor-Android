@@ -28,7 +28,7 @@ import androidx.lifecycle.Lifecycle
 import com.github.ajalt.timberkt.Timber
 import com.google.android.material.snackbar.Snackbar
 import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
-import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
+import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
 import de.markusressel.commons.android.material.snack
 import de.markusressel.mkdocseditor.R
@@ -175,6 +175,8 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
     abstract fun mapToEntity(it: Any): IdentifiableListItem
 
     /**
+
+
      * Persist the current list data
      */
     internal abstract fun persistListData(data: IdentifiableListItem)

@@ -5,9 +5,12 @@ import android.graphics.Color
 import android.graphics.drawable.Drawable
 import androidx.annotation.ColorInt
 import androidx.core.content.ContextCompat
+import com.mikepenz.iconics.IconicsColor
 import com.mikepenz.iconics.IconicsDrawable
+import com.mikepenz.iconics.paddingDp
+import com.mikepenz.iconics.sizeDp
 import com.mikepenz.iconics.typeface.IIcon
-import com.mikepenz.material_design_iconic_typeface_library.MaterialDesignIconic
+import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -128,7 +131,7 @@ class IconHandler @Inject constructor() {
         return IconicsDrawable(context, icon)
                 .sizeDp(sizeDp)
                 .paddingDp(paddingDp)
-                .color(color)
+                .color(IconicsColor.colorInt(color))
     }
 
 }
