@@ -13,9 +13,6 @@ import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
-import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity_
 import de.markusressel.mkdocseditor.view.fragment.SectionBackstackItem
@@ -110,10 +107,10 @@ class FileBrowserViewModel : EntityListViewModel() {
                     equal(SectionEntity_.id, sectionId)
                     // TODO: implement sorting with inhomogeneous types
                     // sort(TYPE_COMPARATOR)
-                },
-                documentPersistenceManager!!.standardOperation().query {
-
                 }),
+//                documentPersistenceManager!!.standardOperation().query {
+//
+//                }),
                 getPageSize()
         ).build()
     }
