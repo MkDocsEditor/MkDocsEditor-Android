@@ -38,7 +38,7 @@ class FileBrowserViewModel : EntityListViewModel() {
     var documentPersistenceManager: DocumentPersistenceManager? = null
     var resourcePersistenceManager: ResourcePersistenceManager? = null
 
-    val currentListItems = MutableLiveData<List<IdentifiableListItem>>()
+    val currentSearchResults = MutableLiveData<List<IdentifiableListItem>>()
 
     val currentSectionId = MutableLiveData<String>()
     val currentSection = switchMapPaged<String, SectionEntity>(currentSectionId,
@@ -63,7 +63,7 @@ class FileBrowserViewModel : EntityListViewModel() {
                     filter { resource -> searchRegex.containsMatchIn(resource.name) }
                 }.find()
 
-                currentListItems.value = sections + documents + resources
+                currentSearchResults.value = sections + documents + resources
             } else {
                 showTopLevel()
             }
@@ -120,9 +120,7 @@ class FileBrowserViewModel : EntityListViewModel() {
      */
     private fun filterList(newData: List<IdentifiableListItem>): List<IdentifiableListItem> {
         val filteredNewData = newData
-                .filter {
-                    itemContainsCurrentSearchString(it)
-                }
+                .filter { itemContainsCurrentSearchString(it) }
                 .toList()
         return filteredNewData
     }
@@ -167,9 +165,9 @@ class FileBrowserViewModel : EntityListViewModel() {
 
         val rootSection = sectionPersistenceManager!!.getRootSection()
         if (rootSection != null) {
-            currentListItems.value = rootSection.subsections + rootSection.documents + rootSection.resources
+            currentSearchResults.value = rootSection.subsections + rootSection.documents + rootSection.resources
         } else {
-            currentListItems.value = emptyList()
+            currentSearchResults.value = emptyList()
         }
     }
 
@@ -219,14 +217,11 @@ class FileBrowserViewModel : EntityListViewModel() {
      */
     fun showTopLevel() {
         currentSectionId.value = ROOT_SECTION_ID
-
         openSection(ROOT_SECTION_ID)
     }
 
     companion object {
-
         /** ID of the tree root section */
         const val ROOT_SECTION_ID = "root"
-
     }
 }

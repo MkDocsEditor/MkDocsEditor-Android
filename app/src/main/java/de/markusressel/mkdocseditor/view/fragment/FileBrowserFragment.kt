@@ -24,6 +24,7 @@ import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
 import de.markusressel.commons.android.material.toast
+import de.markusressel.commons.core.filterByExpectedType
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.*
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
@@ -76,6 +77,18 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         if (fileBrowserViewModel.currentSectionId.value == null) {
             fileBrowserViewModel.currentSectionId.value = FileBrowserViewModel.ROOT_SECTION_ID
         }
+
+        // search
+        fileBrowserViewModel.currentSearchResults.observe(this, Observer {
+            if (it.isEmpty()) {
+                showEmpty()
+            } else {
+                hideEmpty()
+            }
+            epoxyController.setData(it.filterByExpectedType(), it.filterByExpectedType(), it.filterByExpectedType())
+        })
+
+        // normal navigation
         fileBrowserViewModel.currentSection.observe(this, Observer {
             if (it.isNotEmpty()) {
                 it.first().let {
