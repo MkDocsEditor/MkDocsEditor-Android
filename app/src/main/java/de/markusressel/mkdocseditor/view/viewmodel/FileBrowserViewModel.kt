@@ -41,10 +41,12 @@ class FileBrowserViewModel : EntityListViewModel() {
     val currentSearchResults = MutableLiveData<List<IdentifiableListItem>>()
 
     val currentSectionId = MutableLiveData<String>()
-    val currentSection = switchMapPaged<String, SectionEntity>(currentSectionId,
+    val currentSection = switchMapPaged<String, SectionEntity>(
+            currentSectionId,
             Function { sectionId ->
                 getSectionLiveData(sectionId)
-            })
+            }
+    )
 
     init {
         currentSearchFilter.observeForever { searchString ->
@@ -113,27 +115,6 @@ class FileBrowserViewModel : EntityListViewModel() {
 //                }),
                 getPageSize()
         ).build()
-    }
-
-    /**
-     * Filters the given list by the currently active filter and sort options
-     */
-    private fun filterList(newData: List<IdentifiableListItem>): List<IdentifiableListItem> {
-        val filteredNewData = newData
-                .filter { itemContainsCurrentSearchString(it) }
-                .toList()
-        return filteredNewData
-    }
-
-    private fun itemContainsCurrentSearchString(item: IdentifiableListItem): Boolean {
-        return when (currentSearchFilter.value) {
-            null -> true
-            "" -> true
-            else -> {
-                // TODO: search item content
-                true
-            }
-        }
     }
 
     /**
