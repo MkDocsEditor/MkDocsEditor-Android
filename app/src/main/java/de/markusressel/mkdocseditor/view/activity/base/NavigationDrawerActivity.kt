@@ -1,10 +1,13 @@
 package de.markusressel.mkdocseditor.view.activity.base
 
 import android.content.res.ColorStateList
+import android.content.res.Configuration
 import android.os.Bundle
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.view.get
 import androidx.navigation.Navigation
@@ -13,6 +16,8 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import com.eightbitlab.rxbus.Bus
 import com.eightbitlab.rxbus.registerInBus
 import com.github.ajalt.timberkt.Timber
+import com.mikepenz.materialdrawer.R.string.material_drawer_close
+import com.mikepenz.materialdrawer.R.string.material_drawer_open
 import com.mikepenz.materialdrawer.interfaces.OnCheckedChangeListener
 import com.mikepenz.materialdrawer.model.*
 import com.mikepenz.materialdrawer.model.interfaces.*
@@ -30,6 +35,7 @@ import de.markusressel.mkdocseditor.navigation.DrawerMenuItem
 import de.markusressel.mkdocseditor.view.fragment.FileBrowserFragment
 import de.markusressel.mkdocseditor.view.fragment.preferences.PreferencesFragment
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.view_toolbar.*
 import java.util.*
 import javax.inject.Inject
 
@@ -48,6 +54,8 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
     @Inject
     protected lateinit var offlineModeManager: OfflineModeManager
 
+    private lateinit var actionBarDrawerToggle: ActionBarDrawerToggle
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -55,22 +63,7 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
         slider.itemAdapter.add(menuItemList)
         initAccountHeader(slider)
 
-//        drawerLayoutParent.visibility = View.VISIBLE
-
-//        if (isTablet()) {
-//            navigationDrawer = builder.buildView()
-//
-//            drawerLayoutParent.visibility = View.VISIBLE
-//            drawerDividerView.visibility = View.VISIBLE
-//
-//            drawerLayoutParent.addView(navigationDrawer, 0)
-//        } else {
-//            drawerLayoutParent.visibility = View.GONE
-//            drawerDividerView.visibility = View.GONE
-//
-//            navigationDrawer = builder.build()
-//        }
-
+        actionBarDrawerToggle = ActionBarDrawerToggle(this, drawerLayout, toolbar, material_drawer_open, material_drawer_close)
         val appBarConfiguration = AppBarConfiguration(
                 navGraph = navController.graph,
                 drawerLayout = drawerLayout)
@@ -92,6 +85,20 @@ abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
                     recreate()
                 }
                 .registerInBus(this)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        actionBarDrawerToggle.onConfigurationChanged(newConfig)
+    }
+
+    override fun onPostCreate(savedInstanceState: Bundle?) {
+        super.onPostCreate(savedInstanceState)
+        actionBarDrawerToggle.syncState()
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        return actionBarDrawerToggle.onOptionsItemSelected(item)
     }
 
     private fun initAccountHeader(slider: MaterialDrawerSliderView): AccountHeaderView {

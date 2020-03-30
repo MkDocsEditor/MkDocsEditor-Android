@@ -100,8 +100,8 @@ abstract class DaggerSupportActivityBase : LifecycleActivityBase(), HasFragmentI
         val contentView = layoutInflater.inflate(layoutRes, null)
         setContentView(contentView)
 
-        setSupportActionBar(toolbar)
 
+        setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
