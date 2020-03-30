@@ -71,52 +71,54 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     private var searchMenuItem: MenuItem? = null
 
     override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
-        fileBrowserViewModel.sectionPersistenceManager = sectionPersistenceManager
-        fileBrowserViewModel.documentPersistenceManager = documentPersistenceManager
-        fileBrowserViewModel.resourcePersistenceManager = resourcePersistenceManager
-        if (fileBrowserViewModel.currentSectionId.value == null) {
-            fileBrowserViewModel.currentSectionId.value = FileBrowserViewModel.ROOT_SECTION_ID
-        }
-
-        // search
-        fileBrowserViewModel.currentSearchResults.observe(this, Observer {
-            if (it.isEmpty()) {
-                showEmpty()
-            } else {
-                hideEmpty()
+        if (fileBrowserViewModel.sectionPersistenceManager == null) {
+            fileBrowserViewModel.sectionPersistenceManager = sectionPersistenceManager
+            fileBrowserViewModel.documentPersistenceManager = documentPersistenceManager
+            fileBrowserViewModel.resourcePersistenceManager = resourcePersistenceManager
+            if (fileBrowserViewModel.currentSectionId.value == null) {
+                fileBrowserViewModel.currentSectionId.value = FileBrowserViewModel.ROOT_SECTION_ID
             }
-            epoxyController.setData(it.filterByExpectedType(), it.filterByExpectedType(), it.filterByExpectedType())
-        })
 
-        // normal navigation
-        fileBrowserViewModel.currentSection.observe(this, Observer {
-            if (it.isNotEmpty()) {
-                it.first().let {
-                    if (it.subsections.isEmpty() and it.documents.isEmpty() and it.resources.isEmpty()) {
-                        showEmpty()
-                    } else {
-                        hideEmpty()
-                    }
-                    epoxyController.setData(it.subsections, it.documents, it.resources)
-                }
-            } else {
-                // in theory this will navigate back until a section is found
-                // or otherwise show the "empty" screen
-                if (!fileBrowserViewModel.navigateUp()) {
+            // search
+            fileBrowserViewModel.currentSearchResults.observe(this, Observer {
+                if (it.isEmpty()) {
                     showEmpty()
+                } else {
+                    hideEmpty()
                 }
-            }
-        })
+                epoxyController.setData(it.filterByExpectedType(), it.filterByExpectedType(), it.filterByExpectedType())
+            })
 
-        fileBrowserViewModel.currentSearchFilter.observe(this, Observer {
-            searchView?.setQuery(it, false)
-        })
-        fileBrowserViewModel.isSearchExpanded.observe(this, Observer { isExpanded ->
-            if (!isExpanded) {
-                searchView?.clearFocus()
-                searchMenuItem?.collapseActionView()
-            }
-        })
+            // normal navigation
+            fileBrowserViewModel.currentSection.observe(this, Observer {
+                if (it.isNotEmpty()) {
+                    it.first().let {
+                        if (it.subsections.isEmpty() and it.documents.isEmpty() and it.resources.isEmpty()) {
+                            showEmpty()
+                        } else {
+                            hideEmpty()
+                        }
+                        epoxyController.setData(it.subsections, it.documents, it.resources)
+                    }
+                } else {
+                    // in theory this will navigate back until a section is found
+                    // or otherwise show the "empty" screen
+                    if (!fileBrowserViewModel.navigateUp()) {
+                        showEmpty()
+                    }
+                }
+            })
+
+            fileBrowserViewModel.currentSearchFilter.observe(this, Observer {
+                searchView?.setQuery(it, false)
+            })
+            fileBrowserViewModel.isSearchExpanded.observe(this, Observer { isExpanded ->
+                if (!isExpanded) {
+                    searchView?.clearFocus()
+                    searchMenuItem?.collapseActionView()
+                }
+            })
+        }
 
         return super.createViewDataBinding(inflater, container, savedInstanceState)
     }

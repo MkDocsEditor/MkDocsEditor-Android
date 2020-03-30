@@ -47,10 +47,8 @@ abstract class DaggerSupportFragmentBase : LifecycleFragmentBase(), HasSupportFr
     lateinit var childFragmentInjector: DispatchingAndroidInjector<androidx.fragment.app.Fragment>
 
     override fun onAttach(context: Context) {
-        AndroidSupportInjection
-                .inject(this)
-        super
-                .onAttach(context)
+        AndroidSupportInjection.inject(this)
+        super.onAttach(context)
     }
 
     override fun supportFragmentInjector(): AndroidInjector<androidx.fragment.app.Fragment> {
@@ -75,12 +73,8 @@ abstract class DaggerSupportFragmentBase : LifecycleFragmentBase(), HasSupportFr
             viewModel.root
         } else {
             val newContainer = inflater.inflate(layoutRes, container, false) as ViewGroup
-
-            val alternative = super
-                    .onCreateView(inflater, newContainer, savedInstanceState)
-
-            alternative
-                    ?: newContainer
+            val alternative = super.onCreateView(inflater, newContainer, savedInstanceState)
+            alternative ?: newContainer
         }
     }
 
