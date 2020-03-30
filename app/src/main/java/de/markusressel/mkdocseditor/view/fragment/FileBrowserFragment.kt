@@ -1,12 +1,14 @@
 package de.markusressel.mkdocseditor.view.fragment
 
+import android.content.Context
 import android.os.Bundle
 import android.text.InputType
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.Toast
+import androidx.appcompat.widget.SearchView
+import androidx.core.content.ContextCompat
 import androidx.databinding.ViewDataBinding
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import com.afollestad.materialdialogs.MaterialDialog
@@ -18,8 +20,11 @@ import com.airbnb.epoxy.Typed3EpoxyController
 import com.eightbitlab.rxbus.Bus
 import com.eightbitlab.rxbus.registerInBus
 import com.github.ajalt.timberkt.Timber
+import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
+import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
 import de.markusressel.commons.android.material.toast
+import de.markusressel.commons.core.filterByExpectedType
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.*
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
@@ -40,6 +45,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import java.util.*
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 
@@ -61,31 +67,101 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         ViewModelProviders.of(this).get(FileBrowserViewModel::class.java)
     }
 
+    private var searchView: SearchView? = null
+    private var searchMenuItem: MenuItem? = null
+
     override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
-        fileBrowserViewModel.persistenceManager = sectionPersistenceManager
-        if (fileBrowserViewModel.currentSectionId.value == null) {
-            fileBrowserViewModel.currentSectionId.value = FileBrowserViewModel.ROOT_SECTION_ID
-        }
-        fileBrowserViewModel.currentSection.observe(this, Observer {
-            if (it.isNotEmpty()) {
-                it.first().let {
-                    if (it.subsections.isEmpty() and it.documents.isEmpty() and it.resources.isEmpty()) {
-                        showEmpty()
-                    } else {
-                        hideEmpty()
-                    }
-                    epoxyController.setData(it.subsections, it.documents, it.resources)
-                }
-            } else {
-                // in theory this will navigate back until a section is found
-                // or otherwise show the "empty" screen
-                if (!fileBrowserViewModel.navigateUp()) {
-                    showEmpty()
-                }
+        if (fileBrowserViewModel.sectionPersistenceManager == null) {
+            fileBrowserViewModel.sectionPersistenceManager = sectionPersistenceManager
+            fileBrowserViewModel.documentPersistenceManager = documentPersistenceManager
+            fileBrowserViewModel.resourcePersistenceManager = resourcePersistenceManager
+            if (fileBrowserViewModel.currentSectionId.value == null) {
+                fileBrowserViewModel.currentSectionId.value = FileBrowserViewModel.ROOT_SECTION_ID
             }
-        })
+
+            // search
+            fileBrowserViewModel.currentSearchResults.observe(this, Observer {
+                if (it.isEmpty()) {
+                    showEmpty()
+                } else {
+                    hideEmpty()
+                }
+                epoxyController.setData(it.filterByExpectedType(), it.filterByExpectedType(), it.filterByExpectedType())
+            })
+
+            // normal navigation
+            fileBrowserViewModel.currentSection.observe(this, Observer {
+                if (it.isNotEmpty()) {
+                    it.first().let {
+                        if (it.subsections.isEmpty() and it.documents.isEmpty() and it.resources.isEmpty()) {
+                            showEmpty()
+                        } else {
+                            hideEmpty()
+                        }
+                        epoxyController.setData(it.subsections, it.documents, it.resources)
+                    }
+                } else {
+                    // in theory this will navigate back until a section is found
+                    // or otherwise show the "empty" screen
+                    if (!fileBrowserViewModel.navigateUp()) {
+                        showEmpty()
+                    }
+                }
+            })
+
+            fileBrowserViewModel.currentSearchFilter.observe(this, Observer {
+                searchView?.setQuery(it, false)
+            })
+            fileBrowserViewModel.isSearchExpanded.observe(this, Observer { isExpanded ->
+                if (!isExpanded) {
+                    searchView?.clearFocus()
+                    searchMenuItem?.collapseActionView()
+                }
+            })
+        }
 
         return super.createViewDataBinding(inflater, container, savedInstanceState)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(de.markusressel.kutepreferences.core.R.menu.kutepreferences__menu, menu)
+
+        searchMenuItem = menu.findItem(R.id.search)
+        searchMenuItem?.apply {
+            icon = ContextCompat.getDrawable(context as Context, de.markusressel.kutepreferences.core.R.drawable.ic_search_24px)
+            setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
+                override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
+                    val oldValue = fileBrowserViewModel.isSearchExpanded.value
+                    if (oldValue == null || !oldValue) {
+                        fileBrowserViewModel.isSearchExpanded.value = true
+                    }
+                    return true
+                }
+
+                override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
+                    val oldValue = fileBrowserViewModel.isSearchExpanded.value
+                    if (oldValue == null || oldValue) {
+                        fileBrowserViewModel.isSearchExpanded.value = false
+                    }
+                    return true
+                }
+            })
+        }
+
+        searchView = searchMenuItem?.actionView as SearchView
+        searchView?.let {
+            RxSearchView
+                    .queryTextChanges(it)
+                    .skipInitialValue()
+                    .bindUntilEvent(this, Lifecycle.Event.ON_DESTROY)
+                    .debounce(300, TimeUnit.MILLISECONDS)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeBy(onNext = { text ->
+                        fileBrowserViewModel.setSearch(text.toString())
+                    }, onError = { error ->
+                        Timber.e(error) { "Error filtering list" }
+                    })
+        }
     }
 
     override fun getLoadDataFromSourceFunction(): Single<Any> {

@@ -35,9 +35,9 @@ buildscript {
         gsonVersion = "2.8.5"
         kotsonVersion = "2.5.0"
 
-        epoxyVersion = "3.8.0"
+        epoxyVersion = "3.9.0"
 
-        objectboxVersion = "2.4.1"
+        objectboxVersion = "2.5.0"
 
         fuelVersion = "2.2.1"
     }

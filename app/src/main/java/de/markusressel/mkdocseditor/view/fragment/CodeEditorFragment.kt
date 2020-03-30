@@ -178,7 +178,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         })
 
         binding.let {
-            it.setLifecycleOwner(this)
+            it.lifecycleOwner = this
             it.viewModel = viewModel
         }
 

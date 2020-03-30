@@ -56,22 +56,17 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
     private var serverUnavailableSnackbar: Snackbar? = null
 
     private val optionsMenuComponent: OptionsMenuComponent by lazy {
-        OptionsMenuComponent(hostFragment = this, optionsMenuRes = R.menu.options_menu_list, onCreateOptionsMenu = { menu: Menu?, menuInflater: MenuInflater? ->
-            val refreshMenuItem = menu
-                    ?.findItem(R.id.refresh)
-            refreshMenuItem
-                    ?.icon = iconHandler
-                    .getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_refresh)
+        OptionsMenuComponent(hostFragment = this,
+                optionsMenuRes = R.menu.options_menu_list,
+                onCreateOptionsMenu = { menu: Menu?, menuInflater: MenuInflater? ->
+                    val refreshMenuItem = menu?.findItem(R.id.refresh)
+                    refreshMenuItem?.icon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_refresh)
 
-            val searchMenuItem = menu
-                    ?.findItem(R.id.search)
-            searchMenuItem
-                    ?.icon = iconHandler
-                    .getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_search)
+                    val searchMenuItem = menu?.findItem(R.id.search)
+                    searchMenuItem?.icon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_search)
 
-            val searchView = searchMenuItem?.actionView as SearchView?
-            searchView
-                    ?.let {
+                    val searchView = searchMenuItem?.actionView as SearchView?
+                    searchView?.let {
                         RxSearchView
                                 .queryTextChanges(it)
                                 .skipInitialValue()
@@ -88,7 +83,7 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
                                 })
                     }
 
-        }, onOptionsMenuItemClicked = {
+                }, onOptionsMenuItemClicked = {
             when {
                 it.itemId == R.id.refresh -> {
                     reload()
@@ -116,6 +111,9 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // TODO: this should only be done if the viewmodel is not already initialized
+        //  as this resets the current position of the filebrowser, as well as any existing
+        //  search term
         reload()
     }
 
