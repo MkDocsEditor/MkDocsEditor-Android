@@ -111,6 +111,9 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // TODO: this should only be done if the viewmodel is not already initialized
+        //  as this resets the current position of the filebrowser, as well as any existing
+        //  search term
         reload()
     }
 

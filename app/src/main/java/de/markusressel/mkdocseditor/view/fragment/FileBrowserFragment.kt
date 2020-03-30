@@ -154,7 +154,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                     .queryTextChanges(it)
                     .skipInitialValue()
                     .bindUntilEvent(this, Lifecycle.Event.ON_DESTROY)
-                    .debounce(100, TimeUnit.MILLISECONDS)
+                    .debounce(300, TimeUnit.MILLISECONDS)
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribeBy(onNext = { text ->
                         fileBrowserViewModel.setSearch(text.toString())

@@ -9,6 +9,8 @@ import androidx.lifecycle.Observer
 import androidx.paging.LivePagedListBuilder
 import androidx.paging.PagedList
 import com.github.ajalt.timberkt.Timber
+import de.markusressel.commons.android.core.doAsync
+import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
@@ -51,21 +53,26 @@ class FileBrowserViewModel : EntityListViewModel() {
     init {
         currentSearchFilter.observeForever { searchString ->
             if (isSearching()) {
-                val searchRegex = searchString.toRegex(setOf(RegexOption.IGNORE_CASE, RegexOption.LITERAL))
+                // TODO:  this is pretty ugly and time/performance consuming
+                doAsync {
+                    val searchRegex = searchString.toRegex(setOf(RegexOption.IGNORE_CASE, RegexOption.LITERAL))
 
-                val sections = sectionPersistenceManager!!.standardOperation().query {
-                    filter { section -> searchRegex.containsMatchIn(section.name) }
-                }.find()
+                    val sections = sectionPersistenceManager!!.standardOperation().query {
+                        filter { section -> searchRegex.containsMatchIn(section.name) }
+                    }.find()
 
-                val documents = documentPersistenceManager!!.standardOperation().query {
-                    filter { document -> searchRegex.containsMatchIn(document.name) }
-                }.find()
+                    val documents = documentPersistenceManager!!.standardOperation().query {
+                        filter { document -> searchRegex.containsMatchIn(document.name) }
+                    }.find()
 
-                val resources = resourcePersistenceManager!!.standardOperation().query {
-                    filter { resource -> searchRegex.containsMatchIn(resource.name) }
-                }.find()
+                    val resources = resourcePersistenceManager!!.standardOperation().query {
+                        filter { resource -> searchRegex.containsMatchIn(resource.name) }
+                    }.find()
 
-                currentSearchResults.value = sections + documents + resources
+                    runOnUiThread {
+                        currentSearchResults.value = sections + documents + resources
+                    }
+                }
             } else {
                 showTopLevel()
             }
@@ -143,13 +150,6 @@ class FileBrowserViewModel : EntityListViewModel() {
 
         // set the section id on the ViewModel
         currentSectionId.value = sectionId
-
-        val rootSection = sectionPersistenceManager!!.getRootSection()
-        if (rootSection != null) {
-            currentSearchResults.value = rootSection.subsections + rootSection.documents + rootSection.resources
-        } else {
-            currentSearchResults.value = emptyList()
-        }
     }
 
     /**
