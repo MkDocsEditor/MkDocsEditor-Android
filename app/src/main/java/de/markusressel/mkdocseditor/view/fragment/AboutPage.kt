@@ -22,10 +22,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.content.ContextCompat
-import com.mikepenz.aboutlibraries.Libs
 import com.mikepenz.aboutlibraries.LibsBuilder
-import com.mikepenz.aboutlibraries.util.Colors
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
@@ -56,22 +53,22 @@ class AboutPage : DaggerSupportFragmentBase() {
                 .themePreference
                 .persistedValue
 
-        val aboutLibTheme: Libs.ActivityStyle
-        aboutLibTheme = if (themeVal == context.getString(R.string.theme_light_value)) {
-            Libs.ActivityStyle.LIGHT_DARK_TOOLBAR
-        } else {
-            Libs.ActivityStyle.DARK
-        }
+//        val aboutLibTheme: ActivityStyle
+//        aboutLibTheme = if (themeVal == context.getString(R.string.theme_light_value)) {
+//            Libs.ActivityStyle.LIGHT_DARK_TOOLBAR
+//        } else {
+//            Libs.ActivityStyle.DARK
+//        }
 
         val fragment = LibsBuilder()
                 .withAboutIconShown(true)
                 .withAboutVersionShown(true)
                 .withAboutAppName(getString(R.string.app_name))
                 .withAboutDescription(getString(R.string.app_description))
-                .withActivityStyle(aboutLibTheme)
-                .withActivityColor(
-                        Colors(ContextCompat.getColor(context, R.color.primary),
-                                ContextCompat.getColor(context, R.color.primary_dark)))
+//                .withActivityStyle(aboutLibTheme)
+//                .withActivityColor(
+//                        Colors(ContextCompat.getColor(context, R.color.primary),
+//                                ContextCompat.getColor(context, R.color.primary_dark)))
                 .withActivityTitle(context.getString(R.string.menu_item_about))
                 .supportFragment()
 

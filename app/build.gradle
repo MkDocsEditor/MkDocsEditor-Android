@@ -127,9 +127,9 @@ dependencies {
     implementation 'com.karumi:dexter:5.0.0'
 
     // Material Drawer
-    implementation("com.mikepenz:materialdrawer:${materialdrawerVersion}@aar") {
-        transitive = true
-    }
+    implementation "com.mikepenz:materialdrawer:${materialdrawerVersion}"
+    implementation "com.mikepenz:materialdrawer-nav:${materialdrawerVersion}"
+    implementation "com.mikepenz:materialdrawer-iconics:${materialdrawerVersion}"
 
     // Epoxy - Recyclerview for dummies
     implementation "com.airbnb.android:epoxy:$epoxyVersion"
