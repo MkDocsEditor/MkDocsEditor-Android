@@ -35,10 +35,6 @@ class App : Application() {
     @Inject
     internal lateinit var documentPersistenceManager: DocumentPersistenceManager
 
-//    override fun applicationInjector(): AndroidInjector<out DaggerApplication> {
-//        return DaggerAppComponent.builder().create(this)
-//    }
-
     override fun onCreate() {
         super.onCreate()
         // register app lifecycle
