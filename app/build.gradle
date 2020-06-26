@@ -65,15 +65,15 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
     implementation 'androidx.appcompat:appcompat:1.1.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.0-beta6'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.0-beta7'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.1.0'
     implementation 'androidx.annotation:annotation:1.1.0'
     implementation 'androidx.browser:browser:1.2.0'
     implementation 'com.google.android.material:material:1.1.0'
 
-    implementation 'androidx.emoji:emoji:1.0.0'
-    implementation 'androidx.emoji:emoji-bundled:1.0.0'
+    implementation 'androidx.emoji:emoji:1.1.0'
+    implementation 'androidx.emoji:emoji-bundled:1.1.0'
 
     compileOnly "org.glassfish:javax.annotation:$javaxAnnotationVersion"
 
@@ -145,12 +145,13 @@ dependencies {
     implementation 'com.afollestad.material-dialogs:input:2.6.0'
 
     // Code editor
-//    def codeEditorVersion = "v2.1.0"
-    def codeEditorVersion = "dev-SNAPSHOT"
+    def codeEditorVersion = "v3.0.0"
+//    def codeEditorVersion = "master-SNAPSHOT"
     implementation("com.github.markusressel:KodeEditor:${codeEditorVersion}") { changing = true }
 
     // Syntax Highlighting
-    def codeHighlighterVersion = "v1.2.2"
+    def codeHighlighterVersion = "v2.0.0"
+//    def codeHighlighterVersion = "master-SNAPSHOT"
     implementation("com.github.markusressel.KodeHighlighter:markdown:${codeHighlighterVersion}") {
         changing = true
     }
