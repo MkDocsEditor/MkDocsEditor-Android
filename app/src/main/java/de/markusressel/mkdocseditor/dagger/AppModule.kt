@@ -6,6 +6,9 @@ import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.android.ContributesAndroidInjector
+import dagger.hilt.InstallIn
+import dagger.hilt.android.components.ActivityComponent
+import dagger.hilt.android.components.FragmentComponent
 import de.markusressel.kutepreferences.core.persistence.DefaultKutePreferenceDataProvider
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.mkdocseditor.application.App
@@ -26,6 +29,7 @@ import javax.inject.Singleton
  * Created by Markus on 20.12.2017.
  */
 @Module
+@InstallIn(ActivityComponent::class, FragmentComponent::class)
 abstract class AppModule {
 
     @Binds
@@ -56,6 +60,7 @@ abstract class AppModule {
     internal abstract fun PreferencesFragment(): PreferencesFragment
 
     @Module
+    @InstallIn(ActivityComponent::class, FragmentComponent::class)
     companion object {
 
         @Provides

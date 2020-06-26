@@ -6,6 +6,7 @@ import com.eightbitlab.rxbus.Bus
 import com.eightbitlab.rxbus.registerInBus
 import dagger.android.AndroidInjector
 import dagger.android.DaggerApplication
+import dagger.hilt.android.HiltAndroidApp
 import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.application.log.FileTree
 import de.markusressel.mkdocseditor.dagger.DaggerAppComponent
@@ -24,6 +25,7 @@ import javax.inject.Inject
 /**
  * Created by Markus on 20.12.2017.
  */
+@HiltAndroidApp
 class App : DaggerApplicationBase() {
 
     @Inject
@@ -31,6 +33,7 @@ class App : DaggerApplicationBase() {
 
     @Inject
     internal lateinit var offlineModeManager: OfflineModeManager
+
     @Inject
     internal lateinit var documentPersistenceManager: DocumentPersistenceManager
 
