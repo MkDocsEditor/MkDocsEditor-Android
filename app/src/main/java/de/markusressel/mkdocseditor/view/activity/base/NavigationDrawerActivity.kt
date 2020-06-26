@@ -44,7 +44,7 @@ import javax.inject.Inject
  *
  * Created by Markus on 07.01.2018.
  */
-abstract class NavigationDrawerActivity : DaggerSupportActivityBase() {
+abstract class NavigationDrawerActivity : SupportActivityBase() {
 
     override val layoutRes: Int
         get() = R.layout.activity_main

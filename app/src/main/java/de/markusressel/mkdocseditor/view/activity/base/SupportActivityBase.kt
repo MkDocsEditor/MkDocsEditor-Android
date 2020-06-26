@@ -6,7 +6,6 @@ import android.view.WindowManager
 import androidx.annotation.CallSuper
 import androidx.annotation.IntDef
 import androidx.annotation.LayoutRes
-import dagger.android.AndroidInjection
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.view.IconHandler
@@ -21,7 +20,7 @@ import javax.inject.Inject
 /**
  * Created by Markus on 20.12.2017.
  */
-abstract class DaggerSupportActivityBase : LifecycleActivityBase() {
+abstract class SupportActivityBase : LifecycleActivityBase() {
 
     @Inject
     lateinit var iconHandler: IconHandler
@@ -45,15 +44,13 @@ abstract class DaggerSupportActivityBase : LifecycleActivityBase() {
     protected abstract val style: Int
 
     /**
-     * The layout ressource for this Activity
+     * The layout resource for this Activity
      */
     @get:LayoutRes
     protected abstract val layoutRes: Int
 
     @CallSuper
     override fun onCreate(savedInstanceState: Bundle?) {
-        AndroidInjection.inject(this)
-
         // apply forced locale (if set in developer options)
         //        initLocale()
 

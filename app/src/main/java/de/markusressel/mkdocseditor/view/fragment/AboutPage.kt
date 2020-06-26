@@ -23,6 +23,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.mikepenz.aboutlibraries.LibsBuilder
+import dagger.hilt.android.AndroidEntryPoint
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
@@ -36,6 +37,7 @@ import javax.inject.Inject
  * TabNavigationFragment as the base class for this page is a (when looking at sourc code)
  * simple workaround for this problem.
  */
+@AndroidEntryPoint
 class AboutPage : DaggerSupportFragmentBase() {
 
     override val layoutRes: Int

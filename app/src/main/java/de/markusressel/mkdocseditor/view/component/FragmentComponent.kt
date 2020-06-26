@@ -8,7 +8,6 @@ abstract class FragmentComponent(private val hostFragment: LifecycleFragmentBase
     protected val fragment
         get() = hostFragment
 
-    val context: Context? = hostFragment
-            .context
+    val context: Context? = hostFragment.context
 
 }
