@@ -23,6 +23,7 @@ import com.otaliastudios.zoom.ZoomEngine
 import com.trello.rxlifecycle2.LifecycleProvider
 import com.trello.rxlifecycle2.android.FragmentEvent
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
+import dagger.hilt.android.AndroidEntryPoint
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.commons.android.material.snack
 import de.markusressel.kodeeditor.library.view.CodeEditorLayout
@@ -61,6 +62,7 @@ import javax.inject.Inject
 /**
  * Created by Markus on 07.01.2018.
  */
+@AndroidEntryPoint
 class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener {
 
     override val layoutRes: Int

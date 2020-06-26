@@ -23,6 +23,7 @@ import com.github.ajalt.timberkt.Timber
 import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
+import dagger.hilt.android.AndroidEntryPoint
 import de.markusressel.commons.android.material.toast
 import de.markusressel.commons.core.filterByExpectedType
 import de.markusressel.mkdocseditor.R
@@ -52,6 +53,7 @@ import javax.inject.Inject
 /**
  * Created by Markus on 07.01.2018.
  */
+@AndroidEntryPoint
 class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     @Inject
