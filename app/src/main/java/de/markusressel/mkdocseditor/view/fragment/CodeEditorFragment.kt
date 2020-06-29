@@ -121,6 +121,15 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 icon = refreshIcon
             }
 
+            // set "edit" icon
+            menu?.findItem(R.id.edit)?.apply {
+                icon = if (preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue) {
+                    iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_eye)
+                } else {
+                    iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_edit)
+                }
+            }
+
             // set open in browser icon
             menu?.findItem(R.id.open_in_browser)?.apply {
                 val openInBrowserIcon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_open_in_browser)
@@ -136,8 +145,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                     .webUriPreference
                     .persistedValue
 
-            when {
-                it.itemId == R.id.open_in_browser -> {
+            when (it.itemId) {
+                R.id.open_in_browser -> {
+                    if (webBaseUri.isBlank()) {
+                        return@OptionsMenuComponent false
+                    }
+
                     val documentEntity = documentPersistenceManager
                             .standardOperation()
                             .query {
@@ -156,18 +169,24 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                         val url = "$host/$pagePath"
                         chromeCustomTabManager.openChromeCustomTab(url)
                     }
-
                     true
                 }
-                webBaseUri.isBlank() -> false
+                R.id.edit -> {
+                    codeEditorLayout.editable = !codeEditorLayout.editable
+                    it.icon = if (codeEditorLayout.editable) {
+                        iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_eye)
+                    } else {
+                        iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_edit)
+                    }
+                    true
+                }
                 else -> false
             }
         })
     }
 
     override fun initComponents(context: Context) {
-        super
-                .initComponents(context)
+        super.initComponents(context)
         loadingComponent
         optionsMenuComponent
     }
@@ -199,8 +218,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        codeEditorLayout.minimapGravity = Gravity.BOTTOM or Gravity.END
-
         documentSyncManager = DocumentSyncManager(
                 context = context(),
                 hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue,
@@ -216,7 +233,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 onConnectionStatusChanged = ::handleConnectionStatusChange,
                 onInitialText = {
                     runOnUiThread {
-                        restoreEditorState(text = it, editable = true)
+                        restoreEditorState(text = it, editable = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue)
                         loadingComponent.showContent()
                     }
                 }, onTextChanged = ::onTextChanged)
@@ -300,6 +317,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         super.onViewCreated(view, savedInstanceState)
 
         codeEditorLayout = view.findViewById(R.id.codeEditorView)
+        codeEditorLayout.minimapGravity = Gravity.BOTTOM or Gravity.END
         codeEditorLayout.languageRuleBook = MarkdownRuleBook()
         codeEditorLayout.codeEditorView.engine.addListener(object : ZoomEngine.Listener {
             override fun onIdle(engine: ZoomEngine) {
@@ -324,6 +342,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         codeEditorLayout.codeEditorView.selectionChangedListener = this
 
         // disable user input by default, it will be enabled automatically once connected to the server
+        // if not disabled in preferences
         codeEditorLayout.editable = false
     }
 

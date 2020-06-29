@@ -22,7 +22,7 @@ android {
         multiDexEnabled true
 
         // Required for LastAdapter
-        dataBinding.enabled true
+        buildFeatures.dataBinding true
     }
 
     buildTypes {
@@ -153,7 +153,7 @@ dependencies {
     implementation 'com.afollestad.material-dialogs:input:2.6.0'
 
     // Code editor
-    def codeEditorVersion = "v3.0.1"
+    def codeEditorVersion = "v3.0.2"
 //    def codeEditorVersion = "master-SNAPSHOT"
     implementation("com.github.markusressel:KodeEditor:${codeEditorVersion}") { changing = true }
 

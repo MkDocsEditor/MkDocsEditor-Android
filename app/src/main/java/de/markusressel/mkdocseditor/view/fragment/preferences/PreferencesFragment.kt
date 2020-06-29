@@ -15,6 +15,7 @@ class PreferencesFragment : LifecyclePreferenceFragmentBase() {
         return arrayOf(
                 preferenceHolder.connectionCategory,
                 preferenceHolder.offlineCacheCategory,
+                preferenceHolder.uxCategory,
                 preferenceHolder.themePreference
         )
     }
