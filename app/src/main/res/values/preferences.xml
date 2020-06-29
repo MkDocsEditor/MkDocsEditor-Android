@@ -54,7 +54,7 @@
 
     <string name="offline_mode_key" translatable="false">offline_mode</string>
     <string name="clear_offline_cache_key" translatable="false">clear_offline_cache_key</string>
-    <string name="clear_offline_cache_title" translatable="false">Clear offline cache</string>
+    <string name="clear_offline_cache_title">Clear offline cache</string>
 
     <string name="last_offline_cache_update_key" translatable="false">last_offline_cache_update_key</string>
 
@@ -64,5 +64,17 @@
         <item>@string/theme_light_value</item>
         <item>@string/theme_dark_value</item>
     </string-array>
+
+    <!-- UX -->
+    <string name="category_ux_key" translatable="false">category_ux</string>
+    <string name="category_ux_title">UX</string>
+    <string name="category_ux_description">Settings to fine-tune your experience</string>
+
+    <string name="section_code_editor_key" translatable="false">section_code_editor_key</string>
+    <string name="section_code_editor_title">Code Editor</string>
+
+    <string name="code_editor_always_edit_mode_key" translatable="false">code_editor_always_edit_mode_key</string>
+    <string name="code_editor_always_edit_mode_title">Always open edit-mode</string>
+
 
 </resources>

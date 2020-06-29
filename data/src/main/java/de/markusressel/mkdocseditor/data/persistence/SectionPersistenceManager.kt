@@ -108,7 +108,7 @@ class SectionPersistenceManager @Inject constructor(
             notIn(SectionEntity_.entityId, existingSectionIds)
         }.findIds()
 
-        standardOperation().removeByKeys(missingSectionIds.toList())
+        standardOperation().removeByIds(missingSectionIds.toList())
 
         // remove stale documents
         val existingDocumentIds = documentPersistenceManager.standardOperation().query {
@@ -120,7 +120,7 @@ class SectionPersistenceManager @Inject constructor(
             notIn(DocumentEntity_.entityId, existingDocumentIds)
         }.findIds()
 
-        documentPersistenceManager.standardOperation().removeByKeys(missingDocumentIds.toList())
+        documentPersistenceManager.standardOperation().removeByIds(missingDocumentIds.toList())
 
         // remove stale resources
         val existingResourceIds = resourcePersistenceManager.standardOperation().query {
@@ -132,7 +132,7 @@ class SectionPersistenceManager @Inject constructor(
             notIn(ResourceEntity_.entityId, existingResourceIds)
         }.findIds()
 
-        resourcePersistenceManager.standardOperation().removeByKeys(missingResourceIds.toList())
+        resourcePersistenceManager.standardOperation().removeByIds(missingResourceIds.toList())
     }
 
     companion object {

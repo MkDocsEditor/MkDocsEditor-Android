@@ -56,7 +56,7 @@ class LoadingComponent(hostFragment: LifecycleFragmentBase, val onShowContent: (
     }
 
     private fun createWrapperLayout(): ViewGroup {
-        val baseLayout = FrameLayout(context)
+        val baseLayout = FrameLayout(context!!)
 
         // attach the original content view
         contentView?.let {

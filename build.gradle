@@ -8,9 +8,9 @@ buildscript {
         versionName = "0.1.0"
         versionCode = 1
 
-        compileSdkVersion = 28
-        targetSdkVersion = 28
-        buildToolsVersion = "28.0.3"
+        compileSdkVersion = 29
+        targetSdkVersion = 29
+        buildToolsVersion = "29.0.2"
         supportLibVersion = "28.0.0"
 
         // DEPENDENCIES
@@ -50,7 +50,7 @@ buildscript {
         maven { url "http://objectbox.net/beta-repo/" }
     }
     dependencies {
-        classpath "com.android.tools.build:gradle:$gradle_plugin_version"
+        classpath "com.android.tools.build:gradle:${gradle_plugin_version}"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "io.objectbox:objectbox-gradle-plugin:$objectboxVersion"
         classpath "android.arch.navigation:navigation-safe-args-gradle-plugin:1.0.0"
