@@ -199,6 +199,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        codeEditorLayout.minimapGravity = Gravity.BOTTOM or Gravity.END
+
         documentSyncManager = DocumentSyncManager(
                 context = context(),
                 hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue,
