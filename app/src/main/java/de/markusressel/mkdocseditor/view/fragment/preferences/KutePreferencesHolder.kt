@@ -225,6 +225,7 @@ class KutePreferencesHolder @Inject constructor(
                 defaultValue = 200,
                 minimum = 100,
                 maximum = 1000,
+                unit = "ms",
                 dataProvider = dataProvider,
                 onPreferenceChangedListener = { old, new ->
                 })
