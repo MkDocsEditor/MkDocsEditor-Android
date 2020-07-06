@@ -19,6 +19,7 @@
     <string name="exception_raised">☠ Exception raised</string>
     <string name="retry">Retry</string>
     <string name="connect">Connect</string>
+    <string name="sync_error">Synchronization error :(</string>
 
     <string name="add">Add</string>
     <string name="speed_dial_create_document">Create a document</string>

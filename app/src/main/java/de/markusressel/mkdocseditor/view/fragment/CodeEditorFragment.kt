@@ -292,9 +292,11 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 .subscribeBy(onNext = {
                     documentSyncManager.sync()
                 }, onError = {
-                    // TODO: proper error handling for the user
                     Timber.e(it)
                     disconnect("Error in client sync code")
+                    runOnUiThread {
+                        codeEditorLayout.snack(R.string.sync_error, LENGTH_SHORT)
+                    }
                 })
 
 //        textDisposable = RxTextView
