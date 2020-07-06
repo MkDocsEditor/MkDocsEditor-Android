@@ -284,10 +284,10 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     private fun watchTextChanges() {
         textDisposable?.dispose()
 
-        textDisposable = Observable.interval(1, TimeUnit.SECONDS)
+        val syncInterval = preferencesHolder.codeEditorSyncIntervalPreference.persistedValue
+        textDisposable = Observable.interval(syncInterval, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .filter { codeEditorLayout.editable }
                 .bindToLifecycle(this as LifecycleProvider<FragmentEvent>)
                 .subscribeBy(onNext = {
                     documentSyncManager.sync()

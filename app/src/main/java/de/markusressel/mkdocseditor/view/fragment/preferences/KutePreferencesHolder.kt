@@ -212,9 +212,22 @@ class KutePreferencesHolder @Inject constructor(
                         key = R.string.section_code_editor_key,
                         title = context.getString(R.string.section_code_editor_title),
                         children = listOf(
-                                codeEditorAlwaysOpenEditModePreference
+                                codeEditorAlwaysOpenEditModePreference,
+                                codeEditorSyncIntervalPreference
                         )
                 )))
+    }
+
+    val codeEditorSyncIntervalPreference by lazy {
+        KuteNumberPreference(key = R.string.code_editor_sync_interval_key,
+                icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_time),
+                title = context.getString(R.string.code_editor_sync_interval_title),
+                defaultValue = 200,
+                minimum = 100,
+                maximum = 1000,
+                dataProvider = dataProvider,
+                onPreferenceChangedListener = { old, new ->
+                })
     }
 
     val codeEditorAlwaysOpenEditModePreference by lazy {
