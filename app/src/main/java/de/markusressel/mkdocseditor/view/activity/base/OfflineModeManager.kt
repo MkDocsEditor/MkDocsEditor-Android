@@ -77,13 +77,13 @@ class OfflineModeManager @Inject constructor(
         }
 
         val workerData: Data = workDataOf(
-                DOCUMENT_IDS_KEY to documentsToUpdate
+                DOCUMENT_IDS_KEY to documentsToUpdate.toTypedArray()
         )
 
         val offlineSyncWorker = OneTimeWorkRequestBuilder<OfflineSyncWorker>()
                 .setInputData(workerData)
                 .build()
-        WorkManager.getInstance().enqueue(offlineSyncWorker)
+        WorkManager.getInstance(context).enqueue(offlineSyncWorker)
     }
 
 }

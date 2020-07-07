@@ -1,49 +1,42 @@
 package de.markusressel.mkdocseditor.service
 
 import android.content.Context
-import androidx.work.Worker
+import androidx.hilt.Assisted
+import androidx.hilt.work.WorkerInject
+import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.github.ajalt.timberkt.Timber
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.rxkotlin.subscribeBy
-import io.reactivex.schedulers.Schedulers
-import javax.inject.Inject
+import kotlinx.coroutines.coroutineScope
 
-class OfflineSyncWorker(appContext: Context, workerParams: WorkerParameters)
-    : Worker(appContext, workerParams) {
+class OfflineSyncWorker @WorkerInject constructor(
+        @Assisted appContext: Context,
+        @Assisted workerParams: WorkerParameters,
+        val restClient: MkDocsRestClient,
+        val documentContentPersistenceManager: DocumentContentPersistenceManager)
+    : CoroutineWorker(appContext, workerParams) {
 
-    @Inject
-    internal lateinit var restClient: MkDocsRestClient
-
-    @Inject
-    internal lateinit var documentContentPersistenceManager: DocumentContentPersistenceManager
-
-    override fun doWork(): Result {
+    override suspend fun doWork(): Result = coroutineScope {
         val documentIds = inputData.getStringArray(DOCUMENT_IDS_KEY)
         if (documentIds == null) {
             Timber.wtf { "Missing documentIds parameter!" }
-            return Result.failure()
+            return@coroutineScope Result.failure()
         }
 
         Timber.d { "Scheduling background thread for updating offline cache of ${documentIds.size} documents..." }
         // use random order to evenly distribute probability of caching a document
         documentIds.toSet().shuffled().forEach { documentId ->
-            restClient.getDocumentContent(documentId)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeBy(onSuccess = { text ->
-                        documentContentPersistenceManager.insertOrUpdate(documentId = documentId, text = text)
-                        Timber.d { "Offline cache sync finished successfully for documentId: $documentId" }
-                    }, onError = {
-                        Timber.e(it) { "Offline cache sync error for documentId: $documentId (rescheduling)" }
-                    })
+            restClient.getDocumentContent(documentId).fold(success = { text ->
+                documentContentPersistenceManager.insertOrUpdate(documentId = documentId, text = text)
+                Timber.d { "Offline cache sync finished successfully for documentId: $documentId" }
+            }, failure = {
+                Timber.e(it) { "Offline cache sync error for documentId: $documentId (rescheduling)" }
+            })
         }
 
         Timber.d { "Offline cache sync job complete." }
-
-        return Result.success()
+        Result.success()
     }
 
     companion object {

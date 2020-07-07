@@ -112,6 +112,11 @@ dependencies {
     testImplementation "com.google.dagger:hilt-android-testing:$hiltVersion"
     kaptTest "com.google.dagger:hilt-android-compiler:$hiltVersion"
 
+    // Hilt Jetpack integration
+    implementation "androidx.hilt:hilt-lifecycle-viewmodel:1.0.0-alpha01"
+    implementation "androidx.hilt:hilt-work:1.0.0-alpha01"
+    kapt "androidx.hilt:hilt-compiler:1.0.0-alpha01"
+
     // MikePenz stuff
     //the core iconcis library (without any widgets)
     implementation "com.mikepenz:iconics-core:${iconicsVersion}@aar"

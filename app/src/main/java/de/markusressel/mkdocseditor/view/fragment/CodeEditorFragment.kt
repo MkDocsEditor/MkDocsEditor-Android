@@ -10,8 +10,8 @@ import androidx.annotation.CallSuper
 import androidx.annotation.UiThread
 import androidx.databinding.DataBindingUtil
 import androidx.databinding.ViewDataBinding
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProviders
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.callbacks.onDismiss
 import com.github.ajalt.timberkt.Timber
@@ -86,7 +86,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     private lateinit var codeEditorLayout: CodeEditorLayout
 
     private val safeArgs: CodeEditorFragmentArgs by lazy {
-        CodeEditorFragmentArgs.fromBundle(arguments!!)
+        CodeEditorFragmentArgs.fromBundle(requireArguments())
     }
 
     private val documentId: String
@@ -96,7 +96,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
     private var noConnectionSnackbar: Snackbar? = null
 
-    private val viewModel: CodeEditorViewModel by lazy { ViewModelProviders.of(this).get(CodeEditorViewModel::class.java) }
+    private val viewModel: CodeEditorViewModel by viewModels()
 
     // TODO: this property should not exist. only the [DocumentSyncManager] should have this.
     private var currentText: String? by savedInstanceState()
@@ -193,7 +193,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
     override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
         val binding: FragmentEditorBinding = DataBindingUtil.inflate(layoutInflater, layoutRes, container, false)
-        viewModel.getEntity(documentPersistenceManager, documentId).observe(this, Observer<List<DocumentEntity>> {
+        viewModel.getEntity(documentId).observe(this, Observer<List<DocumentEntity>> {
             val entity = it.first()
             viewModel.documentId.value = entity.id
         })
