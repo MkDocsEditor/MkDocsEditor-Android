@@ -20,6 +20,8 @@ import com.airbnb.epoxy.Typed3EpoxyController
 import com.eightbitlab.rxbus.Bus
 import com.eightbitlab.rxbus.registerInBus
 import com.github.ajalt.timberkt.Timber
+import com.github.kittinunf.fuel.core.FuelError
+import com.github.kittinunf.result.Result
 import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
@@ -41,10 +43,11 @@ import de.markusressel.mkdocseditor.view.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragmentBase
 import de.markusressel.mkdocseditor.view.viewmodel.FileBrowserViewModel
 import de.markusressel.mkdocsrestclient.section.SectionModel
-import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
-import io.reactivex.schedulers.Schedulers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -58,10 +61,13 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     @Inject
     lateinit var sectionPersistenceManager: SectionPersistenceManager
+
     @Inject
     lateinit var documentPersistenceManager: DocumentPersistenceManager
+
     @Inject
     lateinit var documentContentPersistenceManager: DocumentContentPersistenceManager
+
     @Inject
     lateinit var resourcePersistenceManager: ResourcePersistenceManager
 
@@ -166,8 +172,8 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         }
     }
 
-    override fun getLoadDataFromSourceFunction(): Single<Any> {
-        return restClient.getItemTree() as Single<Any>
+    override suspend fun getLoadDataFromSourceFunction(): Result<SectionModel, FuelError> {
+        return restClient.getItemTree()
     }
 
     override fun mapToEntity(it: Any): IdentifiableListItem {
@@ -291,7 +297,9 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
             }
 
             positiveButton(android.R.string.ok, click = {
-                createNewSection(getInputField().text.toString().trim())
+                CoroutineScope(Dispatchers.IO).launch {
+                    createNewSection(getInputField().text.toString().trim())
+                }
             })
             negativeButton(android.R.string.cancel)
         }
@@ -322,13 +330,15 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
             }
 
             positiveButton(android.R.string.ok, click = {
-                createNewDocument(getInputField().text.toString().trim())
+                CoroutineScope(Dispatchers.IO).launch {
+                    createNewDocument(getInputField().text.toString().trim())
+                }
             })
             negativeButton(android.R.string.cancel)
         }
     }
 
-    private fun createNewSection(name: String) {
+    private suspend fun createNewSection(name: String) {
         val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
         val parentSection = sectionPersistenceManager.findById(currentSectionId)
         if (parentSection == null) {
@@ -336,21 +346,18 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
             return
         }
 
-        restClient.createSection(currentSectionId, name)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeBy(onSuccess = {
-                    val createdSection = it.asEntity(documentContentPersistenceManager)
-                    parentSection.subsections.add(createdSection)
-                    // insert it into persistence
-                    sectionPersistenceManager.standardOperation().put(parentSection)
-                }, onError = { error ->
-                    Timber.e(error) { "Error creating section" }
-                    context().toast("There was an error :(")
-                })
+        restClient.createSection(currentSectionId, name).fold(success = {
+            val createdSection = it.asEntity(documentContentPersistenceManager)
+            parentSection.subsections.add(createdSection)
+            // insert it into persistence
+            sectionPersistenceManager.standardOperation().put(parentSection)
+        }, failure = {
+            Timber.e(it) { "Error creating section" }
+            context().toast("There was an error :(")
+        })
     }
 
-    private fun createNewDocument(name: String) {
+    private suspend fun createNewDocument(name: String) {
         val documentName = if (name.isEmpty()) "New Document" else name
         val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
         val parentSection = sectionPersistenceManager.findById(currentSectionId)
@@ -359,20 +366,17 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
             return
         }
 
-        val d = restClient.createDocument(
-                fileBrowserViewModel.currentSectionId.value!!, documentName)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeBy(onSuccess = {
+        restClient.createDocument(fileBrowserViewModel.currentSectionId.value!!, documentName).fold(
+                success = {
                     // insert it into persistence
                     documentPersistenceManager.standardOperation().put(
                             it.asEntity(parentSection = parentSection))
                     // and open the editor right away
                     openDocumentEditor(it.id)
-                }, onError = { error ->
-                    Timber.e(error) { "Error creating document" }
-                    context().toast("There was an error :(")
-                })
+                }, failure = {
+            Timber.e(it) { "Error creating document" }
+            context().toast("There was an error :(")
+        })
     }
 
     /**

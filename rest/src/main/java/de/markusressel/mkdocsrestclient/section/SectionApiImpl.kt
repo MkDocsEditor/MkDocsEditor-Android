@@ -18,35 +18,31 @@
 
 package de.markusressel.mkdocsrestclient.section
 
+import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Method
-import com.github.kittinunf.fuel.core.Response
+import com.github.kittinunf.result.Result
 import com.github.salomonbrys.kotson.jsonObject
 import de.markusressel.mkdocsrestclient.RequestManager
-import io.reactivex.Single
 
 /**
  * Created by Markus on 03.06.2018.
  */
 class SectionApiImpl(private val requestManager: RequestManager) : SectionApi {
 
-    override
-    fun getSection(id: String): Single<SectionModel> {
+    override suspend fun getSection(id: String): Result<SectionModel, FuelError> {
         return requestManager.doRequest("/section/$id/", Method.GET, SectionModel.SingleDeserializer())
     }
 
-    override
-    fun createSection(parentId: String, name: String): Single<SectionModel> {
+    override suspend fun createSection(parentId: String, name: String): Result<SectionModel, FuelError> {
         val data = jsonObject(
                 "parent" to parentId,
                 "name" to name
         )
-        return requestManager
-                .doJsonRequest("/section/", Method.POST, data,
-                        SectionModel.SingleDeserializer())
+        return requestManager.doJsonRequest("/section/", Method.POST, data,
+                SectionModel.SingleDeserializer())
     }
 
-    override
-    fun deleteSection(id: String): Single<Pair<Response, ByteArray>> {
+    override suspend fun deleteSection(id: String): Result<String, FuelError> {
         return requestManager.doRequest("/section/$id/", Method.DELETE)
     }
 

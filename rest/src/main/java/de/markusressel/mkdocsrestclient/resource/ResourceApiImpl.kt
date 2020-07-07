@@ -18,30 +18,30 @@
 
 package de.markusressel.mkdocsrestclient.resource
 
+import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Method
-import com.github.kittinunf.fuel.core.Response
+import com.github.kittinunf.result.Result
 import de.markusressel.mkdocsrestclient.RequestManager
-import io.reactivex.Single
 
 /**
  * Created by Markus on 03.06.2018.
  */
 class ResourceApiImpl(private val requestManager: RequestManager) : ResourceApi {
 
-    override fun getResource(id: String): Single<ResourceModel> {
+    override suspend fun getResource(id: String): Result<ResourceModel, FuelError> {
         return requestManager
                 .doRequest("/resource/$id/", Method.GET, ResourceModel.SingleDeserializer())
     }
 
-    override fun getResourceContent(id: String): Single<ByteArray> {
+    override suspend fun getResourceContent(id: String) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun uploadResource(parentId: String): Single<ResourceModel> {
+    override suspend fun uploadResource(parentId: String) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun deleteResource(id: String): Single<Pair<Response, ByteArray>> {
+    override suspend fun deleteResource(id: String): Result<String, FuelError> {
         return requestManager.doRequest("/document/$id/", Method.DELETE)
     }
 

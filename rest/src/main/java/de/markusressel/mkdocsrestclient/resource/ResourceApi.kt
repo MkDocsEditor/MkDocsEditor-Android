@@ -18,8 +18,8 @@
 
 package de.markusressel.mkdocsrestclient.resource
 
-import com.github.kittinunf.fuel.core.Response
-import io.reactivex.Single
+import com.github.kittinunf.fuel.core.FuelError
+import com.github.kittinunf.result.Result
 
 /**
  * Created by Markus on 03.06.2018.
@@ -29,21 +29,21 @@ interface ResourceApi {
     /**
      * Get a resource description
      */
-    fun getResource(id: String): Single<ResourceModel>
+    suspend fun getResource(id: String): Result<ResourceModel, FuelError>
 
     /**
      * Get the actual content data of a resource
      */
-    fun getResourceContent(id: String): Single<ByteArray>
+    suspend fun getResourceContent(id: String)
 
     /**
      * Create a new resource
      */
-    fun uploadResource(parentId: String): Single<ResourceModel>
+    suspend fun uploadResource(parentId: String)
 
     /**
      * Delete an existing resource
      */
-    fun deleteResource(id: String): Single<Pair<Response, ByteArray>>
+    suspend fun deleteResource(id: String): Result<String, FuelError>
 
 }
