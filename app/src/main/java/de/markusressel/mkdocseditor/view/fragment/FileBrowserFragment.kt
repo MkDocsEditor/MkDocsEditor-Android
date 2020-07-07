@@ -26,6 +26,7 @@ import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
 import dagger.hilt.android.AndroidEntryPoint
+import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.commons.android.material.toast
 import de.markusressel.commons.core.filterByExpectedType
 import de.markusressel.mkdocseditor.R
@@ -354,7 +355,9 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
             sectionPersistenceManager.standardOperation().put(parentSection)
         }, failure = {
             Timber.e(it) { "Error creating section" }
-            context().toast("There was an error :(")
+            runOnUiThread {
+                context().toast("There was an error :(")
+            }
         })
     }
 
