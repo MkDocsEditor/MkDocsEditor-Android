@@ -204,6 +204,10 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                         onclick { model, parentView, clickedView, position ->
                             fileBrowserViewModel.openSection(model.item().id)
                         }
+                        onlongclick { model, parentView, clickedView, position ->
+                            Timber.d { "Long clicked section list item" }
+                            true
+                        }
                     }
                 }
 
@@ -216,6 +220,10 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                         onclick { model, parentView, clickedView, position ->
                             openDocumentEditor(model.item().id)
                         }
+                        onlongclick { model, parentView, clickedView, position ->
+                            Timber.d { "Long clicked document list item" }
+                            true
+                        }
                     }
                 }
 
@@ -227,6 +235,10 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                         item(it)
                         onclick { model, parentView, clickedView, position ->
                             openResourceDetailPage(model.item())
+                        }
+                        onlongclick { model, parentView, clickedView, position ->
+                            Timber.d { "Long clicked resource list item" }
+                            true
                         }
                     }
                 }

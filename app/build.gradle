@@ -40,7 +40,8 @@ android {
             initWith release
             applicationIdSuffix ".debugStaging"
             signingConfig signingConfigs.debug
-            debuggable false
+            minifyEnabled false
+            debuggable true
         }
     }
 

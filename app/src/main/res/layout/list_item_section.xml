@@ -12,12 +12,17 @@
             name="onclick"
             type="android.view.View.OnClickListener" />
 
+        <variable
+            name="onlongclick"
+            type="android.view.View.OnLongClickListener" />
+
     </data>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="@{onclick}"
+        android:onLongClick="@{onlongclick}"
         android:orientation="vertical">
 
         <LinearLayout
