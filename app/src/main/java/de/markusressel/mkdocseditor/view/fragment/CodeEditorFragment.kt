@@ -7,16 +7,13 @@ import android.graphics.PointF
 import android.os.Bundle
 import android.view.*
 import androidx.annotation.CallSuper
-import androidx.annotation.UiThread
 import androidx.databinding.DataBindingUtil
 import androidx.databinding.ViewDataBinding
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
-import com.afollestad.materialdialogs.MaterialDialog
-import com.afollestad.materialdialogs.callbacks.onDismiss
+import androidx.lifecycle.observe
 import com.github.ajalt.timberkt.Timber
 import com.google.android.material.snackbar.Snackbar
-import com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE
 import com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import com.otaliastudios.zoom.ZoomEngine
@@ -30,26 +27,16 @@ import de.markusressel.kodeeditor.library.view.CodeEditorLayout
 import de.markusressel.kodeeditor.library.view.SelectionChangedListener
 import de.markusressel.kodehighlighter.language.markdown.MarkdownRuleBook
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
 import de.markusressel.mkdocseditor.databinding.FragmentEditorBinding
-import de.markusressel.mkdocseditor.extensions.common.android.context
 import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
 import de.markusressel.mkdocseditor.network.NetworkManager
 import de.markusressel.mkdocseditor.view.activity.base.OfflineModeManager
 import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
-import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
 import de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel
-import de.markusressel.mkdocsrestclient.BasicAuthConfig
-import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
-import io.objectbox.kotlin.query
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -69,15 +56,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         get() = R.layout.fragment_editor
 
     @Inject
-    lateinit var preferencesHolder: KutePreferencesHolder
-
-    @Inject
-    lateinit var documentPersistenceManager: DocumentPersistenceManager
-
-    @Inject
-    lateinit var documentContentPersistenceManager: DocumentContentPersistenceManager
-
-    @Inject
     lateinit var chromeCustomTabManager: ChromeCustomTabManager
 
     @Inject
@@ -86,7 +64,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     private lateinit var codeEditorLayout: CodeEditorLayout
 
     private val safeArgs: CodeEditorFragmentArgs by lazy {
-        CodeEditorFragmentArgs.fromBundle(arguments!!)
+        CodeEditorFragmentArgs.fromBundle(requireArguments())
     }
 
     private val documentId: String
@@ -97,16 +75,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     private var noConnectionSnackbar: Snackbar? = null
 
     private val viewModel: CodeEditorViewModel by lazy { ViewModelProviders.of(this).get(CodeEditorViewModel::class.java) }
-
-    // TODO: this property should not exist. only the [DocumentSyncManager] should have this.
-    private var currentText: String? by savedInstanceState()
-
-    private var currentPosition by savedInstanceState(PointF())
-    private var currentZoom: Float by savedInstanceState(1F)
-
-    private var initialTextLoaded = false
-
-    private lateinit var documentSyncManager: DocumentSyncManager
 
     @Inject
     lateinit var offlineModeManager: OfflineModeManager
@@ -123,7 +91,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
             // set "edit" icon
             menu?.findItem(R.id.edit)?.apply {
-                icon = if (preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue) {
+                icon = if (viewModel.preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue) {
                     iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_eye)
                 } else {
                     iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_edit)
@@ -134,16 +102,14 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
             menu?.findItem(R.id.open_in_browser)?.apply {
                 val openInBrowserIcon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_open_in_browser)
                 icon = openInBrowserIcon
-                if (preferencesHolder.webUriPreference.persistedValue.isBlank()) {
+                if (viewModel.preferencesHolder.webUriPreference.persistedValue.isBlank()) {
                     isVisible = false
                     isEnabled = false
                 }
 
             }
         }, onOptionsMenuItemClicked = {
-            val webBaseUri = preferencesHolder
-                    .webUriPreference
-                    .persistedValue
+            val webBaseUri = viewModel.preferencesHolder.webUriPreference.persistedValue
 
             when (it.itemId) {
                 R.id.open_in_browser -> {
@@ -158,8 +124,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                             }.findUnique()
 
                     documentEntity?.let { document ->
-                        val host = preferencesHolder
-                                .webUriPreference.persistedValue
+                        val host = viewModel.preferencesHolder.webUriPreference.persistedValue
 
                         val pagePath = when {
                             document.url == "index/" -> ""
@@ -193,10 +158,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
     override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
         val binding: FragmentEditorBinding = DataBindingUtil.inflate(layoutInflater, layoutRes, container, false)
-        viewModel.getEntity(documentPersistenceManager, documentId).observe(this, Observer<List<DocumentEntity>> {
-            val entity = it.first()
-            viewModel.documentId.value = entity.id
-        })
+        viewModel.documentId.value = documentId
 
         binding.let {
             it.lifecycleOwner = this
@@ -218,82 +180,72 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        documentSyncManager = DocumentSyncManager(
-                context = context(),
-                hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue,
-                port = preferencesHolder.restConnectionPortPreference.persistedValue.toInt(),
-                ssl = preferencesHolder.restConnectionSslPreference.persistedValue,
-                basicAuthConfig = BasicAuthConfig(
-                        preferencesHolder.basicAuthUserPreference.persistedValue,
-                        preferencesHolder.basicAuthPasswordPreference.persistedValue),
-                documentId = documentId,
-                currentText = {
-                    codeEditorLayout.codeEditorView.codeEditText.text?.toString() ?: ""
-                },
-                onConnectionStatusChanged = ::handleConnectionStatusChange,
-                onInitialText = {
-                    runOnUiThread {
-                        restoreEditorState(text = it, editable = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue)
-                        loadingComponent.showContent()
-                    }
-                }, onTextChanged = ::onTextChanged)
+        viewModel.editable.observe(this) {
+            codeEditorLayout.editable = it
+        }
+
+        viewModel.connected.observe(this) { connected ->
+            if (connected) {
+                watchTextChanges()
+
+                runOnUiThread {
+                    codeEditorLayout.snack(R.string.connected, Snackbar.LENGTH_SHORT)
+                }
+            } else {
+                noConnectionSnackbar?.dismiss()
+
+                runOnUiThread {
+                    codeEditorLayout.editable = false
+                }
+
+                textDisposable?.dispose()
+
+            }
+
+            runOnUiThread {
+                viewModel.offlineModeEnabled.value = !connected || offlineModeManager.isEnabled()
+//                viewModel.offlineModeEnabled.value = !viewModel.documentSyncManager.isConnected || offlineModeManager.isEnabled()
+            }
+        }
+
+        viewModel.loading.observe(this) {
+            if (it) {
+                loadingComponent.showLoading()
+            } else {
+                loadingComponent.showContent(animated = true)
+            }
+        }
+
+        viewModel.textChange.observe(this) {
+            val oldSelectionStart = codeEditorLayout.codeEditorView.codeEditText.selectionStart
+            val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
+            viewModel.currentText = it.newText
+
+            // set new cursor position
+            val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, it.patches)
+                    .coerceIn(0, viewModel.currentText?.length)
+            val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, it.patches)
+                    .coerceIn(0, viewModel.currentText?.length)
+
+            setEditorText(viewModel.currentText ?: "", newSelectionStart, newSelectionEnd)
+        }
     }
 
     private var textDisposable: Disposable? = null
 
-    private fun handleConnectionStatusChange(connected: Boolean, errorCode: Int?, throwable: Throwable?) {
-        if (connected) {
-            watchTextChanges()
-
-            runOnUiThread {
-                codeEditorLayout.snack(R.string.connected, LENGTH_SHORT)
-            }
-        } else {
-            noConnectionSnackbar?.dismiss()
-            runOnUiThread {
-                codeEditorLayout.editable = false
-            }
-
-            textDisposable?.dispose()
-
-            saveEditorState()
-
-            if (throwable != null) {
-                Timber.e(throwable) { "Websocket error code: $errorCode" }
-                noConnectionSnackbar = codeEditorLayout.snack(
-                        text = R.string.server_unavailable,
-                        duration = LENGTH_INDEFINITE,
-                        actionTitle = R.string.retry,
-                        action = {
-                            reconnectToServer()
-                        })
-            } else {
-                noConnectionSnackbar = codeEditorLayout.snack(
-                        text = R.string.not_connected,
-                        duration = LENGTH_INDEFINITE,
-                        actionTitle = R.string.connect,
-                        action = {
-                            reconnectToServer()
-                        })
-            }
-        }
-
-        updateOfflineBanner()
-    }
-
     private fun watchTextChanges() {
         textDisposable?.dispose()
 
-        val syncInterval = preferencesHolder.codeEditorSyncIntervalPreference.persistedValue
+        val syncInterval = viewModel.preferencesHolder.codeEditorSyncIntervalPreference.persistedValue
         textDisposable = Observable.interval(syncInterval, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .bindToLifecycle(this as LifecycleProvider<FragmentEvent>)
                 .subscribeBy(onNext = {
-                    documentSyncManager.sync()
+                    viewModel.documentSyncManager.sync()
                 }, onError = {
                     Timber.e(it)
-                    disconnect("Error in client sync code")
+                    viewModel.disconnect("Error in client sync code")
                     runOnUiThread {
                         codeEditorLayout.snack(R.string.sync_error, LENGTH_SHORT)
                     }
@@ -323,7 +275,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         codeEditorLayout.languageRuleBook = MarkdownRuleBook()
         codeEditorLayout.codeEditorView.engine.addListener(object : ZoomEngine.Listener {
             override fun onIdle(engine: ZoomEngine) {
-                saveEditorState()
+                viewModel.saveEditorState()
             }
 
             override fun onUpdate(engine: ZoomEngine, matrix: Matrix) {
@@ -349,46 +301,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     }
 
     /**
-     * Restores the editor state from persistence
-     *
-     * @param text the new text to use, or null to keep [currentText]
-     * @param editable when true the editor is editable, otherwise it is not
-     */
-    private fun restoreEditorState(text: String? = null, editable: Boolean) {
-        val entity = getCachedEditorState()
-        if (entity != null) {
-            if (text != null) {
-                // when an entity exists and a new text is given update the entity
-                entity.text = text
-                documentContentPersistenceManager.insertOrUpdate(
-                        documentId = documentId, text = text)
-                currentText = text
-            } else {
-                // restore values from cache
-                currentText = entity.text
-            }
-            currentZoom = entity.zoomLevel
-        } else {
-            currentText = text
-        }
-
-        setEditorText(currentText ?: "")
-        codeEditorLayout.editable = editable
-        entity?.let {
-            codeEditorLayout.codeEditorView.codeEditText.setSelection(entity.selection.coerceIn(0, currentText!!.length))
-            codeEditorLayout.post {
-                // zoom to last saved state
-                val absolutePosition = computeAbsolutePosition(PointF(entity.panX, entity.panY))
-                currentPosition.set(absolutePosition.x, absolutePosition.y)
-
-                codeEditorLayout.codeEditorView.moveTo(currentZoom, absolutePosition.x, absolutePosition.y, true)
-            }
-        }
-
-        initialTextLoaded = true
-    }
-
-    /**
      * Set the editor content to the specified text.
      *
      * @param text the text to set
@@ -402,100 +314,20 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         val editor = codeEditorLayout.codeEditorView
         editor.selectionChangedListener = null
         editor.text = text
-        if (selectionStart != null) {
-            val endIndex = selectionEnd ?: selectionStart
-            editor.codeEditText.setSelection(selectionStart.coerceIn(0, text.length), endIndex.coerceIn(0, text.length))
+        selectionStart?.let {
+            setEditorSelection(text.length, it, selectionEnd)
         }
         editor.selectionChangedListener = this
     }
 
-    /**
-     * Loads the last offline version of this document from persistence
-     */
-    @UiThread
-    private fun loadTextFromPersistence() {
-        val entity = getCachedEditorState()
-
-        if (entity != null) {
-            restoreEditorState(editable = false)
-        } else {
-            MaterialDialog(context()).show {
-                title(R.string.no_offline_version)
-                negativeButton(android.R.string.ok, click = {
-                    it.dismiss()
-                })
-                onDismiss {
-                    navController.navigateUp()
-                }
-            }
-        }
-
-        loadingComponent.showContent(animated = true)
-    }
-
-    /**
-     * Returns the cache entity for this editor and document
-     */
-    private fun getCachedEditorState(): DocumentContentEntity? {
-        return documentContentPersistenceManager.standardOperation().query {
-            equal(DocumentContentEntity_.documentId, documentId)
-        }.findUnique()
-    }
-
-    /**
-     * Disconnects from the server (if necessary) and tries to reestablish a connection
-     */
-    private fun reconnectToServer() {
-        loadingComponent.showLoading()
-        if (documentSyncManager.isConnected) {
-            disconnect(reason = "Editor want's to refresh connection")
-            documentSyncManager.connect()
-        } else {
-            documentSyncManager.connect()
-        }
-    }
-
-    private fun onTextChanged(newText: String, patches: LinkedList<diff_match_patch.Patch>) {
-        val oldSelectionStart = codeEditorLayout.codeEditorView.codeEditText.selectionStart
-        val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
-        currentText = newText
-
-        // set new cursor position
-        val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, patches)
-                .coerceIn(0, currentText?.length)
-        val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
-                .coerceIn(0, currentText?.length)
-
-        setEditorText(currentText ?: "", newSelectionStart, newSelectionEnd)
-        saveEditorState()
+    private fun setEditorSelection(maxIndex: Int, selectionStart: Int, selectionEnd: Int?) {
+        val endIndex = selectionEnd ?: selectionStart
+        codeEditorLayout.codeEditorView.codeEditText
+                .setSelection(selectionStart.coerceIn(0, maxIndex), endIndex.coerceIn(0, maxIndex))
     }
 
     override fun onSelectionChanged(start: Int, end: Int, hasSelection: Boolean) {
-        saveEditorState()
-    }
-
-    /**
-     * Saves the current editor state in a persistent cache
-     */
-    private fun saveEditorState() {
-        if (currentText == null) {
-            // skip if there is no text to save
-            return
-        }
-
-        currentPosition.set(codeEditorLayout.codeEditorView.panX, codeEditorLayout.codeEditorView.panY)
-        currentZoom = codeEditorLayout.codeEditorView.zoom
-
-        val positioningPercentage = getCurrentPositionPercentage()
-
-        documentContentPersistenceManager.insertOrUpdate(
-                documentId = documentId,
-                text = currentText,
-                selection = codeEditorLayout.codeEditorView.codeEditText.selectionStart,
-                zoomLevel = currentZoom,
-                panX = positioningPercentage.x,
-                panY = positioningPercentage.y
-        )
+        viewModel.saveEditorState()
     }
 
     /**
@@ -557,46 +389,22 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     }
 
     private val offlineModeObserver = Observer<Boolean> { enabled ->
-        updateOfflineBanner()
         if (enabled) {
-            disconnect(reason = "Offline mode was activated")
-            loadTextFromPersistence()
+            viewModel.disconnect(reason = "Offline mode was activated")
+            viewModel.loadTextFromPersistence()
         } else {
-            reconnectToServer()
-        }
-    }
-
-    private fun updateOfflineBanner() {
-        runOnUiThread {
-            viewModel.offlineModeEnabled.value = !documentSyncManager.isConnected || offlineModeManager.isEnabled()
+            viewModel.reconnectToServer()
         }
     }
 
     override fun onStart() {
         super.onStart()
-
         offlineModeManager.isEnabled.observe(viewLifecycleOwner, offlineModeObserver)
     }
 
     override fun onPause() {
         super.onPause()
-
-        saveEditorState()
         offlineModeManager.isEnabled.removeObserver(offlineModeObserver)
-    }
-
-    override fun onStop() {
-        disconnect(reason = "Editor was closed")
-
-        super.onStop()
-    }
-
-    private fun disconnect(reason: String = "None") {
-        updateOfflineBanner()
-        noConnectionSnackbar?.dismiss()
-        codeEditorLayout.editable = false
-        documentSyncManager.disconnect(1000, reason)
-        textDisposable?.dispose()
     }
 
 }

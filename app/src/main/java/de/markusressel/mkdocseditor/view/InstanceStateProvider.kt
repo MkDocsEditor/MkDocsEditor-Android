@@ -33,8 +33,7 @@ open class InstanceStateProvider<T>(private val savable: Bundle) {
     operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
         cache = value
         if (value == null) {
-            savable
-                    .remove(property.name)
+            savable.remove(property.name)
             return
         }
         when (value) {

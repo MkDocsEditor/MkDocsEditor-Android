@@ -1,12 +1,10 @@
 package de.markusressel.mkdocsrestclient.sync
 
-import android.content.Context
 import androidx.annotation.WorkerThread
 import com.google.gson.Gson
 import com.google.gson.JsonParseException
 import de.markusressel.commons.android.core.doAsync
 import de.markusressel.commons.android.core.runOnUiThread
-import de.markusressel.commons.android.material.toast
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.websocket.SocketEntityBase
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionHandler
@@ -21,7 +19,6 @@ import java.util.*
  * Class used to manage document changes from client- and server.
  */
 class DocumentSyncManager(
-        val context: Context,
         hostname: String,
         port: Int,
         ssl: Boolean,
@@ -67,7 +64,6 @@ class DocumentSyncManager(
      */
     fun sync() {
         if (!clientShadowIsReady) {
-            context.toast("Shadow is not ready yet...")
             return
         }
 
@@ -159,7 +155,6 @@ class DocumentSyncManager(
                     // patch the clientShadow
                     if (!fragilePatchShadow(editRequest, patches)) {
                         Timber.e("The client shadow does not match the server shadow. A synchronization restart is necessary.")
-                        context.toast("Shadow out of sync")
                         resyncWithServer()
                         return@runOnUiThread
                     }
