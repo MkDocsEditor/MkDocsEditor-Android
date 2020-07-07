@@ -26,6 +26,9 @@ import android.view.View
 import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.Lifecycle
 import com.github.ajalt.timberkt.Timber
+import com.github.kittinunf.fuel.core.FuelError
+import com.github.kittinunf.result.Result
+import com.github.kittinunf.result.map
 import com.google.android.material.snackbar.Snackbar
 import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
@@ -35,11 +38,13 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
-import io.reactivex.Single
+import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
-import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.fragment_recyclerview.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.concurrent.CancellationException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -84,9 +89,11 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
                     }
 
                 }, onOptionsMenuItemClicked = {
-            when {
-                it.itemId == R.id.refresh -> {
-                    reload()
+            when (it.itemId) {
+                R.id.refresh -> {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        reload()
+                    }
                     true
                 }
                 else -> false
@@ -114,63 +121,51 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
         // TODO: this should only be done if the viewmodel is not already initialized
         //  as this resets the current position of the filebrowser, as well as any existing
         //  search term
-        reload()
+        CoroutineScope(Dispatchers.IO).launch {
+            reload()
+        }
     }
 
-    fun reload() {
-        restClient
-                .isHostAlive()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .bindUntilEvent(this, Lifecycle.Event.ON_STOP)
-                .subscribeBy(onSuccess = {
-                    reloadDataFromSource()
-                    serverUnavailableSnackbar?.dismiss()
-                }, onError = {
-                    if (it is CancellationException) {
-                        Timber.d { "Reload cancelled" }
-                    } else {
-                        Timber.e(it)
-                        serverUnavailableSnackbar?.dismiss()
-                        serverUnavailableSnackbar = recyclerView.snack(
-                                text = R.string.server_unavailable,
-                                duration = Snackbar.LENGTH_INDEFINITE,
-                                actionTitle = R.string.retry,
-                                action = {
-                                    reload()
-                                })
-                    }
-                })
+    suspend fun reload() {
+        restClient.isHostAlive().fold(success = {
+            reloadDataFromSource()
+            serverUnavailableSnackbar?.dismiss()
+        }, failure = {
+            if (it is CancellationException) {
+                Timber.d { "Reload cancelled" }
+            } else {
+                Timber.e(it)
+                serverUnavailableSnackbar?.dismiss()
+                serverUnavailableSnackbar = recyclerView.snack(
+                        text = R.string.server_unavailable,
+                        duration = Snackbar.LENGTH_INDEFINITE,
+                        actionTitle = R.string.retry,
+                        action = {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                reload()
+                            }
+                        })
+            }
+        })
     }
 
     /**
      * Reload list data from it's original source, persist it and display it to the user afterwards
      */
-    override fun reloadDataFromSource() {
+    override suspend fun reloadDataFromSource() {
         getLoadDataFromSourceFunction()
-                .map {
-                    mapToEntity(it)
-                }
-                .map {
+                .map { mapToEntity(it) }
+                .fold(success = {
                     persistListData(it)
-                    it
-                }
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .bindUntilEvent(this, Lifecycle.Event.ON_STOP)
-                .subscribeBy(onSuccess = {
+                }, failure = {
                     updateLastUpdatedFromSource()
-                }, onError = {
-                    if (it is CancellationException) {
-                        Timber.d { "reload from source cancelled" }
-                    }
                 })
     }
 
     /**
      * Define a Single that returns the complete list of data from the (server) source
      */
-    internal abstract fun getLoadDataFromSourceFunction(): Single<Any>
+    internal abstract suspend fun getLoadDataFromSourceFunction(): Result<SectionModel, FuelError>
 
     /**
      * Map the source object to the persistence object

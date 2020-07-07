@@ -18,13 +18,12 @@
 
 package de.markusressel.mkdocsrestclient
 
-import android.util.Log
 import com.github.kittinunf.fuel.core.*
 import com.github.kittinunf.fuel.core.extensions.authentication
-import com.github.kittinunf.fuel.rx.rxObject
-import com.github.kittinunf.fuel.rx.rxResponsePair
+import com.github.kittinunf.fuel.coroutines.awaitStringResult
+import com.github.kittinunf.result.Result
 import com.google.gson.Gson
-import io.reactivex.Single
+import timber.log.Timber
 
 /**
  * Created by Markus on 08.02.2018.
@@ -76,8 +75,8 @@ class RequestManager(hostname: String = "localhost",
         fuelManager
                 .addResponseInterceptor { next: (Request, Response) -> Response ->
                     { req: Request, res: Response ->
-                        Log.v("Fuel-Request", req.toString())
-                        Log.v("Fuel-Response", res.toString())
+                        Timber.v(req.toString())
+                        Timber.v(res.toString())
                         next(req, res)
                     }
                 }
@@ -98,7 +97,8 @@ class RequestManager(hostname: String = "localhost",
      * @param urlParameters query parameters
      * @param method the request type (f.ex. GET)
      */
-    private fun createRequest(url: String, urlParameters: List<Pair<String, Any?>> = emptyList(), method: Method, timeout: Int = DEFAULT_TIMEOUT): Request {
+    private fun createRequest(url: String, urlParameters: List<Pair<String, Any?>> = emptyList(),
+                              method: Method, timeout: Int = DEFAULT_TIMEOUT): Request {
         return getAuthenticatedRequest(fuelManager.request(method, url, urlParameters))
                 .timeout(timeout = timeout)
     }
@@ -120,9 +120,8 @@ class RequestManager(hostname: String = "localhost",
      * @param url the URL
      * @param method the request type (f.ex. GET)
      */
-    fun doRequest(url: String, method: Method): Single<Pair<Response, ByteArray>> {
-        return createRequest(url = url, method = method)
-                .rxResponsePair()
+    suspend fun doRequest(url: String, method: Method): Result<String, FuelError> {
+        return createRequest(url = url, method = method).awaitStringResult()
     }
 
     /**
@@ -132,12 +131,9 @@ class RequestManager(hostname: String = "localhost",
      * @param method the request type (f.ex. GET)
      * @param deserializer a deserializer for the response json body
      */
-    fun <T : Any> doRequest(url: String, method: Method, deserializer: Deserializable<T>): Single<T> {
+    suspend fun <T : Any> doRequest(url: String, method: Method, deserializer: Deserializable<T>): Result<T, FuelError> {
         return createRequest(url = url, method = method)
-                .rxObject(deserializer)
-                .map {
-                    it.component1() ?: throw it.component2() ?: throw Exception()
-                }
+                .awaitResponseResult(deserializer).third
     }
 
     /**
@@ -148,12 +144,9 @@ class RequestManager(hostname: String = "localhost",
      * @param method the request type (f.ex. GET)
      * @param deserializer a deserializer for the <b>response</b> json body
      */
-    fun <T : Any> doRequest(url: String, urlParameters: List<Pair<String, Any?>>, method: Method, deserializer: Deserializable<T>): Single<T> {
+    suspend fun <T : Any> doRequest(url: String, urlParameters: List<Pair<String, Any?>>, method: Method, deserializer: Deserializable<T>): Result<T, FuelError> {
         return createRequest(url = url, urlParameters = urlParameters, method = method)
-                .rxObject(deserializer)
-                .map {
-                    it.component1() ?: throw it.component2() ?: throw Exception()
-                }
+                .awaitResponseResult(deserializer).third
     }
 
     /**
@@ -164,17 +157,12 @@ class RequestManager(hostname: String = "localhost",
      * @param jsonData an Object that will be serialized to json
      * @param deserializer a deserializer for the <b>response</b> json body
      */
-    fun <T : Any> doJsonRequest(url: String, method: Method, jsonData: Any, deserializer: Deserializable<T>): Single<T> {
-        val json = Gson()
-                .toJson(jsonData)
-
+    suspend fun <T : Any> doJsonRequest(url: String, method: Method, jsonData: Any, deserializer: Deserializable<T>): Result<T, FuelError> {
+        val json = Gson().toJson(jsonData)
         return createRequest(url = url, method = method)
                 .body(json)
                 .header(HEADER_CONTENT_TYPE_JSON)
-                .rxObject(deserializer)
-                .map {
-                    it.component1() ?: throw it.component2() ?: throw Exception()
-                }
+                .awaitResponseResult(deserializer).third
     }
 
     /**
@@ -184,14 +172,14 @@ class RequestManager(hostname: String = "localhost",
      * @param method the request type (f.ex. GET)
      * @param jsonData an Object that will be serialized to json
      */
-    fun doJsonRequest(url: String, method: Method, jsonData: Any): Single<Pair<Response, ByteArray>> {
+    suspend fun doJsonRequest(url: String, method: Method, jsonData: Any): Result<String, FuelError> {
         val json = Gson()
                 .toJson(jsonData)
 
         return createRequest(url = url, method = method)
                 .body(json)
                 .header(HEADER_CONTENT_TYPE_JSON)
-                .rxResponsePair()
+                .awaitStringResult()
     }
 
     companion object {

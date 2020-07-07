@@ -18,8 +18,8 @@
 
 package de.markusressel.mkdocsrestclient.document
 
-import com.github.kittinunf.fuel.core.Response
-import io.reactivex.Single
+import com.github.kittinunf.fuel.core.FuelError
+import com.github.kittinunf.result.Result
 
 /**
  * Created by Markus on 03.06.2018.
@@ -29,21 +29,21 @@ interface DocumentApi {
     /**
      * Get a Document description
      */
-    fun getDocument(id: String): Single<DocumentModel>
+    suspend fun getDocument(id: String): Result<DocumentModel, FuelError>
 
     /**
      * Get the actual content data of a Document
      */
-    fun getDocumentContent(id: String): Single<String>
+    suspend fun getDocumentContent(id: String): Result<String, FuelError>
 
     /**
      * Create a new document without any content
      */
-    fun createDocument(parentId: String, name: String): Single<DocumentModel>
+    suspend fun createDocument(parentId: String, name: String): Result<DocumentModel, FuelError>
 
     /**
      * Delete an existing document
      */
-    fun deleteDocument(id: String): Single<Pair<Response, ByteArray>>
+    suspend fun deleteDocument(id: String): Result<String, FuelError>
 
 }
