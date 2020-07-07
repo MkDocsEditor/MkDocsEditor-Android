@@ -19,8 +19,7 @@ data class SectionModel(
 
     class SingleDeserializer : ResponseDeserializable<SectionModel> {
         override fun deserialize(content: String): SectionModel? {
-            return Gson()
-                    .fromJson(content)
+            return Gson().fromJson(content)
         }
     }
 
@@ -31,8 +30,7 @@ data class SectionModel(
                 return emptyList()
             }
 
-            return Gson()
-                    .fromJson(content)
+            return Gson().fromJson(content)
         }
 
     }

@@ -18,8 +18,7 @@ data class ResourceModel(
 
     class SingleDeserializer : ResponseDeserializable<ResourceModel> {
         override fun deserialize(content: String): ResourceModel? {
-            return Gson()
-                    .fromJson(content)
+            return Gson().fromJson(content)
         }
     }
 
@@ -30,8 +29,7 @@ data class ResourceModel(
                 return emptyList()
             }
 
-            return Gson()
-                    .fromJson(content)
+            return Gson().fromJson(content)
         }
 
     }

@@ -20,8 +20,7 @@ class WebsocketConnectionHandler(val url: String,
                 val credential = Credentials
                         .basic(basicAuthConfig.username, basicAuthConfig.password)
 
-                response
-                        .request()
+                response.request()
                         .newBuilder()
                         .header("Authorization", credential)
                         .build()

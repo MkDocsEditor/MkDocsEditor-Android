@@ -16,8 +16,7 @@ data class DocumentModel(
 
     class SingleDeserializer : ResponseDeserializable<DocumentModel> {
         override fun deserialize(content: String): DocumentModel? {
-            return Gson()
-                    .fromJson(content)
+            return Gson().fromJson(content)
         }
     }
 
@@ -28,8 +27,7 @@ data class DocumentModel(
                 return emptyList()
             }
 
-            return Gson()
-                    .fromJson(content)
+            return Gson().fromJson(content)
         }
 
     }
