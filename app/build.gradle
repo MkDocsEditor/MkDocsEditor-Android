@@ -41,7 +41,9 @@ android {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
 
-    dataBinding.enabled true
+    buildFeatures {
+        dataBinding true
+    }
 
     packagingOptions {
         pickFirst 'META-INF/library-core_release.kotlin_module'
@@ -111,9 +113,10 @@ dependencies {
 
     // Android KTX
     implementation "androidx.core:core-ktx:$aacAndroidKtxVersion"
-//    implementation "androidx.fragment:fragment-ktx:$androidKtxVersion"
-//    implementation "androidx.collection:collection-ktx:$androidKtxVersion"
-    implementation "android.arch.lifecycle:extensions:2.0.0"
+    implementation "androidx.fragment:fragment-ktx:1.2.5"
+    implementation "androidx.collection:collection-ktx:1.1.0"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.2.0"
+
 
     // RxBus (event bus)
     implementation 'com.eightbitlab:rxbus:1.0.2'
