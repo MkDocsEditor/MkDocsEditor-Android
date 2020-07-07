@@ -48,6 +48,7 @@ import io.reactivex.rxkotlin.subscribeBy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -372,7 +373,9 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                     documentPersistenceManager.standardOperation().put(
                             it.asEntity(parentSection = parentSection))
                     // and open the editor right away
-                    openDocumentEditor(it.id)
+                    withContext(Dispatchers.Main) {
+                        openDocumentEditor(it.id)
+                    }
                 }, failure = {
             Timber.e(it) { "Error creating document" }
             context().toast("There was an error :(")
