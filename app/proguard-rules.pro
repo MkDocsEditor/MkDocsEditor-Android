@@ -20,6 +20,8 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
+-dontobfuscate
+
 # AboutLibraries
 -keep class .R
 -keep class **.R$* {
