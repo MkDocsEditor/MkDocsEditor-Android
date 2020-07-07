@@ -21,12 +21,12 @@ This project is still a work in progress and is **not yet ready for production**
 
 MkDocsEditor aims to provide an easy way for you to manage your existing [MkDocs](https://www.mkdocs.org/) projects:
 * [ ] Subsection management (folders)
-  * [ ] create new sections
+  * [x] create new sections
   * [ ] rename existing sections
   * [ ] move an entire section to another location
   * [ ] delete a section and all the content inside it
 * [ ] Document management (`*.md` files)
-  * [ ] create new documents
+  * [x] create new documents
   * [ ] rename existing documents
   * [x] edit documents
   * [ ] see the result on your hosted website right away

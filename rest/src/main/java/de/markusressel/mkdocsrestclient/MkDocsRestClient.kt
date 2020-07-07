@@ -1,7 +1,8 @@
 package de.markusressel.mkdocsrestclient
 
+import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Method
-import com.github.kittinunf.fuel.core.Response
+import com.github.kittinunf.result.Result
 import de.markusressel.mkdocsrestclient.document.DocumentApi
 import de.markusressel.mkdocsrestclient.document.DocumentApiImpl
 import de.markusressel.mkdocsrestclient.resource.ResourceApi
@@ -9,7 +10,6 @@ import de.markusressel.mkdocsrestclient.resource.ResourceApiImpl
 import de.markusressel.mkdocsrestclient.section.SectionApi
 import de.markusressel.mkdocsrestclient.section.SectionApiImpl
 import de.markusressel.mkdocsrestclient.section.SectionModel
-import io.reactivex.Single
 
 /**
  * Convenience delegation class for easy access to all api methods
@@ -76,14 +76,14 @@ class MkDocsRestClient constructor(
     /**
      * Check if the server is alive and reachable
      */
-    fun isHostAlive(): Single<Pair<Response, ByteArray>> {
+    suspend fun isHostAlive(): Result<String, FuelError> {
         return requestManager.doRequest("/alive/", Method.GET)
     }
 
     /**
      * Get the complete item tree
      */
-    fun getItemTree(): Single<SectionModel> {
+    suspend fun getItemTree(): Result<SectionModel, FuelError> {
         return requestManager.doRequest("/tree/", Method.GET, SectionModel.SingleDeserializer())
     }
 

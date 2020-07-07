@@ -18,8 +18,8 @@
 
 package de.markusressel.mkdocsrestclient.section
 
-import com.github.kittinunf.fuel.core.Response
-import io.reactivex.Single
+import com.github.kittinunf.fuel.core.FuelError
+import com.github.kittinunf.result.Result
 
 /**
  * Created by Markus on 03.06.2018.
@@ -29,16 +29,16 @@ interface SectionApi {
     /**
      * Get a section
      */
-    fun getSection(id: String): Single<SectionModel>
+    suspend fun getSection(id: String): Result<SectionModel, FuelError>
 
     /**
      * Create a new section
      */
-    fun createSection(parentId: String, name: String): Single<SectionModel>
+    suspend fun createSection(parentId: String, name: String): Result<SectionModel, FuelError>
 
     /**
      * Deletes an ENTIRE section
      */
-    fun deleteSection(id: String): Single<Pair<Response, ByteArray>>
+    suspend fun deleteSection(id: String): Result<String, FuelError>
 
 }

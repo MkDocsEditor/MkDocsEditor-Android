@@ -24,4 +24,9 @@
         android:title="@string/open_in_browser"
         app:showAsAction="ifRoom" />
 
+    <item
+        android:id="@+id/edit"
+        android:title="@string/code_editor_edit_mode"
+        app:showAsAction="always" />
+
 </menu>

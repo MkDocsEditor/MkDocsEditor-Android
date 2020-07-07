@@ -7,9 +7,9 @@ import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.AndroidEntryPoint
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.rxkotlin.subscribeBy
-import io.reactivex.schedulers.Schedulers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -39,18 +39,17 @@ class OfflineCacheSyncService : JobService() {
         handler.postDelayed({
             // use random order to evenly distribute probability of caching a document
             documentIds.toSet().shuffled().forEach { documentId ->
-                restClient.getDocumentContent(documentId)
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribeBy(onSuccess = { text ->
-                            documentContentPersistenceManager.insertOrUpdate(documentId = documentId, text = text)
+                CoroutineScope(Dispatchers.IO).launch {
+                    restClient.getDocumentContent(documentId).fold(success = { text ->
+                        documentContentPersistenceManager.insertOrUpdate(documentId = documentId, text = text)
 
-                            Timber.d { "Offline cache sync finished successfully for documentId: $documentId" }
-                            jobFinished(params, false)
-                        }, onError = {
-                            Timber.e(it) { "Offline cache sync error for documentId: $documentId (rescheduling)" }
-                            jobFinished(params, true)
-                        })
+                        Timber.d { "Offline cache sync finished successfully for documentId: $documentId" }
+                        jobFinished(params, false)
+                    }, failure = {
+                        Timber.e(it) { "Offline cache sync error for documentId: $documentId (rescheduling)" }
+                        jobFinished(params, true)
+                    })
+                }
             }
 
             Timber.d { "Offline cache sync job complete." }

@@ -5,6 +5,7 @@ import android.graphics.drawable.Drawable
 import androidx.annotation.DrawableRes
 import androidx.annotation.IdRes
 import androidx.annotation.StringRes
+import androidx.core.content.ContextCompat
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.typeface.IIcon
 import de.markusressel.mkdocseditor.view.IconHandler
@@ -19,20 +20,17 @@ data class DrawerMenuItem(@IdRes val id: Int, @StringRes val title: Int, val ico
      * Get the icon for this DrawerMenuItem
      */
     fun getIcon(iconHandler: IconHandler): Drawable {
-        icon
-                ?.let {
-                    return iconHandler
-                            .getNavigationIcon(icon)
-                }
+        icon?.let {
+            return iconHandler.getNavigationIcon(icon)
+        }
 
-        drawableRes
-                ?.let {
-                    val drawable = iconHandler.context.getDrawable(drawableRes)
-                    val color = iconHandler.themeHelper
-                            .getThemeAttrColor(iconHandler.context, android.R.attr.textColorPrimary)
-                    drawable.setColorFilter(color, PorterDuff.Mode.SRC_ATOP)
-                    return drawable
-                }
+        drawableRes?.let {
+            val drawable = ContextCompat.getDrawable(iconHandler.context, drawableRes)!!
+            val color = iconHandler.themeHelper
+                    .getThemeAttrColor(iconHandler.context, android.R.attr.textColorPrimary)
+            drawable.setColorFilter(color, PorterDuff.Mode.SRC_ATOP)
+            return drawable
+        }
 
         return IconicsDrawable(iconHandler.context)
     }

@@ -202,5 +202,44 @@ class KutePreferencesHolder @Inject constructor(
                 })
     }
 
+    val uxCategory by lazy {
+        KuteCategory(
+                key = R.string.category_ux_key,
+                icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_compass),
+                title = context.getString(R.string.category_ux_title),
+                description = context.getString(R.string.category_ux_description),
+                children = listOf(KuteSection(
+                        key = R.string.section_code_editor_key,
+                        title = context.getString(R.string.section_code_editor_title),
+                        children = listOf(
+                                codeEditorAlwaysOpenEditModePreference,
+                                codeEditorSyncIntervalPreference
+                        )
+                )))
+    }
+
+    val codeEditorSyncIntervalPreference by lazy {
+        KuteNumberPreference(key = R.string.code_editor_sync_interval_key,
+                icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_time),
+                title = context.getString(R.string.code_editor_sync_interval_title),
+                defaultValue = 200,
+                minimum = 100,
+                maximum = 1000,
+                unit = "ms",
+                dataProvider = dataProvider,
+                onPreferenceChangedListener = { old, new ->
+                })
+    }
+
+    val codeEditorAlwaysOpenEditModePreference by lazy {
+        KuteBooleanPreference(key = R.string.code_editor_always_edit_mode_key,
+                icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_edit),
+                title = context.getString(R.string.code_editor_always_edit_mode_title),
+                defaultValue = false,
+                dataProvider = dataProvider,
+                onPreferenceChangedListener = { old, new ->
+                })
+    }
+
 }
 

@@ -96,7 +96,7 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
     /**EntityType
      * Reload list data from it's original source, persist it and display it to the user afterwards
      */
-    abstract fun reloadDataFromSource()
+    abstract suspend fun reloadDataFromSource()
 
     /**
      * Override this in subclasses if necessary

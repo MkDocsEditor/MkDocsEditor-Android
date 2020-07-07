@@ -18,32 +18,32 @@
 
 package de.markusressel.mkdocsrestclient.document
 
+import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Method
-import com.github.kittinunf.fuel.core.Response
 import com.github.kittinunf.fuel.core.deserializers.StringDeserializer
+import com.github.kittinunf.result.Result
 import com.github.salomonbrys.kotson.jsonObject
 import de.markusressel.mkdocsrestclient.RequestManager
-import io.reactivex.Single
 
 /**
  * Created by Markus on 03.06.2018.
  */
 class DocumentApiImpl(private val requestManager: RequestManager) : DocumentApi {
 
-    override fun getDocument(id: String): Single<DocumentModel> {
+    override suspend fun getDocument(id: String): Result<DocumentModel, FuelError> {
         return requestManager.doRequest("/document/$id/", Method.GET, DocumentModel.SingleDeserializer())
     }
 
-    override fun getDocumentContent(id: String): Single<String> {
+    override suspend fun getDocumentContent(id: String): Result<String, FuelError> {
         return requestManager.doRequest("/document/$id/content", Method.GET, StringDeserializer())
     }
 
-    override fun createDocument(parentId: String, name: String): Single<DocumentModel> {
+    override suspend fun createDocument(parentId: String, name: String): Result<DocumentModel, FuelError> {
         val data = jsonObject("parent" to parentId, "name" to name)
         return requestManager.doJsonRequest("/document/", Method.POST, data, DocumentModel.SingleDeserializer())
     }
 
-    override fun deleteDocument(id: String): Single<Pair<Response, ByteArray>> {
+    override suspend fun deleteDocument(id: String): Result<String, FuelError> {
         return requestManager.doRequest("/document/$id/", Method.DELETE)
     }
 
