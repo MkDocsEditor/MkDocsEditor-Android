@@ -120,30 +120,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 val refreshIcon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_refresh)
                 icon = refreshIcon
             }
-
-            // set "edit" icon
-            menu?.findItem(R.id.edit)?.apply {
-                icon = if (preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue) {
-                    iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_eye)
-                } else {
-                    iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_edit)
-                }
-            }
-
-            // set open in browser icon
-            menu?.findItem(R.id.open_in_browser)?.apply {
-                val openInBrowserIcon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_open_in_browser)
-                icon = openInBrowserIcon
-                if (preferencesHolder.webUriPreference.persistedValue.isBlank()) {
-                    isVisible = false
-                    isEnabled = false
-                }
-
-            }
         }, onOptionsMenuItemClicked = {
-            val webBaseUri = preferencesHolder
-                    .webUriPreference
-                    .persistedValue
+            val webBaseUri = preferencesHolder.webUriPreference.persistedValue
 
             when (it.itemId) {
                 R.id.open_in_browser -> {
@@ -158,8 +136,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                             }.findUnique()
 
                     documentEntity?.let { document ->
-                        val host = preferencesHolder
-                                .webUriPreference.persistedValue
+                        val host = preferencesHolder.webUriPreference.persistedValue
 
                         val pagePath = when {
                             document.url == "index/" -> ""
@@ -172,7 +149,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                     true
                 }
                 R.id.edit -> {
-                    codeEditorLayout.editable = !codeEditorLayout.editable
+                    if (offlineModeManager.isEnabled()) {
+                        codeEditorLayout.editable = false
+                    } else {
+                        codeEditorLayout.editable = !codeEditorLayout.editable
+                    }
+
                     it.icon = if (codeEditorLayout.editable) {
                         iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_eye)
                     } else {
@@ -181,6 +163,29 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                     true
                 }
                 else -> false
+            }
+        }, onPrepareOptionsMenu = { menu ->
+            // set "edit" icon
+            menu?.findItem(R.id.edit)?.apply {
+                icon = if (preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue) {
+                    iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_eye)
+                } else {
+                    iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_edit)
+                }
+
+                // invisible initially, until a server connection is established
+                isVisible = !viewModel.offlineModeEnabled.value!!
+            }
+
+            // set open in browser icon
+            menu?.findItem(R.id.open_in_browser)?.apply {
+                val openInBrowserIcon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_open_in_browser)
+                icon = openInBrowserIcon
+                if (preferencesHolder.webUriPreference.persistedValue.isBlank()) {
+                    isVisible = false
+                    isEnabled = false
+                }
+
             }
         })
     }
@@ -209,6 +214,11 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
         optionsMenuComponent.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        super.onPrepareOptionsMenu(menu)
+        optionsMenuComponent.onPrepareOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -298,19 +308,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                         codeEditorLayout.snack(R.string.sync_error, LENGTH_SHORT)
                     }
                 })
-
-//        textDisposable = RxTextView
-//                .textChanges(codeEditorLayout.codeEditorView.codeEditText)
-//                .skipInitialValue()
-//                .debounce(100, TimeUnit.MILLISECONDS)
-//                .subscribeOn(Schedulers.io())
-//                .observeOn(AndroidSchedulers.mainThread())
-//                .bindToLifecycle(this as LifecycleProvider<FragmentEvent>)
-//                .subscribeBy(onNext = {
-//                    sendPatchIfChanged()
-//                }, onError = {
-//                    context?.toast(it.prettyPrint(), Toast.LENGTH_LONG)
-//                })
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -569,6 +566,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     private fun updateOfflineBanner() {
         runOnUiThread {
             viewModel.offlineModeEnabled.value = !documentSyncManager.isConnected || offlineModeManager.isEnabled()
+            activity?.invalidateOptionsMenu()
         }
     }
 
@@ -592,9 +590,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     }
 
     private fun disconnect(reason: String = "None") {
-        updateOfflineBanner()
-        noConnectionSnackbar?.dismiss()
         codeEditorLayout.editable = false
+        noConnectionSnackbar?.dismiss()
+        updateOfflineBanner()
         documentSyncManager.disconnect(1000, reason)
         textDisposable?.dispose()
     }
