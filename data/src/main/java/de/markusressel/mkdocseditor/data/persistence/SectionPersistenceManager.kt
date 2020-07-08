@@ -56,7 +56,7 @@ class SectionPersistenceManager @Inject constructor(
             newSection
         }()
 
-        sectionEntity.documents.forEach { newDocument ->
+        section.documents.forEach { newDocument ->
             val documentEntity = documentPersistenceManager.standardOperation().query {
                 equal(DocumentEntity_.id, newDocument.id)
             }.findUnique()?.apply {
@@ -73,7 +73,7 @@ class SectionPersistenceManager @Inject constructor(
             documentPersistenceManager.standardOperation().put(documentEntity)
         }
 
-        sectionEntity.resources.forEach { newResource ->
+        section.resources.forEach { newResource ->
             val resourceEntity = resourcePersistenceManager.standardOperation().query {
                 equal(ResourceEntity_.id, newResource.id)
             }.findUnique()?.apply {
@@ -85,8 +85,8 @@ class SectionPersistenceManager @Inject constructor(
             resourcePersistenceManager.standardOperation().put(resourceEntity)
         }
 
-        sectionEntity.subsections.forEach { subsection ->
-            addOrUpdateEntityFields(subsection, parentSection)
+        section.subsections.forEach { subsection ->
+            addOrUpdateEntityFields(subsection, sectionEntity)
         }
         // insert updated section
         standardOperation().put(sectionEntity)
