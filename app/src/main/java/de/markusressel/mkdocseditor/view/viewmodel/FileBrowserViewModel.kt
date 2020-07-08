@@ -259,6 +259,13 @@ class FileBrowserViewModel @ViewModelInject constructor(
         })
     }
 
+    /**
+     * Rename a document
+     */
+    suspend fun renameDocument(id: String, documentName: String) {
+        restClient.renameDocument(id, documentName)
+    }
+
     companion object {
         /** ID of the tree root section */
         const val ROOT_SECTION_ID = "root"

@@ -26,7 +26,6 @@ import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
 import dagger.hilt.android.AndroidEntryPoint
-import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.commons.android.material.toast
 import de.markusressel.commons.core.filterByExpectedType
 import de.markusressel.mkdocseditor.R
@@ -197,7 +196,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                             openDocumentEditor(model.item().id)
                         }
                         onlongclick { model, parentView, clickedView, position ->
-                            Timber.d { "Long clicked document list item" }
+                            openEditDocumentDialog(model.item())
                             true
                         }
                     }
@@ -225,13 +224,13 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     override fun getRightFabs(): List<FabConfig.Fab> {
         return listOf(
                 FabConfig.Fab(id = 0,
-                        description = R.string.speed_dial_create_document,
+                        description = R.string.create_document,
                         icon = MaterialDesignIconic.Icon.gmi_file_add,
                         onClick = {
                             openCreateDocumentDialog()
                         }),
                 FabConfig.Fab(id = 1,
-                        description = R.string.speed_dial_create_section,
+                        description = R.string.create_section,
                         icon = MaterialDesignIconic.Icon.gmi_folder,
                         onClick = {
                             openCreateSectionDialog()
@@ -267,7 +266,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         val existingSections = parentSection.subsections.map { it.name }
 
         MaterialDialog(context()).show {
-            title(R.string.speed_dial_create_section)
+            title(R.string.create_section)
             input(waitForPositiveButton = false,
                     allowEmpty = false,
                     hintRes = R.string.hint_new_section,
@@ -301,7 +300,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         val existingDocuments = parentSection.documents.map { it.name }
 
         MaterialDialog(context()).show {
-            title(R.string.speed_dial_create_document)
+            title(R.string.create_document)
             input(waitForPositiveButton = false,
                     allowEmpty = false,
                     hintRes = R.string.hint_new_document,
@@ -323,6 +322,40 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                 CoroutineScope(Dispatchers.IO).launch {
                     val documentName = getInputField().text.toString().trim()
                     fileBrowserViewModel.createNewDocument(documentName)
+                }
+            })
+            negativeButton(android.R.string.cancel)
+        }
+    }
+
+    private fun openEditDocumentDialog(entity: DocumentEntity) {
+        val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
+        val parentSection = fileBrowserViewModel.sectionPersistenceManager.findById(currentSectionId)!!
+        val existingDocuments = parentSection.documents.map { it.name }
+
+        MaterialDialog(context()).show {
+            title(R.string.edit_document)
+            input(waitForPositiveButton = false,
+                    allowEmpty = false,
+                    prefill = entity.name,
+                    inputType = InputType.TYPE_CLASS_TEXT) { dialog, text ->
+
+                val trimmedText = text.toString().trim()
+
+                val inputField = dialog.getInputField()
+                val isValid = !existingDocuments.contains(trimmedText)
+
+                inputField.error = when (isValid) {
+                    true -> null
+                    false -> getString(R.string.error_document_already_exists)
+                }
+                dialog.setActionButtonEnabled(WhichButton.POSITIVE, isValid)
+            }
+
+            positiveButton(android.R.string.ok, click = {
+                CoroutineScope(Dispatchers.IO).launch {
+                    val documentName = getInputField().text.toString().trim()
+                    fileBrowserViewModel.renameDocument(entity.id, documentName)
                 }
             })
             negativeButton(android.R.string.cancel)
