@@ -32,7 +32,7 @@ MkDocsEditor aims to provide an easy way for you to manage your existing [MkDocs
   * [x] see the result on your hosted website right away
   * [ ] move a document
     * [ ] move all resources that are referenced in it, if possible
-  * [ ] delete documents
+  * [x] delete documents
     * [ ] delete unused resources that are referenced in it
 * [ ] Resource file management (any file that is not a markdown file really)
   * [ ] upload resource files
