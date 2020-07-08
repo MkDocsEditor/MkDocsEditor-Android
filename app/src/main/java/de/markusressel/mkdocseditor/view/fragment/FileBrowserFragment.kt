@@ -108,6 +108,12 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
             openDocumentEditor(documentId)
         })
 
+        fileBrowserViewModel.reloadEvent.observe(this, Observer {
+            CoroutineScope(Dispatchers.IO).launch {
+                reload()
+            }
+        })
+
         return super.createViewDataBinding(inflater, container, savedInstanceState)
     }
 
@@ -319,10 +325,8 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
             }
 
             positiveButton(android.R.string.ok, click = {
-                CoroutineScope(Dispatchers.IO).launch {
-                    val documentName = getInputField().text.toString().trim()
-                    fileBrowserViewModel.createNewDocument(documentName)
-                }
+                val documentName = getInputField().text.toString().trim()
+                fileBrowserViewModel.createNewDocument(documentName)
             })
             negativeButton(android.R.string.cancel)
         }
@@ -353,10 +357,11 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
             }
 
             positiveButton(android.R.string.ok, click = {
-                CoroutineScope(Dispatchers.IO).launch {
-                    val documentName = getInputField().text.toString().trim()
-                    fileBrowserViewModel.renameDocument(entity.id, documentName)
-                }
+                val documentName = getInputField().text.toString().trim()
+                fileBrowserViewModel.renameDocument(entity.id, documentName)
+            })
+            neutralButton(R.string.delete, click = {
+                fileBrowserViewModel.deleteDocument(entity.id)
             })
             negativeButton(android.R.string.cancel)
         }

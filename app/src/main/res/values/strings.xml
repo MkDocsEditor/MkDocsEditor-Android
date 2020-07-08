@@ -22,6 +22,7 @@
     <string name="sync_error">Synchronization error :(</string>
 
     <string name="add">Add</string>
+    <string name="delete">Delete</string>
     <string name="create_document">Create a document</string>
     <string name="edit_document">Edit document</string>
     <string name="create_section">Create a section</string>

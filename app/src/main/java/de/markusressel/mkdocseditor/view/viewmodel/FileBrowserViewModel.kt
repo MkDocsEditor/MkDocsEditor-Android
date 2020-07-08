@@ -21,6 +21,7 @@ import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import io.objectbox.android.ObjectBoxDataSource
 import io.objectbox.kotlin.query
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
 
@@ -56,6 +57,7 @@ class FileBrowserViewModel @ViewModelInject constructor(
     )
 
     val openDocumentEditorEvent = LiveEvent<String>()
+    val reloadEvent = LiveEvent<Boolean>()
 
     init {
         currentSearchFilter.observeForever { searchString ->
@@ -235,35 +237,47 @@ class FileBrowserViewModel @ViewModelInject constructor(
         })
     }
 
-    suspend fun createNewDocument(documentName: String) {
-        val name = if (documentName.isEmpty()) "New Document" else documentName
-        val currentSectionId = currentSectionId.value!!
-        val parentSection = sectionPersistenceManager.findById(currentSectionId)
-        if (parentSection == null) {
-            Timber.e { "Parent section could not be found in persistence while trying to create a new document in it" }
-            return
-        }
+    fun createNewDocument(documentName: String) {
+        viewModelScope.launch {
+            val name = if (documentName.isEmpty()) "New Document" else documentName
+            val currentSectionId = currentSectionId.value!!
+            val parentSection = sectionPersistenceManager.findById(currentSectionId)
+            if (parentSection == null) {
+                Timber.e { "Parent section could not be found in persistence while trying to create a new document in it" }
+                return@launch
+            }
 
-        restClient.createDocument(currentSectionId, name).fold(
-                success = {
-                    // insert it into persistence
-                    documentPersistenceManager.standardOperation().put(
-                            it.asEntity(parentSection = parentSection))
-                    // and open the editor right away
-                    withContext(Dispatchers.Main) {
-                        openDocumentEditorEvent.value = it.id
-                    }
-                }, failure = {
-            Timber.e(it) { "Error creating document" }
+            restClient.createDocument(currentSectionId, name).fold(
+                    success = {
+                        // insert it into persistence
+                        documentPersistenceManager.standardOperation().put(
+                                it.asEntity(parentSection = parentSection))
+                        // and open the editor right away
+                        withContext(Dispatchers.Main) {
+                            openDocumentEditorEvent.value = it.id
+                        }
+                    }, failure = {
+                Timber.e(it) { "Error creating document" }
 //            context().toast("There was an error :(")
-        })
+            })
+        }
     }
 
     /**
      * Rename a document
      */
-    suspend fun renameDocument(id: String, documentName: String) {
-        restClient.renameDocument(id, documentName)
+    fun renameDocument(id: String, documentName: String) {
+        viewModelScope.launch {
+            restClient.renameDocument(id, documentName)
+            reloadEvent.value = true
+        }
+    }
+
+    fun deleteDocument(id: String) {
+        viewModelScope.launch {
+            restClient.deleteDocument(id)
+            reloadEvent.value = true
+        }
     }
 
     companion object {
