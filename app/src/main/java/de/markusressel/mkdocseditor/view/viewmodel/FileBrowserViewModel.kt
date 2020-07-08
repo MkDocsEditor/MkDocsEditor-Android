@@ -218,24 +218,26 @@ class FileBrowserViewModel @ViewModelInject constructor(
         currentSectionId.postValue(currentSectionId.value)
     }
 
-    suspend fun createNewSection(sectionName: String) {
-        val currentSectionId = currentSectionId.value!!
-        val parentSection = sectionPersistenceManager.findById(currentSectionId)
-        if (parentSection == null) {
-            Timber.e { "Parent section could not be found in persistence while trying to create a new section in it" }
-            return
-        }
+    fun createNewSection(sectionName: String) {
+        viewModelScope.launch {
+            val currentSectionId = currentSectionId.value!!
+            val parentSection = sectionPersistenceManager.findById(currentSectionId)
+            if (parentSection == null) {
+                Timber.e { "Parent section could not be found in persistence while trying to create a new section in it" }
+                return@launch
+            }
 
-        restClient.createSection(currentSectionId, sectionName).fold(success = {
-            val createdSection = it.asEntity(documentContentPersistenceManager)
-            parentSection.subsections.add(createdSection)
-            // insert it into persistence
-            sectionPersistenceManager.standardOperation().put(parentSection)
-            reloadEvent.value = true
-        }, failure = {
-            Timber.e(it) { "Error creating section" }
+            restClient.createSection(currentSectionId, sectionName).fold(success = {
+                val createdSection = it.asEntity(documentContentPersistenceManager)
+                parentSection.subsections.add(createdSection)
+                // insert it into persistence
+                sectionPersistenceManager.standardOperation().put(parentSection)
+                reloadEvent.value = true
+            }, failure = {
+                Timber.e(it) { "Error creating section" }
 //            toast("There was an error :(")
-        })
+            })
+        }
     }
 
     fun createNewDocument(documentName: String) {
