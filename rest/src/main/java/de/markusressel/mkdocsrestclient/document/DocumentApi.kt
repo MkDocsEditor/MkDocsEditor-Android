@@ -42,6 +42,14 @@ interface DocumentApi {
     suspend fun createDocument(parentId: String, name: String): Result<DocumentModel, FuelError>
 
     /**
+     * Rename a document
+     *
+     * @param id document id
+     * @param name new document name
+     */
+    suspend fun renameDocument(id: String, name: String): Result<DocumentModel, FuelError>
+
+    /**
      * Delete an existing document
      */
     suspend fun deleteDocument(id: String): Result<String, FuelError>

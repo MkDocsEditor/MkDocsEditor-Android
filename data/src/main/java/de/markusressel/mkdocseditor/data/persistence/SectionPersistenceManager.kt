@@ -56,7 +56,7 @@ class SectionPersistenceManager @Inject constructor(
             newSection
         }()
 
-        sectionEntity.documents.forEach { newDocument ->
+        section.documents.forEach { newDocument ->
             val documentEntity = documentPersistenceManager.standardOperation().query {
                 equal(DocumentEntity_.id, newDocument.id)
             }.findUnique()?.apply {
@@ -73,7 +73,7 @@ class SectionPersistenceManager @Inject constructor(
             documentPersistenceManager.standardOperation().put(documentEntity)
         }
 
-        sectionEntity.resources.forEach { newResource ->
+        section.resources.forEach { newResource ->
             val resourceEntity = resourcePersistenceManager.standardOperation().query {
                 equal(ResourceEntity_.id, newResource.id)
             }.findUnique()?.apply {
@@ -85,8 +85,8 @@ class SectionPersistenceManager @Inject constructor(
             resourcePersistenceManager.standardOperation().put(resourceEntity)
         }
 
-        sectionEntity.subsections.forEach { subsection ->
-            addOrUpdateEntityFields(subsection, parentSection)
+        section.subsections.forEach { subsection ->
+            addOrUpdateEntityFields(subsection, sectionEntity)
         }
         // insert updated section
         standardOperation().put(sectionEntity)
@@ -95,6 +95,9 @@ class SectionPersistenceManager @Inject constructor(
     }
 
     private fun deleteMissing(newData: SectionEntity) {
+        // TODO: this currently only works when the whole dataset is updated,
+        //  but it should also be possible to update only parts of the tree
+
         val sectionIds = mutableSetOf<String>()
         val documentIds = mutableSetOf<String>()
         val resourceIds = mutableSetOf<String>()
