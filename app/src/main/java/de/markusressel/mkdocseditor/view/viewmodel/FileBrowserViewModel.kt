@@ -231,6 +231,7 @@ class FileBrowserViewModel @ViewModelInject constructor(
             parentSection.subsections.add(createdSection)
             // insert it into persistence
             sectionPersistenceManager.standardOperation().put(parentSection)
+            reloadEvent.value = true
         }, failure = {
             Timber.e(it) { "Error creating section" }
 //            toast("There was an error :(")
