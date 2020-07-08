@@ -95,6 +95,9 @@ class SectionPersistenceManager @Inject constructor(
     }
 
     private fun deleteMissing(newData: SectionEntity) {
+        // TODO: this currently only works when the whole dataset is updated,
+        //  but it should also be possible to update only parts of the tree
+
         val sectionIds = mutableSetOf<String>()
         val documentIds = mutableSetOf<String>()
         val resourceIds = mutableSetOf<String>()
