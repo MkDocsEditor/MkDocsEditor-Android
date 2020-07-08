@@ -14,6 +14,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.callbacks.onDismiss
+import com.afollestad.materialdialogs.lifecycle.lifecycleOwner
 import com.github.ajalt.timberkt.Timber
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE
@@ -417,6 +418,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
             restoreEditorState(editable = false)
         } else {
             MaterialDialog(context()).show {
+                lifecycleOwner(this@CodeEditorFragment)
                 title(R.string.no_offline_version)
                 negativeButton(android.R.string.ok, click = {
                     it.dismiss()

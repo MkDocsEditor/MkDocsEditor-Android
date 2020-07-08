@@ -16,6 +16,7 @@ import com.afollestad.materialdialogs.WhichButton
 import com.afollestad.materialdialogs.actions.setActionButtonEnabled
 import com.afollestad.materialdialogs.input.getInputField
 import com.afollestad.materialdialogs.input.input
+import com.afollestad.materialdialogs.lifecycle.lifecycleOwner
 import com.airbnb.epoxy.Typed3EpoxyController
 import com.eightbitlab.rxbus.Bus
 import com.eightbitlab.rxbus.registerInBus
@@ -272,6 +273,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         val existingSections = parentSection.subsections.map { it.name }
 
         MaterialDialog(context()).show {
+            lifecycleOwner(this@FileBrowserFragment)
             title(R.string.create_section)
             input(waitForPositiveButton = false,
                     allowEmpty = false,
@@ -306,6 +308,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         val existingDocuments = parentSection.documents.map { it.name }
 
         MaterialDialog(context()).show {
+            lifecycleOwner(this@FileBrowserFragment)
             title(R.string.create_document)
             input(waitForPositiveButton = false,
                     allowEmpty = false,
@@ -338,6 +341,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         val existingDocuments = parentSection.documents.map { it.name }
 
         MaterialDialog(context()).show {
+            lifecycleOwner(this@FileBrowserFragment)
             title(R.string.edit_document)
             input(waitForPositiveButton = false,
                     allowEmpty = false,
