@@ -148,7 +148,7 @@ dependencies {
     implementation 'com.eightbitlab:rxbus:1.0.2'
 
     // Permissions
-    implementation 'com.karumi:dexter:5.0.0'
+    implementation 'com.karumi:dexter:6.2.1'
 
     // Material Drawer
     implementation "com.mikepenz:materialdrawer:${materialdrawerVersion}"
