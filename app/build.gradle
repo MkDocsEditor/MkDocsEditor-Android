@@ -118,6 +118,9 @@ dependencies {
     implementation "androidx.hilt:hilt-work:1.0.0-alpha01"
     kapt "androidx.hilt:hilt-compiler:1.0.0-alpha01"
 
+    // SingleLiveEvent similar implementation
+    implementation "com.github.hadilq.liveevent:liveevent:1.2.0"
+
     // MikePenz stuff
     //the core iconcis library (without any widgets)
     implementation "com.mikepenz:iconics-core:${iconicsVersion}@aar"
