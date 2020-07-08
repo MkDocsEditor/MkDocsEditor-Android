@@ -257,6 +257,7 @@ class FileBrowserViewModel @ViewModelInject constructor(
                         withContext(Dispatchers.Main) {
                             openDocumentEditorEvent.value = it.id
                         }
+                        reloadEvent.value = true
                     }, failure = {
                 Timber.e(it) { "Error creating document" }
 //            context().toast("There was an error :(")
