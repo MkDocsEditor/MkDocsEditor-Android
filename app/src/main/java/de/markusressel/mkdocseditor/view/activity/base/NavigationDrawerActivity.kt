@@ -25,7 +25,6 @@ import com.mikepenz.materialdrawer.widget.AccountHeaderView
 import com.mikepenz.materialdrawer.widget.MaterialDrawerSliderView
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.event.ThemeChangedEvent
-import de.markusressel.mkdocseditor.extensions.common.android.isTablet
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.About
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.FileBrowser
@@ -163,9 +162,9 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
                     setTitle(drawerMenuItem.title)
                 }
 
-                if (!isTablet()) {
+//                if (!isTablet()) {
                     drawerLayout.closeDrawer(slider)
-                }
+//                }
                 consume = true
             }
 

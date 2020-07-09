@@ -49,7 +49,6 @@ import io.reactivex.rxkotlin.subscribeBy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -161,9 +160,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     }
 
     override suspend fun getLoadDataFromSourceFunction(): Result<SectionModel, FuelError> {
-        return withContext(Dispatchers.IO) {
-            restClient.getItemTree()
-        }
+        return restClient.getItemTree()
     }
 
     override fun mapToEntity(it: Any): IdentifiableListItem {
