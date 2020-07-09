@@ -48,7 +48,9 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
     override val layoutRes: Int
         get() = R.layout.activity_main
 
-    protected val navController by lazy { Navigation.findNavController(this, R.id.navHostFragment) }
+    protected val navController by lazy {
+        Navigation.findNavController(this, R.id.navHostFragment)
+    }
 
     @Inject
     protected lateinit var offlineModeManager: OfflineModeManager
@@ -163,7 +165,7 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
                 }
 
 //                if (!isTablet()) {
-                    drawerLayout.closeDrawer(slider)
+                drawerLayout.closeDrawer(slider)
 //                }
                 consume = true
             }

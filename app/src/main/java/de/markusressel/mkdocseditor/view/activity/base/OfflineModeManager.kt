@@ -27,7 +27,9 @@ class OfflineModeManager @Inject constructor(
         private val preferenceDataProvider: KutePreferenceDataProvider,
         private val documentPersistenceManager: DocumentPersistenceManager) {
 
-    var isEnabled = MutableLiveData<Boolean>().apply { value = preferenceDataProvider.getValueUnsafe(R.string.offline_mode_key, false) }
+    var isEnabled = MutableLiveData<Boolean>().apply {
+        value = preferenceDataProvider.getValueUnsafe(R.string.offline_mode_key, false)
+    }
 
     private val colorOn by lazy { ContextCompat.getColor(context, R.color.md_orange_800) }
     private val colorOff by lazy { ContextCompat.getColor(context, R.color.textColorPrimary) }
