@@ -181,6 +181,9 @@ dependencies {
         changing = true
     }
 
+    // Tutorial messages
+    implementation 'com.github.markusressel:TutorialTooltip:v2.0.0'
+
     // AboutLibraries ("About" screen)
     implementation("com.mikepenz:aboutlibraries:$aboutlibrariesVersion@aar") {
         transitive = true

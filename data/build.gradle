@@ -71,8 +71,7 @@ dependencies {
     implementation "androidx.core:core-ktx:$aacAndroidKtxVersion"
 
     // Preferences
-//    def kutePreferencesVersion = "v1.5.2"
-    def kutePreferencesVersion = "dev-SNAPSHOT"
+    def kutePreferencesVersion = "v2.0.0"
     // choose the ones you need
     api("com.github.markusressel.KutePreferences:core:${kutePreferencesVersion}")
     api("com.github.markusressel.KutePreferences:bool:${kutePreferencesVersion}")
