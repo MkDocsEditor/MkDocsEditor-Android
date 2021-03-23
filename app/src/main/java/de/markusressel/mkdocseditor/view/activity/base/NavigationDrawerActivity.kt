@@ -32,10 +32,9 @@ import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.FileBrowser
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.OfflineMode
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.Settings
 import de.markusressel.mkdocseditor.navigation.DrawerMenuItem
+import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.view.fragment.FileBrowserFragment
 import de.markusressel.mkdocseditor.view.fragment.preferences.PreferencesFragment
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.view_toolbar.*
 import java.util.*
 import javax.inject.Inject
 
@@ -60,19 +59,19 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
         super.onCreate(savedInstanceState)
 
         val menuItemList = initDrawerMenuItems()
-        slider.itemAdapter.add(menuItemList)
-        initAccountHeader(slider)
+        binding.slider.itemAdapter.add(menuItemList)
+        initAccountHeader(binding.slider)
 
-        actionBarDrawerToggle = ActionBarDrawerToggle(this, drawerLayout, toolbar, material_drawer_open, material_drawer_close)
+        actionBarDrawerToggle = ActionBarDrawerToggle(this, binding.drawerLayout, binding.toolbarLayout.toolbar, material_drawer_open, material_drawer_close)
         val appBarConfiguration = AppBarConfiguration(
                 navGraph = navController.graph,
-                drawerLayout = drawerLayout)
+                drawerLayout = binding.drawerLayout)
         setupActionBarWithNavController(navController, appBarConfiguration)
 
         navController.addOnDestinationChangedListener { controller, destination, arguments ->
             // update selected drawer item accordingly
             DrawerItemHolder.fromId(destination.id)?.let {
-                slider.setSelection(it.id.toLong(), false)
+                binding.slider.setSelection(it.id.toLong(), false)
             }
         }
     }
@@ -164,7 +163,7 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
                 }
 
                 if (!isTablet()) {
-                    drawerLayout.closeDrawer(slider)
+                    binding.drawerLayout.closeDrawer(binding.slider)
                 }
                 consume = true
             }
@@ -229,8 +228,8 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
     }
 
     override fun onBackPressed() {
-        if (drawerLayout.isDrawerOpen(slider)) {
-            drawerLayout.closeDrawer(slider)
+        if (binding.drawerLayout.isDrawerOpen(binding.slider)) {
+            binding.drawerLayout.closeDrawer(binding.slider)
             return
         }
 

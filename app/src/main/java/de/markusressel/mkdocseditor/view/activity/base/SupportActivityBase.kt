@@ -8,19 +8,19 @@ import androidx.annotation.IntDef
 import androidx.annotation.LayoutRes
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.databinding.ActivityMainBinding
 import de.markusressel.mkdocseditor.view.IconHandler
 import de.markusressel.mkdocseditor.view.ThemeHelper
 import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
-import kotlinx.android.synthetic.main.view_toolbar.*
 import java.util.*
 import javax.inject.Inject
 
 /**
  * Created by Markus on 20.12.2017.
  */
-abstract class SupportActivityBase : LifecycleActivityBase() {
+abstract class SupportActivityBase : StateActivityBase() {
 
     @Inject
     lateinit var iconHandler: IconHandler
@@ -49,6 +49,8 @@ abstract class SupportActivityBase : LifecycleActivityBase() {
     @get:LayoutRes
     protected abstract val layoutRes: Int
 
+    protected lateinit var binding: ActivityMainBinding
+
     @CallSuper
     override fun onCreate(savedInstanceState: Bundle?) {
         // apply forced locale (if set in developer options)
@@ -76,11 +78,11 @@ abstract class SupportActivityBase : LifecycleActivityBase() {
                 password = preferencesHolder.basicAuthPasswordPreference.persistedValue))
 
         // inflate view manually so it can be altered in plugins
-        val contentView = layoutInflater.inflate(layoutRes, null)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        val contentView = binding.root
         setContentView(contentView)
 
-
-        setSupportActionBar(toolbar)
+        setSupportActionBar(binding.toolbarLayout.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 

@@ -25,7 +25,7 @@
 
 
         <de.markusressel.kodeeditor.library.view.CodeEditorLayout
-            android:id="@+id/codeEditorView"
+            android:id="@+id/codeEditorLayout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:ke_divider_enabled="false"

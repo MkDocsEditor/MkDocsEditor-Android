@@ -19,8 +19,8 @@ import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
 import de.markusressel.mkdocseditor.event.*
+import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.view.IconHandler
-import de.markusressel.mkdocseditor.view.activity.base.OfflineModeManager
 import de.markusressel.mkdocseditor.view.preferences.LastOfflineCacheUpdatePreferenceItem
 import javax.inject.Inject
 import javax.inject.Singleton

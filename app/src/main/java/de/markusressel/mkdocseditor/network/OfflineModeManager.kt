@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.view.activity.base
+package de.markusressel.mkdocseditor.network
 
 import android.app.job.JobInfo
 import android.app.job.JobScheduler

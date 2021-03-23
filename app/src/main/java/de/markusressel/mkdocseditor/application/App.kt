@@ -13,10 +13,9 @@ import de.markusressel.mkdocseditor.event.BasicAuthPasswordChangedEvent
 import de.markusressel.mkdocseditor.event.BasicAuthUserChangedEvent
 import de.markusressel.mkdocseditor.event.HostChangedEvent
 import de.markusressel.mkdocseditor.event.PortChangedEvent
-import de.markusressel.mkdocseditor.view.activity.base.OfflineModeManager
+import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
-import io.reactivex.plugins.RxJavaPlugins
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -55,9 +54,6 @@ class App : Application() {
     }
 
     private fun setupErrorHandlers() {
-        RxJavaPlugins.setErrorHandler {
-            Timber.e(it)
-        }
     }
 
     private fun initOfflineMode() {

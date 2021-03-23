@@ -4,8 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.airbnb.epoxy.EpoxyRecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
+    <com.airbnb.epoxy.EpoxyRecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -13,7 +12,9 @@
         android:scrollbars="vertical"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-    <include layout="@layout/layout_empty_list" />
+    <include
+        android:id="@+id/layout_empty_list"
+        layout="@layout/layout_empty_list" />
 
     <com.leinardi.android.speeddial.SpeedDialOverlayLayout
         android:id="@+id/speedDialOverlay"

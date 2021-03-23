@@ -41,7 +41,6 @@ import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
-import kotlinx.android.synthetic.main.fragment_recyclerview.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -64,30 +63,28 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
         OptionsMenuComponent(hostFragment = this,
                 optionsMenuRes = R.menu.options_menu_list,
                 onCreateOptionsMenu = { menu: Menu?, menuInflater: MenuInflater? ->
-                    val refreshMenuItem = menu?.findItem(R.id.refresh)
-                    refreshMenuItem?.icon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_refresh)
-
-                    val searchMenuItem = menu?.findItem(R.id.search)
-                    searchMenuItem?.icon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_search)
-
-                    val searchView = searchMenuItem?.actionView as SearchView?
-                    searchView?.let {
-                        RxSearchView
-                                .queryTextChanges(it)
-                                .skipInitialValue()
-                                .bindUntilEvent(this, Lifecycle.Event.ON_DESTROY)
-                                .debounce(300, TimeUnit.MILLISECONDS)
-                                .observeOn(AndroidSchedulers.mainThread())
-                                .subscribeBy(onNext = {
-                                    currentSearchFilter = it.toString()
-
-                                    // TODO: implement search
-                                }, onError = {
-                                    Timber
-                                            .e(it) { "Error filtering list" }
-                                })
+                    menu?.findItem(R.id.refresh)?.apply {
+                        icon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_refresh)
                     }
 
+                    menu?.findItem(R.id.search)?.apply {
+                        icon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_search)
+                        (actionView as SearchView?)?.apply {
+                            RxSearchView
+                                    .queryTextChanges(this)
+                                    .skipInitialValue()
+                                    .bindUntilEvent(viewLifecycleOwner, Lifecycle.Event.ON_DESTROY)
+                                    .debounce(300, TimeUnit.MILLISECONDS)
+                                    .observeOn(AndroidSchedulers.mainThread())
+                                    .subscribeBy(onNext = {
+                                        currentSearchFilter = it.toString()
+
+                                        // TODO: implement search
+                                    }, onError = {
+                                        Timber.e(it) { "Error filtering list" }
+                                    })
+                        }
+                    }
                 }, onOptionsMenuItemClicked = {
             when (it.itemId) {
                 R.id.refresh -> {
@@ -101,8 +98,8 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
         })
     }
 
-    override fun initComponents(context: Context) {
-        super.initComponents(context)
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
         optionsMenuComponent
     }
 
@@ -136,7 +133,7 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
             } else {
                 Timber.e(it)
                 serverUnavailableSnackbar?.dismiss()
-                serverUnavailableSnackbar = recyclerView.snack(
+                serverUnavailableSnackbar = binding.recyclerView.snack(
                         text = R.string.server_unavailable,
                         duration = Snackbar.LENGTH_INDEFINITE,
                         actionTitle = R.string.retry,

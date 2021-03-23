@@ -18,7 +18,9 @@
 package de.markusressel.mkdocseditor.view.fragment.base
 
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import androidx.annotation.CallSuper
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.airbnb.epoxy.Typed3EpoxyController
@@ -29,14 +31,19 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import kotlinx.android.synthetic.main.fragment_recyclerview.*
-import kotlinx.android.synthetic.main.layout_empty_list.*
+import de.markusressel.mkdocseditor.databinding.FragmentRecyclerviewBinding
 
 
 /**
  * List base class
  */
 abstract class ListFragmentBase : DaggerSupportFragmentBase() {
+
+    private var _binding: FragmentRecyclerviewBinding? = null
+
+    // This property is only valid between onCreateView and
+    // onDestroyView.
+    protected val binding get() = _binding!!
 
     override val layoutRes: Int
         get() = R.layout.fragment_recyclerview
@@ -50,10 +57,17 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
 
     internal var currentSearchFilter: String by savedInstanceState("")
 
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        _binding = FragmentRecyclerviewBinding.inflate(inflater, container, false)
+        val view = binding.root
+        return view
+    }
+
     @CallSuper
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val recyclerView = binding.recyclerView
         recyclerView.setController(epoxyController)
         recyclerView.layoutManager = StaggeredGridLayoutManager(
                 resources.getInteger(R.integer.list_column_count),
@@ -64,7 +78,7 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
     }
 
     override fun onStop() {
-        val layoutManager = recyclerView.layoutManager
+        val layoutManager = binding.recyclerView.layoutManager
         if (layoutManager != null && layoutManager is StaggeredGridLayoutManager) {
             val visibleItems = layoutManager.findFirstVisibleItemPositions(null)
             lastScrollPosition = if (visibleItems.isNotEmpty()) {
@@ -77,9 +91,14 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
         super.onStop()
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
+
     internal fun scrollToItemPosition(itemPosition: Int) {
-        val layoutManager = recyclerView
-                .layoutManager
+        val layoutManager = binding.recyclerView.layoutManager
         // this always returns 0 :(
 //        if (itemPosition != androidx.recyclerview.widget.RecyclerView.NO_POSITION && layoutManager.childCount > 0) {
 //            layoutManager
@@ -113,7 +132,7 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
     }
 
     private fun setupFabs() {
-        speedDial.apply {
+        binding.speedDial.apply {
             setMainFabClosedDrawable(iconHandler.getFabIcon(MaterialDesignIconic.Icon.gmi_plus))
             setMainFabOpenedDrawable(iconHandler.getFabIcon(MaterialDesignIconic.Icon.gmi_close))
 
@@ -142,16 +161,16 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
      * Show the "empty" screen
      */
     internal fun showEmpty() {
-        recyclerView.visibility = View.INVISIBLE
-        layoutEmpty.visibility = View.VISIBLE
+        binding.recyclerView.visibility = View.INVISIBLE
+        binding.layoutEmptyList.layoutEmpty.visibility = View.VISIBLE
     }
 
     /**
      * Hide the "empty" screen
      */
     internal fun hideEmpty() {
-        recyclerView.visibility = View.VISIBLE
-        layoutEmpty.visibility = View.INVISIBLE
+        binding.recyclerView.visibility = View.VISIBLE
+        binding.layoutEmptyList.layoutEmpty.visibility = View.INVISIBLE
     }
 
 }

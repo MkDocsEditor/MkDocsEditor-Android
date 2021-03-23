@@ -27,6 +27,10 @@ class DocumentSyncManager(
         private val onConnectionStatusChanged: (connected: Boolean, errorCode: Int?, throwable: Throwable?) -> Unit,
         private val onInitialText: (initialText: String) -> Unit,
         private val onTextChanged: (newText: String, patches: LinkedList<diff_match_patch.Patch>) -> Unit,
+        /**
+         * A function to get a full copy of the current text on this client.
+         * This method is intended for internal use only.
+         */
         private val currentText: () -> String) : WebsocketConnectionListener {
 
     val websocketUrl: String by lazy {

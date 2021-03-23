@@ -11,18 +11,18 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.annotation.CallSuper
 import androidx.annotation.StringRes
+import androidx.fragment.app.Fragment
 import com.afollestad.materialdialogs.MaterialDialog
 import com.github.ajalt.timberkt.Timber
 import com.jakewharton.rxbinding2.view.RxView
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
 import de.markusressel.commons.logging.prettyPrint
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.view.fragment.base.LifecycleFragmentBase
 
 /**
  * Created by Markus on 15.02.2018.
  */
-class LoadingComponent(hostFragment: LifecycleFragmentBase, val onShowContent: ((animated: Boolean) -> Unit)? = null,
+class LoadingComponent(hostFragment: Fragment, val onShowContent: ((animated: Boolean) -> Unit)? = null,
                        /**
                         * Called when the error screen is shown
                         */
@@ -45,12 +45,9 @@ class LoadingComponent(hostFragment: LifecycleFragmentBase, val onShowContent: (
         contentView = container
 
         val rootView = createWrapperLayout()
-        loadingLayout = rootView
-                .findViewById(R.id.layoutLoading)
-        errorLayout = rootView
-                .findViewById(R.id.layoutError)
-        errorDescription = errorLayout
-                .findViewById(R.id.errorDescription)
+        loadingLayout = rootView.findViewById(R.id.layoutLoading)
+        errorLayout = rootView.findViewById(R.id.layoutError)
+        errorDescription = errorLayout.findViewById(R.id.errorDescription)
 
         return rootView
     }
