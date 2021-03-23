@@ -43,6 +43,11 @@ class DocumentApiImpl(private val requestManager: RequestManager) : DocumentApi 
         return requestManager.doJsonRequest("/document/", Method.POST, data, DocumentModel.SingleDeserializer())
     }
 
+    override suspend fun renameDocument(id: String, name: String): Result<DocumentModel, FuelError> {
+        val data = jsonObject("name" to name)
+        return requestManager.doJsonRequest("/document/$id/", Method.PUT, data, DocumentModel.SingleDeserializer())
+    }
+
     override suspend fun deleteDocument(id: String): Result<String, FuelError> {
         return requestManager.doRequest("/document/$id/", Method.DELETE)
     }

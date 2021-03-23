@@ -2,6 +2,12 @@ package de.markusressel.mkdocseditor.view.viewmodel
 
 import android.graphics.PointF
 import android.view.View
+import androidx.hilt.Assisted
+import androidx.hilt.lifecycle.ViewModelInject
+import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.annotation.UiThread
 import androidx.lifecycle.*
 import de.markusressel.commons.android.core.runOnUiThread
@@ -19,15 +25,17 @@ import java.util.*
 import javax.inject.Inject
 
 
-class CodeEditorViewModel @Inject constructor(
-        private val state: SavedStateHandle,
-        val preferencesHolder: KutePreferencesHolder) : ViewModel(), LifecycleObserver {
+class CodeEditorViewModel @ViewModelInject constructor(
+        @Assisted private val savedStateHandle: SavedStateHandle,
+        val documentPersistenceManager: DocumentPersistenceManager,
+        val preferencesHolder: KutePreferencesHolder
+) : ViewModel() {
 
     val documentId = MutableLiveData<String>()
 
     var documentEntity: ObjectBoxLiveData<DocumentEntity> = getEntity(documentPersistenceManager, documentId.value!!)
 
-    fun getEntity(documentPersistenceManager: DocumentPersistenceManager, documentId: String): ObjectBoxLiveData<DocumentEntity> {
+    fun getEntity(documentId: String): ObjectBoxLiveData<DocumentEntity> {
         return ObjectBoxLiveData(documentPersistenceManager.standardOperation().query {
             equal(DocumentEntity_.id, documentId)
         })

@@ -13,6 +13,7 @@ import androidx.annotation.CallSuper
 import androidx.annotation.StringRes
 import androidx.fragment.app.Fragment
 import com.afollestad.materialdialogs.MaterialDialog
+import com.afollestad.materialdialogs.lifecycle.lifecycleOwner
 import com.github.ajalt.timberkt.Timber
 import com.jakewharton.rxbinding2.view.RxView
 import com.trello.rxlifecycle2.kotlin.bindToLifecycle
@@ -176,6 +177,7 @@ class LoadingComponent(hostFragment: Fragment, val onShowContent: ((animated: Bo
 
                     MaterialDialog(context as Context)
                             .show {
+                                lifecycleOwner(fragment)
                                 title(R.string.error)
                                 message(text = contentText)
                                 positiveButton(res = android.R.string.ok)

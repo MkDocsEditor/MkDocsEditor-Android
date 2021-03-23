@@ -23,6 +23,8 @@ import com.github.kittinunf.fuel.core.extensions.authentication
 import com.github.kittinunf.fuel.coroutines.awaitStringResult
 import com.github.kittinunf.result.Result
 import com.google.gson.Gson
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 /**
@@ -121,7 +123,9 @@ class RequestManager(hostname: String = "localhost",
      * @param method the request type (f.ex. GET)
      */
     suspend fun doRequest(url: String, method: Method): Result<String, FuelError> {
-        return createRequest(url = url, method = method).awaitStringResult()
+        return withContext(Dispatchers.IO) {
+            createRequest(url = url, method = method).awaitStringResult()
+        }
     }
 
     /**
@@ -132,8 +136,10 @@ class RequestManager(hostname: String = "localhost",
      * @param deserializer a deserializer for the response json body
      */
     suspend fun <T : Any> doRequest(url: String, method: Method, deserializer: Deserializable<T>): Result<T, FuelError> {
-        return createRequest(url = url, method = method)
-                .awaitResponseResult(deserializer).third
+        return withContext(Dispatchers.IO) {
+            createRequest(url = url, method = method)
+                    .awaitResponseResult(deserializer).third
+        }
     }
 
     /**
@@ -145,8 +151,10 @@ class RequestManager(hostname: String = "localhost",
      * @param deserializer a deserializer for the <b>response</b> json body
      */
     suspend fun <T : Any> doRequest(url: String, urlParameters: List<Pair<String, Any?>>, method: Method, deserializer: Deserializable<T>): Result<T, FuelError> {
-        return createRequest(url = url, urlParameters = urlParameters, method = method)
-                .awaitResponseResult(deserializer).third
+        return withContext(Dispatchers.IO) {
+            createRequest(url = url, urlParameters = urlParameters, method = method)
+                    .awaitResponseResult(deserializer).third
+        }
     }
 
     /**
@@ -158,11 +166,13 @@ class RequestManager(hostname: String = "localhost",
      * @param deserializer a deserializer for the <b>response</b> json body
      */
     suspend fun <T : Any> doJsonRequest(url: String, method: Method, jsonData: Any, deserializer: Deserializable<T>): Result<T, FuelError> {
-        val json = Gson().toJson(jsonData)
-        return createRequest(url = url, method = method)
-                .body(json)
-                .header(HEADER_CONTENT_TYPE_JSON)
-                .awaitResponseResult(deserializer).third
+        return withContext(Dispatchers.IO) {
+            val json = Gson().toJson(jsonData)
+            createRequest(url = url, method = method)
+                    .body(json)
+                    .header(HEADER_CONTENT_TYPE_JSON)
+                    .awaitResponseResult(deserializer).third
+        }
     }
 
     /**
@@ -176,10 +186,12 @@ class RequestManager(hostname: String = "localhost",
         val json = Gson()
                 .toJson(jsonData)
 
-        return createRequest(url = url, method = method)
-                .body(json)
-                .header(HEADER_CONTENT_TYPE_JSON)
-                .awaitStringResult()
+        return withContext(Dispatchers.IO) {
+            createRequest(url = url, method = method)
+                    .body(json)
+                    .header(HEADER_CONTENT_TYPE_JSON)
+                    .awaitStringResult()
+        }
     }
 
     companion object {

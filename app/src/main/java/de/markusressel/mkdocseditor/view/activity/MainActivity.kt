@@ -20,7 +20,7 @@ class MainActivity : NavigationDrawerActivity() {
     override fun onStart() {
         super.onStart()
         if (BuildConfig.DEBUG) {
-            Dexter.withActivity(this)
+            Dexter.withContext(this)
                     .withPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     .withListener(object : PermissionListener {
                         override fun onPermissionGranted(response: PermissionGrantedResponse?) {}

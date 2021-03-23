@@ -25,7 +25,6 @@ import com.mikepenz.materialdrawer.widget.AccountHeaderView
 import com.mikepenz.materialdrawer.widget.MaterialDrawerSliderView
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.event.ThemeChangedEvent
-import de.markusressel.mkdocseditor.extensions.common.android.isTablet
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.About
 import de.markusressel.mkdocseditor.navigation.DrawerItemHolder.FileBrowser
@@ -48,7 +47,9 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
     override val layoutRes: Int
         get() = R.layout.activity_main
 
-    protected val navController by lazy { Navigation.findNavController(this, R.id.navHostFragment) }
+    protected val navController by lazy {
+        Navigation.findNavController(this, R.id.navHostFragment)
+    }
 
     @Inject
     protected lateinit var offlineModeManager: OfflineModeManager
@@ -162,9 +163,9 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
                     setTitle(drawerMenuItem.title)
                 }
 
-                if (!isTablet()) {
-                    binding.drawerLayout.closeDrawer(binding.slider)
-                }
+//                if (!isTablet()) {
+                binding.drawerLayout.closeDrawer(binding.slider)
+//                }
                 consume = true
             }
 

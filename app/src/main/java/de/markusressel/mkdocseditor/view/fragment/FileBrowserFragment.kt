@@ -8,14 +8,15 @@ import android.widget.Toast
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import androidx.databinding.ViewDataBinding
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProviders
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.WhichButton
 import com.afollestad.materialdialogs.actions.setActionButtonEnabled
 import com.afollestad.materialdialogs.input.getInputField
 import com.afollestad.materialdialogs.input.input
+import com.afollestad.materialdialogs.lifecycle.lifecycleOwner
 import com.airbnb.epoxy.Typed3EpoxyController
 import com.eightbitlab.rxbus.Bus
 import com.eightbitlab.rxbus.registerInBus
@@ -29,7 +30,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.markusressel.commons.android.material.toast
 import de.markusressel.commons.core.filterByExpectedType
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.data.persistence.*
+import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
@@ -48,10 +49,8 @@ import io.reactivex.rxkotlin.subscribeBy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.*
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 
 
 /**
@@ -60,74 +59,61 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
-    @Inject
-    lateinit var sectionPersistenceManager: SectionPersistenceManager
-
-    @Inject
-    lateinit var documentPersistenceManager: DocumentPersistenceManager
-
-    @Inject
-    lateinit var documentContentPersistenceManager: DocumentContentPersistenceManager
-
-    @Inject
-    lateinit var resourcePersistenceManager: ResourcePersistenceManager
-
-    private val fileBrowserViewModel: FileBrowserViewModel by lazy {
-        ViewModelProviders.of(this).get(FileBrowserViewModel::class.java)
-    }
+    private val fileBrowserViewModel: FileBrowserViewModel by viewModels()
 
     private var searchView: SearchView? = null
     private var searchMenuItem: MenuItem? = null
 
     override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
-        if (fileBrowserViewModel.sectionPersistenceManager == null) {
-            fileBrowserViewModel.sectionPersistenceManager = sectionPersistenceManager
-            fileBrowserViewModel.documentPersistenceManager = documentPersistenceManager
-            fileBrowserViewModel.resourcePersistenceManager = resourcePersistenceManager
-            if (fileBrowserViewModel.currentSectionId.value == null) {
-                fileBrowserViewModel.currentSectionId.value = FileBrowserViewModel.ROOT_SECTION_ID
+        // search
+        fileBrowserViewModel.currentSearchResults.observe(this, Observer {
+            if (it.isEmpty()) {
+                showEmpty()
+            } else {
+                hideEmpty()
             }
+            epoxyController.setData(it.filterByExpectedType(), it.filterByExpectedType(), it.filterByExpectedType())
+        })
 
-            // search
-            fileBrowserViewModel.currentSearchResults.observe(this, Observer {
-                if (it.isEmpty()) {
-                    showEmpty()
-                } else {
-                    hideEmpty()
-                }
-                epoxyController.setData(it.filterByExpectedType(), it.filterByExpectedType(), it.filterByExpectedType())
-            })
-
-            // normal navigation
-            fileBrowserViewModel.currentSection.observe(this, Observer {
-                if (it.isNotEmpty()) {
-                    it.first().let {
-                        if (it.subsections.isEmpty() and it.documents.isEmpty() and it.resources.isEmpty()) {
-                            showEmpty()
-                        } else {
-                            hideEmpty()
-                        }
-                        epoxyController.setData(it.subsections, it.documents, it.resources)
-                    }
-                } else {
-                    // in theory this will navigate back until a section is found
-                    // or otherwise show the "empty" screen
-                    if (!fileBrowserViewModel.navigateUp()) {
+        // normal navigation
+        fileBrowserViewModel.currentSection.observe(this, Observer {
+            if (it.isNotEmpty()) {
+                it.first().let { section ->
+                    if (section.subsections.isEmpty() and section.documents.isEmpty() and section.resources.isEmpty()) {
                         showEmpty()
+                    } else {
+                        hideEmpty()
                     }
+                    epoxyController.setData(section.subsections, section.documents, section.resources)
                 }
-            })
+            } else {
+                // in theory this will navigate back until a section is found
+                // or otherwise show the "empty" screen
+                if (!fileBrowserViewModel.navigateUp()) {
+                    showEmpty()
+                }
+            }
+        })
 
-            fileBrowserViewModel.currentSearchFilter.observe(this, Observer {
-                searchView?.setQuery(it, false)
-            })
-            fileBrowserViewModel.isSearchExpanded.observe(this, Observer { isExpanded ->
-                if (!isExpanded) {
-                    searchView?.clearFocus()
-                    searchMenuItem?.collapseActionView()
-                }
-            })
-        }
+        fileBrowserViewModel.currentSearchFilter.observe(this, Observer {
+            searchView?.setQuery(it, false)
+        })
+        fileBrowserViewModel.isSearchExpanded.observe(this, Observer { isExpanded ->
+            if (!isExpanded) {
+                searchView?.clearFocus()
+                searchMenuItem?.collapseActionView()
+            }
+        })
+
+        fileBrowserViewModel.openDocumentEditorEvent.observe(this, Observer { documentId ->
+            openDocumentEditor(documentId)
+        })
+
+        fileBrowserViewModel.reloadEvent.observe(this, Observer {
+            CoroutineScope(Dispatchers.IO).launch {
+                reload()
+            }
+        })
 
         return super.createViewDataBinding(inflater, container, savedInstanceState)
     }
@@ -179,17 +165,13 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     override fun mapToEntity(it: Any): IdentifiableListItem {
         return when (it) {
-            is SectionModel -> it.asEntity(documentContentPersistenceManager)
+            is SectionModel -> it.asEntity(fileBrowserViewModel.documentContentPersistenceManager)
             else -> throw IllegalArgumentException("Cant map object of type ${it.javaClass}!")
         }
     }
 
     override fun persistListData(data: IdentifiableListItem) {
-        // update existing entities
-        val rootSection = data as SectionEntity
-
-        sectionPersistenceManager.insertOrUpdateRoot(rootSection)
-        fileBrowserViewModel.currentSectionId.postValue(fileBrowserViewModel.currentSectionId.value)
+        fileBrowserViewModel.persistListData(data as SectionEntity)
     }
 
     override fun createEpoxyController(): Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>> {
@@ -204,6 +186,10 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                         onclick { model, parentView, clickedView, position ->
                             fileBrowserViewModel.openSection(model.item().id)
                         }
+                        onlongclick { model, parentView, clickedView, position ->
+                            Timber.d { "Long clicked section list item" }
+                            true
+                        }
                     }
                 }
 
@@ -215,6 +201,10 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                         item(it)
                         onclick { model, parentView, clickedView, position ->
                             openDocumentEditor(model.item().id)
+                        }
+                        onlongclick { model, parentView, clickedView, position ->
+                            openEditDocumentDialog(model.item())
+                            true
                         }
                     }
                 }
@@ -228,6 +218,10 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                         onclick { model, parentView, clickedView, position ->
                             openResourceDetailPage(model.item())
                         }
+                        onlongclick { model, parentView, clickedView, position ->
+                            Timber.d { "Long clicked resource list item" }
+                            true
+                        }
                     }
                 }
             }
@@ -237,13 +231,13 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     override fun getRightFabs(): List<FabConfig.Fab> {
         return listOf(
                 FabConfig.Fab(id = 0,
-                        description = R.string.speed_dial_create_document,
+                        description = R.string.create_document,
                         icon = MaterialDesignIconic.Icon.gmi_file_add,
                         onClick = {
                             openCreateDocumentDialog()
                         }),
                 FabConfig.Fab(id = 1,
-                        description = R.string.speed_dial_create_section,
+                        description = R.string.create_section,
                         icon = MaterialDesignIconic.Icon.gmi_folder,
                         onClick = {
                             openCreateSectionDialog()
@@ -275,11 +269,12 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     private fun openCreateSectionDialog() {
         val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
-        val parentSection = sectionPersistenceManager.findById(currentSectionId)!!
+        val parentSection = fileBrowserViewModel.sectionPersistenceManager.findById(currentSectionId)!!
         val existingSections = parentSection.subsections.map { it.name }
 
         MaterialDialog(context()).show {
-            title(R.string.speed_dial_create_section)
+            lifecycleOwner(this@FileBrowserFragment)
+            title(R.string.create_section)
             input(waitForPositiveButton = false,
                     allowEmpty = false,
                     hintRes = R.string.hint_new_section,
@@ -298,9 +293,8 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
             }
 
             positiveButton(android.R.string.ok, click = {
-                CoroutineScope(Dispatchers.IO).launch {
-                    createNewSection(getInputField().text.toString().trim())
-                }
+                val sectionName = getInputField().text.toString().trim()
+                fileBrowserViewModel.createNewSection(sectionName)
             })
             negativeButton(android.R.string.cancel)
         }
@@ -308,11 +302,12 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     private fun openCreateDocumentDialog() {
         val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
-        val parentSection = sectionPersistenceManager.findById(currentSectionId)!!
+        val parentSection = fileBrowserViewModel.sectionPersistenceManager.findById(currentSectionId)!!
         val existingDocuments = parentSection.documents.map { it.name }
 
         MaterialDialog(context()).show {
-            title(R.string.speed_dial_create_document)
+            lifecycleOwner(this@FileBrowserFragment)
+            title(R.string.create_document)
             input(waitForPositiveButton = false,
                     allowEmpty = false,
                     hintRes = R.string.hint_new_document,
@@ -331,55 +326,47 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
             }
 
             positiveButton(android.R.string.ok, click = {
-                CoroutineScope(Dispatchers.IO).launch {
-                    createNewDocument(getInputField().text.toString().trim())
-                }
+                val documentName = getInputField().text.toString().trim()
+                fileBrowserViewModel.createNewDocument(documentName)
             })
             negativeButton(android.R.string.cancel)
         }
     }
 
-    private suspend fun createNewSection(name: String) {
+    private fun openEditDocumentDialog(entity: DocumentEntity) {
         val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
-        val parentSection = sectionPersistenceManager.findById(currentSectionId)
-        if (parentSection == null) {
-            Timber.e { "Parent section could not be found in persistence while trying to create a new section in it" }
-            return
+        val parentSection = fileBrowserViewModel.sectionPersistenceManager.findById(currentSectionId)!!
+        val existingDocuments = parentSection.documents.map { it.name }
+
+        MaterialDialog(context()).show {
+            lifecycleOwner(this@FileBrowserFragment)
+            title(R.string.edit_document)
+            input(waitForPositiveButton = false,
+                    allowEmpty = false,
+                    prefill = entity.name,
+                    inputType = InputType.TYPE_CLASS_TEXT) { dialog, text ->
+
+                val trimmedText = text.toString().trim()
+
+                val inputField = dialog.getInputField()
+                val isValid = !existingDocuments.contains(trimmedText)
+
+                inputField.error = when (isValid) {
+                    true -> null
+                    false -> getString(R.string.error_document_already_exists)
+                }
+                dialog.setActionButtonEnabled(WhichButton.POSITIVE, isValid)
+            }
+
+            positiveButton(android.R.string.ok, click = {
+                val documentName = getInputField().text.toString().trim()
+                fileBrowserViewModel.renameDocument(entity.id, documentName)
+            })
+            neutralButton(R.string.delete, click = {
+                fileBrowserViewModel.deleteDocument(entity.id)
+            })
+            negativeButton(android.R.string.cancel)
         }
-
-        restClient.createSection(currentSectionId, name).fold(success = {
-            val createdSection = it.asEntity(documentContentPersistenceManager)
-            parentSection.subsections.add(createdSection)
-            // insert it into persistence
-            sectionPersistenceManager.standardOperation().put(parentSection)
-        }, failure = {
-            Timber.e(it) { "Error creating section" }
-            context().toast("There was an error :(")
-        })
-    }
-
-    private suspend fun createNewDocument(name: String) {
-        val documentName = if (name.isEmpty()) "New Document" else name
-        val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
-        val parentSection = sectionPersistenceManager.findById(currentSectionId)
-        if (parentSection == null) {
-            Timber.e { "Parent section could not be found in persistence while trying to create a new document in it" }
-            return
-        }
-
-        restClient.createDocument(fileBrowserViewModel.currentSectionId.value!!, documentName).fold(
-                success = {
-                    // insert it into persistence
-                    documentPersistenceManager.standardOperation().put(
-                            it.asEntity(parentSection = parentSection))
-                    // and open the editor right away
-                    withContext(Dispatchers.Main) {
-                        openDocumentEditor(it.id)
-                    }
-                }, failure = {
-            Timber.e(it) { "Error creating document" }
-            context().toast("There was an error :(")
-        })
     }
 
     /**

@@ -16,9 +16,9 @@
         android:layout_width="match_parent"
         android:layout_height="?android:attr/actionBarSize"
         android:background="?android:attr/colorPrimary"
+        android:theme="@style/ToolbarTheme"
         app:layout_collapseMode="pin"
         app:layout_scrollFlags="scroll|snap"
-        app:popupTheme="@style/ThemeOverlay.AppCompat.Dark"
-        app:theme="@style/ToolbarTheme" />
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Dark" />
 
 </com.google.android.material.appbar.CollapsingToolbarLayout>

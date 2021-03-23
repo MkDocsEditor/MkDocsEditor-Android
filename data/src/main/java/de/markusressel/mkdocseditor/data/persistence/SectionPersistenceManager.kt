@@ -43,23 +43,27 @@ class SectionPersistenceManager @Inject constructor(
 
 
     private fun addOrUpdate(rootSection: SectionEntity) {
-        addOrUpdateEntityFields(newData = rootSection)
+        addOrUpdateEntityFields(section = rootSection)
     }
 
-    private fun addOrUpdateEntityFields(newData: SectionEntity): SectionEntity {
+    private fun addOrUpdateEntityFields(section: SectionEntity, parentSection: SectionEntity? = null): SectionEntity {
         // use existing section or insert new one
-        val section = standardOperation().query {
-            equal(SectionEntity_.id, newData.id)
-        }.findUnique() ?: standardOperation().get(standardOperation().put(newData))
+        val sectionEntity = standardOperation().query {
+            equal(SectionEntity_.id, section.id)
+        }.findUnique() ?: {
+            val newSection = standardOperation().get(standardOperation().put(section))
+            parentSection!!.subsections.add(newSection)
+            newSection
+        }()
 
-        newData.documents.forEach { newDocument ->
+        section.documents.forEach { newDocument ->
             val documentEntity = documentPersistenceManager.standardOperation().query {
                 equal(DocumentEntity_.id, newDocument.id)
             }.findUnique()?.apply {
                 filesize = newDocument.filesize
                 modtime = newDocument.modtime
             } ?: newDocument
-            documentEntity.parentSection.target = section
+            documentEntity.parentSection.target = sectionEntity
 
             val documentContentEntity = documentContentPersistenceManager.standardOperation().query {
                 equal(DocumentContentEntity_.documentId, documentEntity.id)
@@ -69,30 +73,31 @@ class SectionPersistenceManager @Inject constructor(
             documentPersistenceManager.standardOperation().put(documentEntity)
         }
 
-        newData.resources.forEach { newResource ->
+        section.resources.forEach { newResource ->
             val resourceEntity = resourcePersistenceManager.standardOperation().query {
                 equal(ResourceEntity_.id, newResource.id)
             }.findUnique()?.apply {
                 filesize = newResource.filesize
                 modtime = newResource.modtime
             } ?: newResource
-            resourceEntity.parentSection.target = section
+            resourceEntity.parentSection.target = sectionEntity
 
             resourcePersistenceManager.standardOperation().put(resourceEntity)
         }
 
-        // clear old sections
-        section.subsections.clear()
-        newData.subsections.forEach { newSection ->
-            section.subsections.add(addOrUpdateEntityFields(newSection))
+        section.subsections.forEach { subsection ->
+            addOrUpdateEntityFields(subsection, sectionEntity)
         }
         // insert updated section
-        standardOperation().put(section)
+        standardOperation().put(sectionEntity)
 
-        return section
+        return sectionEntity
     }
 
     private fun deleteMissing(newData: SectionEntity) {
+        // TODO: this currently only works when the whole dataset is updated,
+        //  but it should also be possible to update only parts of the tree
+
         val sectionIds = mutableSetOf<String>()
         val documentIds = mutableSetOf<String>()
         val resourceIds = mutableSetOf<String>()

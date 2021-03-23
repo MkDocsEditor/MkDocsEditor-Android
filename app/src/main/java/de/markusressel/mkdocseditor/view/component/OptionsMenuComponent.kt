@@ -4,6 +4,8 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import androidx.annotation.MenuRes
+import androidx.lifecycle.Lifecycle
+import androidx.annotation.MenuRes
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
@@ -18,7 +20,8 @@ class OptionsMenuComponent(val hostFragment: Fragment,
                             */
                            @get:MenuRes val optionsMenuRes: Int,
                            val onOptionsMenuItemClicked: ((item: MenuItem) -> Boolean)? = null,
-                           val onCreateOptionsMenu: ((menu: Menu?, inflater: MenuInflater?) -> Unit)? = null)
+                           val onCreateOptionsMenu: ((menu: Menu?, inflater: MenuInflater?) -> Unit)? = null,
+                           val onPrepareOptionsMenu: ((menu: Menu?) -> Unit)? = null)
     : FragmentComponent(hostFragment), LifecycleObserver {
 
     init {
@@ -27,9 +30,14 @@ class OptionsMenuComponent(val hostFragment: Fragment,
 
     fun onCreateOptionsMenu(menu: Menu?, inflater: MenuInflater?) {
         inflater?.inflate(optionsMenuRes, menu)
-
         onCreateOptionsMenu?.let {
             it(menu, inflater)
+        }
+    }
+
+    fun onPrepareOptionsMenu(menu: Menu) {
+        onPrepareOptionsMenu?.let {
+            it(menu)
         }
     }
 

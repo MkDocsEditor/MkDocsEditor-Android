@@ -2,27 +2,37 @@ package de.markusressel.mkdocseditor.view.viewmodel
 
 import androidx.annotation.MainThread
 import androidx.arch.core.util.Function
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.MutableLiveData
+import androidx.hilt.Assisted
+import androidx.hilt.lifecycle.ViewModelInject
+import androidx.lifecycle.*
 import androidx.lifecycle.Observer
 import androidx.paging.LivePagedListBuilder
 import androidx.paging.PagedList
 import com.github.ajalt.timberkt.Timber
+import com.hadilq.liveevent.LiveEvent
 import de.markusressel.commons.android.core.doAsync
 import de.markusressel.commons.android.core.runOnUiThread
-import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
-import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.*
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity_
+import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
 import de.markusressel.mkdocseditor.view.fragment.SectionBackstackItem
+import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import io.objectbox.android.ObjectBoxDataSource
 import io.objectbox.kotlin.query
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.*
 
-class FileBrowserViewModel : EntityListViewModel() {
+class FileBrowserViewModel @ViewModelInject constructor(
+        val restClient: MkDocsRestClient,
+        val sectionPersistenceManager: SectionPersistenceManager,
+        val documentPersistenceManager: DocumentPersistenceManager,
+        val documentContentPersistenceManager: DocumentContentPersistenceManager,
+        private val resourcePersistenceManager: ResourcePersistenceManager,
+        @Assisted private val savedStateHandle: SavedStateHandle
+) : EntityListViewModel() {
 
     private val backstack: Stack<SectionBackstackItem> = Stack()
         get() {
@@ -36,19 +46,18 @@ class FileBrowserViewModel : EntityListViewModel() {
     val isSearchExpanded = MutableLiveData<Boolean>(false)
     val currentSearchFilter = MutableLiveData<String>()
 
-    var sectionPersistenceManager: SectionPersistenceManager? = null
-    var documentPersistenceManager: DocumentPersistenceManager? = null
-    var resourcePersistenceManager: ResourcePersistenceManager? = null
-
     val currentSearchResults = MutableLiveData<List<IdentifiableListItem>>()
 
-    val currentSectionId = MutableLiveData<String>()
+    val currentSectionId = MutableLiveData<String>(ROOT_SECTION_ID)
     val currentSection = switchMapPaged<String, SectionEntity>(
             currentSectionId,
             Function { sectionId ->
                 getSectionLiveData(sectionId)
             }
     )
+
+    val openDocumentEditorEvent = LiveEvent<String>()
+    val reloadEvent = LiveEvent<Boolean>()
 
     init {
         currentSearchFilter.observeForever { searchString ->
@@ -57,15 +66,15 @@ class FileBrowserViewModel : EntityListViewModel() {
                 doAsync {
                     val searchRegex = searchString.toRegex(setOf(RegexOption.IGNORE_CASE, RegexOption.LITERAL))
 
-                    val sections = sectionPersistenceManager!!.standardOperation().query {
+                    val sections = sectionPersistenceManager.standardOperation().query {
                         filter { section -> searchRegex.containsMatchIn(section.name) }
                     }.find()
 
-                    val documents = documentPersistenceManager!!.standardOperation().query {
+                    val documents = documentPersistenceManager.standardOperation().query {
                         filter { document -> searchRegex.containsMatchIn(document.name) }
                     }.find()
 
-                    val resources = resourcePersistenceManager!!.standardOperation().query {
+                    val resources = resourcePersistenceManager.standardOperation().query {
                         filter { resource -> searchRegex.containsMatchIn(resource.name) }
                     }.find()
 
@@ -112,7 +121,7 @@ class FileBrowserViewModel : EntityListViewModel() {
      */
     private fun getSectionLiveData(sectionId: String = ROOT_SECTION_ID): LiveData<PagedList<SectionEntity>> {
         return LivePagedListBuilder(ObjectBoxDataSource.Factory(
-                sectionPersistenceManager!!.standardOperation().query {
+                sectionPersistenceManager.standardOperation().query {
                     equal(SectionEntity_.id, sectionId)
                     // TODO: implement sorting with inhomogeneous types
                     // sort(TYPE_COMPARATOR)
@@ -199,6 +208,80 @@ class FileBrowserViewModel : EntityListViewModel() {
     fun showTopLevel() {
         currentSectionId.value = ROOT_SECTION_ID
         openSection(ROOT_SECTION_ID)
+    }
+
+    /**
+     * Persist the given data
+     */
+    fun persistListData(data: SectionEntity) {
+        sectionPersistenceManager.insertOrUpdateRoot(data)
+        currentSectionId.postValue(currentSectionId.value)
+    }
+
+    fun createNewSection(sectionName: String) {
+        viewModelScope.launch {
+            val currentSectionId = currentSectionId.value!!
+            val parentSection = sectionPersistenceManager.findById(currentSectionId)
+            if (parentSection == null) {
+                Timber.e { "Parent section could not be found in persistence while trying to create a new section in it" }
+                return@launch
+            }
+
+            restClient.createSection(currentSectionId, sectionName).fold(success = {
+                val createdSection = it.asEntity(documentContentPersistenceManager)
+                parentSection.subsections.add(createdSection)
+                // insert it into persistence
+                sectionPersistenceManager.standardOperation().put(parentSection)
+                reloadEvent.value = true
+            }, failure = {
+                Timber.e(it) { "Error creating section" }
+//            toast("There was an error :(")
+            })
+        }
+    }
+
+    fun createNewDocument(documentName: String) {
+        viewModelScope.launch {
+            val name = if (documentName.isEmpty()) "New Document" else documentName
+            val currentSectionId = currentSectionId.value!!
+            val parentSection = sectionPersistenceManager.findById(currentSectionId)
+            if (parentSection == null) {
+                Timber.e { "Parent section could not be found in persistence while trying to create a new document in it" }
+                return@launch
+            }
+
+            restClient.createDocument(currentSectionId, name).fold(
+                    success = {
+                        // insert it into persistence
+                        documentPersistenceManager.standardOperation().put(
+                                it.asEntity(parentSection = parentSection))
+                        // and open the editor right away
+                        withContext(Dispatchers.Main) {
+                            openDocumentEditorEvent.value = it.id
+                        }
+                        reloadEvent.value = true
+                    }, failure = {
+                Timber.e(it) { "Error creating document" }
+//            context().toast("There was an error :(")
+            })
+        }
+    }
+
+    /**
+     * Rename a document
+     */
+    fun renameDocument(id: String, documentName: String) {
+        viewModelScope.launch {
+            restClient.renameDocument(id, documentName)
+            reloadEvent.value = true
+        }
+    }
+
+    fun deleteDocument(id: String) {
+        viewModelScope.launch {
+            restClient.deleteDocument(id)
+            reloadEvent.value = true
+        }
     }
 
     companion object {

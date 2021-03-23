@@ -4,7 +4,7 @@
 
     <string name="code_editor">Code Editor</string>
 
-    <string name="no_offline_version">Sorry, there is no offline version available. Try to connect to the server and open this file to get an updated offline version.</string>
+    <string name="no_offline_version">Sorry, there is no offline version available. Try to connect to the server and re-open this file to get an updated offline version.</string>
 
     <string name="refresh">Refresh</string>
     <string name="open_in_browser">Open in browser</string>
@@ -22,8 +22,11 @@
     <string name="sync_error">Synchronization error :(</string>
 
     <string name="add">Add</string>
-    <string name="speed_dial_create_document">Create a document</string>
-    <string name="speed_dial_create_section">Create a section</string>
+    <string name="delete">Delete</string>
+    <string name="create_document">Create a document</string>
+    <string name="edit_document">Edit document</string>
+    <string name="create_section">Create a section</string>
+    <string name="edit_section">Edit section</string>
 
     <string name="hint_new_section">New Section</string>
     <string name="error_section_already_exists">Section already exists!</string>

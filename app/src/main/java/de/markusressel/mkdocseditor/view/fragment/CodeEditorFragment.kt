@@ -17,6 +17,7 @@ import androidx.lifecycle.OnLifecycleEvent
 import androidx.lifecycle.lifecycleScope
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.callbacks.onDismiss
+import com.afollestad.materialdialogs.lifecycle.lifecycleOwner
 import com.google.android.material.snackbar.Snackbar
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import com.otaliastudios.zoom.ZoomEngine
@@ -43,7 +44,6 @@ import io.objectbox.kotlin.query
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
 
@@ -140,7 +140,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                     true
                 }
                 R.id.edit -> {
-                    codeEditorLayout.editable = !codeEditorLayout.editable
+                    if (offlineModeManager.isEnabled()) {
+                        codeEditorLayout.editable = false
+                    } else {
+                        codeEditorLayout.editable = !codeEditorLayout.editable
+                    }
+
                     it.icon = if (codeEditorLayout.editable) {
                         iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_eye)
                     } else {
@@ -149,6 +154,29 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                     true
                 }
                 else -> false
+            }
+        }, onPrepareOptionsMenu = { menu ->
+            // set "edit" icon
+            menu?.findItem(R.id.edit)?.apply {
+                icon = if (preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue) {
+                    iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_eye)
+                } else {
+                    iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_edit)
+                }
+
+                // invisible initially, until a server connection is established
+                isVisible = !viewModel.offlineModeEnabled.value!!
+            }
+
+            // set open in browser icon
+            menu?.findItem(R.id.open_in_browser)?.apply {
+                val openInBrowserIcon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_open_in_browser)
+                icon = openInBrowserIcon
+                if (preferencesHolder.webUriPreference.persistedValue.isBlank()) {
+                    isVisible = false
+                    isEnabled = false
+                }
+
             }
         })
     }
@@ -174,6 +202,11 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
         optionsMenuComponent.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        super.onPrepareOptionsMenu(menu)
+        optionsMenuComponent.onPrepareOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -391,6 +424,66 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         val endIndex = selectionEnd ?: selectionStart
         codeEditorLayout.codeEditorView.codeEditText
                 .setSelection(selectionStart.coerceIn(0, maxIndex), endIndex.coerceIn(0, maxIndex))
+    /**
+     * Loads the last offline version of this document from persistence
+     */
+    @UiThread
+    private fun loadTextFromPersistence() {
+        val entity = getCachedEditorState()
+
+        if (entity != null) {
+            restoreEditorState(editable = false)
+        } else {
+            MaterialDialog(context()).show {
+                lifecycleOwner(this@CodeEditorFragment)
+                title(R.string.no_offline_version)
+                negativeButton(android.R.string.ok, click = {
+                    it.dismiss()
+                })
+                onDismiss {
+                    navController.navigateUp()
+                }
+            }
+        }
+
+        loadingComponent.showContent(animated = true)
+    }
+
+    /**
+     * Returns the cache entity for this editor and document
+     */
+    private fun getCachedEditorState(): DocumentContentEntity? {
+        return documentContentPersistenceManager.standardOperation().query {
+            equal(DocumentContentEntity_.documentId, documentId)
+        }.findUnique()
+    }
+
+    /**
+     * Disconnects from the server (if necessary) and tries to reestablish a connection
+     */
+    private fun reconnectToServer() {
+        loadingComponent.showLoading()
+        if (documentSyncManager.isConnected) {
+            disconnect(reason = "Editor want's to refresh connection")
+            documentSyncManager.connect()
+        } else {
+            documentSyncManager.connect()
+        }
+    }
+
+    private fun onTextChanged(newText: String, patches: LinkedList<diff_match_patch.Patch>) {
+        val oldSelectionStart = codeEditorLayout.codeEditorView.codeEditText.selectionStart
+        val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
+        currentText = newText
+
+        // set new cursor position
+        val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, patches)
+                .coerceIn(0, currentText?.length)
+        val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
+                .coerceIn(0, currentText?.length)
+
+        setEditorText(currentText ?: "", newSelectionStart, newSelectionEnd)
+        saveEditorState()
     }
 
     override fun onSelectionChanged(start: Int, end: Int, hasSelection: Boolean) {
@@ -481,11 +574,20 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     }
 
     private val offlineModeObserver = Observer<Boolean> { enabled ->
+        updateOfflineBanner()
         if (enabled) {
             disconnect(reason = "Offline mode was activated")
             viewModel.loadTextFromPersistence()
         } else {
             viewModel.reconnectToServer()
+            activity?.invalidateOptionsMenu()
+        }
+    }
+
+    private fun updateOfflineBanner() {
+        runOnUiThread {
+            viewModel.offlineModeEnabled.value = !documentSyncManager.isConnected || offlineModeManager.isEnabled()
+            activity?.invalidateOptionsMenu()
         }
     }
 
@@ -515,7 +617,10 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         disconnect(reason = "Editor was closed")
     }
 
-    fun disconnect(reason: String = "None") {
+    private fun disconnect(reason: String = "None") {
+        codeEditorLayout.editable = false
+        noConnectionSnackbar?.dismiss()
+        updateOfflineBanner()
         viewModel.documentSyncManager.disconnect(1000, reason)
     }
 

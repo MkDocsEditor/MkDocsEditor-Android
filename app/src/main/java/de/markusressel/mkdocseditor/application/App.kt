@@ -3,6 +3,8 @@ package de.markusressel.mkdocseditor.application
 import android.app.Application
 import androidx.emoji.bundled.BundledEmojiCompatConfig
 import androidx.emoji.text.EmojiCompat
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import com.eightbitlab.rxbus.Bus
 import com.eightbitlab.rxbus.registerInBus
 import dagger.hilt.android.HiltAndroidApp
@@ -23,7 +25,11 @@ import javax.inject.Inject
  * Created by Markus on 20.12.2017.
  */
 @HiltAndroidApp
-class App : Application() {
+class App : Application(), Configuration.Provider {
+
+    // used for WorkManager
+    @Inject
+    lateinit var workerFactory: HiltWorkerFactory
 
     @Inject
     internal lateinit var restClient: MkDocsRestClient
@@ -33,6 +39,10 @@ class App : Application() {
 
     @Inject
     internal lateinit var documentPersistenceManager: DocumentPersistenceManager
+
+    override fun getWorkManagerConfiguration() = Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
 
     override fun onCreate() {
         super.onCreate()
