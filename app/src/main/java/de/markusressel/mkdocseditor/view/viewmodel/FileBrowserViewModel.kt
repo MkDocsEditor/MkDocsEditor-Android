@@ -3,6 +3,7 @@ package de.markusressel.mkdocseditor.view.viewmodel
 import androidx.annotation.MainThread
 import androidx.arch.core.util.Function
 import androidx.lifecycle.*
+import androidx.lifecycle.Observer
 import androidx.paging.LivePagedListBuilder
 import androidx.paging.PagedList
 import com.github.ajalt.timberkt.Timber
