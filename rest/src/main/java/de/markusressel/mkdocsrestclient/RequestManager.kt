@@ -89,7 +89,9 @@ class RequestManager(hostname: String = "localhost",
      */
     private fun updateBaseUrl() {
         val protocol = if (ssl) "https" else "http"
-        fuelManager.basePath = "$protocol://${hostname.substringBefore(':')}:$port"
+        val sanitized = hostname.removePrefix("http://").removePrefix("https://")
+        val basePath = "$protocol://${sanitized.substringBefore("/")}:$port/${sanitized.substringAfter("/", "")}"
+        fuelManager.basePath = basePath
     }
 
     /**
