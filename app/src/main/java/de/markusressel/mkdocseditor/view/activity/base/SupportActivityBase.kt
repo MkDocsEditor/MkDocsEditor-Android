@@ -86,7 +86,13 @@ abstract class SupportActivityBase : StateActivityBase() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
+    // An inject method to be overridden by the Hilt generated class.
+    protected open fun inject() {
+        throw UnsupportedOperationException()
+    }
+
     private fun initTheme() {
+        inject()
         val theme = preferencesDataProvider.getValueUnsafe(R.string.theme_key, getString(R.string.theme_dark_value))
 
         //        if (style == DIALOG) {

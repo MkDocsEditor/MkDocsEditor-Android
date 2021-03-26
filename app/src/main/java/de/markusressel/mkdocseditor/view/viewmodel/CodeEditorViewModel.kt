@@ -2,19 +2,19 @@ package de.markusressel.mkdocseditor.view.viewmodel
 
 import android.graphics.PointF
 import android.view.View
-import androidx.hilt.Assisted
-import androidx.hilt.lifecycle.ViewModelInject
+import androidx.annotation.UiThread
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.annotation.UiThread
-import androidx.lifecycle.*
+import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
+import de.markusressel.mkdocseditor.network.NetworkManager
+import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
@@ -24,16 +24,19 @@ import io.objectbox.kotlin.query
 import java.util.*
 import javax.inject.Inject
 
-
-class CodeEditorViewModel @ViewModelInject constructor(
-        @Assisted private val savedStateHandle: SavedStateHandle,
+@HiltViewModel
+class CodeEditorViewModel @Inject constructor(
+        private val savedStateHandle: SavedStateHandle,
         val documentPersistenceManager: DocumentPersistenceManager,
-        val preferencesHolder: KutePreferencesHolder
+        val documentContentPersistenceManager: DocumentContentPersistenceManager,
+        val preferencesHolder: KutePreferencesHolder,
+        val networkManager: NetworkManager,
+        val offlineModeManager: OfflineModeManager
 ) : ViewModel() {
 
     val documentId = MutableLiveData<String>()
 
-    var documentEntity: ObjectBoxLiveData<DocumentEntity> = getEntity(documentPersistenceManager, documentId.value!!)
+    var documentEntity: ObjectBoxLiveData<DocumentEntity> = getEntity(documentId.value!!)
 
     fun getEntity(documentId: String): ObjectBoxLiveData<DocumentEntity> {
         return ObjectBoxLiveData(documentPersistenceManager.standardOperation().query {
@@ -52,7 +55,9 @@ class CodeEditorViewModel @ViewModelInject constructor(
         }
     }
 
+    // TODO: add offlineModeManager.isEnabled() condition
     val editable = MutableLiveData(true)
+    val editModeActive = MutableLiveData(preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue)
 
     val loading = MutableLiveData(true)
     val connectionStatus: MutableLiveData<ConnectionStatusUpdate> = MutableLiveData(null)
@@ -65,12 +70,6 @@ class CodeEditorViewModel @ViewModelInject constructor(
     var currentZoom = 1F
 
     val textChange = MutableLiveData<TextChangeEvent>(null)
-
-    @Inject
-    lateinit var documentPersistenceManager: DocumentPersistenceManager
-
-    @Inject
-    lateinit var documentContentPersistenceManager: DocumentContentPersistenceManager
 
     val documentSyncManager = DocumentSyncManager(
             hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue,

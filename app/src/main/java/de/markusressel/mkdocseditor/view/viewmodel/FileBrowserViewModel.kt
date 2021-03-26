@@ -2,14 +2,12 @@ package de.markusressel.mkdocseditor.view.viewmodel
 
 import androidx.annotation.MainThread
 import androidx.arch.core.util.Function
-import androidx.hilt.Assisted
-import androidx.hilt.lifecycle.ViewModelInject
 import androidx.lifecycle.*
-import androidx.lifecycle.Observer
 import androidx.paging.LivePagedListBuilder
 import androidx.paging.PagedList
 import com.github.ajalt.timberkt.Timber
 import com.hadilq.liveevent.LiveEvent
+import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.doAsync
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocseditor.data.persistence.*
@@ -24,14 +22,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
+import javax.inject.Inject
 
-class FileBrowserViewModel @ViewModelInject constructor(
+@HiltViewModel
+class FileBrowserViewModel @Inject constructor(
+        private val savedStateHandle: SavedStateHandle,
         val restClient: MkDocsRestClient,
         val sectionPersistenceManager: SectionPersistenceManager,
         val documentPersistenceManager: DocumentPersistenceManager,
         val documentContentPersistenceManager: DocumentContentPersistenceManager,
         private val resourcePersistenceManager: ResourcePersistenceManager,
-        @Assisted private val savedStateHandle: SavedStateHandle
 ) : EntityListViewModel() {
 
     private val backstack: Stack<SectionBackstackItem> = Stack()

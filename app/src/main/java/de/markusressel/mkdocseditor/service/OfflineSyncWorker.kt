@@ -1,20 +1,23 @@
 package de.markusressel.mkdocseditor.service
 
 import android.content.Context
-import androidx.hilt.Assisted
-import androidx.hilt.work.WorkerInject
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.github.ajalt.timberkt.Timber
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import kotlinx.coroutines.coroutineScope
 
-class OfflineSyncWorker @WorkerInject constructor(
+
+@HiltWorker
+class OfflineSyncWorker @AssistedInject constructor(
         @Assisted appContext: Context,
         @Assisted workerParams: WorkerParameters,
-        val restClient: MkDocsRestClient,
-        val documentContentPersistenceManager: DocumentContentPersistenceManager)
+        private val restClient: MkDocsRestClient,
+        private val documentContentPersistenceManager: DocumentContentPersistenceManager)
     : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result = coroutineScope {
