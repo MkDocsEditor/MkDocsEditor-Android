@@ -48,10 +48,16 @@ class AppModule {
     @Provides
     @Singleton
     internal fun provideBoxStore(@ApplicationContext context: Context): BoxStore {
-        return MyObjectBox
+        val store = MyObjectBox
                 .builder()
                 .androidContext(context)
                 .build()
+
+        // Clear DB entirely
+//        store.close()
+//        store.deleteAllFiles()
+
+        return store
     }
 
 }

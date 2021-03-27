@@ -49,9 +49,6 @@ class App : Application(), Configuration.Provider {
         // register app lifecycle
         registerActivityLifecycleCallbacks(AppLifecycleTracker())
 
-        // Clear DB entirely
-//        BoxStore.deleteAllFiles(applicationContext, null)
-
         plantTimberTrees()
 
         setupErrorHandlers()

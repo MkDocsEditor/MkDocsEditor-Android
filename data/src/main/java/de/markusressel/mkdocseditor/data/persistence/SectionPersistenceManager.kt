@@ -35,10 +35,11 @@ class SectionPersistenceManager @Inject constructor(
      * and finally removes entities that are not present in the given dataset
      */
     fun insertOrUpdateRoot(newData: SectionEntity) {
-        addOrUpdate(newData)
-
-        // remove data that is not on the server anymore
-        deleteMissing(newData)
+        boxStore.runInTx {
+            addOrUpdate(newData)
+            // remove data that is not on the server anymore
+            deleteMissing(newData)
+        }
     }
 
 
