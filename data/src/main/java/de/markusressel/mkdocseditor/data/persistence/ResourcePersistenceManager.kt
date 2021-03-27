@@ -6,4 +6,5 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ResourcePersistenceManager @Inject constructor() : PersistenceManagerBase<ResourceEntity>(ResourceEntity::class)
+class ResourcePersistenceManager @Inject constructor()
+    : PersistenceManagerBase<ResourceEntity>(ResourceEntity::class)

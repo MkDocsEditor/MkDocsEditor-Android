@@ -9,8 +9,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class DocumentContentPersistenceManager
-@Inject constructor(
+class DocumentContentPersistenceManager @Inject constructor(
         private val documentPersistenceManager: DocumentPersistenceManager)
     : PersistenceManagerBase<DocumentContentEntity>(DocumentContentEntity::class) {
 
