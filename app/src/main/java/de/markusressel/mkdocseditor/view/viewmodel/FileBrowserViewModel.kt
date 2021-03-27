@@ -3,7 +3,6 @@ package de.markusressel.mkdocseditor.view.viewmodel
 import androidx.annotation.MainThread
 import androidx.arch.core.util.Function
 import androidx.lifecycle.*
-import androidx.lifecycle.Observer
 import androidx.paging.LivePagedListBuilder
 import androidx.paging.PagedList
 import com.github.ajalt.timberkt.Timber
@@ -44,18 +43,15 @@ class FileBrowserViewModel @Inject constructor(
             return field
         }
 
-    val isSearchExpanded = MutableLiveData<Boolean>(false)
+    val isSearchExpanded = MutableLiveData(false)
     val currentSearchFilter = MutableLiveData<String>()
 
     val currentSearchResults = MutableLiveData<List<IdentifiableListItem>>()
 
-    val currentSectionId = MutableLiveData<String>(ROOT_SECTION_ID)
-    val currentSection = switchMapPaged<String, SectionEntity>(
-            currentSectionId,
-            Function { sectionId ->
-                getSectionLiveData(sectionId)
-            }
-    )
+    val currentSectionId = MutableLiveData(ROOT_SECTION_ID)
+    val currentSection = switchMapPaged<String, SectionEntity>(currentSectionId) { sectionId ->
+        getSectionLiveData(sectionId)
+    }
 
     val openDocumentEditorEvent = LiveEvent<String>()
     val reloadEvent = LiveEvent<Boolean>()

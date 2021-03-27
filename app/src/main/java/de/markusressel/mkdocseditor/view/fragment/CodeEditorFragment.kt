@@ -10,7 +10,7 @@ import android.widget.Toast.LENGTH_SHORT
 import androidx.annotation.CallSuper
 import androidx.databinding.DataBindingUtil
 import androidx.databinding.ViewDataBinding
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Observer
 import androidx.lifecycle.OnLifecycleEvent
@@ -42,9 +42,7 @@ import de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import io.objectbox.kotlin.query
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
@@ -75,7 +73,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
     private var noConnectionSnackbar: Snackbar? = null
 
-    private val viewModel: CodeEditorViewModel by viewModels()
+    private val viewModel: CodeEditorViewModel by activityViewModels()
 
     private val loadingComponent by lazy { LoadingComponent(this) }
 

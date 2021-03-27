@@ -10,7 +10,7 @@ import android.widget.CompoundButton
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.view.get
-import androidx.navigation.Navigation
+import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import com.eightbitlab.rxbus.Bus
@@ -48,7 +48,9 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
         get() = R.layout.activity_main
 
     protected val navController by lazy {
-        Navigation.findNavController(this, R.id.navHostFragment)
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
+        navHostFragment.navController
+//        Navigation.findNavController(this, R.id.navHostFragment)
     }
 
     @Inject

@@ -8,7 +8,7 @@ import android.widget.Toast
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import androidx.databinding.ViewDataBinding
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Observer
 import com.afollestad.materialdialogs.MaterialDialog
@@ -21,7 +21,6 @@ import com.airbnb.epoxy.Typed3EpoxyController
 import com.eightbitlab.rxbus.Bus
 import com.eightbitlab.rxbus.registerInBus
 import com.github.ajalt.timberkt.Timber
-import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.result.Result
 import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
@@ -59,10 +58,16 @@ import java.util.concurrent.TimeUnit
 @AndroidEntryPoint
 class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
-    private val fileBrowserViewModel: FileBrowserViewModel by viewModels()
+    private val fileBrowserViewModel: FileBrowserViewModel by activityViewModels()
 
     private var searchView: SearchView? = null
     private var searchMenuItem: MenuItem? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        // make sure the viewModel is instantiated on the UI thread
+        fileBrowserViewModel
+    }
 
     override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
         // search
@@ -159,7 +164,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         }
     }
 
-    override suspend fun getLoadDataFromSourceFunction(): Result<SectionModel, FuelError> {
+    override suspend fun getLoadDataFromSourceFunction(): Result<SectionModel, Exception> {
         return restClient.getItemTree()
     }
 

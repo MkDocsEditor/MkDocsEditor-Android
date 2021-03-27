@@ -26,7 +26,6 @@ import android.view.View
 import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.Lifecycle
 import com.github.ajalt.timberkt.Timber
-import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.result.Result
 import com.github.kittinunf.result.map
 import com.google.android.material.snackbar.Snackbar
@@ -155,6 +154,7 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
                 .fold(success = {
                     persistListData(it)
                 }, failure = {
+                    Timber.e(it)
                     updateLastUpdatedFromSource()
                 })
     }
@@ -162,7 +162,7 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
     /**
      * Define a Single that returns the complete list of data from the (server) source
      */
-    internal abstract suspend fun getLoadDataFromSourceFunction(): Result<SectionModel, FuelError>
+    internal abstract suspend fun getLoadDataFromSourceFunction(): Result<SectionModel, Exception>
 
     /**
      * Map the source object to the persistence object

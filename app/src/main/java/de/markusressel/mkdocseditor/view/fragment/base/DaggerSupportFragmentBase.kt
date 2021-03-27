@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import androidx.annotation.LayoutRes
 import androidx.databinding.ViewDataBinding
 import androidx.navigation.NavController
-import androidx.navigation.Navigation
+import androidx.navigation.fragment.NavHostFragment
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.view.IconHandler
 import javax.inject.Inject
@@ -24,7 +24,11 @@ abstract class DaggerSupportFragmentBase : StateFragmentBase() {
     protected lateinit var iconHandler: IconHandler
 
     protected val navController: NavController
-        get() = Navigation.findNavController(requireActivity(), R.id.navHostFragment)
+        get() {
+            val navHostFragment = childFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
+            return navHostFragment.navController
+        }
+//        get() = Navigation.findNavController(requireActivity(), R.id.navHostFragment)
 
     /**
      * The layout resource for this Activity
