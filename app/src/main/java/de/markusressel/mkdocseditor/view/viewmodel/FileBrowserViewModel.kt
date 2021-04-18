@@ -93,7 +93,7 @@ class FileBrowserViewModel @Inject constructor(
             source: LiveData<X>,
             switchMapFunction: Function<X, LiveData<PagedList<Y>>>): MediatorLiveData<PagedList<Y>> {
         val result = MediatorLiveData<PagedList<Y>>()
-        result.addSource(source, object : Observer<X> {
+        result.addSource(source, object : androidx.lifecycle.Observer<X> {
             var mSource: LiveData<PagedList<Y>>? = null
 
             override fun onChanged(x: X?) {
