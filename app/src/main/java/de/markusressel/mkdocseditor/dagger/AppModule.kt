@@ -23,35 +23,35 @@ class AppModule {
 
     @Provides
     @Singleton
-    internal fun provideContext(@ApplicationContext context: Context): Context {
+    fun provideContext(@ApplicationContext context: Context): Context {
         return context
     }
 
     @Provides
     @Singleton
-    internal fun provideKutePreferenceDataProvider(@ApplicationContext context: Context): KutePreferenceDataProvider {
+    fun provideKutePreferenceDataProvider(@ApplicationContext context: Context): KutePreferenceDataProvider {
         return DefaultKutePreferenceDataProvider(context)
     }
 
     @Provides
     @Singleton
-    internal fun provideDiffMatchPatch(): diff_match_patch {
+    fun provideDiffMatchPatch(): diff_match_patch {
         return diff_match_patch()
     }
 
     @Provides
     @Singleton
-    internal fun provideMkDocsRestClient(): MkDocsRestClient {
+    fun provideMkDocsRestClient(): MkDocsRestClient {
         return MkDocsRestClient()
     }
 
     @Provides
     @Singleton
-    internal fun provideBoxStore(@ApplicationContext context: Context): BoxStore {
+    fun provideBoxStore(@ApplicationContext context: Context): BoxStore {
         val store = MyObjectBox
-                .builder()
-                .androidContext(context)
-                .build()
+            .builder()
+            .androidContext(context)
+            .build()
 
         // Clear DB entirely
 //        store.close()

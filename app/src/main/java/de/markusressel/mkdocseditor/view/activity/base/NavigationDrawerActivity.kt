@@ -99,7 +99,7 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
         actionBarDrawerToggle.syncState()
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return actionBarDrawerToggle.onOptionsItemSelected(item)
     }
 

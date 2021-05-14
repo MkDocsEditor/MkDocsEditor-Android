@@ -8,13 +8,9 @@ class AppLifecycleTracker : Application.ActivityLifecycleCallbacks {
 
     private var numStarted = 0
 
-    override fun onActivityCreated(p0: Activity?, p1: Bundle?) {
-    }
+    override fun onActivityCreated(p0: Activity, p1: Bundle?) {}
 
-    override fun onActivitySaveInstanceState(p0: Activity?, p1: Bundle?) {
-    }
-
-    override fun onActivityStarted(activity: Activity?) {
+    override fun onActivityStarted(p0: Activity) {
         if (numStarted == 0) {
             // app went to foreground
             onAppForeground()
@@ -22,17 +18,13 @@ class AppLifecycleTracker : Application.ActivityLifecycleCallbacks {
         numStarted++
     }
 
-    private fun onAppForeground() {
+    private fun onAppForeground() {}
 
-    }
+    override fun onActivityResumed(p0: Activity) {}
 
-    override fun onActivityResumed(p0: Activity?) {
-    }
+    override fun onActivityPaused(p0: Activity) {}
 
-    override fun onActivityPaused(p0: Activity?) {
-    }
-
-    override fun onActivityStopped(activity: Activity?) {
+    override fun onActivityStopped(p0: Activity) {
         numStarted--
         if (numStarted == 0) {
             // app went to background
@@ -40,10 +32,10 @@ class AppLifecycleTracker : Application.ActivityLifecycleCallbacks {
         }
     }
 
-    private fun onAppBackground() {
-    }
+    private fun onAppBackground() {}
 
-    override fun onActivityDestroyed(p0: Activity?) {
-    }
+    override fun onActivitySaveInstanceState(p0: Activity, p1: Bundle) {}
+
+    override fun onActivityDestroyed(p0: Activity) {}
 
 }
