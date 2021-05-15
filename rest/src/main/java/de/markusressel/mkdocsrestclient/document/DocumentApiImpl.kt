@@ -20,9 +20,7 @@ package de.markusressel.mkdocsrestclient.document
 
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Method
-import com.github.kittinunf.fuel.core.deserializers.StringDeserializer
 import com.github.kittinunf.result.Result
-import com.github.salomonbrys.kotson.jsonObject
 import de.markusressel.mkdocsrestclient.RequestManager
 
 /**
@@ -31,21 +29,44 @@ import de.markusressel.mkdocsrestclient.RequestManager
 class DocumentApiImpl(private val requestManager: RequestManager) : DocumentApi {
 
     override suspend fun getDocument(id: String): Result<DocumentModel, FuelError> {
-        return requestManager.doRequest("/document/$id/", Method.GET, DocumentModel.SingleDeserializer())
+        return requestManager.doRequest(
+            "/document/$id/",
+            Method.GET
+        )
     }
 
     override suspend fun getDocumentContent(id: String): Result<String, FuelError> {
-        return requestManager.doRequest("/document/$id/content", Method.GET, StringDeserializer())
+        return requestManager.doRequest("/document/$id/content", Method.GET)
     }
 
-    override suspend fun createDocument(parentId: String, name: String): Result<DocumentModel, FuelError> {
-        val data = jsonObject("parent" to parentId, "name" to name)
-        return requestManager.doJsonRequest("/document/", Method.POST, data, DocumentModel.SingleDeserializer())
+    override suspend fun createDocument(
+        parentId: String,
+        name: String
+    ): Result<DocumentModel, FuelError> {
+        val data = mapOf(
+            "parent" to parentId,
+            "name" to name
+        )
+
+        return requestManager.doJsonRequest(
+            "/document/",
+            Method.POST,
+            data
+        )
     }
 
-    override suspend fun renameDocument(id: String, name: String): Result<DocumentModel, FuelError> {
-        val data = jsonObject("name" to name)
-        return requestManager.doJsonRequest("/document/$id/", Method.PUT, data, DocumentModel.SingleDeserializer())
+    override suspend fun renameDocument(
+        id: String,
+        name: String
+    ): Result<DocumentModel, FuelError> {
+        val data = mapOf(
+            "name" to name
+        )
+        return requestManager.doJsonRequest(
+            "/document/$id/",
+            Method.PUT,
+            data
+        )
     }
 
     override suspend fun deleteDocument(id: String): Result<String, FuelError> {

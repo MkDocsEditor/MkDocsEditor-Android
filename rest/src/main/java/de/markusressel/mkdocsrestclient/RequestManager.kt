@@ -22,7 +22,6 @@ import com.github.kittinunf.fuel.core.*
 import com.github.kittinunf.fuel.core.extensions.authentication
 import com.github.kittinunf.fuel.coroutines.awaitStringResult
 import com.github.kittinunf.result.Result
-import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -30,10 +29,12 @@ import timber.log.Timber
 /**
  * Created by Markus on 08.02.2018.
  */
-class RequestManager(hostname: String = "localhost",
-                     port: Int = 8080,
-                     ssl: Boolean = true,
-                     var basicAuthConfig: BasicAuthConfig? = null) {
+class RequestManager(
+    hostname: String = "localhost",
+    port: Int = 8080,
+    ssl: Boolean = true,
+    var basicAuthConfig: BasicAuthConfig? = null
+) {
 
     /**
      * The hostname of the server
@@ -75,13 +76,13 @@ class RequestManager(hostname: String = "localhost",
      */
     private fun addLogger() {
         fuelManager
-                .addResponseInterceptor { next: (Request, Response) -> Response ->
-                    { req: Request, res: Response ->
-                        Timber.v(req.toString())
-                        Timber.v(res.toString())
-                        next(req, res)
-                    }
+            .addResponseInterceptor { next: (Request, Response) -> Response ->
+                { req: Request, res: Response ->
+                    Timber.v(req.toString())
+                    Timber.v(res.toString())
+                    next(req, res)
                 }
+            }
     }
 
     /**
@@ -90,7 +91,12 @@ class RequestManager(hostname: String = "localhost",
     private fun updateBaseUrl() {
         val protocol = if (ssl) "https" else "http"
         val sanitized = hostname.removePrefix("http://").removePrefix("https://")
-        val basePath = "$protocol://${sanitized.substringBefore("/")}:$port/${sanitized.substringAfter("/", "")}"
+        val basePath = "$protocol://${sanitized.substringBefore("/")}:$port/${
+            sanitized.substringAfter(
+                "/",
+                ""
+            )
+        }"
         fuelManager.basePath = basePath
     }
 
@@ -101,10 +107,14 @@ class RequestManager(hostname: String = "localhost",
      * @param urlParameters query parameters
      * @param method the request type (f.ex. GET)
      */
-    private fun createRequest(url: String, urlParameters: List<Pair<String, Any?>> = emptyList(),
-                              method: Method, timeout: Int = DEFAULT_TIMEOUT): Request {
+    fun createRequest(
+        url: String,
+        urlParameters: List<Pair<String, Any?>> = emptyList(),
+        method: Method,
+        timeout: Int = DEFAULT_TIMEOUT
+    ): Request {
         return getAuthenticatedRequest(fuelManager.request(method, url, urlParameters))
-                .timeout(timeout = timeout)
+            .timeout(timeout = timeout)
     }
 
     /**
@@ -119,12 +129,12 @@ class RequestManager(hostname: String = "localhost",
     }
 
     /**
-     * Do a generic request
+     * Do a simple status code request
      *
      * @param url the URL
      * @param method the request type (f.ex. GET)
      */
-    suspend fun doRequest(url: String, method: Method): Result<String, FuelError> {
+    suspend fun doStatusRequest(url: String, method: Method): Result<String, FuelError> {
         return withContext(Dispatchers.IO) {
             createRequest(url = url, method = method).awaitStringResult()
         }
@@ -135,12 +145,15 @@ class RequestManager(hostname: String = "localhost",
      *
      * @param url the URL
      * @param method the request type (f.ex. GET)
-     * @param deserializer a deserializer for the response json body
      */
-    suspend fun <T : Any> doRequest(url: String, method: Method, deserializer: Deserializable<T>): Result<T, FuelError> {
+    suspend inline fun <reified T : Any> doRequest(
+        url: String,
+        method: Method,
+    ): Result<T, FuelError> {
         return withContext(Dispatchers.IO) {
+            val deserializer: Deserializable<T> = deserializer()
             createRequest(url = url, method = method)
-                    .awaitResponseResult(deserializer).third
+                .awaitResponseResult(deserializer).third
         }
     }
 
@@ -150,12 +163,16 @@ class RequestManager(hostname: String = "localhost",
      * @param url the URL
      * @param urlParameters url query parameters
      * @param method the request type (f.ex. GET)
-     * @param deserializer a deserializer for the <b>response</b> json body
      */
-    suspend fun <T : Any> doRequest(url: String, urlParameters: List<Pair<String, Any?>>, method: Method, deserializer: Deserializable<T>): Result<T, FuelError> {
+    suspend inline fun <reified T : Any> doRequest(
+        url: String,
+        urlParameters: List<Pair<String, Any?>>,
+        method: Method
+    ): Result<T, FuelError> {
         return withContext(Dispatchers.IO) {
+            val deserializer: Deserializable<T> = deserializer()
             createRequest(url = url, urlParameters = urlParameters, method = method)
-                    .awaitResponseResult(deserializer).third
+                .awaitResponseResult(deserializer).third
         }
     }
 
@@ -165,34 +182,19 @@ class RequestManager(hostname: String = "localhost",
      * @param url the URL
      * @param method the request type (f.ex. GET)
      * @param jsonData an Object that will be serialized to json
-     * @param deserializer a deserializer for the <b>response</b> json body
      */
-    suspend fun <T : Any> doJsonRequest(url: String, method: Method, jsonData: Any, deserializer: Deserializable<T>): Result<T, FuelError> {
+    suspend inline fun <reified K : Any, reified T : Any> doJsonRequest(
+        url: String,
+        method: Method,
+        jsonData: K,
+    ): Result<T, FuelError> {
         return withContext(Dispatchers.IO) {
-            val json = Gson().toJson(jsonData)
+            val json = jsonData.toJson()
+            val deserializer: Deserializable<T> = deserializer()
             createRequest(url = url, method = method)
-                    .body(json)
-                    .header(HEADER_CONTENT_TYPE_JSON)
-                    .awaitResponseResult(deserializer).third
-        }
-    }
-
-    /**
-     * Do a request with a json body
-     *
-     * @param url the URL
-     * @param method the request type (f.ex. GET)
-     * @param jsonData an Object that will be serialized to json
-     */
-    suspend fun doJsonRequest(url: String, method: Method, jsonData: Any): Result<String, FuelError> {
-        val json = Gson()
-                .toJson(jsonData)
-
-        return withContext(Dispatchers.IO) {
-            createRequest(url = url, method = method)
-                    .body(json)
-                    .header(HEADER_CONTENT_TYPE_JSON)
-                    .awaitStringResult()
+                .body(json)
+                .header(HEADER_CONTENT_TYPE_JSON)
+                .awaitResponseResult(deserializer).third
         }
     }
 

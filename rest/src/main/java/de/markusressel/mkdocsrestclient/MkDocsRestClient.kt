@@ -77,14 +77,14 @@ class MkDocsRestClient constructor(
      * Check if the server is alive and reachable
      */
     suspend fun isHostAlive(): Result<String, FuelError> {
-        return requestManager.doRequest("/alive/", Method.GET)
+        return requestManager.doStatusRequest("/alive/", Method.GET)
     }
 
     /**
      * Get the complete item tree
      */
     suspend fun getItemTree(): Result<SectionModel, FuelError> {
-        return requestManager.doRequest("/tree/", Method.GET, SectionModel.SingleDeserializer())
+        return requestManager.doRequest("/tree/", Method.GET)
     }
 
 }

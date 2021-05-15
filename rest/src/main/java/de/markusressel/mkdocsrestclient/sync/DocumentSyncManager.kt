@@ -1,8 +1,7 @@
 package de.markusressel.mkdocsrestclient.sync
 
 import androidx.annotation.WorkerThread
-import com.google.gson.Gson
-import com.google.gson.JsonParseException
+import com.squareup.moshi.Moshi
 import de.markusressel.commons.android.core.doAsync
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
@@ -10,6 +9,8 @@ import de.markusressel.mkdocsrestclient.sync.websocket.SocketEntityBase
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionHandler
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionListener
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
+import de.markusressel.mkdocsrestclient.toEntity
+import de.markusressel.mkdocsrestclient.toJson
 import timber.log.Timber
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -19,26 +20,28 @@ import java.util.*
  * Class used to manage document changes from client- and server.
  */
 class DocumentSyncManager(
-        hostname: String,
-        port: Int,
-        ssl: Boolean,
-        basicAuthConfig: BasicAuthConfig,
-        private val documentId: String,
-        private val onConnectionStatusChanged: (connected: Boolean, errorCode: Int?, throwable: Throwable?) -> Unit,
-        private val onInitialText: (initialText: String) -> Unit,
-        private val onTextChanged: (newText: String, patches: LinkedList<diff_match_patch.Patch>) -> Unit,
-        /**
-         * A function to get a full copy of the current text on this client.
-         * This method is intended for internal use only.
-         */
-        private val currentText: () -> String) : WebsocketConnectionListener {
+    hostname: String,
+    port: Int,
+    ssl: Boolean,
+    basicAuthConfig: BasicAuthConfig,
+    private val documentId: String,
+    private val onConnectionStatusChanged: (connected: Boolean, errorCode: Int?, throwable: Throwable?) -> Unit,
+    private val onInitialText: (initialText: String) -> Unit,
+    private val onTextChanged: (newText: String, patches: LinkedList<diff_match_patch.Patch>) -> Unit,
+    /**
+     * A function to get a full copy of the current text on this client.
+     * This method is intended for internal use only.
+     */
+    private val currentText: () -> String
+) : WebsocketConnectionListener {
 
     val websocketUrl: String by lazy {
         val protocol = if (ssl) "wss" else "ws"
         "$protocol://$hostname:$port/document/$documentId/ws"
     }
 
-    private val websocketConnectionHandler = WebsocketConnectionHandler(websocketUrl, basicAuthConfig)
+    private val websocketConnectionHandler =
+        WebsocketConnectionHandler(websocketUrl, basicAuthConfig)
 
     /**
      * The URL used for the websocket connection
@@ -81,7 +84,10 @@ class DocumentSyncManager(
      * @param newText the new and (presumably) changed text
      * @return id of the EditRequest sent to the server
      */
-    private fun sendPatch(previousText: String = clientShadow, newText: String = currentText()): String {
+    private fun sendPatch(
+        previousText: String = clientShadow,
+        newText: String = currentText()
+    ): String {
         // compute diff to current shadow
         val diffs = DIFF_MATCH_PATCH.diff_main(previousText, newText)
         // take a checksum of the client shadow before the diff has been applied
@@ -95,13 +101,15 @@ class DocumentSyncManager(
         // parse to json
         val requestId = UUID.randomUUID().toString()
         val editRequestModel = EditRequestEntity(
-                requestId = requestId,
-                documentId = documentId,
-                patches = DIFF_MATCH_PATCH.patch_toText(patches),
-                shadowChecksum = clientShadowChecksumBeforePatch)
+            requestId = requestId,
+            documentId = documentId,
+            patches = DIFF_MATCH_PATCH.patch_toText(patches),
+            shadowChecksum = clientShadowChecksumBeforePatch
+        )
 
         // send to server
-        websocketConnectionHandler.send(GSON.toJson(editRequestModel))
+        val json = editRequestModel.toJson()
+        websocketConnectionHandler.send(json)
 
         return requestId
     }
@@ -131,7 +139,7 @@ class DocumentSyncManager(
 
     @WorkerThread
     private fun processIncomingMessage(text: String) {
-        val entity = GSON.fromJson(text, SocketEntityBase::class.java)
+        val entity: SocketEntityBase = text.toEntity()
         if (entity.documentId != documentId) {
             // ignore requests for other documents
             return
@@ -139,7 +147,7 @@ class DocumentSyncManager(
 
         when (entity.type) {
             "initial-content" -> {
-                val initialContentEntity = GSON.fromJson(text, InitialContentRequestEntity::class.java)
+                val initialContentEntity: InitialContentRequestEntity = text.toEntity()
 
                 runOnUiThread {
                     clientShadow = initialContentEntity.content
@@ -148,8 +156,7 @@ class DocumentSyncManager(
                 clientShadowIsReady = true
             }
             "edit-request" -> {
-                val editRequest = GSON.fromJson(text, EditRequestEntity::class.java)
-                        ?: throw JsonParseException("result was null!")
+                val editRequest: EditRequestEntity = text.toEntity()
 
                 // parse and apply patches
                 val patches = DIFF_MATCH_PATCH.patch_fromText(editRequest.patches)
@@ -187,7 +194,10 @@ class DocumentSyncManager(
      *
      * @return true if the patch was successful, false otherwise
      */
-    private fun fragilePatchShadow(editRequest: EditRequestEntity, patches: LinkedList<diff_match_patch.Patch>): Boolean {
+    private fun fragilePatchShadow(
+        editRequest: EditRequestEntity,
+        patches: LinkedList<diff_match_patch.Patch>
+    ): Boolean {
         // make sure current shadow matches the server shadow before the patch
         if (clientShadow.checksum() != editRequest.shadowChecksum) {
             return false
@@ -247,7 +257,7 @@ class DocumentSyncManager(
 
     companion object {
         private val DIFF_MATCH_PATCH = diff_match_patch()
-        private val GSON = Gson()
+        private val MOSHI = Moshi.Builder().build()
 
         private const val CHECKSUM_ALGORITHM = "MD5"
         private val HEX_DIGITS = "0123456789abcdef".toLowerCase().toCharArray()

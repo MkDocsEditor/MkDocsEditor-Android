@@ -29,8 +29,10 @@ import de.markusressel.mkdocsrestclient.RequestManager
 class ResourceApiImpl(private val requestManager: RequestManager) : ResourceApi {
 
     override suspend fun getResource(id: String): Result<ResourceModel, FuelError> {
-        return requestManager
-                .doRequest("/resource/$id/", Method.GET, ResourceModel.SingleDeserializer())
+        return requestManager.doRequest(
+            "/resource/$id/",
+            Method.GET
+        )
     }
 
     override suspend fun getResourceContent(id: String) {
