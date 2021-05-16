@@ -7,25 +7,27 @@ import okhttp3.*
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
-class WebsocketConnectionHandler(val url: String,
-                                 val basicAuthConfig: BasicAuthConfig) {
+class WebsocketConnectionHandler(
+    val url: String,
+    val basicAuthConfig: BasicAuthConfig
+) {
 
     private var listener: WebsocketConnectionListener? = null
 
     private val client: OkHttpClient = OkHttpClient.Builder()
-            .readTimeout(0, TimeUnit.MILLISECONDS)
-            .connectTimeout(3, TimeUnit.SECONDS)
-            //            .pingInterval(30, TimeUnit.SECONDS)
-            .authenticator { route, response ->
-                val credential = Credentials
-                        .basic(basicAuthConfig.username, basicAuthConfig.password)
+        .readTimeout(0, TimeUnit.MILLISECONDS)
+        .connectTimeout(3, TimeUnit.SECONDS)
+        //            .pingInterval(30, TimeUnit.SECONDS)
+        .authenticator { route, response ->
+            val credential = Credentials
+                .basic(basicAuthConfig.username, basicAuthConfig.password)
 
-                response.request()
-                        .newBuilder()
-                        .header("Authorization", credential)
-                        .build()
-            }
-            .build()
+            response.request()
+                .newBuilder()
+                .header("Authorization", credential)
+                .build()
+        }
+        .build()
 
     /**
      * Indicates if the websocket is connected

@@ -17,13 +17,13 @@ import de.markusressel.mkdocsrestclient.section.SectionModel
  * Created by Markus on 03.06.2018.
  */
 class MkDocsRestClient constructor(
-        private val requestManager: RequestManager = RequestManager(),
-        sectionApi: SectionApi = SectionApiImpl(requestManager),
-        documentApi: DocumentApi = DocumentApiImpl(requestManager),
-        resourceApi: ResourceApi = ResourceApiImpl(requestManager))
-    : SectionApi by sectionApi,
-        DocumentApi by documentApi,
-        ResourceApi by resourceApi {
+    private val requestManager: RequestManager = RequestManager(),
+    sectionApi: SectionApi = SectionApiImpl(requestManager),
+    documentApi: DocumentApi = DocumentApiImpl(requestManager),
+    resourceApi: ResourceApi = ResourceApiImpl(requestManager)
+) : SectionApi by sectionApi,
+    DocumentApi by documentApi,
+    ResourceApi by resourceApi {
 
     /**
      * Set the url for this client

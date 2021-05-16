@@ -26,7 +26,9 @@ import de.markusressel.mkdocsrestclient.RequestManager
 /**
  * Created by Markus on 03.06.2018.
  */
-class SectionApiImpl(private val requestManager: RequestManager) : SectionApi {
+class SectionApiImpl(
+    private val requestManager: RequestManager
+) : SectionApi {
 
     override suspend fun getSection(id: String): Result<SectionModel, FuelError> {
         return requestManager.doRequest(

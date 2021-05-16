@@ -26,7 +26,9 @@ import de.markusressel.mkdocsrestclient.RequestManager
 /**
  * Created by Markus on 03.06.2018.
  */
-class ResourceApiImpl(private val requestManager: RequestManager) : ResourceApi {
+class ResourceApiImpl(
+    private val requestManager: RequestManager
+) : ResourceApi {
 
     override suspend fun getResource(id: String): Result<ResourceModel, FuelError> {
         return requestManager.doRequest(

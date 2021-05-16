@@ -10,5 +10,8 @@ import java.util.*
 data class DocumentModel(
     val type: String,
     val id: String,
-    val name: String, val filesize: Long, val modtime: Date, val url: String
+    val name: String,
+    val filesize: Long,
+    val modtime: Date,
+    val url: String
 )

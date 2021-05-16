@@ -26,7 +26,9 @@ import de.markusressel.mkdocsrestclient.RequestManager
 /**
  * Created by Markus on 03.06.2018.
  */
-class DocumentApiImpl(private val requestManager: RequestManager) : DocumentApi {
+class DocumentApiImpl(
+    private val requestManager: RequestManager
+) : DocumentApi {
 
     override suspend fun getDocument(id: String): Result<DocumentModel, FuelError> {
         return requestManager.doRequest(
