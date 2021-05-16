@@ -6,5 +6,5 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class DocumentPersistenceManager @Inject constructor()
-    : PersistenceManagerBase<DocumentEntity>(DocumentEntity::class)
+class DocumentPersistenceManager @Inject constructor() :
+    PersistenceManagerBase<DocumentEntity>(DocumentEntity::class)

@@ -1,20 +1,16 @@
 package de.markusressel.mkdocseditor.data.persistence
 
 import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity_
+import de.markusressel.mkdocseditor.data.persistence.entity.*
 import io.objectbox.kotlin.query
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class SectionPersistenceManager @Inject constructor(
-        private val documentPersistenceManager: DocumentPersistenceManager,
-        private val documentContentPersistenceManager: DocumentContentPersistenceManager,
-        private val resourcePersistenceManager: ResourcePersistenceManager
+    private val documentPersistenceManager: DocumentPersistenceManager,
+    private val documentContentPersistenceManager: DocumentContentPersistenceManager,
+    private val resourcePersistenceManager: ResourcePersistenceManager
 ) : PersistenceManagerBase<SectionEntity>(SectionEntity::class) {
 
     /**
@@ -51,15 +47,18 @@ class SectionPersistenceManager @Inject constructor(
         addOrUpdateEntityFields(section = rootSection)
     }
 
-    private fun addOrUpdateEntityFields(section: SectionEntity, parentSection: SectionEntity? = null): SectionEntity {
+    private fun addOrUpdateEntityFields(
+        section: SectionEntity,
+        parentSection: SectionEntity? = null
+    ): SectionEntity {
         // use existing section or insert new one
         val sectionEntity = standardOperation().query {
             equal(SectionEntity_.id, section.id)
-        }.findUnique() ?: {
+        }.findUnique() ?: run {
             val newSection = standardOperation().get(standardOperation().put(section))
             parentSection?.subsections?.add(newSection)
             newSection
-        }()
+        }
 
         section.documents.forEach { newDocument ->
             val documentEntity = documentPersistenceManager.standardOperation().query {
@@ -70,9 +69,10 @@ class SectionPersistenceManager @Inject constructor(
             } ?: newDocument
             documentEntity.parentSection.target = sectionEntity
 
-            val documentContentEntity = documentContentPersistenceManager.standardOperation().query {
-                equal(DocumentContentEntity_.documentId, documentEntity.id)
-            }.findUnique()
+            val documentContentEntity =
+                documentContentPersistenceManager.standardOperation().query {
+                    equal(DocumentContentEntity_.documentId, documentEntity.id)
+                }.findUnique()
             documentEntity.content.target = documentContentEntity
 
             documentPersistenceManager.standardOperation().put(documentEntity)
@@ -150,7 +150,12 @@ class SectionPersistenceManager @Inject constructor(
         /**
          * Recursive method to find all section, document and resource ids
          */
-        private fun findIdsRecursive(section: SectionEntity, sectionIds: MutableSet<String>, documentIds: MutableSet<String>, resourceIds: MutableSet<String>) {
+        private fun findIdsRecursive(
+            section: SectionEntity,
+            sectionIds: MutableSet<String>,
+            documentIds: MutableSet<String>,
+            resourceIds: MutableSet<String>
+        ) {
             sectionIds.add(section.id)
             documentIds.addAll(section.documents.map { it.id })
             resourceIds.addAll(section.resources.map { it.id })
@@ -159,6 +164,5 @@ class SectionPersistenceManager @Inject constructor(
             }
         }
     }
-
 
 }

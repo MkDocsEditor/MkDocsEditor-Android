@@ -10,8 +10,8 @@ import javax.inject.Singleton
 
 @Singleton
 class DocumentContentPersistenceManager @Inject constructor(
-        private val documentPersistenceManager: DocumentPersistenceManager)
-    : PersistenceManagerBase<DocumentContentEntity>(DocumentContentEntity::class) {
+    private val documentPersistenceManager: DocumentPersistenceManager
+) : PersistenceManagerBase<DocumentContentEntity>(DocumentContentEntity::class) {
 
     /**
      * Updates or creates a DocumentContentEntity with the given data and
@@ -20,17 +20,21 @@ class DocumentContentPersistenceManager @Inject constructor(
      * @param documentId the documentId for reference
      * @param text the text content of the document
      */
-    fun insertOrUpdate(documentId: String, text: String? = null,
-                       selection: Int? = null,
-                       zoomLevel: Float? = null,
-                       panX: Float? = null,
-                       panY: Float? = null) {
+    fun insertOrUpdate(
+        documentId: String, text: String? = null,
+        selection: Int? = null,
+        zoomLevel: Float? = null,
+        panX: Float? = null,
+        panY: Float? = null
+    ) {
         val entity = standardOperation().query {
             equal(DocumentContentEntity_.documentId, documentId)
         }.findUnique()
-                ?: DocumentContentEntity(entityId = 0,
-                        date = System.currentTimeMillis(),
-                        documentId = documentId)
+            ?: DocumentContentEntity(
+                entityId = 0,
+                date = System.currentTimeMillis(),
+                documentId = documentId
+            )
 
         // attach parent if necessary
         if (entity.documentEntity.isNull) {
