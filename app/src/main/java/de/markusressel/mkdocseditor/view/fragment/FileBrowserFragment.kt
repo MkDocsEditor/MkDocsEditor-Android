@@ -57,7 +57,7 @@ import java.util.concurrent.TimeUnit
 @AndroidEntryPoint
 class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
-    private val fileBrowserViewModel: FileBrowserViewModel by activityViewModels()
+    private val viewModel: FileBrowserViewModel by activityViewModels()
 
     private var searchView: SearchView? = null
     private var searchMenuItem: MenuItem? = null
@@ -65,7 +65,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     override fun onAttach(context: Context) {
         super.onAttach(context)
         // make sure the viewModel is instantiated on the UI thread
-        fileBrowserViewModel
+        viewModel
     }
 
     override fun createViewDataBinding(
@@ -74,7 +74,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         savedInstanceState: Bundle?
     ): ViewDataBinding? {
         // search
-        fileBrowserViewModel.currentSearchResults.observe(this) {
+        viewModel.currentSearchResults.observe(this) {
             if (it.isEmpty()) {
                 showEmpty()
             } else {
@@ -88,7 +88,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         }
 
         // normal navigation
-        fileBrowserViewModel.currentSection.observe(this) {
+        viewModel.currentSection.observe(this) {
             if (it.isNotEmpty()) {
                 it.first().let { section ->
                     if (section.subsections.isEmpty() and section.documents.isEmpty() and section.resources.isEmpty()) {
@@ -105,27 +105,27 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
             } else {
                 // in theory this will navigate back until a section is found
                 // or otherwise show the "empty" screen
-                if (!fileBrowserViewModel.navigateUp()) {
+                if (!viewModel.navigateUp()) {
                     showEmpty()
                 }
             }
         }
 
-        fileBrowserViewModel.currentSearchFilter.observe(this) {
+        viewModel.currentSearchFilter.observe(this) {
             searchView?.setQuery(it, false)
         }
-        fileBrowserViewModel.isSearchExpanded.observe(this) { isExpanded ->
+        viewModel.isSearchExpanded.observe(this) { isExpanded ->
             if (!isExpanded) {
                 searchView?.clearFocus()
                 searchMenuItem?.collapseActionView()
             }
         }
 
-        fileBrowserViewModel.openDocumentEditorEvent.observe(this) { documentId ->
+        viewModel.openDocumentEditorEvent.observe(this) { documentId ->
             openDocumentEditor(documentId)
         }
 
-        fileBrowserViewModel.reloadEvent.observe(this) {
+        viewModel.reloadEvent.observe(this) {
             CoroutineScope(Dispatchers.IO).launch {
                 reload()
             }
@@ -135,27 +135,27 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(de.markusressel.kutepreferences.core.R.menu.kutepreferences__menu, menu)
+        inflater.inflate(R.menu.options_menu_list, menu)
 
         searchMenuItem = menu.findItem(R.id.search)
         searchMenuItem?.apply {
             icon = ContextCompat.getDrawable(
                 context as Context,
-                de.markusressel.kutepreferences.core.R.drawable.ic_search_24px
+                R.drawable.ic_search_24px
             )
             setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
                 override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
-                    val oldValue = fileBrowserViewModel.isSearchExpanded.value
+                    val oldValue = viewModel.isSearchExpanded.value
                     if (oldValue == null || !oldValue) {
-                        fileBrowserViewModel.isSearchExpanded.value = true
+                        viewModel.isSearchExpanded.value = true
                     }
                     return true
                 }
 
                 override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
-                    val oldValue = fileBrowserViewModel.isSearchExpanded.value
+                    val oldValue = viewModel.isSearchExpanded.value
                     if (oldValue == null || oldValue) {
-                        fileBrowserViewModel.isSearchExpanded.value = false
+                        viewModel.isSearchExpanded.value = false
                     }
                     return true
                 }
@@ -171,7 +171,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                 .debounce(300, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeBy(onNext = { text ->
-                    fileBrowserViewModel.setSearch(text.toString())
+                    viewModel.setSearch(text.toString())
                 }, onError = { error ->
                     Timber.e(error) { "Error filtering list" }
                 })
@@ -184,13 +184,13 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     override fun mapToEntity(it: Any): IdentifiableListItem {
         return when (it) {
-            is SectionModel -> it.asEntity(fileBrowserViewModel.documentContentPersistenceManager)
+            is SectionModel -> it.asEntity(viewModel.documentContentPersistenceManager)
             else -> throw IllegalArgumentException("Cant map object of type ${it.javaClass}!")
         }
     }
 
     override fun persistListData(data: IdentifiableListItem) {
-        fileBrowserViewModel.persistListData(data as SectionEntity)
+        viewModel.persistListData(data as SectionEntity)
     }
 
     override fun createEpoxyController(): Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>> {
@@ -208,7 +208,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                         id(it.id)
                         item(it)
                         onclick { model, parentView, clickedView, position ->
-                            fileBrowserViewModel.openSection(model.item().id)
+                            viewModel.openSection(model.item().id)
                         }
                         onlongclick { model, parentView, clickedView, position ->
                             Timber.d { "Long clicked section list item" }
@@ -293,9 +293,9 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     }
 
     private fun openCreateSectionDialog() {
-        val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
+        val currentSectionId = viewModel.currentSectionId.value!!
         val parentSection =
-            fileBrowserViewModel.sectionPersistenceManager.findById(currentSectionId)!!
+            viewModel.sectionPersistenceManager.findById(currentSectionId)!!
         val existingSections = parentSection.subsections.map { it.name }
 
         MaterialDialog(context()).show {
@@ -322,16 +322,16 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
             positiveButton(android.R.string.ok, click = {
                 val sectionName = getInputField().text.toString().trim()
-                fileBrowserViewModel.createNewSection(sectionName)
+                viewModel.createNewSection(sectionName)
             })
             negativeButton(android.R.string.cancel)
         }
     }
 
     private fun openCreateDocumentDialog() {
-        val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
+        val currentSectionId = viewModel.currentSectionId.value!!
         val parentSection =
-            fileBrowserViewModel.sectionPersistenceManager.findById(currentSectionId)!!
+            viewModel.sectionPersistenceManager.findById(currentSectionId)!!
         val existingDocuments = parentSection.documents.map { it.name }
 
         MaterialDialog(context()).show {
@@ -358,16 +358,16 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
             positiveButton(android.R.string.ok, click = {
                 val documentName = getInputField().text.toString().trim()
-                fileBrowserViewModel.createNewDocument(documentName)
+                viewModel.createNewDocument(documentName)
             })
             negativeButton(android.R.string.cancel)
         }
     }
 
     private fun openEditDocumentDialog(entity: DocumentEntity) {
-        val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
+        val currentSectionId = viewModel.currentSectionId.value!!
         val parentSection =
-            fileBrowserViewModel.sectionPersistenceManager.findById(currentSectionId)!!
+            viewModel.sectionPersistenceManager.findById(currentSectionId)!!
         val existingDocuments = parentSection.documents.map { it.name }
 
         MaterialDialog(context()).show {
@@ -394,10 +394,10 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
             positiveButton(android.R.string.ok, click = {
                 val documentName = getInputField().text.toString().trim()
-                fileBrowserViewModel.renameDocument(entity.id, documentName)
+                viewModel.renameDocument(entity.id, documentName)
             })
             neutralButton(R.string.delete, click = {
-                fileBrowserViewModel.deleteDocument(entity.id)
+                viewModel.deleteDocument(entity.id)
             })
             negativeButton(android.R.string.cancel)
         }
@@ -409,7 +409,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
      * @return true, if the back button event was consumed, false otherwise
      */
     fun onBackPressed(): Boolean {
-        return fileBrowserViewModel.navigateUp()
+        return viewModel.navigateUp()
     }
 
 }
