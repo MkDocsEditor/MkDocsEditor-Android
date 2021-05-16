@@ -78,11 +78,10 @@ class ThemeHelper @Inject constructor(private var context: Context) {
     //    }
 
     private fun setTheme(activity: Activity, @StyleRes themeRes: Int) {
-        activity
-                .applicationContext
-                .setTheme(themeRes)
-        activity
-                .setTheme(themeRes)
+        activity.apply {
+            applicationContext.setTheme(themeRes)
+            setTheme(themeRes)
+        }
     }
 
     /**
@@ -98,11 +97,9 @@ class ThemeHelper @Inject constructor(private var context: Context) {
         val typedValue = TypedValue()
         if (context.theme.resolveAttribute(attr, typedValue, true)) {
             if (typedValue.type >= TypedValue.TYPE_FIRST_INT && typedValue.type <= TypedValue.TYPE_LAST_INT) {
-                return typedValue
-                        .data
+                return typedValue.data
             } else if (typedValue.type == TypedValue.TYPE_STRING) {
-                return ContextCompat
-                        .getColor(context, typedValue.resourceId)
+                return ContextCompat.getColor(context, typedValue.resourceId)
             }
         }
 

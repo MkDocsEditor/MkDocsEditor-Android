@@ -10,7 +10,6 @@ import androidx.core.content.ContextCompat
 import androidx.databinding.ViewDataBinding
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.Observer
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.WhichButton
 import com.afollestad.materialdialogs.actions.setActionButtonEnabled
@@ -71,17 +70,21 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
         // search
-        fileBrowserViewModel.currentSearchResults.observe(this, Observer {
+        fileBrowserViewModel.currentSearchResults.observe(this) {
             if (it.isEmpty()) {
                 showEmpty()
             } else {
                 hideEmpty()
             }
-            epoxyController.setData(it.filterByExpectedType(), it.filterByExpectedType(), it.filterByExpectedType())
-        })
+            epoxyController.setData(
+                it.filterByExpectedType(),
+                it.filterByExpectedType(),
+                it.filterByExpectedType()
+            )
+        }
 
         // normal navigation
-        fileBrowserViewModel.currentSection.observe(this, Observer {
+        fileBrowserViewModel.currentSection.observe(this) {
             if (it.isNotEmpty()) {
                 it.first().let { section ->
                     if (section.subsections.isEmpty() and section.documents.isEmpty() and section.resources.isEmpty()) {
@@ -89,7 +92,11 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                     } else {
                         hideEmpty()
                     }
-                    epoxyController.setData(section.subsections, section.documents, section.resources)
+                    epoxyController.setData(
+                        section.subsections,
+                        section.documents,
+                        section.resources
+                    )
                 }
             } else {
                 // in theory this will navigate back until a section is found
@@ -98,27 +105,27 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                     showEmpty()
                 }
             }
-        })
+        }
 
-        fileBrowserViewModel.currentSearchFilter.observe(this, Observer {
+        fileBrowserViewModel.currentSearchFilter.observe(this) {
             searchView?.setQuery(it, false)
-        })
-        fileBrowserViewModel.isSearchExpanded.observe(this, Observer { isExpanded ->
+        }
+        fileBrowserViewModel.isSearchExpanded.observe(this) { isExpanded ->
             if (!isExpanded) {
                 searchView?.clearFocus()
                 searchMenuItem?.collapseActionView()
             }
-        })
+        }
 
-        fileBrowserViewModel.openDocumentEditorEvent.observe(this, Observer { documentId ->
+        fileBrowserViewModel.openDocumentEditorEvent.observe(this) { documentId ->
             openDocumentEditor(documentId)
-        })
+        }
 
-        fileBrowserViewModel.reloadEvent.observe(this, Observer {
+        fileBrowserViewModel.reloadEvent.observe(this) {
             CoroutineScope(Dispatchers.IO).launch {
                 reload()
             }
-        })
+        }
 
         return super.createViewDataBinding(inflater, container, savedInstanceState)
     }
@@ -183,7 +190,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         return object : Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>>() {
             override fun buildModels(sections: List<SectionEntity>, documents: List<DocumentEntity>, resources: List<ResourceEntity>) {
                 sections.sortedBy {
-                    it.name.toLowerCase(Locale.getDefault())
+                    it.name.lowercase(Locale.getDefault())
                 }.forEach {
                     listItemSection {
                         id(it.id)
@@ -199,7 +206,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                 }
 
                 documents.sortedBy {
-                    it.name.toLowerCase(Locale.getDefault())
+                    it.name.lowercase(Locale.getDefault())
                 }.forEach {
                     listItemDocument {
                         id(it.id)
@@ -215,7 +222,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                 }
 
                 resources.sortedBy {
-                    it.name.toLowerCase(Locale.getDefault())
+                    it.name.lowercase(Locale.getDefault())
                 }.forEach {
                     listItemResource {
                         id(it.id)
