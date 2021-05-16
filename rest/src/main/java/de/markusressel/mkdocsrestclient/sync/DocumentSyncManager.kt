@@ -260,7 +260,7 @@ class DocumentSyncManager(
         private val MOSHI = Moshi.Builder().build()
 
         private const val CHECKSUM_ALGORITHM = "MD5"
-        private val HEX_DIGITS = "0123456789abcdef".toLowerCase().toCharArray()
+        private val HEX_DIGITS = "0123456789abcdef".lowercase().toCharArray()
     }
 
 }
