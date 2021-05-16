@@ -23,16 +23,18 @@ import de.markusressel.mkdocseditor.R
 /**
  * Created by Markus on 15.02.2018.
  */
-class LoadingComponent(hostFragment: Fragment, val onShowContent: ((animated: Boolean) -> Unit)? = null,
-                       /**
-                        * Called when the error screen is shown
-                        */
-                       val onShowError: ((message: String, t: Throwable?) -> Unit)? = null,
-                       /**
-                        * Called when the error is clicked
-                        * Show a sophisticated error screen here
-                        */
-                       val onErrorClicked: ((message: String, t: Throwable?) -> Unit)? = null) : FragmentComponent(hostFragment) {
+class LoadingComponent(
+    hostFragment: Fragment, val onShowContent: ((animated: Boolean) -> Unit)? = null,
+    /**
+     * Called when the error screen is shown
+     */
+    val onShowError: ((message: String, t: Throwable?) -> Unit)? = null,
+    /**
+     * Called when the error is clicked
+     * Show a sophisticated error screen here
+     */
+    val onErrorClicked: ((message: String, t: Throwable?) -> Unit)? = null
+) : FragmentComponent(hostFragment) {
 
     protected lateinit var loadingLayout: ViewGroup
 
@@ -42,7 +44,11 @@ class LoadingComponent(hostFragment: Fragment, val onShowContent: ((animated: Bo
     lateinit var errorDescription: TextView
 
 
-    fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         contentView = container
 
         val rootView = createWrapperLayout()
@@ -135,11 +141,9 @@ class LoadingComponent(hostFragment: Fragment, val onShowContent: ((animated: Bo
     }
 
     private fun showError(message: String, throwable: Throwable? = null) {
-        throwable
-                ?.let {
-                    Timber
-                            .e(throwable) { message }
-                }
+        throwable?.let {
+            Timber.e(throwable) { message }
+        }
         val errorDescriptionText: CharSequence = throwable?.let {
             var text = ""
 
@@ -149,57 +153,51 @@ class LoadingComponent(hostFragment: Fragment, val onShowContent: ((animated: Bo
 
             text += "${throwable.javaClass.simpleName}\n"
 
-            throwable
-                    .message
-                    ?.let {
-                        if (it.isNotEmpty()) text += it
-                    }
+            throwable.message?.let {
+                if (it.isNotEmpty()) text += it
+            }
 
             text
         } ?: message
 
-        errorDescription
-                .text = errorDescriptionText
+        errorDescription.text = errorDescriptionText
 
         RxView
-                .clicks(errorLayout)
-                .bindToLifecycle(errorLayout)
-                .subscribe {
-                    onErrorClicked
-                            ?.let {
-                                it(message, throwable)
-                                return@subscribe
-                            }
+            .clicks(errorLayout)
+            .bindToLifecycle(errorLayout)
+            .subscribe {
+                onErrorClicked
+                    ?.let {
+                        it(message, throwable)
+                        return@subscribe
+                    }
 
-                    val contentText = throwable?.let {
-                        message + "\n\n\n" + throwable.prettyPrint()
-                    } ?: message
+                val contentText = throwable?.let {
+                    message + "\n\n\n" + throwable.prettyPrint()
+                } ?: message
 
-                    MaterialDialog(context as Context)
-                            .show {
-                                lifecycleOwner(fragment)
-                                title(R.string.error)
-                                message(text = contentText)
-                                positiveButton(res = android.R.string.ok)
-                            }
-                }
+                MaterialDialog(context as Context)
+                    .show {
+                        lifecycleOwner(fragment)
+                        title(R.string.error)
+                        message(text = contentText)
+                        positiveButton(res = android.R.string.ok)
+                    }
+            }
 
         setViewVisibility(errorLayout, View.VISIBLE)
-        contentView
-                ?.let {
-                    fadeView(it, 0f)
-                }
+        contentView?.let {
+            fadeView(it, 0f)
+        }
         fadeView(loadingLayout, 0f)
 
-        onShowError
-                ?.let {
-                    it(message, throwable)
-                }
+        onShowError?.let {
+            it(message, throwable)
+        }
     }
 
     private fun setViewVisibility(view: View, visibility: Int) {
-        view
-                .visibility = visibility
+        view.visibility = visibility
     }
 
     private fun fadeView(view: View, alpha: Float) {
@@ -214,27 +212,21 @@ class LoadingComponent(hostFragment: Fragment, val onShowContent: ((animated: Bo
             else -> FADE_DURATION_MS
         }
 
-        view
-                .animate()
-                .alpha(alpha)
-                .setDuration(duration)
-                .setInterpolator(interpolator)
-                .withStartAction {
-                    if (alpha > 0) {
-                        view
-                                .alpha = 0f
-                        view
-                                .visibility = View
-                                .VISIBLE
-                    }
+        view.animate()
+            .alpha(alpha)
+            .setDuration(duration)
+            .setInterpolator(interpolator)
+            .withStartAction {
+                if (alpha > 0) {
+                    view.alpha = 0f
+                    view.visibility = View.VISIBLE
                 }
-                .withEndAction {
-                    if (alpha <= 0) {
-                        view
-                                .visibility = View
-                                .GONE
-                    }
+            }
+            .withEndAction {
+                if (alpha <= 0) {
+                    view.visibility = View.GONE
                 }
+            }
     }
 
     companion object {

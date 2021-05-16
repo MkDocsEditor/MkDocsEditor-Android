@@ -25,7 +25,8 @@ abstract class DaggerSupportFragmentBase : StateFragmentBase() {
 
     protected val navController: NavController
         get() {
-            val navHostFragment = childFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
+            val navHostFragment =
+                childFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
             return navHostFragment.navController
         }
 //        get() = Navigation.findNavController(requireActivity(), R.id.navHostFragment)
@@ -36,7 +37,11 @@ abstract class DaggerSupportFragmentBase : StateFragmentBase() {
     @get:LayoutRes
     protected abstract val layoutRes: Int
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
         val viewModel = createViewDataBinding(inflater, container, savedInstanceState)
         return if (viewModel != null) {
             viewModel.root
@@ -50,6 +55,10 @@ abstract class DaggerSupportFragmentBase : StateFragmentBase() {
     /**
      * Optionally create and setup your ViewDataBinding and ViewModel in this method
      */
-    open fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? = null
+    open fun createViewDataBinding(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): ViewDataBinding? = null
 
 }

@@ -11,7 +11,7 @@ class LastOfflineCacheUpdatePreferenceItem : KutePreferenceListItem {
 
     override fun createEpoxyModel(highlighterFunction: HighlighterFunction): EpoxyModel<*> {
         val viewModel = DataModel(
-                lastUpdated = Date().toLocaleString()
+            lastUpdated = Date().toLocaleString()
         )
 
         return PreferenceItemTextInfoBindingModel_().viewModel(viewModel)

@@ -28,7 +28,11 @@ class AboutPage : DaggerSupportFragmentBase() {
     @Inject
     protected lateinit var preferencesHolder: KutePreferencesHolder
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
         val view = super.onCreateView(inflater, container, savedInstanceState)
 
         val themeVal = preferencesHolder.themePreference.persistedValue
@@ -41,16 +45,16 @@ class AboutPage : DaggerSupportFragmentBase() {
 //        }
 
         val fragment = LibsBuilder()
-                .withAboutIconShown(true)
-                .withAboutVersionShown(true)
-                .withAboutAppName(getString(R.string.app_name))
-                .withAboutDescription(getString(R.string.app_description))
+            .withAboutIconShown(true)
+            .withAboutVersionShown(true)
+            .withAboutAppName(getString(R.string.app_name))
+            .withAboutDescription(getString(R.string.app_description))
 //                .withActivityStyle(aboutLibTheme)
 //                .withActivityColor(
 //                        Colors(ContextCompat.getColor(context, R.color.primary),
 //                                ContextCompat.getColor(context, R.color.primary_dark)))
-                .withActivityTitle(requireContext().getString(R.string.menu_item_about))
-                .supportFragment()
+            .withActivityTitle(requireContext().getString(R.string.menu_item_about))
+            .supportFragment()
 
         val t = childFragmentManager.beginTransaction()
         t.replace(R.id.contentLayout, fragment)

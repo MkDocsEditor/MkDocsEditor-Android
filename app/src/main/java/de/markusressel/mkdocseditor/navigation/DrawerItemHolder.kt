@@ -10,28 +10,32 @@ import de.markusressel.mkdocseditor.R
 object DrawerItemHolder {
 
     val FileBrowser = DrawerMenuItem(
-            id = R.id.fileBrowserPage,
-            title = R.string.menu_item_file_browser,
-            icon = MaterialDesignIconic.Icon.gmi_home,
-            selectable = true)
+        id = R.id.fileBrowserPage,
+        title = R.string.menu_item_file_browser,
+        icon = MaterialDesignIconic.Icon.gmi_home,
+        selectable = true
+    )
 
     val Settings = DrawerMenuItem(
-            id = R.id.preferencesPage,
-            title = R.string.menu_item_settings,
-            icon = MaterialDesignIconic.Icon.gmi_settings,
-            selectable = true)
+        id = R.id.preferencesPage,
+        title = R.string.menu_item_settings,
+        icon = MaterialDesignIconic.Icon.gmi_settings,
+        selectable = true
+    )
 
     val About = DrawerMenuItem(
-            id = R.id.aboutPage,
-            title = R.string.menu_item_about,
-            icon = MaterialDesignIconic.Icon.gmi_info,
-            selectable = true)
+        id = R.id.aboutPage,
+        title = R.string.menu_item_about,
+        icon = MaterialDesignIconic.Icon.gmi_info,
+        selectable = true
+    )
 
     val OfflineMode = DrawerMenuItem(
-            id = R.id.none,
-            title = R.string.menu_item_offline_mode,
-            icon = MaterialDesignIconic.Icon.gmi_airplanemode_active,
-            selectable = false)
+        id = R.id.none,
+        title = R.string.menu_item_offline_mode,
+        icon = MaterialDesignIconic.Icon.gmi_airplanemode_active,
+        selectable = false
+    )
 
     fun fromId(drawerItemIdentifier: Int): DrawerMenuItem? {
         return when (drawerItemIdentifier) {
@@ -39,8 +43,7 @@ object DrawerItemHolder {
             Settings.id -> Settings
             About.id -> About
             else -> {
-                Timber
-                        .w { "Unknown menu item identifier: $drawerItemIdentifier" }
+                Timber.w { "Unknown menu item identifier: $drawerItemIdentifier" }
                 null
             }
         }

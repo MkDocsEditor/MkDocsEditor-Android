@@ -50,14 +50,19 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
 
     protected var lastScrollPosition by savedInstanceState(0)
 
-    protected open val fabConfig: FabConfig = FabConfig(left = mutableListOf(), right = mutableListOf())
+    protected open val fabConfig: FabConfig =
+        FabConfig(left = mutableListOf(), right = mutableListOf())
     private val fabButtonViews = mutableListOf<FloatingActionButton>()
 
     internal val epoxyController by lazy { createEpoxyController() }
 
     internal var currentSearchFilter: String by savedInstanceState("")
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
         _binding = FragmentRecyclerviewBinding.inflate(inflater, container, false)
         val view = binding.root
         return view
@@ -70,8 +75,8 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
         val recyclerView = binding.recyclerView
         recyclerView.setController(epoxyController)
         recyclerView.layoutManager = StaggeredGridLayoutManager(
-                resources.getInteger(R.integer.list_column_count),
-                StaggeredGridLayoutManager.VERTICAL
+            resources.getInteger(R.integer.list_column_count),
+            StaggeredGridLayoutManager.VERTICAL
         )
 
         setupFabs()
@@ -138,8 +143,8 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
 
             val fabItems = (getLeftFabs() + getRightFabs()).map {
                 SpeedDialActionItem.Builder(it.id, iconHandler.getFabIcon(it.icon))
-                        .setLabel(it.description)
-                        .create()
+                    .setLabel(it.description)
+                    .create()
             }
             addAllActionItems(fabItems)
 

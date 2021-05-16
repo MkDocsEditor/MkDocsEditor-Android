@@ -6,6 +6,7 @@ import javax.inject.Singleton
 
 @Singleton
 class ServerConnectivityManager @Inject constructor(
-        val restClient: MkDocsRestClient) {
+    val restClient: MkDocsRestClient
+) {
 
 }

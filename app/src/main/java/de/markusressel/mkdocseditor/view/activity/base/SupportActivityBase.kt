@@ -73,9 +73,12 @@ abstract class SupportActivityBase : StateActivityBase() {
         restClient.setHostname(preferencesHolder.restConnectionHostnamePreference.persistedValue)
         restClient.setPort(preferencesHolder.restConnectionPortPreference.persistedValue.toInt())
         restClient.setUseSSL(preferencesHolder.restConnectionSslPreference.persistedValue)
-        restClient.setBasicAuthConfig(BasicAuthConfig(
+        restClient.setBasicAuthConfig(
+            BasicAuthConfig(
                 username = preferencesHolder.basicAuthUserPreference.persistedValue,
-                password = preferencesHolder.basicAuthPasswordPreference.persistedValue))
+                password = preferencesHolder.basicAuthPasswordPreference.persistedValue
+            )
+        )
 
         // inflate view manually so it can be altered in plugins
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -93,7 +96,10 @@ abstract class SupportActivityBase : StateActivityBase() {
 
     private fun initTheme() {
         inject()
-        val theme = preferencesDataProvider.getValueUnsafe(R.string.theme_key, getString(R.string.theme_dark_value))
+        val theme = preferencesDataProvider.getValueUnsafe(
+            R.string.theme_key,
+            getString(R.string.theme_dark_value)
+        )
 
         //        if (style == DIALOG) {
         //            themeHandler.applyDialogTheme(this, theme)
@@ -113,8 +119,10 @@ abstract class SupportActivityBase : StateActivityBase() {
      * Hide the status bar
      */
     protected fun hideStatusBar() {
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+        )
     }
 
     private fun setLocale(locale: Locale) {

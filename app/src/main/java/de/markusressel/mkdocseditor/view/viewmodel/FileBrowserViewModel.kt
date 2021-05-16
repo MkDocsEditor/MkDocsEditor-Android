@@ -26,12 +26,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class FileBrowserViewModel @Inject constructor(
-        private val savedStateHandle: SavedStateHandle,
-        val restClient: MkDocsRestClient,
-        val sectionPersistenceManager: SectionPersistenceManager,
-        val documentPersistenceManager: DocumentPersistenceManager,
-        val documentContentPersistenceManager: DocumentContentPersistenceManager,
-        private val resourcePersistenceManager: ResourcePersistenceManager,
+    private val savedStateHandle: SavedStateHandle,
+    val restClient: MkDocsRestClient,
+    val sectionPersistenceManager: SectionPersistenceManager,
+    val documentPersistenceManager: DocumentPersistenceManager,
+    val documentContentPersistenceManager: DocumentContentPersistenceManager,
+    private val resourcePersistenceManager: ResourcePersistenceManager,
 ) : EntityListViewModel() {
 
     private val backstack: Stack<SectionBackstackItem> = Stack()
@@ -61,7 +61,8 @@ class FileBrowserViewModel @Inject constructor(
             if (isSearching()) {
                 // TODO:  this is pretty ugly and time/performance consuming
                 doAsync {
-                    val searchRegex = searchString.toRegex(setOf(RegexOption.IGNORE_CASE, RegexOption.LITERAL))
+                    val searchRegex =
+                        searchString.toRegex(setOf(RegexOption.IGNORE_CASE, RegexOption.LITERAL))
 
                     val sections = sectionPersistenceManager.standardOperation().query {
                         filter { section -> searchRegex.containsMatchIn(section.name) }
@@ -90,8 +91,9 @@ class FileBrowserViewModel @Inject constructor(
      */
     @MainThread
     fun <X, Y> switchMapPaged(
-            source: LiveData<X>,
-            switchMapFunction: Function<X, LiveData<PagedList<Y>>>): MediatorLiveData<PagedList<Y>> {
+        source: LiveData<X>,
+        switchMapFunction: Function<X, LiveData<PagedList<Y>>>
+    ): MediatorLiveData<PagedList<Y>> {
         val result = MediatorLiveData<PagedList<Y>>()
         result.addSource(source, object : androidx.lifecycle.Observer<X> {
             var mSource: LiveData<PagedList<Y>>? = null
@@ -117,7 +119,8 @@ class FileBrowserViewModel @Inject constructor(
      * Get the LiveData object for this EntityListViewModel
      */
     private fun getSectionLiveData(sectionId: String = ROOT_SECTION_ID): LiveData<PagedList<SectionEntity>> {
-        return LivePagedListBuilder(ObjectBoxDataSource.Factory(
+        return LivePagedListBuilder(
+            ObjectBoxDataSource.Factory(
                 sectionPersistenceManager.standardOperation().query {
                     equal(SectionEntity_.id, sectionId)
                     // TODO: implement sorting with inhomogeneous types
@@ -126,7 +129,7 @@ class FileBrowserViewModel @Inject constructor(
 //                documentPersistenceManager!!.standardOperation().query {
 //
 //                }),
-                getPageSize()
+            getPageSize()
         ).build()
     }
 
@@ -248,19 +251,20 @@ class FileBrowserViewModel @Inject constructor(
             }
 
             restClient.createDocument(currentSectionId, name).fold(
-                    success = {
-                        // insert it into persistence
-                        documentPersistenceManager.standardOperation().put(
-                                it.asEntity(parentSection = parentSection))
-                        // and open the editor right away
-                        withContext(Dispatchers.Main) {
-                            openDocumentEditorEvent.value = it.id
-                        }
-                        reloadEvent.value = true
-                    }, failure = {
-                Timber.e(it) { "Error creating document" }
+                success = {
+                    // insert it into persistence
+                    documentPersistenceManager.standardOperation().put(
+                        it.asEntity(parentSection = parentSection)
+                    )
+                    // and open the editor right away
+                    withContext(Dispatchers.Main) {
+                        openDocumentEditorEvent.value = it.id
+                    }
+                    reloadEvent.value = true
+                }, failure = {
+                    Timber.e(it) { "Error creating document" }
 //            context().toast("There was an error :(")
-            })
+                })
         }
     }
 

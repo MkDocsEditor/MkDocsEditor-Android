@@ -21,12 +21,12 @@ class ThemeHelper @Inject constructor(private var context: Context) {
 
     private val darkThemeValue: String by lazy {
         context
-                .getString(R.string.theme_dark_value)
+            .getString(R.string.theme_dark_value)
     }
 
     private val lightThemeValue: String by lazy {
         context
-                .getString(R.string.theme_light_value)
+            .getString(R.string.theme_light_value)
     }
 
     //    fun applyPreferencesTheme(target: Activity, theme: String) {

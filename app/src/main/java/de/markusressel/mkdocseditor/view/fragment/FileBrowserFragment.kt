@@ -68,7 +68,11 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         fileBrowserViewModel
     }
 
-    override fun createViewDataBinding(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): ViewDataBinding? {
+    override fun createViewDataBinding(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): ViewDataBinding? {
         // search
         fileBrowserViewModel.currentSearchResults.observe(this) {
             if (it.isEmpty()) {
@@ -135,7 +139,10 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
         searchMenuItem = menu.findItem(R.id.search)
         searchMenuItem?.apply {
-            icon = ContextCompat.getDrawable(context as Context, de.markusressel.kutepreferences.core.R.drawable.ic_search_24px)
+            icon = ContextCompat.getDrawable(
+                context as Context,
+                de.markusressel.kutepreferences.core.R.drawable.ic_search_24px
+            )
             setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
                 override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
                     val oldValue = fileBrowserViewModel.isSearchExpanded.value
@@ -158,16 +165,16 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         searchView = searchMenuItem?.actionView as SearchView
         searchView?.let {
             RxSearchView
-                    .queryTextChanges(it)
-                    .skipInitialValue()
-                    .bindUntilEvent(this, Lifecycle.Event.ON_DESTROY)
-                    .debounce(300, TimeUnit.MILLISECONDS)
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeBy(onNext = { text ->
-                        fileBrowserViewModel.setSearch(text.toString())
-                    }, onError = { error ->
-                        Timber.e(error) { "Error filtering list" }
-                    })
+                .queryTextChanges(it)
+                .skipInitialValue()
+                .bindUntilEvent(this, Lifecycle.Event.ON_DESTROY)
+                .debounce(300, TimeUnit.MILLISECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeBy(onNext = { text ->
+                    fileBrowserViewModel.setSearch(text.toString())
+                }, onError = { error ->
+                    Timber.e(error) { "Error filtering list" }
+                })
         }
     }
 
@@ -187,8 +194,13 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
     }
 
     override fun createEpoxyController(): Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>> {
-        return object : Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>>() {
-            override fun buildModels(sections: List<SectionEntity>, documents: List<DocumentEntity>, resources: List<ResourceEntity>) {
+        return object :
+            Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>>() {
+            override fun buildModels(
+                sections: List<SectionEntity>,
+                documents: List<DocumentEntity>,
+                resources: List<ResourceEntity>
+            ) {
                 sections.sortedBy {
                     it.name.lowercase(Locale.getDefault())
                 }.forEach {
@@ -242,35 +254,36 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     override fun getRightFabs(): List<FabConfig.Fab> {
         return listOf(
-                FabConfig.Fab(id = 0,
-                        description = R.string.create_document,
-                        icon = MaterialDesignIconic.Icon.gmi_file_add,
-                        onClick = {
-                            openCreateDocumentDialog()
-                        }),
-                FabConfig.Fab(id = 1,
-                        description = R.string.create_section,
-                        icon = MaterialDesignIconic.Icon.gmi_folder,
-                        onClick = {
-                            openCreateSectionDialog()
-                        }))
+            FabConfig.Fab(id = 0,
+                description = R.string.create_document,
+                icon = MaterialDesignIconic.Icon.gmi_file_add,
+                onClick = {
+                    openCreateDocumentDialog()
+                }),
+            FabConfig.Fab(id = 1,
+                description = R.string.create_section,
+                icon = MaterialDesignIconic.Icon.gmi_folder,
+                onClick = {
+                    openCreateSectionDialog()
+                })
+        )
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         Bus.observe<OfflineModeChangedEvent>()
-                .subscribe {
-                    //                    fileBrowserViewModel.setOfflineMode(it.enabled)
-                }
-                .registerInBus(this)
+            .subscribe {
+                //                    fileBrowserViewModel.setOfflineMode(it.enabled)
+            }
+            .registerInBus(this)
     }
 
     private fun openDocumentEditor(documentId: String) {
         Timber.d { "Opening Document '$documentId'" }
 
         navController.navigate(
-                FileBrowserFragmentDirections.actionFileBrowserPageToCodeEditorPage(documentId)
+            FileBrowserFragmentDirections.actionFileBrowserPageToCodeEditorPage(documentId)
         )
     }
 
@@ -281,16 +294,19 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     private fun openCreateSectionDialog() {
         val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
-        val parentSection = fileBrowserViewModel.sectionPersistenceManager.findById(currentSectionId)!!
+        val parentSection =
+            fileBrowserViewModel.sectionPersistenceManager.findById(currentSectionId)!!
         val existingSections = parentSection.subsections.map { it.name }
 
         MaterialDialog(context()).show {
             lifecycleOwner(this@FileBrowserFragment)
             title(R.string.create_section)
-            input(waitForPositiveButton = false,
-                    allowEmpty = false,
-                    hintRes = R.string.hint_new_section,
-                    inputType = InputType.TYPE_CLASS_TEXT) { dialog, text ->
+            input(
+                waitForPositiveButton = false,
+                allowEmpty = false,
+                hintRes = R.string.hint_new_section,
+                inputType = InputType.TYPE_CLASS_TEXT
+            ) { dialog, text ->
 
                 val trimmedText = text.toString().trim()
 
@@ -314,16 +330,19 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     private fun openCreateDocumentDialog() {
         val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
-        val parentSection = fileBrowserViewModel.sectionPersistenceManager.findById(currentSectionId)!!
+        val parentSection =
+            fileBrowserViewModel.sectionPersistenceManager.findById(currentSectionId)!!
         val existingDocuments = parentSection.documents.map { it.name }
 
         MaterialDialog(context()).show {
             lifecycleOwner(this@FileBrowserFragment)
             title(R.string.create_document)
-            input(waitForPositiveButton = false,
-                    allowEmpty = false,
-                    hintRes = R.string.hint_new_document,
-                    inputType = InputType.TYPE_CLASS_TEXT) { dialog, text ->
+            input(
+                waitForPositiveButton = false,
+                allowEmpty = false,
+                hintRes = R.string.hint_new_document,
+                inputType = InputType.TYPE_CLASS_TEXT
+            ) { dialog, text ->
 
                 val trimmedText = text.toString().trim()
 
@@ -347,16 +366,19 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
     private fun openEditDocumentDialog(entity: DocumentEntity) {
         val currentSectionId = fileBrowserViewModel.currentSectionId.value!!
-        val parentSection = fileBrowserViewModel.sectionPersistenceManager.findById(currentSectionId)!!
+        val parentSection =
+            fileBrowserViewModel.sectionPersistenceManager.findById(currentSectionId)!!
         val existingDocuments = parentSection.documents.map { it.name }
 
         MaterialDialog(context()).show {
             lifecycleOwner(this@FileBrowserFragment)
             title(R.string.edit_document)
-            input(waitForPositiveButton = false,
-                    allowEmpty = false,
-                    prefill = entity.name,
-                    inputType = InputType.TYPE_CLASS_TEXT) { dialog, text ->
+            input(
+                waitForPositiveButton = false,
+                allowEmpty = false,
+                prefill = entity.name,
+                inputType = InputType.TYPE_CLASS_TEXT
+            ) { dialog, text ->
 
                 val trimmedText = text.toString().trim()
 

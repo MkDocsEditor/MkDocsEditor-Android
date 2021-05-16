@@ -60,41 +60,41 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
 
     private val optionsMenuComponent: OptionsMenuComponent by lazy {
         OptionsMenuComponent(hostFragment = this,
-                optionsMenuRes = R.menu.options_menu_list,
-                onCreateOptionsMenu = { menu: Menu?, menuInflater: MenuInflater? ->
-                    menu?.findItem(R.id.refresh)?.apply {
-                        icon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_refresh)
-                    }
-
-                    menu?.findItem(R.id.search)?.apply {
-                        icon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_search)
-                        (actionView as SearchView?)?.apply {
-                            RxSearchView
-                                    .queryTextChanges(this)
-                                    .skipInitialValue()
-                                    .bindUntilEvent(viewLifecycleOwner, Lifecycle.Event.ON_DESTROY)
-                                    .debounce(300, TimeUnit.MILLISECONDS)
-                                    .observeOn(AndroidSchedulers.mainThread())
-                                    .subscribeBy(onNext = {
-                                        currentSearchFilter = it.toString()
-
-                                        // TODO: implement search
-                                    }, onError = {
-                                        Timber.e(it) { "Error filtering list" }
-                                    })
-                        }
-                    }
-                }, onOptionsMenuItemClicked = {
-            when (it.itemId) {
-                R.id.refresh -> {
-                    CoroutineScope(Dispatchers.IO).launch {
-                        reload()
-                    }
-                    true
+            optionsMenuRes = R.menu.options_menu_list,
+            onCreateOptionsMenu = { menu: Menu?, menuInflater: MenuInflater? ->
+                menu?.findItem(R.id.refresh)?.apply {
+                    icon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_refresh)
                 }
-                else -> false
-            }
-        })
+
+                menu?.findItem(R.id.search)?.apply {
+                    icon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_search)
+                    (actionView as SearchView?)?.apply {
+                        RxSearchView
+                            .queryTextChanges(this)
+                            .skipInitialValue()
+                            .bindUntilEvent(viewLifecycleOwner, Lifecycle.Event.ON_DESTROY)
+                            .debounce(300, TimeUnit.MILLISECONDS)
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribeBy(onNext = {
+                                currentSearchFilter = it.toString()
+
+                                // TODO: implement search
+                            }, onError = {
+                                Timber.e(it) { "Error filtering list" }
+                            })
+                    }
+                }
+            }, onOptionsMenuItemClicked = {
+                when (it.itemId) {
+                    R.id.refresh -> {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            reload()
+                        }
+                        true
+                    }
+                    else -> false
+                }
+            })
     }
 
     override fun onAttach(context: Context) {
@@ -133,14 +133,14 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
                 Timber.e(it)
                 serverUnavailableSnackbar?.dismiss()
                 serverUnavailableSnackbar = binding.recyclerView.snack(
-                        text = R.string.server_unavailable,
-                        duration = Snackbar.LENGTH_INDEFINITE,
-                        actionTitle = R.string.retry,
-                        action = {
-                            CoroutineScope(Dispatchers.IO).launch {
-                                reload()
-                            }
-                        })
+                    text = R.string.server_unavailable,
+                    duration = Snackbar.LENGTH_INDEFINITE,
+                    actionTitle = R.string.retry,
+                    action = {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            reload()
+                        }
+                    })
             }
         })
     }
@@ -150,13 +150,13 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
      */
     override suspend fun reloadDataFromSource() {
         getLoadDataFromSourceFunction()
-                .map { mapToEntity(it) }
-                .fold(success = {
-                    persistListData(it)
-                }, failure = {
-                    Timber.e(it)
-                    updateLastUpdatedFromSource()
-                })
+            .map { mapToEntity(it) }
+            .fold(success = {
+                persistListData(it)
+            }, failure = {
+                Timber.e(it)
+                updateLastUpdatedFromSource()
+            })
     }
 
     /**

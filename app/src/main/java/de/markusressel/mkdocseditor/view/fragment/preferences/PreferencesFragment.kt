@@ -13,10 +13,10 @@ class PreferencesFragment : KutePreferencesMainFragment() {
 
     override fun initPreferenceTree(): Array<KutePreferenceListItem> {
         return arrayOf(
-                preferenceHolder.connectionCategory,
-                preferenceHolder.offlineCacheCategory,
-                preferenceHolder.uxCategory,
-                preferenceHolder.themePreference
+            preferenceHolder.connectionCategory,
+            preferenceHolder.offlineCacheCategory,
+            preferenceHolder.uxCategory,
+            preferenceHolder.themePreference
         )
     }
 

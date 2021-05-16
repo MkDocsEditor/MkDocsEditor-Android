@@ -14,11 +14,11 @@ import kotlinx.coroutines.coroutineScope
 
 @HiltWorker
 class OfflineSyncWorker @AssistedInject constructor(
-        @Assisted appContext: Context,
-        @Assisted workerParams: WorkerParameters,
-        private val restClient: MkDocsRestClient,
-        private val documentContentPersistenceManager: DocumentContentPersistenceManager)
-    : CoroutineWorker(appContext, workerParams) {
+    @Assisted appContext: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val restClient: MkDocsRestClient,
+    private val documentContentPersistenceManager: DocumentContentPersistenceManager
+) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result = coroutineScope {
         val documentIds = inputData.getStringArray(DOCUMENT_IDS_KEY)
@@ -31,7 +31,10 @@ class OfflineSyncWorker @AssistedInject constructor(
         // use random order to evenly distribute probability of caching a document
         documentIds.toSet().shuffled().forEach { documentId ->
             restClient.getDocumentContent(documentId).fold(success = { text ->
-                documentContentPersistenceManager.insertOrUpdate(documentId = documentId, text = text)
+                documentContentPersistenceManager.insertOrUpdate(
+                    documentId = documentId,
+                    text = text
+                )
                 Timber.d { "Offline cache sync finished successfully for documentId: $documentId" }
             }, failure = {
                 Timber.e(it) { "Offline cache sync error for documentId: $documentId (rescheduling)" }

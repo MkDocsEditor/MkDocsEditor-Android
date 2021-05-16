@@ -20,10 +20,14 @@ class FileTree(val context: Context) : Timber.DebugTree() {
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
         try {
             val path = "Log"
-            val fileNameTimeStamp = SimpleDateFormat("dd-MM-yyyy",
-                    Locale.getDefault()).format(Date())
-            val logTimeStamp = SimpleDateFormat("E MMM dd yyyy 'at' hh:mm:ss:SSS aaa",
-                    Locale.getDefault()).format(Date())
+            val fileNameTimeStamp = SimpleDateFormat(
+                "dd-MM-yyyy",
+                Locale.getDefault()
+            ).format(Date())
+            val logTimeStamp = SimpleDateFormat(
+                "E MMM dd yyyy 'at' hh:mm:ss:SSS aaa",
+                Locale.getDefault()
+            ).format(Date())
             val fileName = "$fileNameTimeStamp.html"
 
             // Create file
@@ -33,12 +37,12 @@ class FileTree(val context: Context) : Timber.DebugTree() {
             if (file != null) {
                 val writer = FileWriter(file, true)
                 writer.append("<p style=\"background:lightgray;\"><strong " + "style=\"background:lightblue;\">&nbsp&nbsp")
-                        .append(logTimeStamp)
-                        .append(" :&nbsp&nbsp</strong><strong>&nbsp&nbsp")
-                        .append(tag)
-                        .append("</strong> - ")
-                        .append(message)
-                        .append("</p>")
+                    .append(logTimeStamp)
+                    .append(" :&nbsp&nbsp</strong><strong>&nbsp&nbsp")
+                    .append(tag)
+                    .append("</strong> - ")
+                    .append(message)
+                    .append("</p>")
                 writer.flush()
                 writer.close()
             }
@@ -61,8 +65,10 @@ class FileTree(val context: Context) : Timber.DebugTree() {
         private fun generateFile(path: String, fileName: String): File? {
             var file: File? = null
             if (isExternalStorageAvailable) {
-                val root = File(Environment.getExternalStorageDirectory().absolutePath,
-                        BuildConfig.APPLICATION_ID + File.separator + path)
+                val root = File(
+                    Environment.getExternalStorageDirectory().absolutePath,
+                    BuildConfig.APPLICATION_ID + File.separator + path
+                )
 
                 var dirExists = true
 

@@ -41,7 +41,10 @@ class OfflineCacheSyncService : JobService() {
             documentIds.toSet().shuffled().forEach { documentId ->
                 CoroutineScope(Dispatchers.IO).launch {
                     restClient.getDocumentContent(documentId).fold(success = { text ->
-                        documentContentPersistenceManager.insertOrUpdate(documentId = documentId, text = text)
+                        documentContentPersistenceManager.insertOrUpdate(
+                            documentId = documentId,
+                            text = text
+                        )
 
                         Timber.d { "Offline cache sync finished successfully for documentId: $documentId" }
                         jobFinished(params, false)

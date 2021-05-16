@@ -23,16 +23,19 @@ import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 /**
  * Generic callback used to compare list items
  */
-class DiffCallback<T : IdentifiableListItem>(private val oldListItems: List<T>, private val newListItems: List<T>) : DiffUtil.Callback() {
+class DiffCallback<T : IdentifiableListItem>(
+    private val oldListItems: List<T>,
+    private val newListItems: List<T>
+) : DiffUtil.Callback() {
 
     override fun getOldListSize(): Int {
         return oldListItems
-                .size
+            .size
     }
 
     override fun getNewListSize(): Int {
         return newListItems
-                .size
+            .size
     }
 
     override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
@@ -52,7 +55,7 @@ class DiffCallback<T : IdentifiableListItem>(private val oldListItems: List<T>, 
     override fun getChangePayload(oldItemPosition: Int, newItemPosition: Int): Any? {
         // Implement method if you're going to use ItemAnimator
         return super
-                .getChangePayload(oldItemPosition, newItemPosition)
+            .getChangePayload(oldItemPosition, newItemPosition)
     }
 
 }

@@ -14,7 +14,13 @@ import java.util.concurrent.atomic.AtomicLong
 /**
  * Created by Markus on 08.01.2018.
  */
-data class DrawerMenuItem(@IdRes val id: Int, @StringRes val title: Int, val icon: IIcon? = null, @DrawableRes val drawableRes: Int? = null, val selectable: Boolean) {
+data class DrawerMenuItem(
+    @IdRes val id: Int,
+    @StringRes val title: Int,
+    val icon: IIcon? = null,
+    @DrawableRes val drawableRes: Int? = null,
+    val selectable: Boolean
+) {
 
     /**
      * Get the icon for this DrawerMenuItem
@@ -26,8 +32,10 @@ data class DrawerMenuItem(@IdRes val id: Int, @StringRes val title: Int, val ico
 
         drawableRes?.let {
             val drawable = ContextCompat.getDrawable(iconHandler.context, drawableRes)!!
-            val color = iconHandler.themeHelper
-                    .getThemeAttrColor(iconHandler.context, android.R.attr.textColorPrimary)
+            val color = iconHandler.themeHelper.getThemeAttrColor(
+                iconHandler.context,
+                android.R.attr.textColorPrimary
+            )
             drawable.setColorFilter(color, PorterDuff.Mode.SRC_ATOP)
             return drawable
         }

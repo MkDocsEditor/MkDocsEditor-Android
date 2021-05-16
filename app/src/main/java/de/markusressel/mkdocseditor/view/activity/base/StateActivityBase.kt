@@ -15,13 +15,11 @@ abstract class StateActivityBase : AppCompatActivity() {
         if (savedInstanceState != null) {
             stateBundle.putAll(savedInstanceState.getBundle(KEY_BUNDLE))
         }
-
         super.onCreate(savedInstanceState)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putBundle(KEY_BUNDLE, stateBundle)
-
         super.onSaveInstanceState(outState)
     }
 
@@ -33,7 +31,8 @@ abstract class StateActivityBase : AppCompatActivity() {
     /**
      * Bind a non-null property
      */
-    protected fun <T> savedInstanceState(defaultValue: T) = InstanceStateProvider.NotNull(stateBundle, defaultValue)
+    protected fun <T> savedInstanceState(defaultValue: T) =
+        InstanceStateProvider.NotNull(stateBundle, defaultValue)
 
     companion object {
         const val KEY_BUNDLE = "saved_state"

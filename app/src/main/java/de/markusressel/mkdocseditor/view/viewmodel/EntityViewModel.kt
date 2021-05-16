@@ -15,7 +15,10 @@ abstract class EntityViewModel<EntityType : Any> : ViewModel() {
     /**
      * Get the LiveData object for this EntityViewModel
      */
-    fun getEntityLiveData(persistenceManager: PersistenceManagerBase<EntityType>, entityId: Long): ObjectBoxLiveData<EntityType> {
+    fun getEntityLiveData(
+        persistenceManager: PersistenceManagerBase<EntityType>,
+        entityId: Long
+    ): ObjectBoxLiveData<EntityType> {
         if (entityLiveData == null) {
             entityLiveData = ObjectBoxLiveData(createDbQuery(persistenceManager, entityId))
         }
@@ -29,6 +32,9 @@ abstract class EntityViewModel<EntityType : Any> : ViewModel() {
      * @param persistenceManager the persistence to get the data from
      * @param entityId the entity id
      */
-    abstract fun createDbQuery(persistenceManager: PersistenceManagerBase<EntityType>, entityId: Long): Query<EntityType>
+    abstract fun createDbQuery(
+        persistenceManager: PersistenceManagerBase<EntityType>,
+        entityId: Long
+    ): Query<EntityType>
 
 }

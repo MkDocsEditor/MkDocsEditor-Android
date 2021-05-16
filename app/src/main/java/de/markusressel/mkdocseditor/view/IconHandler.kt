@@ -40,7 +40,7 @@ class IconHandler @Inject constructor() {
      */
     fun getNavigationIcon(icon: IIcon): IconicsDrawable {
         val color = themeHelper
-                .getThemeAttrColor(context, android.R.attr.textColorPrimary)
+            .getThemeAttrColor(context, android.R.attr.textColorPrimary)
         return getIcon(icon, color, 24)
     }
 
@@ -53,7 +53,7 @@ class IconHandler @Inject constructor() {
      */
     fun getBottomNavigationIcon(icon: IIcon): IconicsDrawable {
         val color = themeHelper
-                .getThemeAttrColor(context, android.R.attr.textColorPrimary)
+            .getThemeAttrColor(context, android.R.attr.textColorPrimary)
         return getIcon(icon, color, 48)
     }
 
@@ -66,7 +66,7 @@ class IconHandler @Inject constructor() {
      */
     fun getWizardIcon(icon: IIcon): IconicsDrawable {
         val color = themeHelper
-                .getThemeAttrColor(context, android.R.attr.textColorPrimary)
+            .getThemeAttrColor(context, android.R.attr.textColorPrimary)
         return getIcon(icon, color, 64)
     }
 
@@ -79,7 +79,7 @@ class IconHandler @Inject constructor() {
      */
     fun getConfigurationDialogControlBarIcon(icon: IIcon): IconicsDrawable {
         val color = themeHelper
-                .getThemeAttrColor(context, android.R.attr.textColorPrimary)
+            .getThemeAttrColor(context, android.R.attr.textColorPrimary)
         return getIcon(icon, color, 36)
     }
 
@@ -92,7 +92,7 @@ class IconHandler @Inject constructor() {
      */
     fun getFabIcon(icon: IIcon): IconicsDrawable {
         val color = Color
-                .WHITE
+            .WHITE
         return getIcon(icon, color, 24, 5)
     }
 
@@ -107,7 +107,7 @@ class IconHandler @Inject constructor() {
         //        val color = themeHelper
         //                .getThemeAttrColor(context, android.R.attr.textColorPrimary)
         val color = ContextCompat
-                .getColor(context, android.R.color.white)
+            .getColor(context, android.R.color.white)
 
         var padding = 0
         if (icon === MaterialDesignIconic.Icon.gmi_plus) {
@@ -124,11 +124,16 @@ class IconHandler @Inject constructor() {
      */
     fun getPreferenceIcon(icon: IIcon): Drawable {
         val color = themeHelper
-                .getThemeAttrColor(context, R.attr.kute_preferences__setting__default_icon_color)
+            .getThemeAttrColor(context, R.attr.kute_preferences__setting__default_icon_color)
         return getIcon(icon, color = color, sizeDp = 36)
     }
 
-    fun getIcon(icon: IIcon, @ColorInt color: Int, sizeDp: Int, paddingDp: Int = 0): IconicsDrawable {
+    fun getIcon(
+        icon: IIcon,
+        @ColorInt color: Int,
+        sizeDp: Int,
+        paddingDp: Int = 0
+    ): IconicsDrawable {
         return IconicsDrawable(context, icon).apply {
             this.sizeDp = sizeDp
             this.paddingDp = paddingDp

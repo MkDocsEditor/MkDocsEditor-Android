@@ -11,7 +11,8 @@ import javax.inject.Singleton
 
 @Singleton
 class NetworkManager @Inject constructor(
-        private val context: Context) {
+    private val context: Context
+) {
 
     /**
      * Checks if Internet access is connected
@@ -50,7 +51,8 @@ class NetworkManager @Inject constructor(
         val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val networkInfo = connMgr.activeNetworkInfo
 
-        val isWifiConnected = networkInfo != null && ConnectivityManager.TYPE_WIFI == networkInfo.type && networkInfo.isConnectedOrConnecting
+        val isWifiConnected =
+            networkInfo != null && ConnectivityManager.TYPE_WIFI == networkInfo.type && networkInfo.isConnectedOrConnecting
         Timber.d("isWifiConnected: $isWifiConnected")
         return isWifiConnected
     }
@@ -64,7 +66,8 @@ class NetworkManager @Inject constructor(
         val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val networkInfo = connMgr.activeNetworkInfo
 
-        val isEthernetConnected = networkInfo != null && ConnectivityManager.TYPE_ETHERNET == networkInfo.type && networkInfo.isConnectedOrConnecting
+        val isEthernetConnected =
+            networkInfo != null && ConnectivityManager.TYPE_ETHERNET == networkInfo.type && networkInfo.isConnectedOrConnecting
         Timber.d("isEthernetConnected: $isEthernetConnected")
         return isEthernetConnected
     }
@@ -78,7 +81,8 @@ class NetworkManager @Inject constructor(
         val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val networkInfo = connMgr.activeNetworkInfo
 
-        val isGprsConnected = networkInfo != null && ConnectivityManager.TYPE_MOBILE == networkInfo.type && networkInfo.isConnectedOrConnecting
+        val isGprsConnected =
+            networkInfo != null && ConnectivityManager.TYPE_MOBILE == networkInfo.type && networkInfo.isConnectedOrConnecting
         Timber.d("isGprsConnected: $isGprsConnected")
         return isGprsConnected
     }
@@ -104,7 +108,8 @@ class NetworkManager @Inject constructor(
      */
     fun getConnectedWifiSSID(): String? {
         return if (isWifiConnected()) {
-            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            val wifiManager =
+                context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
             val info = wifiManager.connectionInfo
             var ssid = info.ssid
 

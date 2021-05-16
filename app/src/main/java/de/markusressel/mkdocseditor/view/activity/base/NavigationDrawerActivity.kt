@@ -48,7 +48,8 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
         get() = R.layout.activity_main
 
     protected val navController by lazy {
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
         navHostFragment.navController
 //        Navigation.findNavController(this, R.id.navHostFragment)
     }
@@ -65,10 +66,17 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
         binding.slider.itemAdapter.add(menuItemList)
         initAccountHeader(binding.slider)
 
-        actionBarDrawerToggle = ActionBarDrawerToggle(this, binding.drawerLayout, binding.toolbarLayout.toolbar, material_drawer_open, material_drawer_close)
+        actionBarDrawerToggle = ActionBarDrawerToggle(
+            this,
+            binding.drawerLayout,
+            binding.toolbarLayout.toolbar,
+            material_drawer_open,
+            material_drawer_close
+        )
         val appBarConfiguration = AppBarConfiguration(
-                navGraph = navController.graph,
-                drawerLayout = binding.drawerLayout)
+            navGraph = navController.graph,
+            drawerLayout = binding.drawerLayout
+        )
         setupActionBarWithNavController(navController, appBarConfiguration)
 
         navController.addOnDestinationChangedListener { controller, destination, arguments ->
@@ -83,10 +91,10 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
         super.onStart()
 
         Bus.observe<ThemeChangedEvent>()
-                .subscribe {
-                    recreate()
-                }
-                .registerInBus(this)
+            .subscribe {
+                recreate()
+            }
+            .registerInBus(this)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -151,7 +159,8 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
         val clickListener = { view: View?, drawerItem: IDrawerItem<*>, i: Int ->
             var consume = false
             val drawerMenuItem = DrawerItemHolder.fromId(
-                    drawerItem.identifier.toInt())
+                drawerItem.identifier.toInt()
+            )
 
             drawerMenuItem?.let {
                 if (it.id == R.id.none) {
@@ -175,19 +184,26 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
         }
 
         menuItemList.addAll(
-                arrayOf(
-                        createPrimaryMenuItem(FileBrowser, clickListener),
-                        DividerDrawerItem(),
-                        createPrimaryMenuItem(Settings, clickListener),
-                        createSecondaryMenuItem(About, clickListener),
-                        DividerDrawerItem(),
-                        createOfflineModeMenuItem(OfflineMode, clickListener,
-                                defaultValue = offlineModeManager.isEnabled())))
+            arrayOf(
+                createPrimaryMenuItem(FileBrowser, clickListener),
+                DividerDrawerItem(),
+                createPrimaryMenuItem(Settings, clickListener),
+                createSecondaryMenuItem(About, clickListener),
+                DividerDrawerItem(),
+                createOfflineModeMenuItem(
+                    OfflineMode, clickListener,
+                    defaultValue = offlineModeManager.isEnabled()
+                )
+            )
+        )
 
         return menuItemList
     }
 
-    private fun createPrimaryMenuItem(menuItem: DrawerMenuItem, clickListener: ((v: View?, item: IDrawerItem<*>, position: Int) -> Boolean)?): PrimaryDrawerItem {
+    private fun createPrimaryMenuItem(
+        menuItem: DrawerMenuItem,
+        clickListener: ((v: View?, item: IDrawerItem<*>, position: Int) -> Boolean)?
+    ): PrimaryDrawerItem {
         return PrimaryDrawerItem().apply {
             nameRes = menuItem.title
             identifier = menuItem.id.toLong()
@@ -197,7 +213,10 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
         }
     }
 
-    private fun createSecondaryMenuItem(menuItem: DrawerMenuItem, clickListener: ((v: View?, item: IDrawerItem<*>, position: Int) -> Boolean)?): SecondaryDrawerItem {
+    private fun createSecondaryMenuItem(
+        menuItem: DrawerMenuItem,
+        clickListener: ((v: View?, item: IDrawerItem<*>, position: Int) -> Boolean)?
+    ): SecondaryDrawerItem {
         return SecondaryDrawerItem().apply {
             nameRes = menuItem.title
             identifier = menuItem.id.toLong()
@@ -207,10 +226,18 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
         }
     }
 
-    private fun createOfflineModeMenuItem(menuItem: DrawerMenuItem, clickListener: ((v: View?, item: IDrawerItem<*>, position: Int) -> Boolean)?, defaultValue: Boolean = false): IDrawerItem<*> {
+    private fun createOfflineModeMenuItem(
+        menuItem: DrawerMenuItem,
+        clickListener: ((v: View?, item: IDrawerItem<*>, position: Int) -> Boolean)?,
+        defaultValue: Boolean = false
+    ): IDrawerItem<*> {
 
         val onCheckedChangeListener = object : OnCheckedChangeListener {
-            override fun onCheckedChanged(drawerItem: IDrawerItem<*>, buttonView: CompoundButton, isChecked: Boolean) {
+            override fun onCheckedChanged(
+                drawerItem: IDrawerItem<*>,
+                buttonView: CompoundButton,
+                isChecked: Boolean
+            ) {
                 offlineModeManager.setEnabled(isChecked)
                 val parentView = buttonView.parent as ViewGroup
                 val iconView = parentView[0] as AppCompatImageView

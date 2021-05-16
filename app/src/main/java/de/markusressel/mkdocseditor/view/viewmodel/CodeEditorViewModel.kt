@@ -26,12 +26,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CodeEditorViewModel @Inject constructor(
-        private val savedStateHandle: SavedStateHandle,
-        val documentPersistenceManager: DocumentPersistenceManager,
-        val documentContentPersistenceManager: DocumentContentPersistenceManager,
-        val preferencesHolder: KutePreferencesHolder,
-        val networkManager: NetworkManager,
-        val offlineModeManager: OfflineModeManager
+    private val savedStateHandle: SavedStateHandle,
+    val documentPersistenceManager: DocumentPersistenceManager,
+    val documentContentPersistenceManager: DocumentContentPersistenceManager,
+    val preferencesHolder: KutePreferencesHolder,
+    val networkManager: NetworkManager,
+    val offlineModeManager: OfflineModeManager
 ) : ViewModel() {
 
     val documentId = MutableLiveData<String>()
@@ -57,7 +57,8 @@ class CodeEditorViewModel @Inject constructor(
 
     // TODO: add offlineModeManager.isEnabled() condition
     val editable = MutableLiveData(true)
-    val editModeActive = MutableLiveData(preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue)
+    val editModeActive =
+        MutableLiveData(preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue)
 
     val loading = MutableLiveData(true)
     val connectionStatus: MutableLiveData<ConnectionStatusUpdate> = MutableLiveData(null)
@@ -72,29 +73,40 @@ class CodeEditorViewModel @Inject constructor(
     val textChange = MutableLiveData<TextChangeEvent>(null)
 
     val documentSyncManager = DocumentSyncManager(
-            hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue,
-            port = preferencesHolder.restConnectionPortPreference.persistedValue.toInt(),
-            ssl = preferencesHolder.restConnectionSslPreference.persistedValue,
-            basicAuthConfig = BasicAuthConfig(
-                    preferencesHolder.basicAuthUserPreference.persistedValue,
-                    preferencesHolder.basicAuthPasswordPreference.persistedValue),
-            documentId = documentId.value!!,
-            currentText = {
-                currentText.value.orEmpty()
+        hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue,
+        port = preferencesHolder.restConnectionPortPreference.persistedValue.toInt(),
+        ssl = preferencesHolder.restConnectionSslPreference.persistedValue,
+        basicAuthConfig = BasicAuthConfig(
+            preferencesHolder.basicAuthUserPreference.persistedValue,
+            preferencesHolder.basicAuthPasswordPreference.persistedValue
+        ),
+        documentId = documentId.value!!,
+        currentText = {
+            currentText.value.orEmpty()
 //                binding.codeEditorLayout.codeEditorView.codeEditText.text?.toString() ?: ""
-            },
-            onConnectionStatusChanged = ::handleConnectionStatusChange,
-            onInitialText = {
-                runOnUiThread {
-                    currentText.value = it
-                    editable.value = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue
-                    loading.value = false
-                }
-            }, onTextChanged = ::onTextChanged)
+        },
+        onConnectionStatusChanged = ::handleConnectionStatusChange,
+        onInitialText = {
+            runOnUiThread {
+                currentText.value = it
+                editable.value =
+                    preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue
+                loading.value = false
+            }
+        }, onTextChanged = ::onTextChanged
+    )
 
-    data class ConnectionStatusUpdate(val connected: Boolean, val errorCode: Int?, val throwable: Throwable?)
+    data class ConnectionStatusUpdate(
+        val connected: Boolean,
+        val errorCode: Int?,
+        val throwable: Throwable?
+    )
 
-    private fun handleConnectionStatusChange(connected: Boolean, errorCode: Int?, throwable: Throwable?) {
+    private fun handleConnectionStatusChange(
+        connected: Boolean,
+        errorCode: Int?,
+        throwable: Throwable?
+    ) {
         if (!connected) {
             editable.value = false
         }

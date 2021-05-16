@@ -41,8 +41,8 @@ class App : Application(), Configuration.Provider {
     internal lateinit var documentPersistenceManager: DocumentPersistenceManager
 
     override fun getWorkManagerConfiguration() = Configuration.Builder()
-            .setWorkerFactory(workerFactory)
-            .build()
+        .setWorkerFactory(workerFactory)
+        .build()
 
     override fun onCreate() {
         super.onCreate()
@@ -91,7 +91,8 @@ class App : Application(), Configuration.Provider {
         Bus.observe<BasicAuthPasswordChangedEvent>().subscribe {
             val oldConfig = restClient.getBasicAuthConfig()
             restClient.setBasicAuthConfig(
-                    BasicAuthConfig(oldConfig?.username ?: "", it.password))
+                BasicAuthConfig(oldConfig?.username ?: "", it.password)
+            )
         }.registerInBus(this)
     }
 

@@ -12,15 +12,16 @@ import androidx.lifecycle.OnLifecycleEvent
 /**
  * Created by Markus on 15.02.2018.
  */
-class OptionsMenuComponent(val hostFragment: Fragment,
-                           /**
-                            * The layout resource for this Activity
-                            */
-                           @get:MenuRes val optionsMenuRes: Int,
-                           val onOptionsMenuItemClicked: ((item: MenuItem) -> Boolean)? = null,
-                           val onCreateOptionsMenu: ((menu: Menu?, inflater: MenuInflater?) -> Unit)? = null,
-                           val onPrepareOptionsMenu: ((menu: Menu?) -> Unit)? = null)
-    : FragmentComponent(hostFragment), LifecycleObserver {
+class OptionsMenuComponent(
+    val hostFragment: Fragment,
+    /**
+     * The layout resource for this Activity
+     */
+    @get:MenuRes val optionsMenuRes: Int,
+    val onOptionsMenuItemClicked: ((item: MenuItem) -> Boolean)? = null,
+    val onCreateOptionsMenu: ((menu: Menu?, inflater: MenuInflater?) -> Unit)? = null,
+    val onPrepareOptionsMenu: ((menu: Menu?) -> Unit)? = null
+) : FragmentComponent(hostFragment), LifecycleObserver {
 
     init {
         hostFragment.lifecycle.addObserver(this)
@@ -55,6 +56,5 @@ class OptionsMenuComponent(val hostFragment: Fragment,
     fun onHostCreate() {
         hostFragment.setHasOptionsMenu(true)
     }
-
 
 }

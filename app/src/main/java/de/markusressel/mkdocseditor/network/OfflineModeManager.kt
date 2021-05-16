@@ -23,9 +23,10 @@ import javax.inject.Singleton
  */
 @Singleton
 class OfflineModeManager @Inject constructor(
-        private val context: Context,
-        private val preferenceDataProvider: KutePreferenceDataProvider,
-        private val documentPersistenceManager: DocumentPersistenceManager) {
+    private val context: Context,
+    private val preferenceDataProvider: KutePreferenceDataProvider,
+    private val documentPersistenceManager: DocumentPersistenceManager
+) {
 
     var isEnabled = MutableLiveData<Boolean>().apply {
         value = preferenceDataProvider.getValueUnsafe(R.string.offline_mode_key, false)
@@ -65,26 +66,29 @@ class OfflineModeManager @Inject constructor(
      *
      * @param documentIds optionally specify a list of document id's to update
      */
-    fun scheduleOfflineCacheUpdate(documentIds: Collection<String>? = null, evenInOfflineMode: Boolean = false) {
+    fun scheduleOfflineCacheUpdate(
+        documentIds: Collection<String>? = null,
+        evenInOfflineMode: Boolean = false
+    ) {
         if (isEnabled() && !evenInOfflineMode) {
             Timber.d { "Offline mode is active, no offline cache update is scheduled." }
             return
         }
 
         val documentsToUpdate = documentIds
-                ?: documentPersistenceManager.standardOperation().all.map { it.id }
+            ?: documentPersistenceManager.standardOperation().all.map { it.id }
         if (documentsToUpdate.isEmpty()) {
             Timber.d { "No documentIds provided, nothing to schedule." }
             return
         }
 
         val workerData: Data = workDataOf(
-                DOCUMENT_IDS_KEY to documentsToUpdate.toTypedArray()
+            DOCUMENT_IDS_KEY to documentsToUpdate.toTypedArray()
         )
 
         val offlineSyncWorker = OneTimeWorkRequestBuilder<OfflineSyncWorker>()
-                .setInputData(workerData)
-                .build()
+            .setInputData(workerData)
+            .build()
         WorkManager.getInstance(context).enqueue(offlineSyncWorker)
     }
 

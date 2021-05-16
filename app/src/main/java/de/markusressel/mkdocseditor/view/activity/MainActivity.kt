@@ -21,12 +21,17 @@ class MainActivity : NavigationDrawerActivity() {
         super.onStart()
         if (BuildConfig.DEBUG) {
             Dexter.withContext(this)
-                    .withPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    .withListener(object : PermissionListener {
-                        override fun onPermissionGranted(response: PermissionGrantedResponse?) {}
-                        override fun onPermissionRationaleShouldBeShown(permission: PermissionRequest?, token: PermissionToken?) {}
-                        override fun onPermissionDenied(response: PermissionDeniedResponse?) {}
-                    }).check()
+                .withPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                .withListener(object : PermissionListener {
+                    override fun onPermissionGranted(response: PermissionGrantedResponse?) {}
+                    override fun onPermissionRationaleShouldBeShown(
+                        permission: PermissionRequest?,
+                        token: PermissionToken?
+                    ) {
+                    }
+
+                    override fun onPermissionDenied(response: PermissionDeniedResponse?) {}
+                }).check()
         }
     }
 

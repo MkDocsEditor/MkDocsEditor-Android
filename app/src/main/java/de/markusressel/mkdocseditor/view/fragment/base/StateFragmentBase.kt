@@ -32,7 +32,8 @@ abstract class StateFragmentBase : Fragment() {
     /**
      * Bind a non-null property
      */
-    protected fun <T> savedInstanceState(defaultValue: T) = InstanceStateProvider.NotNull(stateBundle, defaultValue)
+    protected fun <T> savedInstanceState(defaultValue: T) =
+        InstanceStateProvider.NotNull(stateBundle, defaultValue)
 
     companion object {
         const val KEY_BUNDLE = "saved_state"
