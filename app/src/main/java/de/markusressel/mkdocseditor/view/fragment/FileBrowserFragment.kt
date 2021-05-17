@@ -36,7 +36,7 @@ import de.markusressel.mkdocseditor.listItemDocument
 import de.markusressel.mkdocseditor.listItemResource
 import de.markusressel.mkdocseditor.listItemSection
 import de.markusressel.mkdocseditor.view.fragment.base.FabConfig
-import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragmentBase
+import de.markusressel.mkdocseditor.view.fragment.base.ListFragmentBase
 import de.markusressel.mkdocseditor.view.viewmodel.FileBrowserViewModel
 import de.markusressel.mkdocseditor.view.viewmodel.FileBrowserViewModel.Event.ReloadEvent
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit
  * Created by Markus on 07.01.2018.
  */
 @AndroidEntryPoint
-class FileBrowserFragment : MultiPersistableListFragmentBase() {
+class FileBrowserFragment : ListFragmentBase() {
 
     val viewModel by activityViewModels<FileBrowserViewModel>()
 

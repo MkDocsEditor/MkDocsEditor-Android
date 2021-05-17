@@ -17,21 +17,35 @@
 
 package de.markusressel.mkdocseditor.view.fragment.base
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.CallSuper
+import androidx.appcompat.widget.SearchView
+import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.airbnb.epoxy.Typed3EpoxyController
+import com.github.ajalt.timberkt.Timber
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.snackbar.Snackbar
+import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.leinardi.android.speeddial.SpeedDialActionItem
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
+import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.databinding.FragmentRecyclerviewBinding
+import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.rxkotlin.subscribeBy
+import java.util.concurrent.TimeUnit
 
 
 /**
@@ -48,11 +62,64 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
     override val layoutRes: Int
         get() = R.layout.fragment_recyclerview
 
+    // TODO: this should be fed by a livedata observer
+    private var serverUnavailableSnackbar: Snackbar? = null
+
+    private val optionsMenuComponent: OptionsMenuComponent by lazy {
+        OptionsMenuComponent(hostFragment = this,
+            optionsMenuRes = R.menu.options_menu_list,
+            onCreateOptionsMenu = { menu: Menu?, menuInflater: MenuInflater? ->
+                menu?.findItem(R.id.refresh)?.apply {
+                    icon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_refresh)
+                }
+
+                menu?.findItem(R.id.search)?.apply {
+                    icon = iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_search)
+                    (actionView as SearchView?)?.apply {
+                        RxSearchView
+                            .queryTextChanges(this)
+                            .skipInitialValue()
+                            .bindUntilEvent(viewLifecycleOwner, Lifecycle.Event.ON_DESTROY)
+                            .debounce(300, TimeUnit.MILLISECONDS)
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribeBy(onNext = {
+                                // TODO: set currentSearchFilter on viewModel
+                                // viewModel.currentSearchFilter = it.toString()
+                            }, onError = {
+                                Timber.e(it) { "Error filtering list" }
+                            })
+                    }
+                }
+            }, onOptionsMenuItemClicked = {
+                when (it.itemId) {
+                    R.id.refresh -> {
+                        // TODO: notify viewmodel to reload data
+                        true
+                    }
+                    else -> false
+                }
+            })
+    }
+
     protected open val fabConfig: FabConfig =
         FabConfig(left = mutableListOf(), right = mutableListOf())
     private val fabButtonViews = mutableListOf<FloatingActionButton>()
 
     internal val epoxyController by lazy { createEpoxyController() }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        optionsMenuComponent
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        super.onCreateOptionsMenu(menu, inflater)
+        optionsMenuComponent.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return super.onOptionsItemSelected(item) || optionsMenuComponent.onOptionsItemSelected(item)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
