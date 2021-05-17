@@ -48,15 +48,11 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
     override val layoutRes: Int
         get() = R.layout.fragment_recyclerview
 
-    protected var lastScrollPosition by savedInstanceState(0)
-
     protected open val fabConfig: FabConfig =
         FabConfig(left = mutableListOf(), right = mutableListOf())
     private val fabButtonViews = mutableListOf<FloatingActionButton>()
 
     internal val epoxyController by lazy { createEpoxyController() }
-
-    internal var currentSearchFilter: String by savedInstanceState("")
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -82,26 +78,6 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
         setupFabs()
     }
 
-    override fun onStop() {
-        val layoutManager = binding.recyclerView.layoutManager
-        if (layoutManager != null && layoutManager is StaggeredGridLayoutManager) {
-            val visibleItems = layoutManager.findFirstVisibleItemPositions(null)
-            lastScrollPosition = if (visibleItems.isNotEmpty()) {
-                visibleItems.first()
-            } else {
-                0
-            }
-        }
-
-        super.onStop()
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
-
-
     internal fun scrollToItemPosition(itemPosition: Int) {
         val layoutManager = binding.recyclerView.layoutManager
         // this always returns 0 :(
@@ -116,11 +92,6 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
      * The epoxy controller defines what information is displayed.
      */
     abstract fun createEpoxyController(): Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>>
-
-    /**EntityType
-     * Reload list data from it's original source, persist it and display it to the user afterwards
-     */
-    abstract suspend fun reloadDataFromSource()
 
     /**
      * Override this in subclasses if necessary
@@ -176,6 +147,26 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
     internal fun hideEmpty() {
         binding.recyclerView.visibility = View.VISIBLE
         binding.layoutEmptyList.layoutEmpty.visibility = View.INVISIBLE
+    }
+
+    override fun onStop() {
+        val layoutManager = binding.recyclerView.layoutManager
+        if (layoutManager != null && layoutManager is StaggeredGridLayoutManager) {
+            val visibleItems = layoutManager.findFirstVisibleItemPositions(null)
+            // TODO: set scroll position on viewModel
+            //viewModel.lastScrollPosition = if (visibleItems.isNotEmpty()) {
+            //    visibleItems.first()
+            //} else {
+            //    0
+            //}
+        }
+
+        super.onStop()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
 }

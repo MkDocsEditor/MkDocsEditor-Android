@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.LayoutRes
 import androidx.databinding.ViewDataBinding
+import androidx.fragment.app.Fragment
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import de.markusressel.mkdocseditor.R
@@ -18,7 +19,7 @@ import javax.inject.Inject
  *
  * Created by Markus on 07.01.2018.
  */
-abstract class DaggerSupportFragmentBase : StateFragmentBase() {
+abstract class DaggerSupportFragmentBase : Fragment() {
 
     @Inject
     protected lateinit var iconHandler: IconHandler

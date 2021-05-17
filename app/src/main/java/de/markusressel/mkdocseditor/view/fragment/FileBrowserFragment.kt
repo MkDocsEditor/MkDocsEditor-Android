@@ -20,7 +20,6 @@ import com.airbnb.epoxy.Typed3EpoxyController
 import com.eightbitlab.rxbus.Bus
 import com.eightbitlab.rxbus.registerInBus
 import com.github.ajalt.timberkt.Timber
-import com.github.kittinunf.result.Result
 import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
@@ -28,11 +27,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.markusressel.commons.android.material.toast
 import de.markusressel.commons.core.filterByExpectedType
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
 import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
 import de.markusressel.mkdocseditor.extensions.common.android.context
 import de.markusressel.mkdocseditor.listItemDocument
@@ -41,12 +38,9 @@ import de.markusressel.mkdocseditor.listItemSection
 import de.markusressel.mkdocseditor.view.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.view.fragment.base.MultiPersistableListFragmentBase
 import de.markusressel.mkdocseditor.view.viewmodel.FileBrowserViewModel
-import de.markusressel.mkdocsrestclient.section.SectionModel
+import de.markusressel.mkdocseditor.view.viewmodel.FileBrowserViewModel.Event.ReloadEvent
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -57,7 +51,7 @@ import java.util.concurrent.TimeUnit
 @AndroidEntryPoint
 class FileBrowserFragment : MultiPersistableListFragmentBase() {
 
-    private val viewModel: FileBrowserViewModel by activityViewModels()
+    val viewModel by activityViewModels<FileBrowserViewModel>()
 
     private var searchView: SearchView? = null
     private var searchMenuItem: MenuItem? = null
@@ -74,7 +68,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         savedInstanceState: Bundle?
     ): ViewDataBinding? {
         // search
-        viewModel.currentSearchResults.observe(this) {
+        viewModel.currentSearchResults.observe(viewLifecycleOwner) {
             if (it.isEmpty()) {
                 showEmpty()
             } else {
@@ -88,7 +82,7 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
         }
 
         // normal navigation
-        viewModel.currentSection.observe(this) {
+        viewModel.currentSection.observe(viewLifecycleOwner) {
             if (it.isNotEmpty()) {
                 it.first().let { section ->
                     if (section.subsections.isEmpty() and section.documents.isEmpty() and section.resources.isEmpty()) {
@@ -111,23 +105,23 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
             }
         }
 
-        viewModel.currentSearchFilter.observe(this) {
+        viewModel.currentSearchFilter.observe(viewLifecycleOwner) {
             searchView?.setQuery(it, false)
         }
-        viewModel.isSearchExpanded.observe(this) { isExpanded ->
+        viewModel.isSearchExpanded.observe(viewLifecycleOwner) { isExpanded ->
             if (!isExpanded) {
                 searchView?.clearFocus()
                 searchMenuItem?.collapseActionView()
             }
         }
 
-        viewModel.openDocumentEditorEvent.observe(this) { documentId ->
+        viewModel.openDocumentEditorEvent.observe(viewLifecycleOwner) { documentId ->
             openDocumentEditor(documentId)
         }
 
-        viewModel.reloadEvent.observe(this) {
-            CoroutineScope(Dispatchers.IO).launch {
-                reload()
+        viewModel.events.observe(viewLifecycleOwner) {
+            when (it) {
+                is ReloadEvent -> showEmpty()
             }
         }
 
@@ -176,21 +170,6 @@ class FileBrowserFragment : MultiPersistableListFragmentBase() {
                     Timber.e(error) { "Error filtering list" }
                 })
         }
-    }
-
-    override suspend fun getLoadDataFromSourceFunction(): Result<SectionModel, Exception> {
-        return restClient.getItemTree()
-    }
-
-    override fun mapToEntity(it: Any): IdentifiableListItem {
-        return when (it) {
-            is SectionModel -> it.asEntity(viewModel.documentContentPersistenceManager)
-            else -> throw IllegalArgumentException("Cant map object of type ${it.javaClass}!")
-        }
-    }
-
-    override fun persistListData(data: IdentifiableListItem) {
-        viewModel.persistListData(data as SectionEntity)
     }
 
     override fun createEpoxyController(): Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>> {

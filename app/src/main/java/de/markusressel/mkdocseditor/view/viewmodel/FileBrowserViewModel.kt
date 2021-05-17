@@ -6,6 +6,8 @@ import androidx.lifecycle.*
 import androidx.paging.LivePagedListBuilder
 import androidx.paging.PagedList
 import com.github.ajalt.timberkt.Timber
+import com.github.kittinunf.result.Result
+import com.github.kittinunf.result.map
 import com.hadilq.liveevent.LiveEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.doAsync
@@ -15,7 +17,7 @@ import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
 import de.markusressel.mkdocseditor.view.fragment.SectionBackstackItem
-import de.markusressel.mkdocsrestclient.MkDocsRestClient
+import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.objectbox.android.ObjectBoxDataSource
 import io.objectbox.kotlin.query
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +29,6 @@ import javax.inject.Inject
 @HiltViewModel
 class FileBrowserViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
-    val restClient: MkDocsRestClient,
     val sectionPersistenceManager: SectionPersistenceManager,
     val documentPersistenceManager: DocumentPersistenceManager,
     val documentContentPersistenceManager: DocumentContentPersistenceManager,
@@ -44,7 +45,6 @@ class FileBrowserViewModel @Inject constructor(
         }
 
     val isSearchExpanded = MutableLiveData(false)
-    val currentSearchFilter = MutableLiveData<String>()
 
     val currentSearchResults = MutableLiveData<List<IdentifiableListItem>>()
 
@@ -54,7 +54,7 @@ class FileBrowserViewModel @Inject constructor(
     }
 
     val openDocumentEditorEvent = LiveEvent<String>()
-    val reloadEvent = LiveEvent<Boolean>()
+    val events = LiveEvent<Event>()
 
     init {
         currentSearchFilter.observeForever { searchString ->
@@ -134,6 +134,19 @@ class FileBrowserViewModel @Inject constructor(
     }
 
     /**
+     * Reload list data from it's original source, persist it and display it to the user afterwards
+     */
+    override suspend fun reloadDataFromSource() {
+        getLoadDataFromSourceFunction()
+            .map { mapToEntity(it) }
+            .fold(success = {
+                persistListData(it)
+            }, failure = {
+                Timber.e(it)
+            })
+    }
+
+    /**
      * Removes all items in the backstack
      */
     internal fun clearBackstack() {
@@ -210,12 +223,21 @@ class FileBrowserViewModel @Inject constructor(
         openSection(ROOT_SECTION_ID)
     }
 
-    /**
-     * Persist the given data
-     */
-    fun persistListData(data: SectionEntity) {
-        sectionPersistenceManager.insertOrUpdateRoot(data)
+    override fun persistListData(data: IdentifiableListItem) {
+        // TODO: can we get rid of the cast?
+        sectionPersistenceManager.insertOrUpdateRoot(data as SectionEntity)
         currentSectionId.postValue(currentSectionId.value)
+    }
+
+    override suspend fun getLoadDataFromSourceFunction(): Result<SectionModel, Exception> {
+        return restClient.getItemTree()
+    }
+
+    override fun mapToEntity(it: Any): IdentifiableListItem {
+        return when (it) {
+            is SectionModel -> it.asEntity(documentContentPersistenceManager)
+            else -> throw IllegalArgumentException("Cant map object of type ${it.javaClass}!")
+        }
     }
 
     fun createNewSection(sectionName: String) {
@@ -232,7 +254,7 @@ class FileBrowserViewModel @Inject constructor(
                 parentSection.subsections.add(createdSection)
                 // insert it into persistence
                 sectionPersistenceManager.standardOperation().put(parentSection)
-                reloadEvent.value = true
+                reload()
             }, failure = {
                 Timber.e(it) { "Error creating section" }
 //            toast("There was an error :(")
@@ -260,7 +282,7 @@ class FileBrowserViewModel @Inject constructor(
                     withContext(Dispatchers.Main) {
                         openDocumentEditorEvent.value = it.id
                     }
-                    reloadEvent.value = true
+                    reload()
                 }, failure = {
                     Timber.e(it) { "Error creating document" }
 //            context().toast("There was an error :(")
@@ -274,15 +296,19 @@ class FileBrowserViewModel @Inject constructor(
     fun renameDocument(id: String, documentName: String) {
         viewModelScope.launch {
             restClient.renameDocument(id, documentName)
-            reloadEvent.value = true
+            reload()
         }
     }
 
     fun deleteDocument(id: String) {
         viewModelScope.launch {
             restClient.deleteDocument(id)
-            reloadEvent.value = true
+            reload()
         }
+    }
+
+    sealed class Event {
+        object ReloadEvent : Event()
     }
 
     companion object {

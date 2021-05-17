@@ -18,34 +18,21 @@
 package de.markusressel.mkdocseditor.view.fragment.base
 
 import android.content.Context
-import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
-import android.view.View
 import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.Lifecycle
 import com.github.ajalt.timberkt.Timber
-import com.github.kittinunf.result.Result
-import com.github.kittinunf.result.map
 import com.google.android.material.snackbar.Snackbar
 import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
-import de.markusressel.commons.android.material.snack
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
-import de.markusressel.mkdocsrestclient.MkDocsRestClient
-import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.util.concurrent.CancellationException
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 
 
 /**
@@ -53,9 +40,7 @@ import javax.inject.Inject
  */
 abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
 
-    @Inject
-    lateinit var restClient: MkDocsRestClient
-
+    // TODO: this should be fed by a livedata observer
     private var serverUnavailableSnackbar: Snackbar? = null
 
     private val optionsMenuComponent: OptionsMenuComponent by lazy {
@@ -76,9 +61,8 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
                             .debounce(300, TimeUnit.MILLISECONDS)
                             .observeOn(AndroidSchedulers.mainThread())
                             .subscribeBy(onNext = {
-                                currentSearchFilter = it.toString()
-
-                                // TODO: implement search
+                                // TODO: set currentSearchFilter on viewModel
+                                // viewModel.currentSearchFilter = it.toString()
                             }, onError = {
                                 Timber.e(it) { "Error filtering list" }
                             })
@@ -87,9 +71,7 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
             }, onOptionsMenuItemClicked = {
                 when (it.itemId) {
                     R.id.refresh -> {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            reload()
-                        }
+                        // TODO: notify viewmodel to reload data
                         true
                     }
                     else -> false
@@ -109,80 +91,6 @@ abstract class MultiPersistableListFragmentBase : ListFragmentBase() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return super.onOptionsItemSelected(item) || optionsMenuComponent.onOptionsItemSelected(item)
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        // TODO: this should only be done if the viewmodel is not already initialized
-        //  as this resets the current position of the filebrowser, as well as any existing
-        //  search term
-        CoroutineScope(Dispatchers.IO).launch {
-            reload()
-        }
-    }
-
-    suspend fun reload() {
-        restClient.isHostAlive().fold(success = {
-            reloadDataFromSource()
-            serverUnavailableSnackbar?.dismiss()
-        }, failure = {
-            if (it is CancellationException) {
-                Timber.d { "Reload cancelled" }
-            } else {
-                Timber.e(it)
-                serverUnavailableSnackbar?.dismiss()
-                serverUnavailableSnackbar = binding.recyclerView.snack(
-                    text = R.string.server_unavailable,
-                    duration = Snackbar.LENGTH_INDEFINITE,
-                    actionTitle = R.string.retry,
-                    action = {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            reload()
-                        }
-                    })
-            }
-        })
-    }
-
-    /**
-     * Reload list data from it's original source, persist it and display it to the user afterwards
-     */
-    override suspend fun reloadDataFromSource() {
-        getLoadDataFromSourceFunction()
-            .map { mapToEntity(it) }
-            .fold(success = {
-                persistListData(it)
-            }, failure = {
-                Timber.e(it)
-                updateLastUpdatedFromSource()
-            })
-    }
-
-    /**
-     * Define a Single that returns the complete list of data from the (server) source
-     */
-    internal abstract suspend fun getLoadDataFromSourceFunction(): Result<SectionModel, Exception>
-
-    /**
-     * Map the source object to the persistence object
-     */
-    abstract fun mapToEntity(it: Any): IdentifiableListItem
-
-    /**
-
-
-     * Persist the current list data
-     */
-    internal abstract fun persistListData(data: IdentifiableListItem)
-
-    private fun getLastUpdatedFromSource(): Long {
-        // TODO:
-        return 0
-    }
-
-    private fun updateLastUpdatedFromSource() {
-        // TODO:
     }
 
 }
