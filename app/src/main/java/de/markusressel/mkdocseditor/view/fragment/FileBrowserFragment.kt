@@ -7,7 +7,6 @@ import android.view.*
 import android.widget.Toast
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
-import androidx.databinding.ViewDataBinding
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import com.afollestad.materialdialogs.MaterialDialog
@@ -53,6 +52,23 @@ class FileBrowserFragment : ListFragmentBase() {
 
     val viewModel by activityViewModels<FileBrowserViewModel>()
 
+    override fun getFabConfig() = FabConfig(
+        right = listOf(
+            FabConfig.Fab(id = 0,
+                description = R.string.create_document,
+                icon = MaterialDesignIconic.Icon.gmi_file_add,
+                onClick = {
+                    openCreateDocumentDialog()
+                }),
+            FabConfig.Fab(id = 1,
+                description = R.string.create_section,
+                icon = MaterialDesignIconic.Icon.gmi_folder,
+                onClick = {
+                    openCreateSectionDialog()
+                })
+        )
+    )
+
     private var searchView: SearchView? = null
     private var searchMenuItem: MenuItem? = null
 
@@ -62,11 +78,11 @@ class FileBrowserFragment : ListFragmentBase() {
         viewModel
     }
 
-    override fun createViewDataBinding(
+    override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): ViewDataBinding? {
+    ): View? {
         // search
         viewModel.currentSearchResults.observe(viewLifecycleOwner) {
             if (it.isEmpty()) {
@@ -125,7 +141,7 @@ class FileBrowserFragment : ListFragmentBase() {
             }
         }
 
-        return super.createViewDataBinding(inflater, container, savedInstanceState)
+        return super.onCreateView(inflater, container, savedInstanceState)
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -231,23 +247,6 @@ class FileBrowserFragment : ListFragmentBase() {
         }
     }
 
-    override fun getRightFabs(): List<FabConfig.Fab> {
-        return listOf(
-            FabConfig.Fab(id = 0,
-                description = R.string.create_document,
-                icon = MaterialDesignIconic.Icon.gmi_file_add,
-                onClick = {
-                    openCreateDocumentDialog()
-                }),
-            FabConfig.Fab(id = 1,
-                description = R.string.create_section,
-                icon = MaterialDesignIconic.Icon.gmi_folder,
-                onClick = {
-                    openCreateSectionDialog()
-                })
-        )
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -272,9 +271,9 @@ class FileBrowserFragment : ListFragmentBase() {
     }
 
     private fun openCreateSectionDialog() {
-        val currentSectionId = viewModel.currentSectionId.value!!
-        val parentSection =
-            viewModel.sectionPersistenceManager.findById(currentSectionId)!!
+        val currentSectionId = viewModel.currentSectionId.value ?: return
+        val parentSection = viewModel.sectionPersistenceManager.findById(currentSectionId) ?: return
+
         val existingSections = parentSection.subsections.map { it.name }
 
         MaterialDialog(context()).show {

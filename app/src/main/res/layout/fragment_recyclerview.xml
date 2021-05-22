@@ -1,33 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <com.airbnb.epoxy.EpoxyRecyclerView
-        android:id="@+id/recyclerView"
+    <data>
+
+        <variable
+            name="viewModel"
+            type="de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel" />
+    </data>
+
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fadeScrollbars="false"
-        android:scrollbars="vertical"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+        android:layout_height="match_parent">
 
-    <include
-        android:id="@+id/layout_empty_list"
-        layout="@layout/layout_empty_list" />
+        <com.airbnb.epoxy.EpoxyRecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fadeScrollbars="false"
+            android:scrollbars="vertical"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-    <com.leinardi.android.speeddial.SpeedDialOverlayLayout
-        android:id="@+id/speedDialOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="?attr/speedDialOverlayColor" />
+        <include
+            android:id="@+id/layout_empty_list"
+            layout="@layout/layout_empty_list" />
 
-    <com.leinardi.android.speeddial.SpeedDialView
-        android:id="@+id/speedDial"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        app:layout_behavior="@string/speeddial_scrolling_view_snackbar_behavior"
-        app:sdOverlayLayout="@id/speedDialOverlay" />
+        <com.leinardi.android.speeddial.SpeedDialOverlayLayout
+            android:id="@+id/speedDialOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?attr/speedDialOverlayColor" />
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+        <com.leinardi.android.speeddial.SpeedDialView
+            android:id="@+id/speedDial"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            app:layout_behavior="@string/speeddial_scrolling_view_snackbar_behavior"
+            app:sdOverlayLayout="@id/speedDialOverlay" />
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+</layout>

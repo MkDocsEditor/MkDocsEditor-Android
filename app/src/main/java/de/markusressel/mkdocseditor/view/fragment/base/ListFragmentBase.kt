@@ -19,19 +19,13 @@ package de.markusressel.mkdocseditor.view.fragment.base
 
 import android.content.Context
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import androidx.annotation.CallSuper
 import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.airbnb.epoxy.Typed3EpoxyController
 import com.github.ajalt.timberkt.Timber
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import com.jakewharton.rxbinding2.support.v7.widget.RxSearchView
 import com.leinardi.android.speeddial.SpeedDialActionItem
@@ -53,14 +47,7 @@ import java.util.concurrent.TimeUnit
  */
 abstract class ListFragmentBase : DaggerSupportFragmentBase() {
 
-    private var _binding: FragmentRecyclerviewBinding? = null
-
-    // This property is only valid between onCreateView and
-    // onDestroyView.
-    protected val binding get() = _binding!!
-
-    override val layoutRes: Int
-        get() = R.layout.fragment_recyclerview
+    lateinit var binding: FragmentRecyclerviewBinding
 
     // TODO: this should be fed by a livedata observer
     private var serverUnavailableSnackbar: Snackbar? = null
@@ -101,11 +88,18 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
             })
     }
 
-    protected open val fabConfig: FabConfig =
-        FabConfig(left = mutableListOf(), right = mutableListOf())
-    private val fabButtonViews = mutableListOf<FloatingActionButton>()
+    protected open fun getFabConfig(): FabConfig? = null
 
     internal val epoxyController by lazy { createEpoxyController() }
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        binding = FragmentRecyclerviewBinding.inflate(layoutInflater, container, false)
+        return binding.root
+    }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -119,16 +113,6 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return super.onOptionsItemSelected(item) || optionsMenuComponent.onOptionsItemSelected(item)
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        _binding = FragmentRecyclerviewBinding.inflate(inflater, container, false)
-        val view = binding.root
-        return view
     }
 
     @CallSuper
@@ -160,26 +144,14 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
      */
     abstract fun createEpoxyController(): Typed3EpoxyController<List<SectionEntity>, List<DocumentEntity>, List<ResourceEntity>>
 
-    /**
-     * Override this in subclasses if necessary
-     */
-    protected open fun getLeftFabs(): List<FabConfig.Fab> {
-        return emptyList()
-    }
-
-    /**
-     * Override this in subclasses if necessary
-     */
-    protected open fun getRightFabs(): List<FabConfig.Fab> {
-        return emptyList()
-    }
-
     private fun setupFabs() {
+        val fabConfig = getFabConfig() ?: return
+
         binding.speedDial.apply {
             setMainFabClosedDrawable(iconHandler.getFabIcon(MaterialDesignIconic.Icon.gmi_plus))
             setMainFabOpenedDrawable(iconHandler.getFabIcon(MaterialDesignIconic.Icon.gmi_close))
 
-            val fabItems = (getLeftFabs() + getRightFabs()).map {
+            val fabItems = (fabConfig.left + fabConfig.right).map {
                 SpeedDialActionItem.Builder(it.id, iconHandler.getFabIcon(it.icon))
                     .setLabel(it.description)
                     .create()
@@ -187,9 +159,9 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
             addAllActionItems(fabItems)
 
             setOnActionSelectedListener { actionItem ->
-                val fabConfig = (getRightFabs() + getLeftFabs()).find { it.id == actionItem.id }
-                if (fabConfig != null) {
-                    fabConfig.onClick?.invoke()
+                val item = (fabConfig.right + fabConfig.left).find { it.id == actionItem.id }
+                if (item != null) {
+                    item.onClick?.invoke()
                     // close the speed dial
                     false
                 } else {
@@ -229,11 +201,6 @@ abstract class ListFragmentBase : DaggerSupportFragmentBase() {
         }
 
         super.onStop()
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 
 }

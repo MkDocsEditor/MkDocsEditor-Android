@@ -8,8 +8,6 @@ import android.os.Bundle
 import android.view.*
 import android.widget.Toast.LENGTH_SHORT
 import androidx.annotation.CallSuper
-import androidx.databinding.DataBindingUtil
-import androidx.databinding.ViewDataBinding
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Observer
@@ -42,9 +40,7 @@ import de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import io.objectbox.kotlin.query
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
@@ -55,8 +51,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener {
 
-    override val layoutRes: Int
-        get() = R.layout.fragment_editor
+    lateinit var binding: FragmentEditorBinding
 
     @Inject
     internal lateinit var documentPersistenceManager: DocumentPersistenceManager
@@ -169,13 +164,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         optionsMenuComponent
     }
 
-    override fun createViewDataBinding(
+    override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): ViewDataBinding? {
-        val binding: FragmentEditorBinding =
-            DataBindingUtil.inflate(layoutInflater, layoutRes, container, false)
+    ): View {
+        binding = FragmentEditorBinding.inflate(layoutInflater, container, false)
         viewModel.documentId.value = documentId
 
         binding.let {
@@ -183,7 +177,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
             it.viewModel = viewModel
         }
 
-        return binding
+        val parent = binding.root as ViewGroup
+        return loadingComponent.onCreateView(inflater, parent, savedInstanceState)
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -545,15 +540,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
             panX = positioningPercentage.x,
             panY = positioningPercentage.y
         )
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        val parent = super.onCreateView(inflater, container, savedInstanceState) as ViewGroup
-        return loadingComponent.onCreateView(inflater, parent, savedInstanceState)
     }
 
     private val offlineModeObserver = Observer<Boolean> { enabled ->

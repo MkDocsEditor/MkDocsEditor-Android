@@ -8,8 +8,6 @@ import com.mikepenz.aboutlibraries.LibsBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
-import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
-import javax.inject.Inject
 
 /**
  * The page presenting details about this app.
@@ -22,18 +20,13 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class AboutPage : DaggerSupportFragmentBase() {
 
-    override val layoutRes: Int
-        get() = R.layout.fragment_about_page
-
-    @Inject
-    protected lateinit var preferencesHolder: KutePreferencesHolder
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view = super.onCreateView(inflater, container, savedInstanceState)
+        super.onCreateView(inflater, container, savedInstanceState)
+        val view = inflater.inflate(R.layout.fragment_about_page, container, false)
 
         val themeVal = preferencesHolder.themePreference.persistedValue
 
