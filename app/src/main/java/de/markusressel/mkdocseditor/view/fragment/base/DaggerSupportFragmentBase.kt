@@ -2,8 +2,7 @@ package de.markusressel.mkdocseditor.view.fragment.base
 
 import androidx.fragment.app.Fragment
 import androidx.navigation.NavController
-import androidx.navigation.fragment.NavHostFragment
-import de.markusressel.mkdocseditor.R
+import androidx.navigation.fragment.findNavController
 import de.markusressel.mkdocseditor.view.IconHandler
 import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
 import javax.inject.Inject
@@ -23,10 +22,6 @@ abstract class DaggerSupportFragmentBase : Fragment() {
     protected lateinit var preferencesHolder: KutePreferencesHolder
 
     protected val navController: NavController
-        get() {
-            val navHostFragment =
-                childFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
-            return navHostFragment.navController
-        }
+        get() = findNavController()
 
 }
