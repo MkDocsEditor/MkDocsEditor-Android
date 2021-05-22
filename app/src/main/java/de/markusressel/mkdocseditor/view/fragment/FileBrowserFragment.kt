@@ -34,10 +34,11 @@ import de.markusressel.mkdocseditor.extensions.common.android.context
 import de.markusressel.mkdocseditor.listItemDocument
 import de.markusressel.mkdocseditor.listItemResource
 import de.markusressel.mkdocseditor.listItemSection
+import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.view.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.view.fragment.base.ListFragmentBase
 import de.markusressel.mkdocseditor.view.viewmodel.FileBrowserViewModel
-import de.markusressel.mkdocseditor.view.viewmodel.FileBrowserViewModel.Event.ReloadEvent
+import de.markusressel.mkdocseditor.view.viewmodel.FileBrowserViewModel.Event.*
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import java.util.*
@@ -58,13 +59,13 @@ class FileBrowserFragment : ListFragmentBase() {
                 description = R.string.create_document,
                 icon = MaterialDesignIconic.Icon.gmi_file_add,
                 onClick = {
-                    openCreateDocumentDialog()
+                    viewModel.onCreateDocumentFabClicked()
                 }),
             FabConfig.Fab(id = 1,
                 description = R.string.create_section,
                 icon = MaterialDesignIconic.Icon.gmi_folder,
                 onClick = {
-                    openCreateSectionDialog()
+                    viewModel.onCreateSectionFabClicked()
                 })
         )
     )
@@ -98,20 +99,27 @@ class FileBrowserFragment : ListFragmentBase() {
         }
 
         // normal navigation
-        viewModel.currentSection.observe(viewLifecycleOwner) {
-            if (it.isNotEmpty()) {
-                it.first().let { section ->
-                    if (section.subsections.isEmpty() and section.documents.isEmpty() and section.resources.isEmpty()) {
-                        showEmpty()
-                    } else {
-                        hideEmpty()
-                    }
-                    epoxyController.setData(
-                        section.subsections,
-                        section.documents,
-                        section.resources
-                    )
+        viewModel.currentSection.observe(viewLifecycleOwner) { resource ->
+            val section = resource.data
+
+            if (resource is Resource.Loading && section == null) {
+                //showLoading()
+                return@observe
+            } else {
+                //showContent()
+            }
+
+            if (section != null) {
+                if (section.subsections.isEmpty() and section.documents.isEmpty() and section.resources.isEmpty()) {
+                    showEmpty()
+                } else {
+                    hideEmpty()
                 }
+                epoxyController.setData(
+                    section.subsections,
+                    section.documents,
+                    section.resources
+                )
             } else {
                 // in theory this will navigate back until a section is found
                 // or otherwise show the "empty" screen
@@ -135,9 +143,111 @@ class FileBrowserFragment : ListFragmentBase() {
             openDocumentEditor(documentId)
         }
 
-        viewModel.events.observe(viewLifecycleOwner) {
-            when (it) {
-                is ReloadEvent -> showEmpty()
+        viewModel.events.observe(viewLifecycleOwner) { event ->
+            when (event) {
+                is ReloadEvent -> {
+                    // showEmpty()
+                }
+                is CreateDocumentEvent -> {
+                    val existingSections = emptyList<String>()
+
+                    MaterialDialog(context()).show {
+                        lifecycleOwner(this@FileBrowserFragment)
+                        title(R.string.create_document)
+                        input(
+                            waitForPositiveButton = false,
+                            allowEmpty = false,
+                            hintRes = R.string.hint_new_section,
+                            inputType = InputType.TYPE_CLASS_TEXT
+                        ) { dialog, text ->
+
+                            val trimmedText = text.toString().trim()
+
+                            val inputField = dialog.getInputField()
+                            val isValid = !existingSections.contains(trimmedText)
+
+                            inputField.error = when (isValid) {
+                                true -> null
+                                false -> getString(R.string.error_section_already_exists)
+                            }
+                            dialog.setActionButtonEnabled(WhichButton.POSITIVE, isValid)
+                        }
+
+                        positiveButton(android.R.string.ok, click = {
+                            val documentName = getInputField().text.toString().trim()
+                            viewModel.createNewDocument(documentName)
+                        })
+                        negativeButton(android.R.string.cancel)
+                    }
+                }
+                is CreateSectionEvent -> {
+                    val existingSections = emptyList<String>()
+
+                    MaterialDialog(context()).show {
+                        lifecycleOwner(this@FileBrowserFragment)
+                        title(R.string.create_section)
+                        input(
+                            waitForPositiveButton = false,
+                            allowEmpty = false,
+                            hintRes = R.string.hint_new_section,
+                            inputType = InputType.TYPE_CLASS_TEXT
+                        ) { dialog, text ->
+
+                            val trimmedText = text.toString().trim()
+
+                            val inputField = dialog.getInputField()
+                            val isValid = !existingSections.contains(trimmedText)
+
+                            inputField.error = when (isValid) {
+                                true -> null
+                                false -> getString(R.string.error_section_already_exists)
+                            }
+                            dialog.setActionButtonEnabled(WhichButton.POSITIVE, isValid)
+                        }
+
+                        positiveButton(android.R.string.ok, click = {
+                            val sectionName = getInputField().text.toString().trim()
+                            viewModel.createNewSection(sectionName)
+                        })
+                        negativeButton(android.R.string.cancel)
+                    }
+                }
+                is RenameDocumentEvent -> {
+
+                    val existingDocuments = emptyList<String>()
+
+                    MaterialDialog(context()).show {
+                        lifecycleOwner(this@FileBrowserFragment)
+                        title(R.string.edit_document)
+                        input(
+                            waitForPositiveButton = false,
+                            allowEmpty = false,
+                            prefill = event.entity.name,
+                            inputType = InputType.TYPE_CLASS_TEXT
+                        ) { dialog, text ->
+
+                            val trimmedText = text.toString().trim()
+
+                            val inputField = dialog.getInputField()
+                            val isValid = !existingDocuments.contains(trimmedText)
+
+                            inputField.error = when (isValid) {
+                                true -> null
+                                false -> getString(R.string.error_document_already_exists)
+                            }
+                            dialog.setActionButtonEnabled(WhichButton.POSITIVE, isValid)
+                        }
+
+                        positiveButton(android.R.string.ok, click = {
+                            val documentName = getInputField().text.toString().trim()
+                            viewModel.renameDocument(event.entity.id, documentName)
+                        })
+                        neutralButton(R.string.delete, click = {
+                            viewModel.deleteDocument(event.entity.id)
+                        })
+                        negativeButton(android.R.string.cancel)
+                    }
+                }
             }
         }
 
@@ -222,8 +332,7 @@ class FileBrowserFragment : ListFragmentBase() {
                             openDocumentEditor(model.item().id)
                         }
                         onlongclick { model, parentView, clickedView, position ->
-                            openEditDocumentDialog(model.item())
-                            true
+                            viewModel.onDocumentLongClicked(model.item())
                         }
                     }
                 }
@@ -268,117 +377,6 @@ class FileBrowserFragment : ListFragmentBase() {
     private fun openResourceDetailPage(resource: ResourceEntity) {
         Timber.d { "Opening Resource '${resource.name}'" }
         context?.toast("Resources are not yet supported :(", Toast.LENGTH_LONG)
-    }
-
-    private fun openCreateSectionDialog() {
-        val currentSectionId = viewModel.currentSectionId.value ?: return
-        val parentSection = viewModel.sectionPersistenceManager.findById(currentSectionId) ?: return
-
-        val existingSections = parentSection.subsections.map { it.name }
-
-        MaterialDialog(context()).show {
-            lifecycleOwner(this@FileBrowserFragment)
-            title(R.string.create_section)
-            input(
-                waitForPositiveButton = false,
-                allowEmpty = false,
-                hintRes = R.string.hint_new_section,
-                inputType = InputType.TYPE_CLASS_TEXT
-            ) { dialog, text ->
-
-                val trimmedText = text.toString().trim()
-
-                val inputField = dialog.getInputField()
-                val isValid = !existingSections.contains(trimmedText)
-
-                inputField.error = when (isValid) {
-                    true -> null
-                    false -> getString(R.string.error_section_already_exists)
-                }
-                dialog.setActionButtonEnabled(WhichButton.POSITIVE, isValid)
-            }
-
-            positiveButton(android.R.string.ok, click = {
-                val sectionName = getInputField().text.toString().trim()
-                viewModel.createNewSection(sectionName)
-            })
-            negativeButton(android.R.string.cancel)
-        }
-    }
-
-    private fun openCreateDocumentDialog() {
-        val currentSectionId = viewModel.currentSectionId.value!!
-        val parentSection =
-            viewModel.sectionPersistenceManager.findById(currentSectionId)!!
-        val existingDocuments = parentSection.documents.map { it.name }
-
-        MaterialDialog(context()).show {
-            lifecycleOwner(this@FileBrowserFragment)
-            title(R.string.create_document)
-            input(
-                waitForPositiveButton = false,
-                allowEmpty = false,
-                hintRes = R.string.hint_new_document,
-                inputType = InputType.TYPE_CLASS_TEXT
-            ) { dialog, text ->
-
-                val trimmedText = text.toString().trim()
-
-                val inputField = dialog.getInputField()
-                val isValid = !existingDocuments.contains(trimmedText)
-
-                inputField.error = when (isValid) {
-                    true -> null
-                    false -> getString(R.string.error_document_already_exists)
-                }
-                dialog.setActionButtonEnabled(WhichButton.POSITIVE, isValid)
-            }
-
-            positiveButton(android.R.string.ok, click = {
-                val documentName = getInputField().text.toString().trim()
-                viewModel.createNewDocument(documentName)
-            })
-            negativeButton(android.R.string.cancel)
-        }
-    }
-
-    private fun openEditDocumentDialog(entity: DocumentEntity) {
-        val currentSectionId = viewModel.currentSectionId.value!!
-        val parentSection =
-            viewModel.sectionPersistenceManager.findById(currentSectionId)!!
-        val existingDocuments = parentSection.documents.map { it.name }
-
-        MaterialDialog(context()).show {
-            lifecycleOwner(this@FileBrowserFragment)
-            title(R.string.edit_document)
-            input(
-                waitForPositiveButton = false,
-                allowEmpty = false,
-                prefill = entity.name,
-                inputType = InputType.TYPE_CLASS_TEXT
-            ) { dialog, text ->
-
-                val trimmedText = text.toString().trim()
-
-                val inputField = dialog.getInputField()
-                val isValid = !existingDocuments.contains(trimmedText)
-
-                inputField.error = when (isValid) {
-                    true -> null
-                    false -> getString(R.string.error_document_already_exists)
-                }
-                dialog.setActionButtonEnabled(WhichButton.POSITIVE, isValid)
-            }
-
-            positiveButton(android.R.string.ok, click = {
-                val documentName = getInputField().text.toString().trim()
-                viewModel.renameDocument(entity.id, documentName)
-            })
-            neutralButton(R.string.delete, click = {
-                viewModel.deleteDocument(entity.id)
-            })
-            negativeButton(android.R.string.cancel)
-        }
     }
 
     /**

@@ -15,7 +15,7 @@ buildscript {
         // DEPENDENCIES
 
         // Android Architecture Components
-        aacAndroidKtxVersion = "1.3.2"
+        aacAndroidKtxVersion = "1.5.0"
 
         javaxAnnotationVersion = "10.0-b28"
         hiltVersion = "2.35"

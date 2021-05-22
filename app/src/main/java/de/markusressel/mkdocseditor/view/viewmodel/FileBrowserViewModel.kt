@@ -1,25 +1,20 @@
 package de.markusressel.mkdocseditor.view.viewmodel
 
-import androidx.annotation.MainThread
-import androidx.arch.core.util.Function
 import androidx.lifecycle.*
-import androidx.paging.LivePagedListBuilder
-import androidx.paging.PagedList
+import androidx.lifecycle.Transformations.switchMap
 import com.github.ajalt.timberkt.Timber
-import com.github.kittinunf.result.Result
-import com.github.kittinunf.result.map
 import com.hadilq.liveevent.LiveEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.doAsync
 import de.markusressel.commons.android.core.runOnUiThread
-import de.markusressel.mkdocseditor.data.persistence.*
+import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
+import de.markusressel.mkdocseditor.network.DataRepository
+import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.view.fragment.SectionBackstackItem
-import de.markusressel.mkdocsrestclient.section.SectionModel
-import io.objectbox.android.ObjectBoxDataSource
-import io.objectbox.kotlin.query
+import de.markusressel.mkdocseditor.view.viewmodel.FileBrowserViewModel.Event.*
+import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -29,10 +24,8 @@ import javax.inject.Inject
 @HiltViewModel
 class FileBrowserViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
-    val sectionPersistenceManager: SectionPersistenceManager,
-    val documentPersistenceManager: DocumentPersistenceManager,
-    val documentContentPersistenceManager: DocumentContentPersistenceManager,
-    private val resourcePersistenceManager: ResourcePersistenceManager,
+    private val dataRepository: DataRepository,
+    private val restClient: MkDocsRestClient,
 ) : EntityListViewModel() {
 
     private val backstack: Stack<SectionBackstackItem> = Stack()
@@ -46,104 +39,33 @@ class FileBrowserViewModel @Inject constructor(
 
     val isSearchExpanded = MutableLiveData(false)
 
+    // TODO: this should be a combination of searchString and all available IdentifiableListItems
     val currentSearchResults = MutableLiveData<List<IdentifiableListItem>>()
 
-    val currentSectionId = MutableLiveData(ROOT_SECTION_ID)
-    val currentSection = switchMapPaged<String, SectionEntity>(currentSectionId) { sectionId ->
-        getSectionLiveData(sectionId)
-    }
+    private val currentSectionId = MutableLiveData(ROOT_SECTION_ID)
+
+    val currentSection: LiveData<Resource<SectionEntity?>> =
+        switchMap(currentSectionId) { sectionId ->
+            dataRepository.getSection(sectionId).asLiveData()
+        }
 
     val openDocumentEditorEvent = LiveEvent<String>()
     val events = LiveEvent<Event>()
 
     init {
+        // TODO: baaaad
         currentSearchFilter.observeForever { searchString ->
             if (isSearching()) {
-                // TODO:  this is pretty ugly and time/performance consuming
                 doAsync {
-                    val searchRegex =
-                        searchString.toRegex(setOf(RegexOption.IGNORE_CASE, RegexOption.LITERAL))
-
-                    val sections = sectionPersistenceManager.standardOperation().query {
-                        filter { section -> searchRegex.containsMatchIn(section.name) }
-                    }.find()
-
-                    val documents = documentPersistenceManager.standardOperation().query {
-                        filter { document -> searchRegex.containsMatchIn(document.name) }
-                    }.find()
-
-                    val resources = resourcePersistenceManager.standardOperation().query {
-                        filter { resource -> searchRegex.containsMatchIn(resource.name) }
-                    }.find()
-
+                    val data = dataRepository.find(searchString)
                     runOnUiThread {
-                        currentSearchResults.value = sections + documents + resources
+                        currentSearchResults.value = data
                     }
                 }
             } else {
                 showTopLevel()
             }
         }
-    }
-
-    /**
-     * Helper function to use switchMap with a PagedList
-     */
-    @MainThread
-    fun <X, Y> switchMapPaged(
-        source: LiveData<X>,
-        switchMapFunction: Function<X, LiveData<PagedList<Y>>>
-    ): MediatorLiveData<PagedList<Y>> {
-        val result = MediatorLiveData<PagedList<Y>>()
-        result.addSource(source, object : androidx.lifecycle.Observer<X> {
-            var mSource: LiveData<PagedList<Y>>? = null
-
-            override fun onChanged(x: X?) {
-                val newLiveData = switchMapFunction.apply(x)
-                if (mSource === newLiveData) {
-                    return
-                }
-                if (mSource != null) {
-                    result.removeSource(mSource!!)
-                }
-                mSource = newLiveData
-                if (mSource != null) {
-                    result.addSource(mSource!!) { y -> result.setValue(y) }
-                }
-            }
-        })
-        return result
-    }
-
-    /**
-     * Get the LiveData object for this EntityListViewModel
-     */
-    private fun getSectionLiveData(sectionId: String = ROOT_SECTION_ID): LiveData<PagedList<SectionEntity>> {
-        return LivePagedListBuilder(
-            ObjectBoxDataSource.Factory(
-                sectionPersistenceManager.standardOperation().query {
-                    equal(SectionEntity_.id, sectionId)
-                    // TODO: implement sorting with inhomogeneous types
-                    // sort(TYPE_COMPARATOR)
-                }),
-//                documentPersistenceManager!!.standardOperation().query {
-//
-//                }),
-            getPageSize()
-        ).build()
-    }
-
-    /**
-     * Reload list data from it's original source, persist it and display it to the user afterwards
-     */
-    override suspend fun reloadDataFromSource() {
-        getLoadDataFromSourceFunction()
-            .map { mapToEntity(it) }
-            .fold(success = {
-                persistListData(it)
-            }, failure = {
-                Timber.e(it)
-            })
     }
 
     /**
@@ -156,7 +78,7 @@ class FileBrowserViewModel @Inject constructor(
     /**
      * Open a specific section
      *
-     * @param section the section to open
+     * @param sectionId the section to open
      * @param addToBackstack true, when the section should be added to backstack, false otherwise
      */
     internal fun openSection(sectionId: String, addToBackstack: Boolean = true) {
@@ -192,7 +114,7 @@ class FileBrowserViewModel @Inject constructor(
     /**
      * @return true if a search is currently open, false otherwise
      */
-    fun isSearching(): Boolean {
+    private fun isSearching(): Boolean {
         return currentSearchFilter.value?.isNotBlank() ?: false
     }
 
@@ -218,75 +140,28 @@ class FileBrowserViewModel @Inject constructor(
     /**
      * Show the top level preferences page
      */
-    fun showTopLevel() {
+    private fun showTopLevel() {
         currentSectionId.value = ROOT_SECTION_ID
         openSection(ROOT_SECTION_ID)
     }
 
-    override fun persistListData(data: IdentifiableListItem) {
-        // TODO: can we get rid of the cast?
-        sectionPersistenceManager.insertOrUpdateRoot(data as SectionEntity)
-        currentSectionId.postValue(currentSectionId.value)
-    }
-
-    override suspend fun getLoadDataFromSourceFunction(): Result<SectionModel, Exception> {
-        return restClient.getItemTree()
-    }
-
-    override fun mapToEntity(it: Any): IdentifiableListItem {
-        return when (it) {
-            is SectionModel -> it.asEntity(documentContentPersistenceManager)
-            else -> throw IllegalArgumentException("Cant map object of type ${it.javaClass}!")
-        }
-    }
-
     fun createNewSection(sectionName: String) {
         viewModelScope.launch {
-            val currentSectionId = currentSectionId.value!!
-            val parentSection = sectionPersistenceManager.findById(currentSectionId)
-            if (parentSection == null) {
-                Timber.e { "Parent section could not be found in persistence while trying to create a new section in it" }
-                return@launch
-            }
-
-            restClient.createSection(currentSectionId, sectionName).fold(success = {
-                val createdSection = it.asEntity(documentContentPersistenceManager)
-                parentSection.subsections.add(createdSection)
-                // insert it into persistence
-                sectionPersistenceManager.standardOperation().put(parentSection)
-                reload()
-            }, failure = {
-                Timber.e(it) { "Error creating section" }
-//            toast("There was an error :(")
-            })
+            dataRepository.createNewSection(sectionName, currentSectionId.value!!)
         }
     }
 
     fun createNewDocument(documentName: String) {
         viewModelScope.launch {
             val name = if (documentName.isEmpty()) "New Document" else documentName
-            val currentSectionId = currentSectionId.value!!
-            val parentSection = sectionPersistenceManager.findById(currentSectionId)
-            if (parentSection == null) {
-                Timber.e { "Parent section could not be found in persistence while trying to create a new document in it" }
-                return@launch
-            }
+            val newDocumentId = dataRepository.createNewDocument(name, currentSectionId.value!!)
 
-            restClient.createDocument(currentSectionId, name).fold(
-                success = {
-                    // insert it into persistence
-                    documentPersistenceManager.standardOperation().put(
-                        it.asEntity(parentSection = parentSection)
-                    )
-                    // and open the editor right away
-                    withContext(Dispatchers.Main) {
-                        openDocumentEditorEvent.value = it.id
-                    }
-                    reload()
-                }, failure = {
-                    Timber.e(it) { "Error creating document" }
-//            context().toast("There was an error :(")
-                })
+            reload()
+
+            // and open the editor right away
+            withContext(Dispatchers.Main) {
+                openDocumentEditorEvent.value = newDocumentId
+            }
         }
     }
 
@@ -307,8 +182,30 @@ class FileBrowserViewModel @Inject constructor(
         }
     }
 
+    private fun reload() {
+        currentSectionId.value = currentSectionId.value
+    }
+
+    fun onCreateSectionFabClicked() {
+        val currentSectionId = currentSectionId.value!!
+        events.value = CreateSectionEvent(currentSectionId)
+    }
+
+    fun onCreateDocumentFabClicked() {
+        val currentSectionId = currentSectionId.value!!
+        events.value = CreateDocumentEvent(currentSectionId)
+    }
+
+    fun onDocumentLongClicked(entity: DocumentEntity): Boolean {
+        events.value = RenameDocumentEvent(entity)
+        return true
+    }
+
     sealed class Event {
         object ReloadEvent : Event()
+        data class CreateSectionEvent(val parentId: String) : Event()
+        data class CreateDocumentEvent(val parentId: String) : Event()
+        data class RenameDocumentEvent(val entity: DocumentEntity) : Event()
     }
 
     companion object {
