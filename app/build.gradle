@@ -170,8 +170,8 @@ dependencies {
     implementation 'com.afollestad.material-dialogs:lifecycle:3.3.0'
 
     // Code editor
-    def codeEditorVersion = "v3.0.2"
-//    def codeEditorVersion = "master-SNAPSHOT"
+//    def codeEditorVersion = "v3.0.3"
+    def codeEditorVersion = "master-SNAPSHOT"
     implementation("com.github.markusressel:KodeEditor:${codeEditorVersion}") { changing = true }
 
     // Syntax Highlighting

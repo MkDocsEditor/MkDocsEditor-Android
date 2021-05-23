@@ -8,11 +8,9 @@ import android.os.Bundle
 import android.view.*
 import android.widget.Toast.LENGTH_SHORT
 import androidx.annotation.CallSuper
-import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Lifecycle
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.*
 import androidx.lifecycle.Observer
-import androidx.lifecycle.OnLifecycleEvent
-import androidx.lifecycle.lifecycleScope
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.callbacks.onDismiss
 import com.github.ajalt.timberkt.Timber
@@ -27,12 +25,12 @@ import de.markusressel.kodeeditor.library.view.SelectionChangedListener
 import de.markusressel.kodehighlighter.language.markdown.MarkdownRuleBook
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
 import de.markusressel.mkdocseditor.databinding.FragmentEditorBinding
 import de.markusressel.mkdocseditor.extensions.common.android.context
 import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
+import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
@@ -72,7 +70,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
     private var noConnectionSnackbar: Snackbar? = null
 
-    private val viewModel: CodeEditorViewModel by activityViewModels()
+    private val viewModel: CodeEditorViewModel by viewModels()
 
     private val loadingComponent by lazy { LoadingComponent(this) }
 
@@ -103,7 +101,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                     // set "edit" icon
                     menu?.findItem(R.id.edit)?.apply {
                         // invisible initially, until a server connection is established
-                        isVisible = !viewModel.offlineModeEnabled.value!! && editable
+                        isVisible = !viewModel.offlineModeManager.isEnabled() && editable
                     }
                 }
             },
@@ -166,39 +164,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         optionsMenuComponent
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        binding = FragmentEditorBinding.inflate(layoutInflater, container, false)
-        viewModel.documentId.value = documentId
-
-        binding.let {
-            it.lifecycleOwner = this
-            it.viewModel = viewModel
-        }
-
-        val parent = binding.root as ViewGroup
-        return loadingComponent.onCreateView(inflater, parent, savedInstanceState)
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
-        optionsMenuComponent.onCreateOptionsMenu(menu, inflater)
-    }
-
-    override fun onPrepareOptionsMenu(menu: Menu) {
-        super.onPrepareOptionsMenu(menu)
-        optionsMenuComponent.onPrepareOptionsMenu(menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return super.onOptionsItemSelected(item) || optionsMenuComponent.onOptionsItemSelected(item)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        viewModel.documentId.value = documentId
 
         viewModel.editModeActive.observe(this) {
             runOnUiThread {
@@ -208,6 +176,10 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
         viewModel.connectionStatus.observe(this) { status ->
             noConnectionSnackbar?.dismiss()
+
+            if (status == null) {
+                return@observe
+            }
 
             if (status.connected) {
                 noConnectionSnackbar?.dismiss()
@@ -243,8 +215,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
             }
 
             runOnUiThread {
-                viewModel.offlineModeEnabled.value =
+                viewModel.offlineModeManager.setEnabled(
                     !status.connected || viewModel.offlineModeManager.isEnabled.value!!
+                )
             }
         }
 
@@ -256,26 +229,41 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
             }
         }
 
-        viewModel.documentEntity.observe(this) { entities ->
+        viewModel.documentEntity.observe(this) { resource ->
+            viewModel.loading.value = resource is Resource.Loading
 
-            if (entities.isNullOrEmpty()) {
-
-            } else {
-                val documentEntity = entities.first()
-
-                if (documentEntity != null) {
-                    restoreEditorState(editable = false)
-                } else {
-                    MaterialDialog(context()).show {
-                        title(R.string.no_offline_version)
-                        negativeButton(android.R.string.ok, click = {
-                            it.dismiss()
-                        })
-                        onDismiss {
-                            navController.navigateUp()
-                        }
+            if (resource is Resource.Error) {
+                Timber.e(resource.error)
+                MaterialDialog(context()).show {
+                    title(R.string.error)
+                    message(text = resource.error?.localizedMessage ?: "Unknown error")
+                    negativeButton(android.R.string.ok, click = {
+                        it.dismiss()
+                    })
+                    onDismiss {
+                        navController.navigateUp()
                     }
                 }
+                return@observe
+            }
+
+            val entity = resource.data
+            val content = entity?.content?.target?.text
+
+            if (viewModel.offlineModeManager.isEnabled() && content == null) {
+                MaterialDialog(context()).show {
+                    title(R.string.no_offline_version_title)
+                    message(R.string.no_offline_version)
+                    negativeButton(android.R.string.ok, click = {
+                        it.dismiss()
+                    })
+                    onDismiss {
+                        navController.navigateUp()
+                    }
+                }
+            } else {
+                // val documentEntity = entities.first()
+                restoreEditorState(entity = entity, editable = false)
             }
         }
 
@@ -283,6 +271,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         }
 
         viewModel.textChange.observe(this) {
+            if (it == null) return@observe
+
             val oldSelectionStart = codeEditorLayout.codeEditorView.codeEditText.selectionStart
             val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
             viewModel.currentText.value = it.newText
@@ -298,20 +288,51 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         }
     }
 
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        binding = FragmentEditorBinding.inflate(layoutInflater, container, false).apply {
+            lifecycleOwner = this@CodeEditorFragment
+            viewModel = this@CodeEditorFragment.viewModel
+        }
+
+        val parent = binding.root as ViewGroup
+        return loadingComponent.onCreateView(inflater, parent, savedInstanceState)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        super.onCreateOptionsMenu(menu, inflater)
+        optionsMenuComponent.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        super.onPrepareOptionsMenu(menu)
+        optionsMenuComponent.onPrepareOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return super.onOptionsItemSelected(item) || optionsMenuComponent.onOptionsItemSelected(item)
+    }
+
     /**
      * Restores the editor state from persistence
      *
      * @param text the new text to use, or null to keep [currentText]
      * @param editable when true the editor is editable, otherwise it is not
      */
-    private fun restoreEditorState(text: String? = null, editable: Boolean) {
-        val entity = viewModel.documentEntity.value?.first()
+    private fun restoreEditorState(
+        entity: DocumentEntity? = null,
+        text: String? = null,
+        editable: Boolean
+    ) {
         val content = entity?.content?.target
         if (content != null) {
             if (text != null) {
                 // when an entity exists and a new text is given update the entity
                 content.text = text
-                viewModel.documentContentPersistenceManager.insertOrUpdate(
+                viewModel.updateDocumentContentInCache(
                     documentId = viewModel.documentId.value!!,
                     text = text
                 )
@@ -418,40 +439,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
             .setSelection(selectionStart.coerceIn(0, maxIndex), endIndex.coerceIn(0, maxIndex))
     }
 
-//    /**
-//     * Loads the last offline version of this document from persistence
-//     */
-//    @UiThread
-//    private fun loadTextFromPersistence() {
-//        val entity = getCachedEditorState()
-//
-//        if (entity != null) {
-//            restoreEditorState(editable = false)
-//        } else {
-//            MaterialDialog(context()).show {
-//                lifecycleOwner(this@CodeEditorFragment)
-//                title(R.string.no_offline_version)
-//                negativeButton(android.R.string.ok, click = {
-//                    it.dismiss()
-//                })
-//                onDismiss {
-//                    navController.navigateUp()
-//                }
-//            }
-//        }
-//
-//        loadingComponent.showContent(animated = true)
-//    }
-
-    /**
-     * Returns the cache entity for this editor and document
-     */
-    private fun getCachedEditorState(): DocumentContentEntity? {
-        return viewModel.documentContentPersistenceManager.standardOperation().query {
-            equal(DocumentContentEntity_.documentId, documentId)
-        }.findUnique()
-    }
-
     override fun onSelectionChanged(start: Int, end: Int, hasSelection: Boolean) {
         saveEditorState()
     }
@@ -534,31 +521,29 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
         val positioningPercentage = getCurrentPositionPercentage()
 
-        viewModel.documentContentPersistenceManager.insertOrUpdate(
-            documentId = viewModel.documentId.value!!,
-            text = viewModel.currentText.value,
+        viewModel.saveEditorState(
             selection = codeEditorLayout.codeEditorView.codeEditText.selectionStart,
-            zoomLevel = viewModel.currentZoom,
             panX = positioningPercentage.x,
             panY = positioningPercentage.y
         )
     }
 
     private val offlineModeObserver = Observer<Boolean> { enabled ->
-        updateOfflineBanner()
         if (enabled) {
             disconnect(reason = "Offline mode was activated")
             viewModel.loadTextFromPersistence()
         } else {
             viewModel.reconnectToServer()
-            activity?.invalidateOptionsMenu()
         }
+        activity?.invalidateOptionsMenu()
     }
 
     private fun updateOfflineBanner() {
+        // TODO: not sure what this was for o.O
         runOnUiThread {
-            viewModel.offlineModeEnabled.value =
+            viewModel.offlineModeManager.setEnabled(
                 !viewModel.documentSyncManager.isConnected || viewModel.offlineModeManager.isEnabled()
+            )
             activity?.invalidateOptionsMenu()
         }
     }
@@ -592,7 +577,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     private fun disconnect(reason: String = "None") {
         codeEditorLayout.editable = false
         noConnectionSnackbar?.dismiss()
-        updateOfflineBanner()
         viewModel.documentSyncManager.disconnect(1000, reason)
     }
 

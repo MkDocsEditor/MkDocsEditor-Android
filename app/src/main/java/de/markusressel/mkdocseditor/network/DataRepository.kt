@@ -5,9 +5,7 @@ import androidx.paging.LivePagedListBuilder
 import androidx.paging.PagedList
 import com.github.ajalt.timberkt.Timber
 import de.markusressel.mkdocseditor.data.persistence.*
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.*
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.networkBoundResource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
@@ -20,6 +18,7 @@ import javax.inject.Singleton
 
 @Singleton
 class DataRepository @Inject constructor(
+    private val offlineModeManager: OfflineModeManager,
     private val restClient: MkDocsRestClient,
     private val sectionPersistenceManager: SectionPersistenceManager,
     private val documentPersistenceManager: DocumentPersistenceManager,
@@ -74,7 +73,7 @@ class DataRepository @Inject constructor(
             )
         },
         shouldFetch = {
-            true
+            offlineModeManager.isEnabled().not()
         }
     )
 
@@ -97,7 +96,7 @@ class DataRepository @Inject constructor(
             )
         },
         shouldFetch = {
-            true
+            offlineModeManager.isEnabled().not()
         }
     )
 
@@ -137,7 +136,63 @@ class DataRepository @Inject constructor(
             )
         },
         shouldFetch = {
-            true
+            offlineModeManager.isEnabled().not()
+        }
+    )
+
+    fun getDocumentContent(documentId: String) = networkBoundResource(
+        query = {
+            flowOf(
+                documentContentPersistenceManager.standardOperation().query {
+                    equal(DocumentContentEntity_.documentId, documentId)
+                }.findFirst()
+            )
+        },
+        fetch = {
+            restClient.getDocumentContent(documentId)
+        },
+        saveFetchResult = {
+            it.fold(
+                success = { content ->
+                    documentContentPersistenceManager.insertOrUpdate(
+                        documentId = documentId,
+                        text = content,
+                    )
+                },
+                failure = { error ->
+                    Timber.e(error)
+                }
+            )
+        },
+        shouldFetch = {
+            !offlineModeManager.isEnabled()
+        }
+    )
+
+    fun getDocument(documentId: String): Flow<Resource<DocumentEntity?>> = networkBoundResource(
+        query = {
+            flowOf(
+                documentPersistenceManager.standardOperation().query {
+                    equal(DocumentEntity_.id, documentId)
+                }.findFirst()
+            )
+        },
+        fetch = {
+            restClient.getItemTree()
+        },
+        saveFetchResult = {
+            it.fold(
+                success = { sectionModel ->
+                    val entity = sectionModel.asEntity(documentContentPersistenceManager)
+                    sectionPersistenceManager.insertOrUpdateRoot(entity)
+                },
+                failure = { error ->
+                    Timber.e(error)
+                }
+            )
+        },
+        shouldFetch = {
+            !offlineModeManager.isEnabled()
         }
     )
 
@@ -177,6 +232,31 @@ class DataRepository @Inject constructor(
                 Timber.e(it) { "Error creating document" }
                 throw it
             })
+    }
+
+    suspend fun updateDocumentContentInCache(documentId: String, text: String) {
+        documentContentPersistenceManager.insertOrUpdate(
+            documentId = documentId,
+            text = text
+        )
+    }
+
+    suspend fun saveEditorState(
+        documentId: String,
+        text: String?,
+        selection: Int,
+        zoomLevel: Float,
+        panX: Float,
+        panY: Float
+    ) {
+        documentContentPersistenceManager.insertOrUpdate(
+            documentId = documentId,
+            text = text,
+            selection = selection,
+            zoomLevel = zoomLevel,
+            panX = panX,
+            panY = panY
+        )
     }
 
 }

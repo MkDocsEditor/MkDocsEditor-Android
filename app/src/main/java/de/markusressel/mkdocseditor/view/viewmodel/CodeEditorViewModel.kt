@@ -3,51 +3,40 @@ package de.markusressel.mkdocseditor.view.viewmodel
 import android.graphics.PointF
 import android.view.View
 import androidx.annotation.UiThread
-import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.*
+import androidx.lifecycle.Transformations.switchMap
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.runOnUiThread
-import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
+import de.markusressel.mkdocseditor.network.DataRepository
 import de.markusressel.mkdocseditor.network.NetworkManager
 import de.markusressel.mkdocseditor.network.OfflineModeManager
+import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
-import io.objectbox.android.ObjectBoxLiveData
-import io.objectbox.kotlin.query
+import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
 
 @HiltViewModel
 class CodeEditorViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
-    val documentPersistenceManager: DocumentPersistenceManager,
-    val documentContentPersistenceManager: DocumentContentPersistenceManager,
+    val dataRepository: DataRepository,
     val preferencesHolder: KutePreferencesHolder,
     val networkManager: NetworkManager,
-    val offlineModeManager: OfflineModeManager
+    val offlineModeManager: OfflineModeManager,
 ) : ViewModel() {
 
-    val documentId = MutableLiveData<String>()
+    val documentId = savedStateHandle.getLiveData<String>("documentId")
 
-    var documentEntity: ObjectBoxLiveData<DocumentEntity> = getEntity(documentId.value!!)
-
-    fun getEntity(documentId: String): ObjectBoxLiveData<DocumentEntity> {
-        return ObjectBoxLiveData(documentPersistenceManager.standardOperation().query {
-            equal(DocumentEntity_.id, documentId)
-        })
+    val documentEntity: LiveData<Resource<DocumentEntity?>> = switchMap(documentId) { documentId ->
+        dataRepository.getDocument(documentId).asLiveData()
     }
 
-    val offlineModeEnabled = MutableLiveData<Boolean>()
-
     val offlineModeBannerVisibility = MediatorLiveData<Int>().apply {
-        addSource(offlineModeEnabled) { value ->
+        addSource(offlineModeManager.isEnabled) { value ->
             when (value) {
                 true -> setValue(View.VISIBLE)
                 else -> setValue(View.GONE)
@@ -61,7 +50,7 @@ class CodeEditorViewModel @Inject constructor(
         MutableLiveData(preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue)
 
     val loading = MutableLiveData(true)
-    val connectionStatus: MutableLiveData<ConnectionStatusUpdate> = MutableLiveData(null)
+    val connectionStatus: MutableLiveData<ConnectionStatusUpdate?> = MutableLiveData(null)
 
     // TODO: this property should not exist. only the [DocumentSyncManager] should have this.
     // TODO: savedInstanceState in viewModel?
@@ -70,7 +59,7 @@ class CodeEditorViewModel @Inject constructor(
     var currentPosition = PointF()
     var currentZoom = 1F
 
-    val textChange = MutableLiveData<TextChangeEvent>(null)
+    val textChange = MutableLiveData<TextChangeEvent?>(null)
 
     val documentSyncManager = DocumentSyncManager(
         hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue,
@@ -134,6 +123,25 @@ class CodeEditorViewModel @Inject constructor(
             documentSyncManager.disconnect(1000, reason = "Editor want's to refresh connection")
         }
         documentSyncManager.connect()
+    }
+
+    fun updateDocumentContentInCache(documentId: String, text: String) {
+        viewModelScope.launch {
+            dataRepository.updateDocumentContentInCache(documentId, text)
+        }
+    }
+
+    fun saveEditorState(selection: Int, panX: Float, panY: Float) {
+        viewModelScope.launch {
+            dataRepository.saveEditorState(
+                documentId.value!!,
+                currentText.value,
+                selection,
+                currentZoom,
+                panX,
+                panY
+            )
+        }
     }
 
 }

@@ -21,7 +21,8 @@ class DocumentContentPersistenceManager @Inject constructor(
      * @param text the text content of the document
      */
     fun insertOrUpdate(
-        documentId: String, text: String? = null,
+        documentId: String,
+        text: String? = null,
         selection: Int? = null,
         zoomLevel: Float? = null,
         panX: Float? = null,
