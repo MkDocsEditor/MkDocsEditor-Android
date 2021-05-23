@@ -211,10 +211,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                         })
                 }
 
+                // TODO: the viewmodel should be able to decide this on its own
                 viewModel.editModeActive.value = false
             }
 
             runOnUiThread {
+                // TODO: the viewmodel should be able to decide this on its own
                 viewModel.offlineModeManager.setEnabled(
                     !status.connected || viewModel.offlineModeManager.isEnabled.value!!
                 )

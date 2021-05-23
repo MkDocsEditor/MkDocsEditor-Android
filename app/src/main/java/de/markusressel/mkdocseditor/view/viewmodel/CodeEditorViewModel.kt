@@ -95,12 +95,13 @@ class CodeEditorViewModel @Inject constructor(
         connected: Boolean,
         errorCode: Int?,
         throwable: Throwable?
-    ) {
+    ) = runOnUiThread {
         if (!connected) {
             editable.value = false
         }
-        this.connectionStatus.value = ConnectionStatusUpdate(connected, errorCode, throwable)
+        connectionStatus.value = ConnectionStatusUpdate(connected, errorCode, throwable)
     }
+
 
     /**
      * Loads the last offline version of this document from persistence
