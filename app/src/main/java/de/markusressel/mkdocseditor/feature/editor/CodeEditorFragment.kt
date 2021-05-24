@@ -50,14 +50,14 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
     private lateinit var codeEditorLayout: CodeEditorLayout
 
-    private val safeArgs by lazy {
-        CodeEditorFragmentArgs.fromBundle(
-            requireArguments()
-        )
-    }
+    //private val safeArgs by lazy {
+    //    CodeEditorFragmentArgs.fromBundle(
+    //        requireArguments()
+    //    )
+    //}
 
-    private val documentId: String
-        get() = safeArgs.documentId
+    //private val documentId: String
+    //    get() = safeArgs.documentId
 
     private var noConnectionSnackbar: Snackbar? = null
 
@@ -80,20 +80,22 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 // set "edit" icon
                 viewModel.editModeActive.observe(viewLifecycleOwner) { editModeActive ->
                     menu?.findItem(R.id.edit)?.apply {
-                        icon = if (!editModeActive) {
+                        icon = if (editModeActive) {
                             iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_eye)
                         } else {
                             iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_edit)
                         }
                     }
+                    activity?.invalidateOptionsMenu()
                 }
 
                 viewModel.editable.observe(viewLifecycleOwner) { editable ->
                     // set "edit" icon
                     menu?.findItem(R.id.edit)?.apply {
                         // invisible initially, until a server connection is established
-                        isVisible = !viewModel.offlineModeManager.isEnabled() && editable
+                        isVisible = viewModel.offlineModeManager.isEnabled().not() && editable
                     }
+                    activity?.invalidateOptionsMenu()
                 }
             },
             onOptionsMenuItemClicked = {
@@ -210,8 +212,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         super.onViewCreated(view, savedInstanceState)
 
         viewModel.editModeActive.observe(viewLifecycleOwner) {
-            activity?.invalidateOptionsMenu()
-
             runOnUiThread {
                 codeEditorLayout.editable = it
             }
@@ -471,9 +471,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
             viewModel.loadTextFromPersistence()
         } else {
             viewModel.reconnectToServer()
-        }
-        runOnUiThread {
-            activity?.invalidateOptionsMenu()
         }
     }
 

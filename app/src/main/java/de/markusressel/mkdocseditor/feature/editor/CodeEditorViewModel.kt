@@ -15,10 +15,13 @@ import de.markusressel.mkdocseditor.feature.editor.CodeEditorViewModel.CodeEdito
 import de.markusressel.mkdocseditor.network.NetworkManager
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.util.Resource
+import de.markusressel.mkdocseditor.util.Resource.Success
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
@@ -45,19 +48,14 @@ class CodeEditorViewModel @Inject constructor(
      */
     val editable = MediatorLiveData<Boolean>().apply {
         addSource(offlineModeManager.isEnabled) { value ->
-            // TODO: what about the syncManager connection status changes?
-
-            setValue(documentSyncManager.isConnected && value)
+            setValue(value.not())
         }
     }
 
     /**
-     * Indicates whether the CodeEditor is in "edit" mode or not.
-     * the edit mode can only be activated if [editable] is true
+     * Indicates whether the CodeEditor is in "edit" mode or not
      */
-    val editModeActive = MutableLiveData(
-        preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue
-    )
+    val editModeActive = MutableLiveData(false)
 
     val offlineModeBannerVisibility = MediatorLiveData<Int>().apply {
         addSource(offlineModeManager.isEnabled) { value ->
@@ -91,6 +89,10 @@ class CodeEditorViewModel @Inject constructor(
         onConnectionStatusChanged = { connected, errorCode, throwable ->
             runOnUiThread {
                 events.value = ConnectionStatus(connected, errorCode, throwable)
+                if (connected) {
+                    editModeActive.value =
+                        preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue
+                }
             }
         },
         onInitialText = {
@@ -114,6 +116,13 @@ class CodeEditorViewModel @Inject constructor(
                 is TextChange -> {
                 }
                 is OpenWebView -> {
+                }
+            }
+        }
+        documentEntity.observeForever {
+            when (it) {
+                is Success -> {
+                    reconnectToServer()
                 }
             }
         }
@@ -210,11 +219,12 @@ class CodeEditorViewModel @Inject constructor(
         return true
     }
 
+    /**
+     * Called when the user activates the edit mode
+     */
     fun onEditClicked(): Boolean {
-        if (editable.value == true) {
-            // invert state of edit mode
-            editModeActive.value = editModeActive.value != true
-        }
+        // invert state of edit mode
+        editModeActive.value = editModeActive.value != true
         return true
     }
 
