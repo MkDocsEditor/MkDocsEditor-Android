@@ -172,11 +172,11 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
         // set new cursor position
         val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, patches)
-            .coerceIn(0, viewModel.currentText.value?.length)
+            .coerceIn(0, newText.length)
         val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
-            .coerceIn(0, viewModel.currentText.value?.length)
+            .coerceIn(0, newText.length)
 
-        setEditorText(viewModel.currentText.value ?: "", newSelectionStart, newSelectionEnd)
+        setEditorText(newText, newSelectionStart, newSelectionEnd)
         saveEditorState()
     }
 
@@ -301,9 +301,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 // val documentEntity = entities.first()
                 restoreEditorState(entity = entity, editable = false)
             }
-        }
-
-        viewModel.currentText.observe(viewLifecycleOwner) { currentText ->
         }
 
         viewModel.events.observe(viewLifecycleOwner) { event ->
@@ -450,7 +447,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
     private fun calculateNewSelectionIndex(
         oldSelection: Int,
-        patches: LinkedList<diff_match_patch.Patch>
+        patches: LinkedList<Patch>
     ): Int {
         var newSelection = oldSelection
 

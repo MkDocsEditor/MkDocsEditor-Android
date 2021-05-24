@@ -14,9 +14,7 @@ import de.markusressel.mkdocseditor.network.NetworkManager
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
-import de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel.CodeEditorEvent.ConnectionStatus
-import de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel.CodeEditorEvent.Error
-import de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel.CodeEditorEvent.TextChange
+import de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel.CodeEditorEvent.*
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
@@ -68,7 +66,6 @@ class CodeEditorViewModel @Inject constructor(
     val loading = MutableLiveData(true)
 
     // TODO: this property should not exist. only the [DocumentSyncManager] should have this.
-    // TODO: savedInstanceState in viewModel?
     var currentText: MutableLiveData<String?> = MutableLiveData(null)
 
     var currentPosition = PointF()
@@ -85,9 +82,10 @@ class CodeEditorViewModel @Inject constructor(
         documentId = documentId.value!!,
         currentText = {
             currentText.value.orEmpty()
-//                binding.codeEditorLayout.codeEditorView.codeEditText.text?.toString() ?: ""
         },
-        onConnectionStatusChanged = ::handleConnectionStatusChange,
+        onConnectionStatusChanged = { connected, errorCode, throwable ->
+            events.value = ConnectionStatus(connected, errorCode, throwable)
+        },
         onInitialText = {
             runOnUiThread {
                 currentText.value = it
@@ -95,14 +93,6 @@ class CodeEditorViewModel @Inject constructor(
             }
         }, onTextChanged = ::onTextChanged
     )
-
-    private fun handleConnectionStatusChange(
-        connected: Boolean,
-        errorCode: Int?,
-        throwable: Throwable?
-    ) {
-        events.value = ConnectionStatus(connected, errorCode, throwable)
-    }
 
     init {
         events.observeForever { event ->
@@ -136,7 +126,7 @@ class CodeEditorViewModel @Inject constructor(
             }.catch { ex ->
                 Timber.e(ex)
                 disconnect("Error in client sync code")
-                events.postValue(CodeEditorEvent.Error(throwable = ex))
+                events.postValue(Error(throwable = ex))
             }
         }
     }
