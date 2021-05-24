@@ -24,6 +24,6 @@ abstract class EchoWebSocketListenerBase : WebSocketListener() {
     }
 
     companion object {
-        private val NORMAL_CLOSURE_STATUS = 1000
+        private const val NORMAL_CLOSURE_STATUS = 1000
     }
 }

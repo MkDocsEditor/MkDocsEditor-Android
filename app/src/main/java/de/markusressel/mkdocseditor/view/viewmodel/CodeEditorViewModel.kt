@@ -5,6 +5,7 @@ import android.view.View
 import androidx.annotation.UiThread
 import androidx.lifecycle.*
 import androidx.lifecycle.Transformations.switchMap
+import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
@@ -13,9 +14,15 @@ import de.markusressel.mkdocseditor.network.NetworkManager
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.view.fragment.preferences.KutePreferencesHolder
+import de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel.CodeEditorEvent.ConnectionStatus
+import de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel.CodeEditorEvent.Error
+import de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel.CodeEditorEvent.TextChange
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
@@ -29,10 +36,20 @@ class CodeEditorViewModel @Inject constructor(
     val offlineModeManager: OfflineModeManager,
 ) : ViewModel() {
 
+    val events = MutableLiveData<CodeEditorEvent>()
+
     val documentId = savedStateHandle.getLiveData<String>("documentId")
 
     val documentEntity: LiveData<Resource<DocumentEntity?>> = switchMap(documentId) { documentId ->
         dataRepository.getDocument(documentId).asLiveData()
+    }
+
+    val editable = MediatorLiveData<Boolean>().apply {
+        addSource(offlineModeManager.isEnabled) { value ->
+            // TODO: what about the syncManager connection status changes?
+
+            setValue(documentSyncManager.isConnected && value)
+        }
     }
 
     val offlineModeBannerVisibility = MediatorLiveData<Int>().apply {
@@ -44,13 +61,11 @@ class CodeEditorViewModel @Inject constructor(
         }
     }
 
-    // TODO: add offlineModeManager.isEnabled() condition
-    val editable = MutableLiveData(true)
-    val editModeActive =
-        MutableLiveData(preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue)
+    val editModeActive = MutableLiveData(
+        preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue
+    )
 
     val loading = MutableLiveData(true)
-    val connectionStatus: MutableLiveData<ConnectionStatusUpdate?> = MutableLiveData(null)
 
     // TODO: this property should not exist. only the [DocumentSyncManager] should have this.
     // TODO: savedInstanceState in viewModel?
@@ -59,9 +74,7 @@ class CodeEditorViewModel @Inject constructor(
     var currentPosition = PointF()
     var currentZoom = 1F
 
-    val textChange = MutableLiveData<TextChangeEvent?>(null)
-
-    val documentSyncManager = DocumentSyncManager(
+    private val documentSyncManager = DocumentSyncManager(
         hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue,
         port = preferencesHolder.restConnectionPortPreference.persistedValue.toInt(),
         ssl = preferencesHolder.restConnectionSslPreference.persistedValue,
@@ -78,30 +91,55 @@ class CodeEditorViewModel @Inject constructor(
         onInitialText = {
             runOnUiThread {
                 currentText.value = it
-                editable.value =
-                    preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue
                 loading.value = false
             }
         }, onTextChanged = ::onTextChanged
-    )
-
-    data class ConnectionStatusUpdate(
-        val connected: Boolean,
-        val errorCode: Int?,
-        val throwable: Throwable?
     )
 
     private fun handleConnectionStatusChange(
         connected: Boolean,
         errorCode: Int?,
         throwable: Throwable?
-    ) = runOnUiThread {
-        if (!connected) {
-            editable.value = false
-        }
-        connectionStatus.value = ConnectionStatusUpdate(connected, errorCode, throwable)
+    ) {
+        events.value = ConnectionStatus(connected, errorCode, throwable)
     }
 
+    init {
+        events.observeForever { event ->
+            when (event) {
+                is ConnectionStatus -> {
+                    if (event.connected) {
+                        watchTextChanges()
+                    }
+                }
+                is Error -> {
+                }
+                is TextChange -> {
+                }
+            }
+        }
+    }
+
+    private fun watchTextChanges() {
+        val syncInterval = preferencesHolder.codeEditorSyncIntervalPreference.persistedValue
+
+        val syncFlow = flow {
+            while (documentSyncManager.isConnected) {
+                emit(false)
+                kotlinx.coroutines.delay(syncInterval)
+            }
+        }
+
+        viewModelScope.launch {
+            syncFlow.onEach {
+                documentSyncManager.sync()
+            }.catch { ex ->
+                Timber.e(ex)
+                disconnect("Error in client sync code")
+                events.postValue(CodeEditorEvent.Error(throwable = ex))
+            }
+        }
+    }
 
     /**
      * Loads the last offline version of this document from persistence
@@ -112,7 +150,7 @@ class CodeEditorViewModel @Inject constructor(
     }
 
     private fun onTextChanged(newText: String, patches: LinkedList<diff_match_patch.Patch>) {
-        textChange.value = TextChangeEvent(newText, patches)
+        events.value = TextChange(newText, patches)
     }
 
     /**
@@ -124,6 +162,14 @@ class CodeEditorViewModel @Inject constructor(
             documentSyncManager.disconnect(1000, reason = "Editor want's to refresh connection")
         }
         documentSyncManager.connect()
+    }
+
+    fun disconnect(reason: String = "None") {
+
+        editModeActive.value = false
+
+        documentSyncManager.disconnect(1000, reason)
+        events.value = ConnectionStatus(connected = false)
     }
 
     fun updateDocumentContentInCache(documentId: String, text: String) {
@@ -143,6 +189,24 @@ class CodeEditorViewModel @Inject constructor(
                 panY
             )
         }
+    }
+
+    sealed class CodeEditorEvent {
+        data class ConnectionStatus(
+            val connected: Boolean,
+            val errorCode: Int? = null,
+            val throwable: Throwable? = null
+        ) : CodeEditorEvent()
+
+        data class TextChange(
+            val newText: String,
+            val patches: LinkedList<diff_match_patch.Patch>
+        ) : CodeEditorEvent()
+
+        data class Error(
+            val message: String? = null,
+            val throwable: Throwable? = null
+        ) : CodeEditorEvent()
     }
 
 }

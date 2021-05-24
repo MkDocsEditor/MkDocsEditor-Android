@@ -257,7 +257,6 @@ class DocumentSyncManager(
 
     companion object {
         private val DIFF_MATCH_PATCH = diff_match_patch()
-        private val MOSHI = Moshi.Builder().build()
 
         private const val CHECKSUM_ALGORITHM = "MD5"
         private val HEX_DIGITS = "0123456789abcdef".lowercase().toCharArray()

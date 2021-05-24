@@ -6,7 +6,6 @@ import android.graphics.Matrix
 import android.graphics.PointF
 import android.os.Bundle
 import android.view.*
-import android.widget.Toast.LENGTH_SHORT
 import androidx.annotation.CallSuper
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
@@ -35,13 +34,10 @@ import de.markusressel.mkdocseditor.view.component.LoadingComponent
 import de.markusressel.mkdocseditor.view.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.view.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel
+import de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel.CodeEditorEvent.*
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
+import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch.Patch
 import io.objectbox.kotlin.query
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
 
@@ -167,127 +163,21 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel.documentId.value = documentId
+    }
 
-        viewModel.editModeActive.observe(this) {
-            runOnUiThread {
-                codeEditorLayout.editable = it
-            }
-        }
+    private fun handleTextChange(newText: String, patches: LinkedList<Patch>) {
+        val oldSelectionStart = codeEditorLayout.codeEditorView.codeEditText.selectionStart
+        val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
+        viewModel.currentText.value = newText
 
-        viewModel.connectionStatus.observe(this) { status ->
-            noConnectionSnackbar?.dismiss()
+        // set new cursor position
+        val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, patches)
+            .coerceIn(0, viewModel.currentText.value?.length)
+        val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
+            .coerceIn(0, viewModel.currentText.value?.length)
 
-            if (status == null) {
-                return@observe
-            }
-
-            if (status.connected) {
-                noConnectionSnackbar?.dismiss()
-
-                watchTextChanges()
-
-                runOnUiThread {
-                    codeEditorLayout.snack(R.string.connected, Snackbar.LENGTH_SHORT)
-                }
-            } else {
-                saveEditorState()
-
-                if (status.throwable != null) {
-                    Timber.e(status.throwable) { "Websocket error code: ${status.errorCode}" }
-                    noConnectionSnackbar = codeEditorLayout.snack(
-                        text = R.string.server_unavailable,
-                        duration = Snackbar.LENGTH_INDEFINITE,
-                        actionTitle = R.string.retry,
-                        action = {
-                            viewModel.reconnectToServer()
-                        })
-                } else {
-                    noConnectionSnackbar = codeEditorLayout.snack(
-                        text = R.string.not_connected,
-                        duration = Snackbar.LENGTH_INDEFINITE,
-                        actionTitle = R.string.connect,
-                        action = {
-                            viewModel.reconnectToServer()
-                        })
-                }
-
-                // TODO: the viewmodel should be able to decide this on its own
-                viewModel.editModeActive.value = false
-            }
-
-            runOnUiThread {
-                // TODO: the viewmodel should be able to decide this on its own
-                viewModel.offlineModeManager.setEnabled(
-                    !status.connected || viewModel.offlineModeManager.isEnabled.value!!
-                )
-            }
-        }
-
-        viewModel.loading.observe(this) {
-            if (it) {
-                loadingComponent.showLoading()
-            } else {
-                loadingComponent.showContent(animated = true)
-            }
-        }
-
-        viewModel.documentEntity.observe(this) { resource ->
-            viewModel.loading.value = resource is Resource.Loading
-
-            if (resource is Resource.Error) {
-                Timber.e(resource.error)
-                MaterialDialog(context()).show {
-                    title(R.string.error)
-                    message(text = resource.error?.localizedMessage ?: "Unknown error")
-                    negativeButton(android.R.string.ok, click = {
-                        it.dismiss()
-                    })
-                    onDismiss {
-                        navController.navigateUp()
-                    }
-                }
-                return@observe
-            }
-
-            val entity = resource.data
-            val content = entity?.content?.target?.text
-
-            if (viewModel.offlineModeManager.isEnabled() && content == null) {
-                MaterialDialog(context()).show {
-                    title(R.string.no_offline_version_title)
-                    message(R.string.no_offline_version)
-                    negativeButton(android.R.string.ok, click = {
-                        it.dismiss()
-                    })
-                    onDismiss {
-                        navController.navigateUp()
-                    }
-                }
-            } else {
-                // val documentEntity = entities.first()
-                restoreEditorState(entity = entity, editable = false)
-            }
-        }
-
-        viewModel.currentText.observe(this) { currentText ->
-        }
-
-        viewModel.textChange.observe(this) {
-            if (it == null) return@observe
-
-            val oldSelectionStart = codeEditorLayout.codeEditorView.codeEditText.selectionStart
-            val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
-            viewModel.currentText.value = it.newText
-
-            // set new cursor position
-            val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, it.patches)
-                .coerceIn(0, viewModel.currentText.value?.length)
-            val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, it.patches)
-                .coerceIn(0, viewModel.currentText.value?.length)
-
-            setEditorText(viewModel.currentText.value ?: "", newSelectionStart, newSelectionEnd)
-            saveEditorState()
-        }
+        setEditorText(viewModel.currentText.value ?: "", newSelectionStart, newSelectionEnd)
+        saveEditorState()
     }
 
     override fun onCreateView(
@@ -349,37 +239,123 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         }
     }
 
-    private fun watchTextChanges() {
-        val syncInterval =
-            viewModel.preferencesHolder.codeEditorSyncIntervalPreference.persistedValue
-
-        val syncFlow = flow {
-            while (viewModel.connectionStatus.value?.connected == true) {
-                emit(false)
-                delay(syncInterval)
-            }
-        }
-
-        // TODO: manage threads
-        // .subscribeOn(Schedulers.io())
-        // .observeOn(AndroidSchedulers.mainThread())
-        lifecycleScope.launch {
-            syncFlow.onEach {
-                viewModel.documentSyncManager.sync()
-            }.catch { ex ->
-                Timber.e(ex)
-                disconnect("Error in client sync code")
-                runOnUiThread {
-                    codeEditorLayout.snack(R.string.sync_error, LENGTH_SHORT)
-                }
-            }
-        }
-    }
-
     @SuppressLint("ClickableViewAccessibility")
     @CallSuper
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // TODO: whats the difference between editable and editModeActive?
+        viewModel.editable.observe(viewLifecycleOwner) { editable ->
+            runOnUiThread {
+                codeEditorLayout.editable = editable
+            }
+        }
+
+        viewModel.editModeActive.observe(viewLifecycleOwner) {
+            runOnUiThread {
+                codeEditorLayout.editable = it
+            }
+        }
+
+        viewModel.loading.observe(viewLifecycleOwner) {
+            if (it) {
+                loadingComponent.showLoading()
+            } else {
+                loadingComponent.showContent(animated = true)
+            }
+        }
+
+        viewModel.documentEntity.observe(viewLifecycleOwner) { resource ->
+            viewModel.loading.value = resource is Resource.Loading
+
+            if (resource is Resource.Error) {
+                Timber.e(resource.error)
+                MaterialDialog(context()).show {
+                    title(R.string.error)
+                    message(text = resource.error?.localizedMessage ?: "Unknown error")
+                    negativeButton(android.R.string.ok, click = {
+                        it.dismiss()
+                    })
+                    onDismiss {
+                        navController.navigateUp()
+                    }
+                }
+                return@observe
+            }
+
+            val entity = resource.data
+            val content = entity?.content?.target?.text
+
+            if (viewModel.offlineModeManager.isEnabled() && content == null) {
+                MaterialDialog(context()).show {
+                    title(R.string.no_offline_version_title)
+                    message(R.string.no_offline_version)
+                    negativeButton(android.R.string.ok, click = {
+                        it.dismiss()
+                    })
+                    onDismiss {
+                        navController.navigateUp()
+                    }
+                }
+            } else {
+                // val documentEntity = entities.first()
+                restoreEditorState(entity = entity, editable = false)
+            }
+        }
+
+        viewModel.currentText.observe(viewLifecycleOwner) { currentText ->
+        }
+
+        viewModel.events.observe(viewLifecycleOwner) { event ->
+            when (event) {
+                is ConnectionStatus -> {
+                    noConnectionSnackbar?.dismiss()
+
+                    if (event.connected) {
+                        noConnectionSnackbar?.dismiss()
+
+                        runOnUiThread {
+                            codeEditorLayout.snack(R.string.connected, Snackbar.LENGTH_SHORT)
+                        }
+                    } else {
+                        saveEditorState()
+
+                        if (event.throwable != null) {
+                            Timber.e(event.throwable) { "Websocket error code: ${event.errorCode}" }
+                            noConnectionSnackbar = codeEditorLayout.snack(
+                                text = R.string.server_unavailable,
+                                duration = Snackbar.LENGTH_INDEFINITE,
+                                actionTitle = R.string.retry,
+                                action = {
+                                    viewModel.reconnectToServer()
+                                })
+                        } else {
+                            noConnectionSnackbar = codeEditorLayout.snack(
+                                text = R.string.not_connected,
+                                duration = Snackbar.LENGTH_INDEFINITE,
+                                actionTitle = R.string.connect,
+                                action = {
+                                    viewModel.reconnectToServer()
+                                })
+                        }
+                    }
+                }
+                is TextChange -> {
+                    handleTextChange(event.newText, event.patches)
+                }
+                is Error -> {
+                    noConnectionSnackbar = codeEditorLayout.snack(
+                        text = event.message
+                            ?: event.throwable?.localizedMessage
+                            ?: getString(R.string.unknown_error),
+                        duration = Snackbar.LENGTH_INDEFINITE,
+                        actionTitle = getString(R.string.retry),
+                        action = {
+                            viewModel.reconnectToServer()
+                        })
+                }
+            }
+        }
 
         codeEditorLayout = view.findViewById(R.id.codeEditorLayout)
         codeEditorLayout.minimapGravity = Gravity.BOTTOM or Gravity.END
@@ -532,20 +508,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
     private val offlineModeObserver = Observer<Boolean> { enabled ->
         if (enabled) {
-            disconnect(reason = "Offline mode was activated")
+            viewModel.disconnect(reason = "Offline mode was activated")
             viewModel.loadTextFromPersistence()
         } else {
             viewModel.reconnectToServer()
         }
-        activity?.invalidateOptionsMenu()
-    }
-
-    private fun updateOfflineBanner() {
-        // TODO: not sure what this was for o.O
         runOnUiThread {
-            viewModel.offlineModeManager.setEnabled(
-                !viewModel.documentSyncManager.isConnected || viewModel.offlineModeManager.isEnabled()
-            )
             activity?.invalidateOptionsMenu()
         }
     }
@@ -573,13 +541,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     protected fun onLifeCycleStop() {
-        disconnect(reason = "Editor was closed")
-    }
-
-    private fun disconnect(reason: String = "None") {
-        codeEditorLayout.editable = false
-        noConnectionSnackbar?.dismiss()
-        viewModel.documentSyncManager.disconnect(1000, reason)
+        viewModel.disconnect(reason = "Editor was closed")
     }
 
 }
