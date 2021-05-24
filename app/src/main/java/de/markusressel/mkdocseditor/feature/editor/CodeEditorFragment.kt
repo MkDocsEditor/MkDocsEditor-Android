@@ -178,26 +178,29 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
      */
     private fun restoreEditorState(
         entity: DocumentEntity? = null,
-        text: String? = null,
-        editable: Boolean
+        text: String? = null
     ) {
         val content = entity?.content?.target
         if (content != null) {
             if (text != null) {
                 // when an entity exists and a new text is given update the entity
-                content.text = text
                 viewModel.updateDocumentContentInCache(
                     documentId = viewModel.documentId.value!!,
                     text = text
                 )
-                viewModel.currentText.value = text
+                codeEditorLayout.text = text
             } else {
                 // restore values from cache
-                viewModel.currentText.value = content.text
+                codeEditorLayout.text = content.text
             }
-            viewModel.currentZoom = content.zoomLevel
+            codeEditorLayout.codeEditorView.moveTo(
+                content.zoomLevel,
+                content.panX,
+                content.panY,
+                animate = false
+            )
         } else {
-            viewModel.currentText.value = ""
+            codeEditorLayout.text = ""
         }
     }
 
@@ -256,7 +259,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 }
             } else {
                 // val documentEntity = entities.first()
-                restoreEditorState(entity = entity, editable = false)
+                restoreEditorState(entity = entity)
             }
         }
 
@@ -294,6 +297,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                         }
                     }
                 }
+                is InitialText -> {
+                    restoreEditorState(viewModel.documentEntity.value?.data, event.text)
+                }
                 is TextChange -> handleTextChange(event.newText, event.patches)
                 is OpenWebView -> chromeCustomTabManager.openChromeCustomTab(event.url)
                 is Error -> {
@@ -319,6 +325,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
             }
 
             override fun onUpdate(engine: ZoomEngine, matrix: Matrix) {
+                viewModel.currentPosition.set(
+                    codeEditorLayout.codeEditorView.panX,
+                    codeEditorLayout.codeEditorView.panY
+                )
+                viewModel.currentZoom.value = codeEditorLayout.codeEditorView.zoom
+
 //                val totalWidth = codeEditorLayout.contentLayout.width
 //
 //                val panX = engine.panX
@@ -443,12 +455,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
             // skip if there is no text to save
             return
         }
-
-        viewModel.currentPosition.set(
-            codeEditorLayout.codeEditorView.panX,
-            codeEditorLayout.codeEditorView.panY
-        )
-        viewModel.currentZoom = codeEditorLayout.codeEditorView.zoom
 
         val positioningPercentage = getCurrentPositionPercentage()
 

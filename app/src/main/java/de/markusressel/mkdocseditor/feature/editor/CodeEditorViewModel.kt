@@ -18,9 +18,7 @@ import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
@@ -76,7 +74,7 @@ class CodeEditorViewModel @Inject constructor(
     var currentText: MutableLiveData<String?> = MutableLiveData(null)
 
     var currentPosition = PointF()
-    var currentZoom = 1F
+    var currentZoom = MutableLiveData(1F)
 
     private val documentSyncManager = DocumentSyncManager(
         hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue,
@@ -91,11 +89,13 @@ class CodeEditorViewModel @Inject constructor(
             currentText.value.orEmpty()
         },
         onConnectionStatusChanged = { connected, errorCode, throwable ->
-            events.value = ConnectionStatus(connected, errorCode, throwable)
+            runOnUiThread {
+                events.value = ConnectionStatus(connected, errorCode, throwable)
+            }
         },
         onInitialText = {
             runOnUiThread {
-                currentText.value = it
+                events.value = InitialText(it)
                 loading.value = false
             }
         }, onTextChanged = ::onTextChanged
@@ -112,6 +112,8 @@ class CodeEditorViewModel @Inject constructor(
                 is Error -> {
                 }
                 is TextChange -> {
+                }
+                is OpenWebView -> {
                 }
             }
         }
@@ -181,7 +183,7 @@ class CodeEditorViewModel @Inject constructor(
                 documentId.value!!,
                 currentText.value,
                 selection,
-                currentZoom,
+                currentZoom.value!!,
                 panX,
                 panY
             )
@@ -222,6 +224,8 @@ class CodeEditorViewModel @Inject constructor(
             val errorCode: Int? = null,
             val throwable: Throwable? = null
         ) : CodeEditorEvent()
+
+        data class InitialText(val text: String) : CodeEditorEvent()
 
         data class TextChange(
             val newText: String,
