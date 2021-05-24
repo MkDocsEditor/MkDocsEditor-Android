@@ -22,8 +22,7 @@ class WebsocketConnectionHandler(
             val credential = Credentials
                 .basic(basicAuthConfig.username, basicAuthConfig.password)
 
-            response.request()
-                .newBuilder()
+            response.request.newBuilder()
                 .header("Authorization", credential)
                 .build()
         }
@@ -58,18 +57,13 @@ class WebsocketConnectionHandler(
         val request = Request.Builder().url(url).build()
         webSocket = client.newWebSocket(request, object : EchoWebSocketListenerBase() {
 
-            override fun onOpen(webSocket: WebSocket, response: Response?) {
+            override fun onOpen(webSocket: WebSocket, response: Response) {
                 super.onOpen(webSocket, response)
                 onNewConnectionStatus(true)
             }
 
-            override fun onMessage(webSocket: WebSocket, text: String?) {
+            override fun onMessage(webSocket: WebSocket, text: String) {
                 super.onMessage(webSocket, text)
-
-                if (text == null) {
-                    return
-                }
-
                 listener?.onMessage(text)
             }
 
@@ -78,13 +72,13 @@ class WebsocketConnectionHandler(
                 onNewConnectionStatus(false)
             }
 
-            override fun onFailure(webSocket: WebSocket, t: Throwable?, response: Response?) {
+            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 super.onFailure(webSocket, t, response)
                 onNewConnectionStatus(false)
 
                 Timber.e(t, "Websocket error")
                 runOnUiThread {
-                    listener?.onConnectionChanged(isConnected, response?.code(), t)
+                    listener?.onConnectionChanged(isConnected, response?.code, t)
                 }
             }
         })
@@ -125,7 +119,7 @@ class WebsocketConnectionHandler(
      * Shutdown the websocket
      */
     fun shutdown() {
-        client.dispatcher().executorService().shutdown()
+        client.dispatcher.executorService.shutdown()
     }
 
 }

@@ -7,20 +7,20 @@ import okio.ByteString
 
 abstract class EchoWebSocketListenerBase : WebSocketListener() {
 
-    override fun onOpen(webSocket: WebSocket, response: Response?) {
+    override fun onOpen(webSocket: WebSocket, response: Response) {
     }
 
-    override fun onMessage(webSocket: WebSocket, text: String?) {
+    override fun onMessage(webSocket: WebSocket, text: String) {
     }
 
-    override fun onMessage(webSocket: WebSocket, bytes: ByteString?) {
+    override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
     }
 
-    override fun onClosing(webSocket: WebSocket, code: Int, reason: String?) {
+    override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
         webSocket.close(NORMAL_CLOSURE_STATUS, reason)
     }
 
-    override fun onFailure(webSocket: WebSocket, t: Throwable?, response: Response?) {
+    override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
     }
 
     companion object {
