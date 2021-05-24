@@ -34,6 +34,8 @@ import de.markusressel.mkdocseditor.ui.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch.Patch
+import kotlinx.coroutines.flow.onEach
+import reactivecircus.flowbinding.android.widget.textChanges
 import java.util.*
 import javax.inject.Inject
 
@@ -303,6 +305,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 is TextChange -> handleTextChange(event.newText, event.patches)
                 is OpenWebView -> chromeCustomTabManager.openChromeCustomTab(event.url)
                 is Error -> {
+                    Timber.e(event.throwable) { "Error" }
                     noConnectionSnackbar = codeEditorLayout.snack(
                         text = event.message
                             ?: event.throwable?.localizedMessage
@@ -319,17 +322,22 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         codeEditorLayout = view.findViewById(R.id.codeEditorLayout)
         codeEditorLayout.minimapGravity = Gravity.BOTTOM or Gravity.END
         codeEditorLayout.languageRuleBook = MarkdownRuleBook()
-        codeEditorLayout.codeEditorView.engine.addListener(object : ZoomEngine.Listener {
-            override fun onIdle(engine: ZoomEngine) {
-                saveEditorState()
-            }
+        codeEditorLayout.codeEditorView.codeEditText.textChanges().onEach {
+            viewModel.currentText.value = it.toString()
+        }
 
-            override fun onUpdate(engine: ZoomEngine, matrix: Matrix) {
-                viewModel.currentPosition.set(
-                    codeEditorLayout.codeEditorView.panX,
-                    codeEditorLayout.codeEditorView.panY
-                )
-                viewModel.currentZoom.value = codeEditorLayout.codeEditorView.zoom
+        codeEditorLayout.codeEditorView.engine.addListener(
+            object : ZoomEngine.Listener {
+                override fun onIdle(engine: ZoomEngine) {
+                    saveEditorState()
+                }
+
+                override fun onUpdate(engine: ZoomEngine, matrix: Matrix) {
+                    viewModel.currentPosition.set(
+                        codeEditorLayout.codeEditorView.panX,
+                        codeEditorLayout.codeEditorView.panY
+                    )
+                    viewModel.currentZoom.value = codeEditorLayout.codeEditorView.zoom
 
 //                val totalWidth = codeEditorLayout.contentLayout.width
 //
@@ -343,8 +351,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 //                val offsetXMaybe = totalRangeX * percentage
 //                val offsetFromPan = -panX
 //                val test = 1
-            }
-        })
+                }
+            })
         codeEditorLayout.codeEditorView.selectionChangedListener = this
 
         // disable user input by default, it will be enabled automatically once connected to the server

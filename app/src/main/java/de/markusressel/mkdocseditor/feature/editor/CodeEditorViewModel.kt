@@ -19,6 +19,7 @@ import de.markusressel.mkdocseditor.util.Resource.Success
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEach
@@ -134,17 +135,21 @@ class CodeEditorViewModel @Inject constructor(
         val syncFlow = flow {
             while (documentSyncManager.isConnected) {
                 emit(false)
-                kotlinx.coroutines.delay(syncInterval)
+                delay(syncInterval)
             }
         }
 
         viewModelScope.launch {
-            syncFlow.onEach {
-                documentSyncManager.sync()
-            }.catch { ex ->
+            try {
+                syncFlow.onEach {
+                    documentSyncManager.sync()
+                }.catch { ex ->
+                    Timber.e(ex)
+                    disconnect("Error in client sync code")
+                    events.postValue(Error(throwable = ex))
+                }
+            } catch (ex: Exception) {
                 Timber.e(ex)
-                disconnect("Error in client sync code")
-                events.postValue(Error(throwable = ex))
             }
         }
     }
