@@ -186,10 +186,10 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         val content = entity?.content?.target
         if (content != null) {
             if (text != null) {
-                codeEditorLayout.text = text
+                setEditorText(text)
             } else {
                 // restore values from cache
-                codeEditorLayout.text = content.text
+                setEditorText(content.text, content.selection)
             }
             codeEditorLayout.codeEditorView.moveTo(
                 content.zoomLevel,
@@ -461,6 +461,11 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         }
 
         val positioningPercentage = getCurrentPositionPercentage()
+
+        if (positioningPercentage.x.isNaN() || positioningPercentage.y.isNaN()) {
+            // don't save the state if it is incomplete
+            return
+        }
 
         viewModel.saveEditorState(
             selection = codeEditorLayout.codeEditorView.codeEditText.selectionStart,

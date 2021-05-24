@@ -34,7 +34,7 @@ class DocumentContentPersistenceManager @Inject constructor(
             ?: DocumentContentEntity(
                 entityId = 0,
                 date = System.currentTimeMillis(),
-                documentId = documentId
+                documentId = documentId,
             )
 
         // attach parent if necessary

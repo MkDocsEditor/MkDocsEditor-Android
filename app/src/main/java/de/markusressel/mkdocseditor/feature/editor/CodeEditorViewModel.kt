@@ -185,7 +185,7 @@ class CodeEditorViewModel @Inject constructor(
         events.value = ConnectionStatus(connected = false)
     }
 
-    fun updateDocumentContentInCache(documentId: String, text: String) {
+    private fun updateDocumentContentInCache(documentId: String, text: String) {
         viewModelScope.launch {
             dataRepository.updateDocumentContentInCache(documentId, text)
         }
