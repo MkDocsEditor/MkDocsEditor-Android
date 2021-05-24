@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.ui.fragment.preferences
+package de.markusressel.mkdocseditor.data
 
 import android.content.Context
 import com.eightbitlab.rxbus.Bus
@@ -19,9 +19,9 @@ import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
 import de.markusressel.mkdocseditor.event.*
+import de.markusressel.mkdocseditor.feature.preferences.LastOfflineCacheUpdatePreferenceItem
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.ui.IconHandler
-import de.markusressel.mkdocseditor.feature.preferences.LastOfflineCacheUpdatePreferenceItem
 import javax.inject.Inject
 import javax.inject.Singleton
 

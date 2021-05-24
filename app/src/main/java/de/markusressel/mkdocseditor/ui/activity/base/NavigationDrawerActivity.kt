@@ -25,15 +25,15 @@ import com.mikepenz.materialdrawer.widget.AccountHeaderView
 import com.mikepenz.materialdrawer.widget.MaterialDrawerSliderView
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.event.ThemeChangedEvent
+import de.markusressel.mkdocseditor.feature.browser.FileBrowserFragment
+import de.markusressel.mkdocseditor.feature.preferences.PreferencesFragment
+import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.ui.navigation.DrawerItemHolder
 import de.markusressel.mkdocseditor.ui.navigation.DrawerItemHolder.About
 import de.markusressel.mkdocseditor.ui.navigation.DrawerItemHolder.FileBrowser
 import de.markusressel.mkdocseditor.ui.navigation.DrawerItemHolder.OfflineMode
 import de.markusressel.mkdocseditor.ui.navigation.DrawerItemHolder.Settings
 import de.markusressel.mkdocseditor.ui.navigation.DrawerMenuItem
-import de.markusressel.mkdocseditor.network.OfflineModeManager
-import de.markusressel.mkdocseditor.feature.browser.FileBrowserFragment
-import de.markusressel.mkdocseditor.ui.fragment.preferences.PreferencesFragment
 import java.util.*
 import javax.inject.Inject
 

@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.ui.fragment
+package de.markusressel.mkdocseditor.feature.about
 
 import android.os.Bundle
 import android.view.LayoutInflater

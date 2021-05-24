@@ -1,8 +1,9 @@
-package de.markusressel.mkdocseditor.ui.fragment.preferences
+package de.markusressel.mkdocseditor.feature.preferences
 
 import dagger.hilt.android.AndroidEntryPoint
 import de.markusressel.kutepreferences.core.KutePreferenceListItem
 import de.markusressel.kutepreferences.core.view.KutePreferencesMainFragment
+import de.markusressel.mkdocseditor.data.KutePreferencesHolder
 import javax.inject.Inject
 
 @AndroidEntryPoint

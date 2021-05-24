@@ -8,10 +8,10 @@ import androidx.annotation.IntDef
 import androidx.annotation.LayoutRes
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.databinding.ActivityMainBinding
 import de.markusressel.mkdocseditor.ui.IconHandler
 import de.markusressel.mkdocseditor.ui.ThemeHelper
-import de.markusressel.mkdocseditor.ui.fragment.preferences.KutePreferencesHolder
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import java.util.*
