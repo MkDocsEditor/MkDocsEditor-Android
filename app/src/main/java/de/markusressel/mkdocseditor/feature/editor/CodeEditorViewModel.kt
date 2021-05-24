@@ -18,7 +18,9 @@ import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
