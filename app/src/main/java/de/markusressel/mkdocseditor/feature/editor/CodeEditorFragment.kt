@@ -7,6 +7,7 @@ import android.graphics.PointF
 import android.os.Bundle
 import android.view.*
 import androidx.annotation.CallSuper
+import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
 import androidx.lifecycle.Observer
@@ -34,8 +35,6 @@ import de.markusressel.mkdocseditor.ui.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch.Patch
-import kotlinx.coroutines.flow.onEach
-import reactivecircus.flowbinding.android.widget.textChanges
 import java.util.*
 import javax.inject.Inject
 
@@ -131,7 +130,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         optionsMenuComponent
     }
 
-    private fun handleTextChange(newText: String, patches: LinkedList<Patch>) {
+    private fun handleExternalTextChange(newText: String, patches: LinkedList<Patch>) {
         val oldSelectionStart = codeEditorLayout.codeEditorView.codeEditText.selectionStart
         val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
         viewModel.currentText.value = newText
@@ -187,11 +186,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         val content = entity?.content?.target
         if (content != null) {
             if (text != null) {
-                // when an entity exists and a new text is given update the entity
-                viewModel.updateDocumentContentInCache(
-                    documentId = viewModel.documentId.value!!,
-                    text = text
-                )
                 codeEditorLayout.text = text
             } else {
                 // restore values from cache
@@ -302,7 +296,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 is InitialText -> {
                     restoreEditorState(viewModel.documentEntity.value?.data, event.text)
                 }
-                is TextChange -> handleTextChange(event.newText, event.patches)
+                is TextChange -> handleExternalTextChange(event.newText, event.patches)
                 is OpenWebView -> chromeCustomTabManager.openChromeCustomTab(event.url)
                 is Error -> {
                     Timber.e(event.throwable) { "Error" }
@@ -322,9 +316,11 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         codeEditorLayout = view.findViewById(R.id.codeEditorLayout)
         codeEditorLayout.minimapGravity = Gravity.BOTTOM or Gravity.END
         codeEditorLayout.languageRuleBook = MarkdownRuleBook()
-        codeEditorLayout.codeEditorView.codeEditText.textChanges().onEach {
-            viewModel.currentText.value = it.toString()
-        }
+        codeEditorLayout.codeEditorView.codeEditText.addTextChangedListener(
+            onTextChanged = { text, start, before, count ->
+                viewModel.currentText.value = text.toString()
+            },
+        )
 
         codeEditorLayout.codeEditorView.engine.addListener(
             object : ZoomEngine.Listener {

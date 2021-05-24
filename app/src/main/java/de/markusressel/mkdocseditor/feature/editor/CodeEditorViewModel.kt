@@ -20,9 +20,6 @@ import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
@@ -97,10 +94,20 @@ class CodeEditorViewModel @Inject constructor(
             }
         },
         onInitialText = {
+            // when an entity exists and a new text is given update the entity
+            documentId.value?.let { documentId ->
+                updateDocumentContentInCache(
+                    documentId = documentId,
+                    text = it
+                )
+            }
+
             runOnUiThread {
+                currentText.value = it
                 events.value = InitialText(it)
                 loading.value = false
             }
+            watchTextChanges()
         }, onTextChanged = ::onTextChanged
     )
 
@@ -108,9 +115,6 @@ class CodeEditorViewModel @Inject constructor(
         events.observeForever { event ->
             when (event) {
                 is ConnectionStatus -> {
-                    if (event.connected) {
-                        watchTextChanges()
-                    }
                 }
                 is Error -> {
                 }
@@ -132,18 +136,14 @@ class CodeEditorViewModel @Inject constructor(
     private fun watchTextChanges() {
         val syncInterval = preferencesHolder.codeEditorSyncIntervalPreference.persistedValue
 
-        val syncFlow = flow {
-            while (documentSyncManager.isConnected) {
-                emit(false)
-                delay(syncInterval)
-            }
-        }
-
         viewModelScope.launch {
             try {
-                syncFlow.onEach {
-                    documentSyncManager.sync()
-                }.catch { ex ->
+                try {
+                    while (documentSyncManager.isConnected) {
+                        documentSyncManager.sync()
+                        delay(syncInterval)
+                    }
+                } catch (ex: Exception) {
                     Timber.e(ex)
                     disconnect("Error in client sync code")
                     events.postValue(Error(throwable = ex))
