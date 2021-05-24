@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/fileBrowserPage"
-        android:name="de.markusressel.mkdocseditor.view.fragment.FileBrowserFragment"
+        android:name="de.markusressel.mkdocseditor.feature.browser.FileBrowserFragment"
         android:label="@string/menu_item_file_browser"
         tools:layout="@layout/fragment_recyclerview">
 
@@ -18,7 +18,7 @@
 
     <fragment
         android:id="@+id/codeEditorPage"
-        android:name="de.markusressel.mkdocseditor.view.fragment.CodeEditorFragment"
+        android:name="de.markusressel.mkdocseditor.feature.editor.CodeEditorFragment"
         android:label="@string/code_editor"
         tools:layout="@layout/fragment_editor">
         <argument
@@ -28,12 +28,12 @@
 
     <fragment
         android:id="@+id/preferencesPage"
-        android:name="de.markusressel.mkdocseditor.view.fragment.preferences.PreferencesFragment"
+        android:name="de.markusressel.mkdocseditor.ui.fragment.preferences.PreferencesFragment"
         android:label="@string/menu_item_settings" />
 
     <fragment
         android:id="@+id/aboutPage"
-        android:name="de.markusressel.mkdocseditor.view.fragment.AboutPage"
+        android:name="de.markusressel.mkdocseditor.ui.fragment.AboutPage"
         android:label="@string/menu_item_about" />
 
     <fragment

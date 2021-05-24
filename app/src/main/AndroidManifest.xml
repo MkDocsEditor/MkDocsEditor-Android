@@ -22,7 +22,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppThemeDark"
         android:usesCleartextTraffic="true">
-        <activity android:name=".view.activity.MainActivity">
+        <activity android:name="de.markusressel.mkdocseditor.ui.activity.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

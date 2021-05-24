@@ -6,7 +6,7 @@ import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.net.toUri
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.view.ThemeHelper
+import de.markusressel.mkdocseditor.ui.ThemeHelper
 import javax.inject.Inject
 import javax.inject.Singleton
 

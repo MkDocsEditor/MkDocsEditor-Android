@@ -6,7 +6,7 @@
 
         <variable
             name="viewModel"
-            type="de.markusressel.mkdocseditor.view.viewmodel.CodeEditorViewModel" />
+            type="de.markusressel.mkdocseditor.feature.editor.CodeEditorViewModel" />
     </data>
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout

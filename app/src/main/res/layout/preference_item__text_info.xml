@@ -5,7 +5,7 @@
 
         <variable
             name="viewModel"
-            type="de.markusressel.mkdocseditor.view.preferences.LastOfflineCacheUpdatePreferenceItem.DataModel" />
+            type="de.markusressel.mkdocseditor.feature.preferences.LastOfflineCacheUpdatePreferenceItem.DataModel" />
     </data>
 
     <LinearLayout
