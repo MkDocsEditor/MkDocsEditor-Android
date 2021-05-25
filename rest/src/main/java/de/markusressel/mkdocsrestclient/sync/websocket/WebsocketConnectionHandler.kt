@@ -7,10 +7,24 @@ import okhttp3.*
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
+/**
+ * Simplifies setting up and communicating over a websocket
+ */
 class WebsocketConnectionHandler(
+    /**
+     * The URL at which the server is awaiting a websocket connection
+     */
     val url: String,
+    /**
+     * Configuration for HTTP Basic Auth
+     */
     val basicAuthConfig: BasicAuthConfig
 ) {
+
+    /**
+     * Indicates if the websocket is connected
+     */
+    var isConnected = false
 
     private var listener: WebsocketConnectionListener? = null
 
@@ -27,11 +41,6 @@ class WebsocketConnectionHandler(
                 .build()
         }
         .build()
-
-    /**
-     * Indicates if the websocket is connected
-     */
-    var isConnected = false
 
     private var webSocket: WebSocket? = null
 

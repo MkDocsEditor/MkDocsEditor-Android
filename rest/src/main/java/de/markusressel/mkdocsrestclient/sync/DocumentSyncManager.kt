@@ -1,7 +1,6 @@
 package de.markusressel.mkdocsrestclient.sync
 
 import androidx.annotation.WorkerThread
-import com.squareup.moshi.Moshi
 import de.markusressel.commons.android.core.doAsync
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
@@ -239,21 +238,20 @@ class DocumentSyncManager(
     private fun String.checksum(): String {
         val md = MessageDigest.getInstance(CHECKSUM_ALGORITHM)
         val checksumByteArray = md.digest(toByteArray(charset = StandardCharsets.UTF_16LE))
-        return toHexString(checksumByteArray)
+        return checksumByteArray.toHexString()
     }
 
     /**
      * Converts a byte array to it's hex representation include leading zeros.
      */
-    private fun toHexString(data: ByteArray): String {
-        val chars = CharArray(data.size * 2)
-        for (i in data.indices) {
-            chars[i * 2] = HEX_DIGITS[data[i].toInt() shr (4) and 0xf]
-            chars[i * 2 + 1] = HEX_DIGITS[data[i].toInt() and 0xf]
+    private fun ByteArray.toHexString(): String {
+        val chars = CharArray(size * 2)
+        indices.forEach { i ->
+            chars[i * 2] = HEX_DIGITS[this[i].toInt() shr (4) and 0xf]
+            chars[i * 2 + 1] = HEX_DIGITS[this[i].toInt() and 0xf]
         }
         return String(chars)
     }
-
 
     companion object {
         private val DIFF_MATCH_PATCH = diff_match_patch()
