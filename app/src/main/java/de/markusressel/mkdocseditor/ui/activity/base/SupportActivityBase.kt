@@ -6,6 +6,7 @@ import android.view.WindowManager
 import androidx.annotation.CallSuper
 import androidx.annotation.IntDef
 import androidx.annotation.LayoutRes
+import androidx.appcompat.app.AppCompatActivity
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.KutePreferencesHolder
@@ -20,7 +21,7 @@ import javax.inject.Inject
 /**
  * Created by Markus on 20.12.2017.
  */
-abstract class SupportActivityBase : StateActivityBase() {
+abstract class SupportActivityBase : AppCompatActivity() {
 
     @Inject
     lateinit var iconHandler: IconHandler

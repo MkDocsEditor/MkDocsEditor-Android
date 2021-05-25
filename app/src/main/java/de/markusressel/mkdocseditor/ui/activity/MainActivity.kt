@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.ui.activity
 
 import android.Manifest
+import androidx.activity.viewModels
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionDeniedResponse
@@ -14,11 +15,17 @@ import de.markusressel.mkdocseditor.ui.activity.base.NavigationDrawerActivity
 @AndroidEntryPoint
 class MainActivity : NavigationDrawerActivity() {
 
+    private val viewModel: MainViewModel by viewModels()
+
     override val style: Int
         get() = DEFAULT
 
     override fun onStart() {
         super.onStart()
+        requestPermission()
+    }
+
+    private fun requestPermission() {
         if (BuildConfig.DEBUG) {
             Dexter.withContext(this)
                 .withPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)

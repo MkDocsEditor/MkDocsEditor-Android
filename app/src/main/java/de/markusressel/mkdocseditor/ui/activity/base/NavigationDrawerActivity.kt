@@ -48,10 +48,10 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
         get() = R.layout.activity_main
 
     protected val navController by lazy {
-        val navHostFragment =
-            supportFragmentManager.findFragmentById(R.id.navHostFragment) as NavHostFragment
+        val navHostFragment = supportFragmentManager.findFragmentById(
+            R.id.navHostFragment
+        ) as NavHostFragment
         navHostFragment.navController
-//        Navigation.findNavController(this, R.id.navHostFragment)
     }
 
     @Inject
@@ -191,7 +191,8 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
                 createSecondaryMenuItem(About, clickListener),
                 DividerDrawerItem(),
                 createOfflineModeMenuItem(
-                    OfflineMode, clickListener,
+                    OfflineMode,
+                    clickListener,
                     defaultValue = offlineModeManager.isEnabled()
                 )
             )
@@ -203,27 +204,23 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
     private fun createPrimaryMenuItem(
         menuItem: DrawerMenuItem,
         clickListener: ((v: View?, item: IDrawerItem<*>, position: Int) -> Boolean)?
-    ): PrimaryDrawerItem {
-        return PrimaryDrawerItem().apply {
-            nameRes = menuItem.title
-            identifier = menuItem.id.toLong()
-            iconDrawable = menuItem.getIcon(iconHandler)
-            isSelectable = menuItem.selectable
-            onDrawerItemClickListener = clickListener
-        }
+    ) = PrimaryDrawerItem().apply {
+        nameRes = menuItem.title
+        identifier = menuItem.id.toLong()
+        iconDrawable = menuItem.getIcon(iconHandler)
+        isSelectable = menuItem.selectable
+        onDrawerItemClickListener = clickListener
     }
 
     private fun createSecondaryMenuItem(
         menuItem: DrawerMenuItem,
         clickListener: ((v: View?, item: IDrawerItem<*>, position: Int) -> Boolean)?
-    ): SecondaryDrawerItem {
-        return SecondaryDrawerItem().apply {
-            nameRes = menuItem.title
-            identifier = menuItem.id.toLong()
-            iconDrawable = menuItem.getIcon(iconHandler)
-            isSelectable = menuItem.selectable
-            onDrawerItemClickListener = clickListener
-        }
+    ) = SecondaryDrawerItem().apply {
+        nameRes = menuItem.title
+        identifier = menuItem.id.toLong()
+        iconDrawable = menuItem.getIcon(iconHandler)
+        isSelectable = menuItem.selectable
+        onDrawerItemClickListener = clickListener
     }
 
     private fun createOfflineModeMenuItem(

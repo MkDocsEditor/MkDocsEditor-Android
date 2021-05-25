@@ -24,7 +24,8 @@ import de.markusressel.mkdocseditor.R
  * Created by Markus on 15.02.2018.
  */
 class LoadingComponent(
-    hostFragment: Fragment, val onShowContent: ((animated: Boolean) -> Unit)? = null,
+    hostFragment: Fragment,
+    val onShowContent: ((animated: Boolean) -> Unit)? = null,
     /**
      * Called when the error screen is shown
      */
