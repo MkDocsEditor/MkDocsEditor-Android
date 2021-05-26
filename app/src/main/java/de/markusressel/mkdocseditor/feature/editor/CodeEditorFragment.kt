@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.feature.editor
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Matrix
 import android.graphics.PointF
@@ -44,25 +43,16 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener {
 
-    lateinit var binding: FragmentEditorBinding
-
     @Inject
     lateinit var chromeCustomTabManager: ChromeCustomTabManager
 
+    private val viewModel: CodeEditorViewModel by viewModels()
+
+    private lateinit var binding: FragmentEditorBinding
+
     private lateinit var codeEditorLayout: CodeEditorLayout
 
-    //private val safeArgs by lazy {
-    //    CodeEditorFragmentArgs.fromBundle(
-    //        requireArguments()
-    //    )
-    //}
-
-    //private val documentId: String
-    //    get() = safeArgs.documentId
-
     private var noConnectionSnackbar: Snackbar? = null
-
-    private val viewModel: CodeEditorViewModel by viewModels()
 
     private val loadingComponent by lazy { LoadingComponent(this) }
 
@@ -126,21 +116,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         optionsMenuComponent
     }
 
-    private fun handleExternalTextChange(newText: String, patches: LinkedList<Patch>) {
-        val oldSelectionStart = codeEditorLayout.codeEditorView.codeEditText.selectionStart
-        val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
-        viewModel.currentText.value = newText
-
-        // set new cursor position
-        val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, patches)
-            .coerceIn(0, newText.length)
-        val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
-            .coerceIn(0, newText.length)
-
-        setEditorText(newText, newSelectionStart, newSelectionEnd)
-        saveEditorState()
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -198,157 +173,146 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         }
     }
 
-    @SuppressLint("ClickableViewAccessibility")
     @CallSuper
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel.editModeActive.observe(viewLifecycleOwner) {
-            runOnUiThread {
-                codeEditorLayout.editable = it
-            }
-        }
-
-        viewModel.loading.observe(viewLifecycleOwner) { loading ->
-            when {
-                loading -> loadingComponent.showLoading()
-                else -> loadingComponent.showContent(animated = true)
-            }
-        }
-
-        viewModel.documentEntity.observe(viewLifecycleOwner) { resource ->
-            viewModel.loading.value = resource is Resource.Loading
-
-            if (resource is Resource.Error) {
-                Timber.e(resource.error)
-                MaterialDialog(context()).show {
-                    title(R.string.error)
-                    message(text = resource.error?.localizedMessage ?: "Unknown error")
-                    negativeButton(android.R.string.ok, click = {
-                        it.dismiss()
-                    })
-                    onDismiss {
-                        navController.navigateUp()
-                    }
+        viewModel.apply {
+            editModeActive.observe(viewLifecycleOwner) {
+                runOnUiThread {
+                    codeEditorLayout.editable = it
                 }
-                return@observe
             }
 
-            val entity = resource.data
-            val content = entity?.content?.target?.text
-
-            if (viewModel.offlineModeManager.isEnabled() && content == null) {
-                MaterialDialog(context()).show {
-                    title(R.string.no_offline_version_title)
-                    message(R.string.no_offline_version)
-                    negativeButton(android.R.string.ok, click = {
-                        it.dismiss()
-                    })
-                    onDismiss {
-                        navController.navigateUp()
-                    }
+            loading.observe(viewLifecycleOwner) { loading ->
+                when {
+                    loading -> loadingComponent.showLoading()
+                    else -> loadingComponent.showContent(animated = true)
                 }
-            } else {
-                // val documentEntity = entities.first()
-                restoreEditorState(entity = entity)
             }
-        }
 
-        viewModel.events.observe(viewLifecycleOwner) { event ->
-            when (event) {
-                is ConnectionStatus -> {
-                    noConnectionSnackbar?.dismiss()
+            documentEntity.observe(viewLifecycleOwner) { resource ->
+                loading.value = resource is Resource.Loading
 
-                    if (event.connected) {
+                if (resource is Resource.Error) {
+                    Timber.e(resource.error)
+                    MaterialDialog(context()).show {
+                        title(R.string.error)
+                        message(text = resource.error?.localizedMessage ?: "Unknown error")
+                        negativeButton(android.R.string.ok, click = {
+                            it.dismiss()
+                        })
+                        onDismiss {
+                            navController.navigateUp()
+                        }
+                    }
+                    return@observe
+                }
+
+                val entity = resource.data
+                val content = entity?.content?.target?.text
+
+                if (offlineModeManager.isEnabled() && content == null) {
+                    MaterialDialog(context()).show {
+                        title(R.string.no_offline_version_title)
+                        message(R.string.no_offline_version)
+                        negativeButton(android.R.string.ok, click = {
+                            it.dismiss()
+                        })
+                        onDismiss {
+                            navController.navigateUp()
+                        }
+                    }
+                } else {
+                    // val documentEntity = entities.first()
+                    restoreEditorState(entity = entity)
+                }
+            }
+
+            events.observe(viewLifecycleOwner) { event ->
+                when (event) {
+                    is ConnectionStatus -> {
                         noConnectionSnackbar?.dismiss()
 
-                        runOnUiThread {
-                            codeEditorLayout.snack(R.string.connected, Snackbar.LENGTH_SHORT)
-                        }
-                    } else {
-                        saveEditorState()
-
-                        if (event.throwable != null) {
-                            Timber.e(event.throwable) { "Websocket error code: ${event.errorCode}" }
-                            noConnectionSnackbar = codeEditorLayout.snack(
-                                text = R.string.server_unavailable,
-                                duration = Snackbar.LENGTH_INDEFINITE,
-                                actionTitle = R.string.retry,
-                                action = {
-                                    viewModel.reconnectToServer()
-                                })
+                        if (event.connected) {
+                            runOnUiThread {
+                                codeEditorLayout.snack(R.string.connected, Snackbar.LENGTH_SHORT)
+                            }
                         } else {
-                            noConnectionSnackbar = codeEditorLayout.snack(
-                                text = R.string.not_connected,
-                                duration = Snackbar.LENGTH_INDEFINITE,
-                                actionTitle = R.string.connect,
-                                action = {
-                                    viewModel.reconnectToServer()
-                                })
+                            saveEditorState()
+
+                            if (event.throwable != null) {
+                                Timber.e(event.throwable) { "Websocket error code: ${event.errorCode}" }
+                                noConnectionSnackbar = codeEditorLayout.snack(
+                                    text = R.string.server_unavailable,
+                                    duration = Snackbar.LENGTH_INDEFINITE,
+                                    actionTitle = R.string.retry,
+                                    action = {
+                                        viewModel.onRetryClicked()
+                                    })
+                            } else {
+                                noConnectionSnackbar = codeEditorLayout.snack(
+                                    text = R.string.not_connected,
+                                    duration = Snackbar.LENGTH_INDEFINITE,
+                                    actionTitle = R.string.connect,
+                                    action = {
+                                        viewModel.onConnectClicked()
+                                    })
+                            }
                         }
                     }
-                }
-                is InitialText -> {
-                    restoreEditorState(viewModel.documentEntity.value?.data, event.text)
-                }
-                is TextChange -> handleExternalTextChange(event.newText, event.patches)
-                is OpenWebView -> chromeCustomTabManager.openChromeCustomTab(event.url)
-                is Error -> {
-                    Timber.e(event.throwable) { "Error" }
-                    noConnectionSnackbar = codeEditorLayout.snack(
-                        text = event.message
-                            ?: event.throwable?.localizedMessage
-                            ?: getString(R.string.unknown_error),
-                        duration = Snackbar.LENGTH_INDEFINITE,
-                        actionTitle = getString(R.string.retry),
-                        action = {
-                            viewModel.reconnectToServer()
-                        })
+                    is InitialText -> {
+                        restoreEditorState(viewModel.documentEntity.value?.data, event.text)
+                    }
+                    is TextChange -> handleExternalTextChange(event.newText, event.patches)
+                    is OpenWebView -> chromeCustomTabManager.openChromeCustomTab(event.url)
+                    is Error -> {
+                        Timber.e(event.throwable) { "Error" }
+                        noConnectionSnackbar?.dismiss()
+                        noConnectionSnackbar = codeEditorLayout.snack(
+                            text = event.message
+                                ?: event.throwable?.localizedMessage
+                                ?: getString(R.string.unknown_error),
+                            duration = Snackbar.LENGTH_INDEFINITE,
+                            actionTitle = getString(R.string.retry),
+                            action = {
+                                viewModel.onRetryClicked()
+                            })
+                    }
                 }
             }
         }
 
         codeEditorLayout = view.findViewById(R.id.codeEditorLayout)
-        codeEditorLayout.minimapGravity = Gravity.BOTTOM or Gravity.END
-        codeEditorLayout.languageRuleBook = MarkdownRuleBook()
-        codeEditorLayout.codeEditorView.codeEditText.addTextChangedListener(
-            onTextChanged = { text, start, before, count ->
-                viewModel.currentText.value = text.toString()
-            },
-        )
+        codeEditorLayout.apply {
+            minimapGravity = Gravity.BOTTOM or Gravity.END
+            languageRuleBook = MarkdownRuleBook()
+            codeEditorView.codeEditText.addTextChangedListener(
+                onTextChanged = { text, start, before, count ->
+                    viewModel.currentText.value = text.toString()
+                },
+            )
+            codeEditorView.engine.addListener(
+                object : ZoomEngine.Listener {
+                    override fun onIdle(engine: ZoomEngine) {
+                        saveEditorState()
+                    }
 
-        codeEditorLayout.codeEditorView.engine.addListener(
-            object : ZoomEngine.Listener {
-                override fun onIdle(engine: ZoomEngine) {
-                    saveEditorState()
-                }
+                    override fun onUpdate(engine: ZoomEngine, matrix: Matrix) {
+                        viewModel.currentPosition.set(
+                            codeEditorLayout.codeEditorView.panX,
+                            codeEditorLayout.codeEditorView.panY
+                        )
+                        viewModel.currentZoom.value = codeEditorLayout.codeEditorView.zoom
+                    }
+                })
 
-                override fun onUpdate(engine: ZoomEngine, matrix: Matrix) {
-                    viewModel.currentPosition.set(
-                        codeEditorLayout.codeEditorView.panX,
-                        codeEditorLayout.codeEditorView.panY
-                    )
-                    viewModel.currentZoom.value = codeEditorLayout.codeEditorView.zoom
+            codeEditorView.selectionChangedListener = this@CodeEditorFragment
 
-//                val totalWidth = codeEditorLayout.contentLayout.width
-//
-//                val panX = engine.panX
-//                val panY = engine.panY
-//
-//                val offsetX = engine.computeHorizontalScrollOffset()
-//                val totalRangeX = engine.computeHorizontalScrollRange()
-//                val percentage = engine.computeHorizontalScrollOffset().toFloat() / engine.computeHorizontalScrollRange()
-//
-//                val offsetXMaybe = totalRangeX * percentage
-//                val offsetFromPan = -panX
-//                val test = 1
-                }
-            })
-        codeEditorLayout.codeEditorView.selectionChangedListener = this
-
-        // disable user input by default, it will be enabled automatically once connected to the server
-        // if not disabled in preferences
-        codeEditorLayout.editable = false
+            // disable user input by default, it will be enabled automatically once connected to the server
+            // if not disabled in preferences
+            editable = false
+        }
     }
 
     /**
@@ -363,25 +327,43 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         selectionStart: Int? = null,
         selectionEnd: Int? = null
     ) {
-        // we don't listen to selection changes when the text is changed via code
-        // because the selection will be restored from persistence anyway
-        // and the listener would override this
-        val editor = codeEditorLayout.codeEditorView
-        editor.selectionChangedListener = null
-        editor.text = text
-        selectionStart?.let {
-            setEditorSelection(text.length, it, selectionEnd)
+        codeEditorLayout.codeEditorView.apply {
+            // we don't listen to selection changes when the text is changed via code
+            // because the selection will be restored from persistence anyway
+            // and the listener would override this
+            selectionChangedListener = null
+            this.text = text
+            selectionStart?.let {
+                setEditorSelection(text.length, it, selectionEnd)
+            }
+            selectionChangedListener = this
         }
-        editor.selectionChangedListener = this
     }
 
     private fun setEditorSelection(maxIndex: Int, selectionStart: Int, selectionEnd: Int?) {
         val endIndex = selectionEnd ?: selectionStart
-        codeEditorLayout.codeEditorView.codeEditText
-            .setSelection(selectionStart.coerceIn(0, maxIndex), endIndex.coerceIn(0, maxIndex))
+        codeEditorLayout.codeEditorView.codeEditText.setSelection(
+            selectionStart.coerceIn(0, maxIndex),
+            endIndex.coerceIn(0, maxIndex)
+        )
     }
 
     override fun onSelectionChanged(start: Int, end: Int, hasSelection: Boolean) {
+        saveEditorState()
+    }
+
+    private fun handleExternalTextChange(newText: String, patches: LinkedList<Patch>) {
+        val oldSelectionStart = codeEditorLayout.codeEditorView.codeEditText.selectionStart
+        val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
+        viewModel.currentText.value = newText
+
+        // set new cursor position
+        val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, patches)
+            .coerceIn(0, newText.length)
+        val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
+            .coerceIn(0, newText.length)
+
+        setEditorText(newText, newSelectionStart, newSelectionEnd)
         saveEditorState()
     }
 
@@ -390,12 +372,10 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
      *
      * @return a point with horizontal (x) and vertical (y) positioning percentages
      */
-    private fun getCurrentPositionPercentage(): PointF {
-        val engine = codeEditorLayout.codeEditorView.engine
-        return PointF(
-            engine.computeHorizontalScrollOffset()
-                .toFloat() / engine.computeHorizontalScrollRange(),
-            engine.computeVerticalScrollOffset().toFloat() / engine.computeVerticalScrollRange()
+    private fun getCurrentPositionPercentage() = codeEditorLayout.codeEditorView.engine.run {
+        PointF(
+            computeHorizontalScrollOffset().toFloat() / computeHorizontalScrollRange(),
+            computeVerticalScrollOffset().toFloat() / computeVerticalScrollRange()
         )
     }
 
@@ -404,13 +384,14 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
      *
      * @return a point with horizontal (x) and vertical (y) absolute, scale-independent, positioning coordinate values
      */
-    private fun computeAbsolutePosition(percentage: PointF): PointF {
-        val engine = codeEditorLayout.codeEditorView.engine
-        return PointF(
-            -1 * percentage.x * (engine.computeHorizontalScrollRange() / engine.realZoom),
-            -1 * percentage.y * (engine.computeVerticalScrollRange() / engine.realZoom)
-        )
-    }
+    private fun computeAbsolutePosition(percentage: PointF) =
+        codeEditorLayout.codeEditorView.engine.run {
+            PointF(
+                -1 * percentage.x * (computeHorizontalScrollRange() / realZoom),
+                -1 * percentage.y * (computeVerticalScrollRange() / realZoom)
+            )
+        }
+
 
     private fun calculateNewSelectionIndex(
         oldSelection: Int,
@@ -470,11 +451,13 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     }
 
     private val offlineModeObserver = Observer<Boolean> { enabled ->
-        if (enabled) {
-            viewModel.disconnect(reason = "Offline mode was activated")
-            viewModel.loadTextFromPersistence()
-        } else {
-            viewModel.reconnectToServer()
+        viewModel.apply {
+            if (enabled) {
+                disconnect(reason = "Offline mode was activated")
+                loadTextFromPersistence()
+            } else {
+                reconnectToServer()
+            }
         }
     }
 

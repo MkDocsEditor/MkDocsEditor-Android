@@ -69,8 +69,8 @@ class CodeEditorViewModel @Inject constructor(
     // TODO: this property should not exist. only the [DocumentSyncManager] should have this.
     var currentText: MutableLiveData<String?> = MutableLiveData(null)
 
-    var currentPosition = PointF()
-    var currentZoom = MutableLiveData(1F)
+    val currentPosition = PointF()
+    val currentZoom = MutableLiveData(1F)
 
     private val documentSyncManager = DocumentSyncManager(
         hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue,
@@ -94,6 +94,12 @@ class CodeEditorViewModel @Inject constructor(
             }
         },
         onInitialText = {
+            runOnUiThread {
+                currentText.value = it
+                events.value = InitialText(it)
+                loading.value = false
+            }
+
             // when an entity exists and a new text is given update the entity
             documentId.value?.let { documentId ->
                 updateDocumentContentInCache(
@@ -102,11 +108,7 @@ class CodeEditorViewModel @Inject constructor(
                 )
             }
 
-            runOnUiThread {
-                currentText.value = it
-                events.value = InitialText(it)
-                loading.value = false
-            }
+            // launch coroutine to continuously watch for changes
             watchTextChanges()
         }, onTextChanged = ::onTextChanged
     )
@@ -219,6 +221,21 @@ class CodeEditorViewModel @Inject constructor(
         // invert state of edit mode
         editModeActive.value = editModeActive.value != true
         return true
+    }
+
+    /**
+     * Called when the user wants to connect to the server
+     */
+    fun onConnectClicked() {
+        reconnectToServer()
+    }
+
+    /**
+     * Called when the user wants to reconnect to the server
+     * after a previous connection (attempt) has failed
+     */
+    fun onRetryClicked() {
+        reconnectToServer()
     }
 
     sealed class CodeEditorEvent {
