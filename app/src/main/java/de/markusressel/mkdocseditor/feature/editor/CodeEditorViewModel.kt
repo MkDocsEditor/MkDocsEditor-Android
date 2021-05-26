@@ -112,18 +112,6 @@ class CodeEditorViewModel @Inject constructor(
     )
 
     init {
-        events.observeForever { event ->
-            when (event) {
-                is ConnectionStatus -> {
-                }
-                is Error -> {
-                }
-                is TextChange -> {
-                }
-                is OpenWebView -> {
-                }
-            }
-        }
         documentEntity.observeForever {
             when (it) {
                 is Success -> {

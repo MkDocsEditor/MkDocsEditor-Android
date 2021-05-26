@@ -101,12 +101,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
             },
             onOptionsMenuItemClicked = {
                 when (it.itemId) {
-                    R.id.open_in_browser -> {
-                        viewModel.onOpenInBrowserClicked()
-                    }
-                    R.id.edit -> {
-                        viewModel.onEditClicked()
-                    }
+                    R.id.open_in_browser -> viewModel.onOpenInBrowserClicked()
+                    R.id.edit -> viewModel.onEditClicked()
                     else -> false
                 }
             },
@@ -213,11 +209,10 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
             }
         }
 
-        viewModel.loading.observe(viewLifecycleOwner) {
-            if (it) {
-                loadingComponent.showLoading()
-            } else {
-                loadingComponent.showContent(animated = true)
+        viewModel.loading.observe(viewLifecycleOwner) { loading ->
+            when {
+                loading -> loadingComponent.showLoading()
+                else -> loadingComponent.showContent(animated = true)
             }
         }
 
