@@ -147,7 +147,6 @@ class DocumentSyncManager(
         when (entity.type) {
             "initial-content" -> {
                 val initialContentEntity: InitialContentRequestEntity = text.toEntity()
-
                 runOnUiThread {
                     clientShadow = initialContentEntity.content
                     onInitialText(initialContentEntity.content)

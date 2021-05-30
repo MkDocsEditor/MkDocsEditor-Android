@@ -94,11 +94,8 @@ class CodeEditorViewModel @Inject constructor(
             }
         },
         onInitialText = {
-            runOnUiThread {
-                currentText.value = it
-                events.value = InitialText(it)
-                loading.value = false
-            }
+            currentText.value = it
+            loading.value = false
 
             // when an entity exists and a new text is given update the entity
             documentId.value?.let { documentId ->
@@ -107,6 +104,8 @@ class CodeEditorViewModel @Inject constructor(
                     text = it
                 )
             }
+
+            events.value = InitialText(it)
 
             // launch coroutine to continuously watch for changes
             watchTextChanges()
