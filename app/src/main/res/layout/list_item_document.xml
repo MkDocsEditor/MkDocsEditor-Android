@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <data>
 
@@ -18,64 +19,65 @@
 
     </data>
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="@{onclick}"
         android:onLongClick="@{onlongclick}"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="8dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="8dp">
+        <com.mikepenz.iconics.view.IconicsImageView
+            android:id="@+id/mainIcon"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_margin="4dp"
+            app:flow_horizontalAlign="center"
+            app:iiv_color="?attr/documentBackgroundColor"
+            app:iiv_icon="gmi-file"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:src="@drawable/ic_search_24px" />
 
-            <FrameLayout
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginStart="8dp"
-                android:layout_marginEnd="8dp">
+        <com.mikepenz.iconics.view.IconicsImageView
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_gravity="bottom|end"
+            android:visibility="@{item.offlineAvailableVisibility}"
+            app:iiv_color="?attr/documentOfflineAvailableColor"
+            app:iiv_icon="gmi-save"
+            app:layout_constraintBottom_toBottomOf="@id/mainIcon"
+            app:layout_constraintRight_toRightOf="@id/mainIcon" />
 
-                <com.mikepenz.iconics.view.IconicsImageView
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    app:iiv_color="?attr/documentBackgroundColor"
-                    app:iiv_icon="gmi-file" />
+        <TextView
+            android:id="@+id/title"
+            style="@style/sub_header_content_textview"
+            android:text="@{item.name}"
+            android:textStyle="bold"
+            app:layout_constraintLeft_toRightOf="@id/mainIcon"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="My Document" />
 
-                <com.mikepenz.iconics.view.IconicsImageView
-                    android:layout_width="12dp"
-                    android:layout_height="12dp"
-                    android:layout_gravity="bottom|end"
-                    android:visibility="@{item.offlineAvailableVisibility}"
-                    app:iiv_color="?attr/documentOfflineAvailableColor"
-                    app:iiv_icon="gmi-save" />
+        <TextView
+            android:id="@+id/size"
+            style="@style/sub_header_content_textview"
+            android:layout_marginTop="4dp"
+            android:text="@{item.formattedDocumentSize(context)}"
+            android:textSize="16sp"
+            app:layout_constraintLeft_toRightOf="@id/mainIcon"
+            app:layout_constraintTop_toBottomOf="@id/title"
+            tools:text="26 B" />
 
-            </FrameLayout>
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_marginTop="4dp"
+            android:background="?attr/listItem_dividerColor"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@id/title"
+            app:layout_constraintTop_toBottomOf="@id/size" />
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    style="@style/sub_header_content_textview"
-                    android:text="@{item.name}"
-                    android:textStyle="bold" />
-
-                <TextView
-                    style="@style/sub_header_content_textview"
-                    android:text="@{item.formattedDocumentSize(context)}"
-                    android:textSize="16sp" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-        <include layout="@layout/view_divider" />
-
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </layout>

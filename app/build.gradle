@@ -111,9 +111,6 @@ dependencies {
 
     // Hilt WorkManager integration
     implementation 'androidx.hilt:hilt-work:1.0.0'
-    // When using Kotlin.
-    // deprecated (?)
-    //kapt 'androidx.hilt:hilt-compiler:1.0.0'
 
     // SingleLiveEvent similar implementation
     implementation "com.github.hadilq.liveevent:liveevent:1.2.0"
@@ -123,7 +120,9 @@ dependencies {
     implementation "com.mikepenz:iconics-core:${iconicsVersion}@aar"
     //this adds all ui view widgets (IconicsButton, IconicsImageView, ...)
     implementation "com.mikepenz:iconics-views:${iconicsVersion}@aar"
-    implementation 'com.mikepenz:material-design-iconic-typeface:2.2.0.6-kotlin@aar'
+    // fonts
+    implementation 'com.mikepenz:google-material-typeface:4.0.0.1-kotlin@aar'
+    implementation 'com.mikepenz:material-design-iconic-typeface:2.2.0.8-kotlin@aar'
 
     // Android Architecture Components
     implementation "android.arch.navigation:navigation-fragment-ktx:1.0.0"
