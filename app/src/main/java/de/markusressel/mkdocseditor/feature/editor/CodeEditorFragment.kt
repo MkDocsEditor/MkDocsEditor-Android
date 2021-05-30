@@ -336,7 +336,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
             selectionStart?.let {
                 setEditorSelection(text.length, it, selectionEnd)
             }
-            selectionChangedListener = this
+            selectionChangedListener = this@CodeEditorFragment
         }
     }
 
