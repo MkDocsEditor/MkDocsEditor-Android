@@ -9,7 +9,6 @@ import androidx.annotation.CallSuper
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
-import androidx.lifecycle.Observer
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.callbacks.onDismiss
 import com.github.ajalt.timberkt.Timber
@@ -224,6 +223,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                         }
                     }
                 } else {
+                    // this is executed a second time, right after connecting to the server... why?
                     restoreEditorState(entity = entity)
                 }
             }
@@ -446,32 +446,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
             panY = positioningPercentage.y
         )
     }
-
-    private val offlineModeObserver = Observer<Boolean> { enabled ->
-        viewModel.apply {
-            if (enabled) {
-                disconnect(reason = "Offline mode was activated")
-                loadTextFromPersistence()
-            } else {
-                reconnectToServer()
-            }
-        }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        viewModel.offlineModeManager.isEnabled.observe(viewLifecycleOwner, offlineModeObserver)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        viewModel.offlineModeManager.isEnabled.removeObserver(offlineModeObserver)
-    }
-
-    //    @OnLifecycleEvent(Lifecycle.Event.ON_START)
-//    protected fun onLifeCycleStart() {
-//        offlineModeManager.isEnabled.observe(viewLifecycleOwner, offlineModeObserver)
-//    }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
     protected fun onLifeCyclePause() {

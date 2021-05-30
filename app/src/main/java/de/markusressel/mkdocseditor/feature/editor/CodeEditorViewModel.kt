@@ -21,6 +21,8 @@ import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
@@ -45,25 +47,21 @@ class CodeEditorViewModel @Inject constructor(
     /**
      * Indicates whether the edit mode can be activated or not
      */
-    val editable = MediatorLiveData<Boolean>().apply {
-        addSource(offlineModeManager.isEnabled) { value ->
-            setValue(value.not())
-        }
-    }
+    val editable = offlineModeManager.isEnabled.mapLatest {
+        it.not() && documentSyncManager.isConnected
+    }.asLiveData()
 
     /**
      * Indicates whether the CodeEditor is in "edit" mode or not
      */
     val editModeActive = MutableLiveData(false)
 
-    val offlineModeBannerVisibility = MediatorLiveData<Int>().apply {
-        addSource(offlineModeManager.isEnabled) { value ->
-            when (value) {
-                true -> setValue(View.VISIBLE)
-                else -> setValue(View.GONE)
-            }
+    val offlineModeBannerVisibility = offlineModeManager.isEnabled.mapLatest {
+        when (it) {
+            true -> View.VISIBLE
+            else -> View.GONE
         }
-    }
+    }.asLiveData()
 
     val loading = MutableLiveData(true)
 
@@ -117,8 +115,22 @@ class CodeEditorViewModel @Inject constructor(
         documentEntity.observeForever {
             when (it) {
                 is Success -> {
-                    reconnectToServer()
+                    if (offlineModeManager.isEnabled().not()) {
+                        reconnectToServer()
+                    }
                 }
+            }
+        }
+
+        offlineModeManager.isEnabled.onEach { enabled ->
+            when (enabled) {
+                true -> disconnect("Offline mode activated")
+            }
+        }
+
+        editable.observeForever {
+            if (editModeActive.value == true) {
+                editModeActive.value = false
             }
         }
     }
@@ -161,7 +173,7 @@ class CodeEditorViewModel @Inject constructor(
     /**
      * Disconnects from the server (if necessary) and tries to reestablish a connection
      */
-    fun reconnectToServer() {
+    private fun reconnectToServer() {
         loading.value = true
         if (documentSyncManager.isConnected) {
             documentSyncManager.disconnect(1000, reason = "Editor want's to refresh connection")
@@ -176,7 +188,6 @@ class CodeEditorViewModel @Inject constructor(
      * @param throwable an (optional) exception that is causing the disconnect
      */
     fun disconnect(reason: String = "None", throwable: Throwable? = null) {
-        editable.value = false
         editModeActive.value = false
 
         documentSyncManager.disconnect(1000, reason)
