@@ -48,7 +48,7 @@ class CodeEditorViewModel @Inject constructor(
      * Indicates whether the edit mode can be activated or not
      */
     val editable = offlineModeManager.isEnabled.mapLatest {
-        it.not() && documentSyncManager.isConnected
+        it.not()
     }.asLiveData()
 
     /**
