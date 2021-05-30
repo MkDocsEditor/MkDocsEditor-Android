@@ -19,6 +19,7 @@ import de.markusressel.mkdocseditor.util.Resource.Success
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.*
@@ -132,10 +133,12 @@ class CodeEditorViewModel @Inject constructor(
                         documentSyncManager.sync()
                         delay(syncInterval)
                     }
+                } catch (ex: CancellationException) {
+                    Timber.d { "Stopped watching text changes" }
+                    disconnect("Stopped")
                 } catch (ex: Exception) {
                     Timber.e(ex)
-                    disconnect("Error in client sync code")
-                    events.postValue(Error(throwable = ex))
+                    disconnect(throwable = ex)
                 }
             } catch (ex: Exception) {
                 Timber.e(ex)
@@ -166,12 +169,18 @@ class CodeEditorViewModel @Inject constructor(
         documentSyncManager.connect()
     }
 
-    fun disconnect(reason: String = "None") {
+    /**
+     * Disconnect from the server
+     *
+     * @param reason a textual description of the reasoning behind the disconnect
+     * @param throwable an (optional) exception that is causing the disconnect
+     */
+    fun disconnect(reason: String = "None", throwable: Throwable? = null) {
         editable.value = false
         editModeActive.value = false
 
         documentSyncManager.disconnect(1000, reason)
-        events.value = ConnectionStatus(connected = false)
+        events.value = ConnectionStatus(connected = false, throwable = throwable)
     }
 
     private fun updateDocumentContentInCache(documentId: String, text: String) {

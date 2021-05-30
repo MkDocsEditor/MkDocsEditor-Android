@@ -224,7 +224,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                         }
                     }
                 } else {
-                    // val documentEntity = entities.first()
                     restoreEditorState(entity = entity)
                 }
             }
@@ -239,8 +238,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                                 codeEditorLayout.snack(R.string.connected, Snackbar.LENGTH_SHORT)
                             }
                         } else {
-                            saveEditorState()
-
                             if (event.throwable != null) {
                                 Timber.e(event.throwable) { "Websocket error code: ${event.errorCode}" }
                                 noConnectionSnackbar = codeEditorLayout.snack(
