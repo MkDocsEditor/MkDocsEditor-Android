@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-parcelize'
 apply plugin: 'kotlin-kapt'
-apply plugin: 'androidx.navigation.safeargs'
+apply plugin: 'androidx.navigation.safeargs.kotlin'
 apply plugin: 'dagger.hilt.android.plugin'
 
 android {
@@ -107,7 +107,7 @@ dependencies {
 
     // Hilt (Dagger wrapper)
     implementation "com.google.dagger:hilt-android:$hiltVersion"
-    kapt "com.google.dagger:hilt-android-compiler:$hiltVersion"
+    kapt "com.google.dagger:hilt-compiler:$hiltVersion"
 
     // Hilt WorkManager integration
     implementation 'androidx.hilt:hilt-work:1.0.0'
@@ -125,8 +125,8 @@ dependencies {
     implementation 'com.mikepenz:material-design-iconic-typeface:2.2.0.8-kotlin@aar'
 
     // Android Architecture Components
-    implementation "android.arch.navigation:navigation-fragment-ktx:1.0.0"
-    implementation "android.arch.navigation:navigation-ui-ktx:1.0.0"
+    implementation "androidx.navigation:navigation-fragment-ktx:2.3.5"
+    implementation "androidx.navigation:navigation-ui-ktx:2.3.5"
 
     // Android KTX
     implementation "androidx.core:core-ktx:$aacAndroidKtxVersion"
@@ -191,14 +191,14 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test:runner:1.4.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
-    implementation 'android.arch.navigation:navigation-fragment:1.0.0'
+    implementation 'androidx.navigation:navigation-fragment:2.3.5'
 
     // Hilt instrumentation tests
     androidTestImplementation "com.google.dagger:hilt-android-testing:$hiltVersion"
-    kaptAndroidTest "com.google.dagger:hilt-android-compiler:$hiltVersion"
+    kaptAndroidTest "com.google.dagger:hilt-compiler:$hiltVersion"
     // Hilt local unit tests
     testImplementation "com.google.dagger:hilt-android-testing:$hiltVersion"
-    kaptTest "com.google.dagger:hilt-android-compiler:$hiltVersion"
+    kaptTest "com.google.dagger:hilt-compiler:$hiltVersion"
 }
 
 configurations.all() {

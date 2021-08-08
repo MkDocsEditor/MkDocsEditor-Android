@@ -48,13 +48,13 @@ dependencies {
 
     // Hilt (Dagger wrapper)
     implementation "com.google.dagger:hilt-android:$hiltVersion"
-    kapt "com.google.dagger:hilt-android-compiler:$hiltVersion"
+    kapt "com.google.dagger:hilt-compiler:$hiltVersion"
     // For instrumentation tests
     androidTestImplementation  "com.google.dagger:hilt-android-testing:$hiltVersion"
-    kaptAndroidTest "com.google.dagger:hilt-android-compiler:$hiltVersion"
+    kaptAndroidTest "com.google.dagger:hilt-compiler:$hiltVersion"
     // For local unit tests
     testImplementation "com.google.dagger:hilt-android-testing:$hiltVersion"
-    kaptTest "com.google.dagger:hilt-android-compiler:$hiltVersion"
+    kaptTest "com.google.dagger:hilt-compiler:$hiltVersion"
 
     // TODO: why is the gson dependency in this module?
     implementation "com.google.code.gson:gson:${rootProject.ext.gsonVersion}"

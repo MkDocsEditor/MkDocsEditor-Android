@@ -1,7 +1,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
     ext {
-        kotlin_version = '1.5.20'
+        kotlin_version = '1.5.21'
         gradle_plugin_version = '7.0.0'
 
         minSdkVersion = 22
@@ -19,16 +19,16 @@ buildscript {
 
         javaxAnnotationVersion = "10.0-b28"
         hiltVersion = "2.38.1"
-        aboutlibrariesVersion = "8.8.5"
-        materialdrawerVersion = "8.4.0"
-        iconicsVersion = "5.2.8"
+        aboutlibrariesVersion = "8.9.1"
+        materialdrawerVersion = "8.4.2"
+        iconicsVersion = "5.3.0"
 
         timberKtVersion = "1.5.1"
 
-        gsonVersion = "2.8.6"
+        gsonVersion = "2.8.7"
         kotsonVersion = "2.5.0"
 
-        epoxyVersion = "4.6.1"
+        epoxyVersion = "4.6.2"
 
         objectboxVersion = "2.9.1"
 
