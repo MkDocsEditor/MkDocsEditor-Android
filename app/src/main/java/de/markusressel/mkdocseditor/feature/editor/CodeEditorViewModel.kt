@@ -3,8 +3,13 @@ package de.markusressel.mkdocseditor.feature.editor
 import android.graphics.PointF
 import android.view.View
 import androidx.annotation.UiThread
-import androidx.lifecycle.*
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.Transformations.switchMap
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.runOnUiThread
@@ -119,12 +124,14 @@ class CodeEditorViewModel @Inject constructor(
                         reconnectToServer()
                     }
                 }
+                else -> {}
             }
         }
 
         offlineModeManager.isEnabled.onEach { enabled ->
             when (enabled) {
                 true -> disconnect("Offline mode activated")
+                else -> {}
             }
         }
 

@@ -3,7 +3,12 @@ package de.markusressel.mkdocseditor.feature.browser
 import android.content.Context
 import android.os.Bundle
 import android.text.InputType
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
@@ -31,13 +36,13 @@ import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
 import de.markusressel.mkdocseditor.extensions.common.android.context
+import de.markusressel.mkdocseditor.feature.browser.FileBrowserViewModel.Event.*
 import de.markusressel.mkdocseditor.listItemDocument
 import de.markusressel.mkdocseditor.listItemResource
 import de.markusressel.mkdocseditor.listItemSection
-import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.ui.fragment.base.ListFragmentBase
-import de.markusressel.mkdocseditor.feature.browser.FileBrowserViewModel.Event.*
+import de.markusressel.mkdocseditor.util.Resource
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import java.util.*
@@ -368,11 +373,12 @@ class FileBrowserFragment : ListFragmentBase() {
     private fun openDocumentEditor(documentId: String) {
         Timber.d { "Opening Document '$documentId'" }
 
-        navController.navigate(
-            FileBrowserFragmentDirections.actionFileBrowserPageToCodeEditorPage(
-                documentId
-            )
-        )
+        // TODO: safeArgs are currently broken :(
+        // navController.navigate(
+        // FileBrowserFragmentDirections.actionFileBrowserPageToCodeEditorPage(
+        //     documentId
+        // )
+        // )
     }
 
     private fun openResourceDetailPage(resource: ResourceEntity) {

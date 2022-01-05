@@ -39,15 +39,16 @@ android {
 
 dependencies {
     // moshi
-    implementation "com.squareup.moshi:moshi:1.12.0"
-    implementation "com.squareup.moshi:moshi-kotlin:1.12.0"
-    kapt "com.squareup.moshi:moshi-kotlin-codegen:1.12.0"
-    implementation "com.squareup.moshi:moshi-adapters:1.12.0"
+    def moshiVersion = "1.13.0"
+    implementation "com.squareup.moshi:moshi:$moshiVersion"
+    implementation "com.squareup.moshi:moshi-kotlin:$moshiVersion"
+    kapt "com.squareup.moshi:moshi-kotlin-codegen:$moshiVersion"
+    implementation "com.squareup.moshi:moshi-adapters:$moshiVersion"
 
     //for JVM
     api "com.github.kittinunf.fuel:fuel:${rootProject.ext.fuelVersion}"
     //for Kotlin Coroutines
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.3"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2"
     api "com.github.kittinunf.fuel:fuel-coroutines:${rootProject.ext.fuelVersion}"
     //for moshi support
     implementation "com.github.kittinunf.fuel:fuel-moshi:${rootProject.ext.fuelVersion}"
@@ -55,23 +56,24 @@ dependencies {
     implementation "com.github.kittinunf.fuel:fuel-android:${rootProject.ext.fuelVersion}"
 
     // okhttp (for websockets)
-    implementation 'com.squareup.okhttp3:okhttp:4.9.1'
+    implementation 'com.squareup.okhttp3:okhttp:4.9.3'
 
-    api("com.github.markusressel.commons:commons_core:master-SNAPSHOT") {
+    def commonsVersion = "master-SNAPSHOT"
+    api("com.github.markusressel.commons:commons_core:$commonsVersion") {
         changing = true
     }
-    api("com.github.markusressel.commons:commons_logging:master-SNAPSHOT") {
+    api("com.github.markusressel.commons:commons_logging:$commonsVersion") {
         changing = true
     }
-    api("com.github.markusressel.commons:commons_android_core:master-SNAPSHOT") {
+    api("com.github.markusressel.commons:commons_android_core:$commonsVersion") {
         changing = true
     }
-    api("com.github.markusressel.commons:commons_android_material:master-SNAPSHOT") {
+    api("com.github.markusressel.commons:commons_android_material:$commonsVersion") {
         changing = true
     }
 
     // Logging
-    api 'com.jakewharton.timber:timber:4.7.1'
+    api 'com.jakewharton.timber:timber:5.0.1'
     api "com.github.ajalt:timberkt:${rootProject.ext.timberKtVersion}"
 
 //    testImplementation 'junit:junit:4.12'
