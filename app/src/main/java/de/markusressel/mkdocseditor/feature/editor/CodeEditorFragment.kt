@@ -4,7 +4,13 @@ import android.content.Context
 import android.graphics.Matrix
 import android.graphics.PointF
 import android.os.Bundle
-import android.view.*
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import androidx.annotation.CallSuper
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.viewModels
@@ -148,8 +154,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), DefaultLifecycleObserver
     /**
      * Restores the editor state from persistence
      *
-     * @param text the new text to use, or null to keep [currentText]
-     * @param editable when true the editor is editable, otherwise it is not
+     * @param text the new text to use, or null to keep the current text
      */
     private fun restoreEditorState(
         entity: DocumentEntity? = null,
@@ -163,10 +168,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), DefaultLifecycleObserver
                 // restore values from cache
                 setEditorText(content.text, content.selection)
             }
+
+            val absolutePosition = computeAbsolutePosition(PointF(content.panX, content.panY))
             codeEditorLayout.codeEditorView.moveTo(
                 content.zoomLevel,
-                content.panX,
-                content.panY,
+                absolutePosition.x,
+                absolutePosition.y,
                 animate = false
             )
         } else {
@@ -226,7 +233,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), DefaultLifecycleObserver
                         }
                     }
                 } else {
-                    // this is executed a second time, right after connecting to the server... why?
                     restoreEditorState(entity = entity)
                 }
             }
