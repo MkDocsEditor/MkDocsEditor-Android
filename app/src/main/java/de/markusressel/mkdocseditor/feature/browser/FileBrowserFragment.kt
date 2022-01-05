@@ -12,8 +12,10 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
+import androidx.core.os.bundleOf
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.asLiveData
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.WhichButton
 import com.afollestad.materialdialogs.actions.setActionButtonEnabled
@@ -89,7 +91,7 @@ class FileBrowserFragment : ListFragmentBase() {
         savedInstanceState: Bundle?
     ): View? {
         // search
-        viewModel.currentSearchResults.observe(viewLifecycleOwner) {
+        viewModel.currentSearchResults.asLiveData().observe(viewLifecycleOwner) {
             if (it.isEmpty()) {
                 showEmpty()
             } else {
@@ -106,9 +108,12 @@ class FileBrowserFragment : ListFragmentBase() {
         viewModel.currentSection.observe(viewLifecycleOwner) { resource ->
             val section = resource.data
 
+            if (resource is Resource.Error) {
+                context?.toast("Error: ${resource.error?.message}", Toast.LENGTH_LONG)
+            }
+
             if (resource is Resource.Loading && section == null) {
                 //showLoading()
-                return@observe
             } else {
                 //showContent()
             }
@@ -133,7 +138,7 @@ class FileBrowserFragment : ListFragmentBase() {
             }
         }
 
-        viewModel.currentSearchFilter.observe(viewLifecycleOwner) {
+        viewModel.currentSearchFilter.asLiveData().observe(viewLifecycleOwner) {
             searchView?.setQuery(it, false)
         }
         viewModel.isSearchExpanded.observe(viewLifecycleOwner) { isExpanded ->
@@ -379,6 +384,12 @@ class FileBrowserFragment : ListFragmentBase() {
         //     documentId
         // )
         // )
+
+        navController.navigate(
+            R.id.codeEditorPage, bundleOf(
+                "documentId" to documentId
+            )
+        )
     }
 
     private fun openResourceDetailPage(resource: ResourceEntity) {

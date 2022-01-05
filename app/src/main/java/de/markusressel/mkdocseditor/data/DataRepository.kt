@@ -4,8 +4,17 @@ import androidx.lifecycle.asFlow
 import androidx.paging.LivePagedListBuilder
 import androidx.paging.PagedList
 import com.github.ajalt.timberkt.Timber
-import de.markusressel.mkdocseditor.data.persistence.*
-import de.markusressel.mkdocseditor.data.persistence.entity.*
+import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
+import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
+import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity_
+import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.networkBoundResource
@@ -93,6 +102,7 @@ class DataRepository @Inject constructor(
                 },
                 failure = { error ->
                     Timber.e(error)
+                    throw error
                 }
             )
         },
@@ -189,6 +199,7 @@ class DataRepository @Inject constructor(
                 },
                 failure = { error ->
                     Timber.e(error)
+                    throw error
                 }
             )
         },

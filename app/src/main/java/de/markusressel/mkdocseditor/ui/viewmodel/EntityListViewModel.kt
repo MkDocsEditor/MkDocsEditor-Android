@@ -1,7 +1,7 @@
 package de.markusressel.mkdocseditor.ui.viewmodel
 
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
  * Base class for implementing a ViewModel for item lists
@@ -9,10 +9,10 @@ import androidx.lifecycle.ViewModel
 abstract class EntityListViewModel : ViewModel() {
 
     // TODO: use savedState
-    val currentSearchFilter = MutableLiveData<String>()
+    val currentSearchFilter = MutableStateFlow("")
 
     // TODO: save in state
-    val lastScrollPosition = MutableLiveData(0)
+    val lastScrollPosition = MutableStateFlow(0)
 
     /**
      * Override this if you want to use a different page size

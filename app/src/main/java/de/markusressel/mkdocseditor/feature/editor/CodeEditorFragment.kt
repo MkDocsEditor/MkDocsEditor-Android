@@ -8,7 +8,8 @@ import android.view.*
 import androidx.annotation.CallSuper
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.*
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.callbacks.onDismiss
 import com.github.ajalt.timberkt.Timber
@@ -40,7 +41,8 @@ import javax.inject.Inject
  * Created by Markus on 07.01.2018.
  */
 @AndroidEntryPoint
-class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener {
+class CodeEditorFragment : DaggerSupportFragmentBase(), DefaultLifecycleObserver,
+    SelectionChangedListener {
 
     @Inject
     lateinit var chromeCustomTabManager: ChromeCustomTabManager
@@ -195,6 +197,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
                 if (resource is Resource.Error) {
                     Timber.e(resource.error)
+                    // TODO: fallback to offline mode, if available
                     MaterialDialog(context()).show {
                         title(R.string.error)
                         message(text = resource.error?.localizedMessage ?: "Unknown error")
@@ -447,14 +450,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         )
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-    protected fun onLifeCyclePause() {
+    override fun onPause(owner: LifecycleOwner) {
         saveEditorState()
 //        offlineModeManager.isEnabled.removeObserver(offlineModeObserver)
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-    protected fun onLifeCycleStop() {
+    override fun onStop(owner: LifecycleOwner) {
         viewModel.disconnect(reason = "Editor was closed")
     }
 

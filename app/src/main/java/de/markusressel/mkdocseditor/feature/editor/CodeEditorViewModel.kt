@@ -35,7 +35,7 @@ import javax.inject.Inject
 @HiltViewModel
 class CodeEditorViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
-    val dataRepository: DataRepository,
+    private val dataRepository: DataRepository,
     val preferencesHolder: KutePreferencesHolder,
     val networkManager: NetworkManager,
     val offlineModeManager: OfflineModeManager,
@@ -43,7 +43,7 @@ class CodeEditorViewModel @Inject constructor(
 
     val events = MutableLiveData<CodeEditorEvent>()
 
-    val documentId = savedStateHandle.getLiveData<String>("documentId")
+    private val documentId = savedStateHandle.getLiveData<String>("documentId")
 
     val documentEntity: LiveData<Resource<DocumentEntity?>> = switchMap(documentId) { documentId ->
         dataRepository.getDocument(documentId).asLiveData()
@@ -113,7 +113,9 @@ class CodeEditorViewModel @Inject constructor(
 
             // launch coroutine to continuously watch for changes
             watchTextChanges()
-        }, onTextChanged = ::onTextChanged
+        },
+        onTextChanged = ::onTextChanged,
+        readOnly = editModeActive.value?.not() ?: true
     )
 
     init {
@@ -139,6 +141,10 @@ class CodeEditorViewModel @Inject constructor(
             if (editModeActive.value == true) {
                 editModeActive.value = false
             }
+        }
+
+        editModeActive.observeForever {
+            documentSyncManager.readOnly = it.not()
         }
     }
 
@@ -201,23 +207,21 @@ class CodeEditorViewModel @Inject constructor(
         events.value = ConnectionStatus(connected = false, throwable = throwable)
     }
 
-    private fun updateDocumentContentInCache(documentId: String, text: String) {
+    private fun updateDocumentContentInCache(documentId: String, text: String) =
         viewModelScope.launch {
             dataRepository.updateDocumentContentInCache(documentId, text)
         }
-    }
 
-    fun saveEditorState(selection: Int, panX: Float, panY: Float) {
-        viewModelScope.launch {
-            dataRepository.saveEditorState(
-                documentId.value!!,
-                currentText.value,
-                selection,
-                currentZoom.value!!,
-                panX,
-                panY
-            )
-        }
+
+    fun saveEditorState(selection: Int, panX: Float, panY: Float) = viewModelScope.launch {
+        dataRepository.saveEditorState(
+            documentId.value!!,
+            currentText.value,
+            selection,
+            currentZoom.value!!,
+            panX,
+            panY
+        )
     }
 
     fun onOpenInBrowserClicked(): Boolean {
