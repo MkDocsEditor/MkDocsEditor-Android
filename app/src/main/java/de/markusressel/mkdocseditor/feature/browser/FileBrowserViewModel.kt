@@ -17,6 +17,7 @@ import de.markusressel.mkdocseditor.ui.viewmodel.EntityListViewModel
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -50,12 +51,7 @@ class FileBrowserViewModel @Inject constructor(
         currentSearchFilter.combine(isSearching) { searchString, isSearching ->
             when {
                 isSearching -> dataRepository.find(searchString)
-                else -> {
-                    // TODO: this doesn't work because the fragment will show an "empty" screen
-                    //  after the flow is updated, so the "showTopLevel" call has to come from somewhere else
-                    showTopLevel()
-                    emptyList()
-                }
+                else -> emptyList()
             }
         }
 
@@ -68,6 +64,16 @@ class FileBrowserViewModel @Inject constructor(
 
     val openDocumentEditorEvent = LiveEvent<String>()
     val events = LiveEvent<Event>()
+
+    init {
+        viewModelScope.launch {
+            isSearching.collect {
+                if (it.not()) {
+                    showTopLevel()
+                }
+            }
+        }
+    }
 
     /**
      * Removes all items in the backstack
@@ -141,8 +147,8 @@ class FileBrowserViewModel @Inject constructor(
      * Show the top level preferences page
      */
     private fun showTopLevel() {
+        backstack.clear()
         currentSectionId.value = ROOT_SECTION_ID
-        openSection(ROOT_SECTION_ID)
     }
 
     fun createNewSection(sectionName: String) = viewModelScope.launch {
