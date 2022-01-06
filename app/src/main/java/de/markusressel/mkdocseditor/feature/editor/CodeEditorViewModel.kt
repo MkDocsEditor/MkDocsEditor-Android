@@ -26,6 +26,8 @@ import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -49,12 +51,15 @@ class CodeEditorViewModel @Inject constructor(
         dataRepository.getDocument(documentId).asLiveData()
     }
 
+    val connectionStatus = MutableStateFlow<ConnectionStatus?>(null)
+
     /**
      * Indicates whether the edit mode can be activated or not
      */
-    val editable = offlineModeManager.isEnabled.mapLatest {
-        it.not()
-    }.asLiveData()
+    val editable =
+        offlineModeManager.isEnabled.combine(connectionStatus) { offlineModeEnabled, connectionStatus ->
+            offlineModeEnabled.not() && (connectionStatus?.connected ?: false)
+        }
 
     /**
      * Indicates whether the CodeEditor is in "edit" mode or not
@@ -90,11 +95,9 @@ class CodeEditorViewModel @Inject constructor(
         },
         onConnectionStatusChanged = { connected, errorCode, throwable ->
             runOnUiThread {
-                events.value = ConnectionStatus(connected, errorCode, throwable)
-                if (connected) {
-                    editModeActive.value =
-                        preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue
-                }
+                val status = ConnectionStatus(connected, errorCode, throwable)
+                connectionStatus.value = status
+                events.value = status
             }
         },
         onInitialText = {
@@ -134,12 +137,6 @@ class CodeEditorViewModel @Inject constructor(
             when (enabled) {
                 true -> disconnect("Offline mode activated")
                 else -> {}
-            }
-        }
-
-        editable.observeForever {
-            if (editModeActive.value == true) {
-                editModeActive.value = false
             }
         }
 
@@ -266,6 +263,10 @@ class CodeEditorViewModel @Inject constructor(
      */
     fun onRetryClicked() {
         reconnectToServer()
+    }
+
+    fun isCachedContentAvailable(): Boolean {
+        return documentEntity.value?.data?.content?.target?.text != null
     }
 
     sealed class CodeEditorEvent {

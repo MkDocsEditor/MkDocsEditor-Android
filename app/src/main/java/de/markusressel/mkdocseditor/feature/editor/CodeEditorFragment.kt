@@ -14,8 +14,8 @@ import android.view.ViewGroup
 import androidx.annotation.CallSuper
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.lifecycleScope
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.callbacks.onDismiss
 import com.github.ajalt.timberkt.Timber
@@ -40,6 +40,8 @@ import de.markusressel.mkdocseditor.ui.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch.Patch
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import java.util.*
 import javax.inject.Inject
 
@@ -47,7 +49,7 @@ import javax.inject.Inject
  * Created by Markus on 07.01.2018.
  */
 @AndroidEntryPoint
-class CodeEditorFragment : DaggerSupportFragmentBase(), DefaultLifecycleObserver,
+class CodeEditorFragment : DaggerSupportFragmentBase(),
     SelectionChangedListener {
 
     @Inject
@@ -87,7 +89,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), DefaultLifecycleObserver
                     activity?.invalidateOptionsMenu()
                 }
 
-                viewModel.editable.observe(viewLifecycleOwner) { editable ->
+                viewModel.editable.asLiveData().observe(viewLifecycleOwner) { editable ->
                     // set "edit" icon
                     menu?.findItem(R.id.edit)?.apply {
                         // invisible initially, until a server connection is established
@@ -187,6 +189,25 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), DefaultLifecycleObserver
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+
+            viewModel.editable.collect { editable ->
+                if (editable.not()) {
+                    if (viewModel.editModeActive.value == true) {
+                        viewModel.editModeActive.value = false
+                    }
+                }
+            }
+
+            viewModel.connectionStatus.combine(viewModel.editable) { status, editable ->
+                viewModel.editModeActive.value =
+                    (status?.connected ?: false)
+                            && editable
+                            && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue
+            }
+
+        }
+
         viewModel.apply {
             editModeActive.observe(viewLifecycleOwner) {
                 runOnUiThread {
@@ -206,15 +227,24 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), DefaultLifecycleObserver
 
                 if (resource is Resource.Error) {
                     Timber.e(resource.error)
-                    // TODO: fallback to offline mode, if available
-                    MaterialDialog(context()).show {
-                        title(R.string.error)
-                        message(text = resource.error?.localizedMessage ?: "Unknown error")
-                        negativeButton(android.R.string.ok, click = {
-                            it.dismiss()
-                        })
-                        onDismiss {
-                            navController.navigateUp()
+                    if (viewModel.isCachedContentAvailable()) {
+                        // fallback to offline mode, if available
+                        events.postValue(Error(resource.error?.message))
+                    } else {
+                        MaterialDialog(context()).show {
+                            title(R.string.error)
+                            message(
+                                text = getString(
+                                    R.string.error_and_no_offline_version,
+                                    resource.error?.localizedMessage
+                                )
+                            )
+                            negativeButton(android.R.string.ok, click = {
+                                it.dismiss()
+                            })
+                            onDismiss {
+                                navController.navigateUp()
+                            }
                         }
                     }
                     return@observe
@@ -243,6 +273,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), DefaultLifecycleObserver
                 when (event) {
                     is ConnectionStatus -> {
                         noConnectionSnackbar?.dismiss()
+                        loading.value = false
 
                         if (event.connected) {
                             runOnUiThread {
@@ -458,13 +489,19 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), DefaultLifecycleObserver
         )
     }
 
-    override fun onPause(owner: LifecycleOwner) {
+    override fun onPause() {
         saveEditorState()
-//        offlineModeManager.isEnabled.removeObserver(offlineModeObserver)
+        super.onPause()
     }
 
-    override fun onStop(owner: LifecycleOwner) {
+    override fun onStop() {
         viewModel.disconnect(reason = "Editor was closed")
+        super.onStop()
+    }
+
+    override fun onDestroy() {
+        noConnectionSnackbar?.dismiss()
+        super.onDestroy()
     }
 
 }
