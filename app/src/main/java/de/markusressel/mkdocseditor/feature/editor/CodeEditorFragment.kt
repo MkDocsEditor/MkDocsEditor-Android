@@ -4,11 +4,17 @@ import android.content.Context
 import android.graphics.Matrix
 import android.graphics.PointF
 import android.os.Bundle
-import android.view.*
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import androidx.annotation.CallSuper
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.*
+import androidx.lifecycle.asLiveData
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.callbacks.onDismiss
 import com.github.ajalt.timberkt.Timber
@@ -40,7 +46,8 @@ import javax.inject.Inject
  * Created by Markus on 07.01.2018.
  */
 @AndroidEntryPoint
-class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener {
+class CodeEditorFragment : DaggerSupportFragmentBase(),
+    SelectionChangedListener {
 
     @Inject
     lateinit var chromeCustomTabManager: ChromeCustomTabManager
@@ -79,7 +86,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                     activity?.invalidateOptionsMenu()
                 }
 
-                viewModel.editable.observe(viewLifecycleOwner) { editable ->
+                viewModel.editable.asLiveData().observe(viewLifecycleOwner) { editable ->
                     // set "edit" icon
                     menu?.findItem(R.id.edit)?.apply {
                         // invisible initially, until a server connection is established
@@ -146,8 +153,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
     /**
      * Restores the editor state from persistence
      *
-     * @param text the new text to use, or null to keep [currentText]
-     * @param editable when true the editor is editable, otherwise it is not
+     * @param text the new text to use, or null to keep the current text
      */
     private fun restoreEditorState(
         entity: DocumentEntity? = null,
@@ -161,14 +167,18 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 // restore values from cache
                 setEditorText(content.text, content.selection)
             }
+
+            val absolutePosition = computeAbsolutePosition(PointF(content.panX, content.panY))
             codeEditorLayout.codeEditorView.moveTo(
                 content.zoomLevel,
-                content.panX,
-                content.panY,
+                absolutePosition.x,
+                absolutePosition.y,
                 animate = false
             )
         } else {
-            codeEditorLayout.text = ""
+            if (text != null) {
+                setEditorText(text)
+            }
         }
     }
 
@@ -195,14 +205,24 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
 
                 if (resource is Resource.Error) {
                     Timber.e(resource.error)
-                    MaterialDialog(context()).show {
-                        title(R.string.error)
-                        message(text = resource.error?.localizedMessage ?: "Unknown error")
-                        negativeButton(android.R.string.ok, click = {
-                            it.dismiss()
-                        })
-                        onDismiss {
-                            navController.navigateUp()
+                    if (viewModel.isCachedContentAvailable()) {
+                        // fallback to offline mode, if available
+                        events.postValue(Error(resource.error?.message))
+                    } else {
+                        MaterialDialog(context()).show {
+                            title(R.string.error)
+                            message(
+                                text = getString(
+                                    R.string.error_and_no_offline_version,
+                                    resource.error?.localizedMessage
+                                )
+                            )
+                            negativeButton(android.R.string.ok, click = {
+                                it.dismiss()
+                            })
+                            onDismiss {
+                                navController.navigateUp()
+                            }
                         }
                     }
                     return@observe
@@ -223,7 +243,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                         }
                     }
                 } else {
-                    // this is executed a second time, right after connecting to the server... why?
                     restoreEditorState(entity = entity)
                 }
             }
@@ -232,6 +251,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                 when (event) {
                     is ConnectionStatus -> {
                         noConnectionSnackbar?.dismiss()
+                        loading.value = false
 
                         if (event.connected) {
                             runOnUiThread {
@@ -247,7 +267,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
                                     action = {
                                         viewModel.onRetryClicked()
                                     })
-                            } else {
+                            } else if (viewModel.offlineModeManager.isEnabled().not()) {
                                 noConnectionSnackbar = codeEditorLayout.snack(
                                     text = R.string.not_connected,
                                     duration = Snackbar.LENGTH_INDEFINITE,
@@ -447,15 +467,19 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), SelectionChangedListener
         )
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-    protected fun onLifeCyclePause() {
+    override fun onPause() {
         saveEditorState()
-//        offlineModeManager.isEnabled.removeObserver(offlineModeObserver)
+        super.onPause()
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-    protected fun onLifeCycleStop() {
+    override fun onStop() {
         viewModel.disconnect(reason = "Editor was closed")
+        super.onStop()
+    }
+
+    override fun onDestroy() {
+        noConnectionSnackbar?.dismiss()
+        super.onDestroy()
     }
 
 }

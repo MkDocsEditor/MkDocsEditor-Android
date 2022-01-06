@@ -28,7 +28,7 @@ class OfflineModeManager @Inject constructor(
     private val documentPersistenceManager: DocumentPersistenceManager
 ) {
 
-    var isEnabled = MutableStateFlow(
+    val isEnabled = MutableStateFlow(
         preferenceDataProvider.getValueUnsafe(R.string.offline_mode_key, false)
     )
 

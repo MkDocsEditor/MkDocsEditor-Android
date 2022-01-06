@@ -3,12 +3,20 @@ package de.markusressel.mkdocseditor.feature.browser
 import android.content.Context
 import android.os.Bundle
 import android.text.InputType
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
+import androidx.core.os.bundleOf
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.lifecycleScope
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.WhichButton
 import com.afollestad.materialdialogs.actions.setActionButtonEnabled
@@ -31,15 +39,16 @@ import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
 import de.markusressel.mkdocseditor.extensions.common.android.context
+import de.markusressel.mkdocseditor.feature.browser.FileBrowserViewModel.Event.*
 import de.markusressel.mkdocseditor.listItemDocument
 import de.markusressel.mkdocseditor.listItemResource
 import de.markusressel.mkdocseditor.listItemSection
-import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.ui.fragment.base.ListFragmentBase
-import de.markusressel.mkdocseditor.feature.browser.FileBrowserViewModel.Event.*
+import de.markusressel.mkdocseditor.util.Resource
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
+import kotlinx.coroutines.flow.collect
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -84,26 +93,31 @@ class FileBrowserFragment : ListFragmentBase() {
         savedInstanceState: Bundle?
     ): View? {
         // search
-        viewModel.currentSearchResults.observe(viewLifecycleOwner) {
-            if (it.isEmpty()) {
-                showEmpty()
-            } else {
-                hideEmpty()
+        lifecycleScope.launchWhenStarted {
+            viewModel.currentSearchResults.collect {
+                if (it.isEmpty()) {
+                    showEmpty()
+                } else {
+                    hideEmpty()
+                }
+                epoxyController.setData(
+                    it.filterByExpectedType(),
+                    it.filterByExpectedType(),
+                    it.filterByExpectedType()
+                )
             }
-            epoxyController.setData(
-                it.filterByExpectedType(),
-                it.filterByExpectedType(),
-                it.filterByExpectedType()
-            )
         }
 
         // normal navigation
         viewModel.currentSection.observe(viewLifecycleOwner) { resource ->
             val section = resource.data
 
+            if (resource is Resource.Error) {
+                context?.toast("Error: ${resource.error?.message}", Toast.LENGTH_LONG)
+            }
+
             if (resource is Resource.Loading && section == null) {
                 //showLoading()
-                return@observe
             } else {
                 //showContent()
             }
@@ -128,7 +142,7 @@ class FileBrowserFragment : ListFragmentBase() {
             }
         }
 
-        viewModel.currentSearchFilter.observe(viewLifecycleOwner) {
+        viewModel.currentSearchFilter.asLiveData().observe(viewLifecycleOwner) {
             searchView?.setQuery(it, false)
         }
         viewModel.isSearchExpanded.observe(viewLifecycleOwner) { isExpanded ->
@@ -368,9 +382,16 @@ class FileBrowserFragment : ListFragmentBase() {
     private fun openDocumentEditor(documentId: String) {
         Timber.d { "Opening Document '$documentId'" }
 
+        // TODO: safeArgs are currently broken :(
+        // navController.navigate(
+        // FileBrowserFragmentDirections.actionFileBrowserPageToCodeEditorPage(
+        //     documentId
+        // )
+        // )
+
         navController.navigate(
-            FileBrowserFragmentDirections.actionFileBrowserPageToCodeEditorPage(
-                documentId
+            R.id.codeEditorPage, bundleOf(
+                "documentId" to documentId
             )
         )
     }

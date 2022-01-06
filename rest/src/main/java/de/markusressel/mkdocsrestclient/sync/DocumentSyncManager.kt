@@ -31,7 +31,8 @@ class DocumentSyncManager(
      * A function to get a full copy of the current text on this client.
      * This method is intended for internal use only.
      */
-    private val currentText: () -> String
+    private val currentText: () -> String,
+    var readOnly: Boolean = false,
 ) : WebsocketConnectionListener {
 
     val websocketUrl: String by lazy {
@@ -73,7 +74,12 @@ class DocumentSyncManager(
             return
         }
 
-        sendPatch()
+        // prevent client side changes by assuming a non-changed state
+        val newText = when {
+            readOnly -> clientShadow
+            else -> currentText()
+        }
+        sendPatch(newText = newText)
     }
 
     /**

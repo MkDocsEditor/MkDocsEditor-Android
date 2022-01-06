@@ -3,8 +3,13 @@ package de.markusressel.mkdocseditor.feature.editor
 import android.graphics.PointF
 import android.view.View
 import androidx.annotation.UiThread
-import androidx.lifecycle.*
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.Transformations.switchMap
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.runOnUiThread
@@ -21,8 +26,10 @@ import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapLatest
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
@@ -30,7 +37,7 @@ import javax.inject.Inject
 @HiltViewModel
 class CodeEditorViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
-    val dataRepository: DataRepository,
+    private val dataRepository: DataRepository,
     val preferencesHolder: KutePreferencesHolder,
     val networkManager: NetworkManager,
     val offlineModeManager: OfflineModeManager,
@@ -38,18 +45,21 @@ class CodeEditorViewModel @Inject constructor(
 
     val events = MutableLiveData<CodeEditorEvent>()
 
-    val documentId = savedStateHandle.getLiveData<String>("documentId")
+    private val documentId = savedStateHandle.getLiveData<String>("documentId")
 
     val documentEntity: LiveData<Resource<DocumentEntity?>> = switchMap(documentId) { documentId ->
         dataRepository.getDocument(documentId).asLiveData()
     }
 
+    private val connectionStatus = MutableStateFlow<ConnectionStatus?>(null)
+
     /**
      * Indicates whether the edit mode can be activated or not
      */
-    val editable = offlineModeManager.isEnabled.mapLatest {
-        it.not()
-    }.asLiveData()
+    val editable =
+        offlineModeManager.isEnabled.combine(connectionStatus) { offlineModeEnabled, connectionStatus ->
+            offlineModeEnabled.not() && (connectionStatus?.connected ?: false)
+        }
 
     /**
      * Indicates whether the CodeEditor is in "edit" mode or not
@@ -85,11 +95,9 @@ class CodeEditorViewModel @Inject constructor(
         },
         onConnectionStatusChanged = { connected, errorCode, throwable ->
             runOnUiThread {
-                events.value = ConnectionStatus(connected, errorCode, throwable)
-                if (connected) {
-                    editModeActive.value =
-                        preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue
-                }
+                val status = ConnectionStatus(connected, errorCode, throwable)
+                connectionStatus.value = status
+                events.value = status
             }
         },
         onInitialText = {
@@ -108,10 +116,54 @@ class CodeEditorViewModel @Inject constructor(
 
             // launch coroutine to continuously watch for changes
             watchTextChanges()
-        }, onTextChanged = ::onTextChanged
+        },
+        onTextChanged = ::onTextChanged,
+        readOnly = editModeActive.value?.not() ?: true
     )
 
     init {
+        viewModelScope.launch {
+            editable.collect { editable ->
+                if (editable.not()) {
+                    if (editModeActive.value == true) {
+                        editModeActive.value = false
+                    }
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            combine(
+                connectionStatus,
+                editable,
+                offlineModeManager.isEnabled
+            ) { status, editable, offlineModeEnabled ->
+                (status?.connected ?: false)
+                        && editable
+                        && offlineModeEnabled.not()
+                        && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue
+            }.collect {
+                editModeActive.value = it
+            }
+        }
+
+        viewModelScope.launch {
+            offlineModeManager.isEnabled.collect { enabled ->
+                when {
+                    enabled -> disconnect("Offline mode activated")
+                    else -> {
+                        if (preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.not()) {
+                            events.value = ConnectionStatus(
+                                connected = connectionStatus.value?.connected ?: false
+                            )
+                        } else {
+                            reconnectToServer()
+                        }
+                    }
+                }
+            }
+        }
+
         documentEntity.observeForever {
             when (it) {
                 is Success -> {
@@ -119,19 +171,12 @@ class CodeEditorViewModel @Inject constructor(
                         reconnectToServer()
                     }
                 }
+                else -> {}
             }
         }
 
-        offlineModeManager.isEnabled.onEach { enabled ->
-            when (enabled) {
-                true -> disconnect("Offline mode activated")
-            }
-        }
-
-        editable.observeForever {
-            if (editModeActive.value == true) {
-                editModeActive.value = false
-            }
+        editModeActive.observeForever {
+            documentSyncManager.readOnly = it.not()
         }
     }
 
@@ -194,23 +239,21 @@ class CodeEditorViewModel @Inject constructor(
         events.value = ConnectionStatus(connected = false, throwable = throwable)
     }
 
-    private fun updateDocumentContentInCache(documentId: String, text: String) {
+    private fun updateDocumentContentInCache(documentId: String, text: String) =
         viewModelScope.launch {
             dataRepository.updateDocumentContentInCache(documentId, text)
         }
-    }
 
-    fun saveEditorState(selection: Int, panX: Float, panY: Float) {
-        viewModelScope.launch {
-            dataRepository.saveEditorState(
-                documentId.value!!,
-                currentText.value,
-                selection,
-                currentZoom.value!!,
-                panX,
-                panY
-            )
-        }
+
+    fun saveEditorState(selection: Int, panX: Float, panY: Float) = viewModelScope.launch {
+        dataRepository.saveEditorState(
+            documentId.value!!,
+            currentText.value,
+            selection,
+            currentZoom.value!!,
+            panX,
+            panY
+        )
     }
 
     fun onOpenInBrowserClicked(): Boolean {
@@ -255,6 +298,10 @@ class CodeEditorViewModel @Inject constructor(
      */
     fun onRetryClicked() {
         reconnectToServer()
+    }
+
+    fun isCachedContentAvailable(): Boolean {
+        return documentEntity.value?.data?.content?.target?.text != null
     }
 
     sealed class CodeEditorEvent {

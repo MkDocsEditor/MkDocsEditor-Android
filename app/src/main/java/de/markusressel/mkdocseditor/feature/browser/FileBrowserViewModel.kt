@@ -1,21 +1,26 @@
 package de.markusressel.mkdocseditor.feature.browser
 
-import androidx.lifecycle.*
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.Transformations.switchMap
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
 import com.hadilq.liveevent.LiveEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
-import de.markusressel.commons.android.core.doAsync
-import de.markusressel.commons.android.core.runOnUiThread
-import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
+import de.markusressel.mkdocseditor.data.DataRepository
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.data.DataRepository
-import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.feature.browser.FileBrowserViewModel.Event.*
 import de.markusressel.mkdocseditor.ui.viewmodel.EntityListViewModel
+import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
@@ -38,9 +43,17 @@ class FileBrowserViewModel @Inject constructor(
         }
 
     val isSearchExpanded = MutableLiveData(false)
+    private val isSearching = currentSearchFilter.map {
+        it.isNotBlank()
+    }
 
-    // TODO: this should be a combination of searchString and all available IdentifiableListItems
-    val currentSearchResults = MutableLiveData<List<IdentifiableListItem>>()
+    val currentSearchResults =
+        currentSearchFilter.combine(isSearching) { searchString, isSearching ->
+            when {
+                isSearching -> dataRepository.find(searchString)
+                else -> emptyList()
+            }
+        }
 
     private val currentSectionId = MutableLiveData(ROOT_SECTION_ID)
 
@@ -53,17 +66,11 @@ class FileBrowserViewModel @Inject constructor(
     val events = LiveEvent<Event>()
 
     init {
-        // TODO: baaaad
-        currentSearchFilter.observeForever { searchString ->
-            if (isSearching()) {
-                doAsync {
-                    val data = dataRepository.find(searchString)
-                    runOnUiThread {
-                        currentSearchResults.value = data
-                    }
+        viewModelScope.launch {
+            isSearching.collect {
+                if (it.not()) {
+                    showTopLevel()
                 }
-            } else {
-                showTopLevel()
             }
         }
     }
@@ -81,10 +88,16 @@ class FileBrowserViewModel @Inject constructor(
      * @param sectionId the section to open
      * @param addToBackstack true, when the section should be added to backstack, false otherwise
      */
-    internal fun openSection(sectionId: String, addToBackstack: Boolean = true) {
-        if (!isSearching() && currentSectionId.value == sectionId) {
+    internal fun openSection(
+        sectionId: String,
+        addToBackstack: Boolean = true,
+    ) = viewModelScope.launch {
+        if (
+            isSearching.stateIn(viewModelScope).value.not()
+            && currentSectionId.value == sectionId
+        ) {
             // ignore if no search is currently active and this section is already set
-            return
+            return@launch
         }
 
         Timber.d { "Opening Section '${sectionId}'" }
@@ -112,13 +125,6 @@ class FileBrowserViewModel @Inject constructor(
     }
 
     /**
-     * @return true if a search is currently open, false otherwise
-     */
-    private fun isSearching(): Boolean {
-        return currentSearchFilter.value?.isNotBlank() ?: false
-    }
-
-    /**
      * Set the search string
      *
      * @return true if the value has changed, false otherwise
@@ -141,45 +147,37 @@ class FileBrowserViewModel @Inject constructor(
      * Show the top level preferences page
      */
     private fun showTopLevel() {
+        backstack.clear()
         currentSectionId.value = ROOT_SECTION_ID
-        openSection(ROOT_SECTION_ID)
     }
 
-    fun createNewSection(sectionName: String) {
-        viewModelScope.launch {
-            dataRepository.createNewSection(sectionName, currentSectionId.value!!)
-        }
+    fun createNewSection(sectionName: String) = viewModelScope.launch {
+        dataRepository.createNewSection(sectionName, currentSectionId.value!!)
     }
 
-    fun createNewDocument(documentName: String) {
-        viewModelScope.launch {
-            val name = if (documentName.isEmpty()) "New Document" else documentName
-            val newDocumentId = dataRepository.createNewDocument(name, currentSectionId.value!!)
+    fun createNewDocument(documentName: String) = viewModelScope.launch {
+        val name = if (documentName.isEmpty()) "New Document" else documentName
+        val newDocumentId = dataRepository.createNewDocument(name, currentSectionId.value!!)
 
-            reload()
+        reload()
 
-            // and open the editor right away
-            withContext(Dispatchers.Main) {
-                openDocumentEditorEvent.value = newDocumentId
-            }
+        // and open the editor right away
+        withContext(Dispatchers.Main) {
+            openDocumentEditorEvent.value = newDocumentId
         }
     }
 
     /**
      * Rename a document
      */
-    fun renameDocument(id: String, documentName: String) {
-        viewModelScope.launch {
-            restClient.renameDocument(id, documentName)
-            reload()
-        }
+    fun renameDocument(id: String, documentName: String) = viewModelScope.launch {
+        restClient.renameDocument(id, documentName)
+        reload()
     }
 
-    fun deleteDocument(id: String) {
-        viewModelScope.launch {
-            restClient.deleteDocument(id)
-            reload()
-        }
+    fun deleteDocument(id: String) = viewModelScope.launch {
+        restClient.deleteDocument(id)
+        reload()
     }
 
     private fun reload() {
