@@ -16,6 +16,7 @@ import androidx.core.os.bundleOf
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.asLiveData
+import androidx.lifecycle.lifecycleScope
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.WhichButton
 import com.afollestad.materialdialogs.actions.setActionButtonEnabled
@@ -47,6 +48,7 @@ import de.markusressel.mkdocseditor.ui.fragment.base.ListFragmentBase
 import de.markusressel.mkdocseditor.util.Resource
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
+import kotlinx.coroutines.flow.collect
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -91,17 +93,19 @@ class FileBrowserFragment : ListFragmentBase() {
         savedInstanceState: Bundle?
     ): View? {
         // search
-        viewModel.currentSearchResults.asLiveData().observe(viewLifecycleOwner) {
-            if (it.isEmpty()) {
-                showEmpty()
-            } else {
-                hideEmpty()
+        lifecycleScope.launchWhenStarted {
+            viewModel.currentSearchResults.collect {
+                if (it.isEmpty()) {
+                    showEmpty()
+                } else {
+                    hideEmpty()
+                }
+                epoxyController.setData(
+                    it.filterByExpectedType(),
+                    it.filterByExpectedType(),
+                    it.filterByExpectedType()
+                )
             }
-            epoxyController.setData(
-                it.filterByExpectedType(),
-                it.filterByExpectedType(),
-                it.filterByExpectedType()
-            )
         }
 
         // normal navigation

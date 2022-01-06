@@ -18,8 +18,8 @@ import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
@@ -86,7 +86,10 @@ class FileBrowserViewModel @Inject constructor(
         sectionId: String,
         addToBackstack: Boolean = true,
     ) = viewModelScope.launch {
-        if (!isSearching.last() && currentSectionId.value == sectionId) {
+        if (
+            isSearching.stateIn(viewModelScope).value.not()
+            && currentSectionId.value == sectionId
+        ) {
             // ignore if no search is currently active and this section is already set
             return@launch
         }
