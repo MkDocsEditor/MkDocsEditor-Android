@@ -15,7 +15,6 @@ import androidx.annotation.CallSuper
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.asLiveData
-import androidx.lifecycle.lifecycleScope
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.callbacks.onDismiss
 import com.github.ajalt.timberkt.Timber
@@ -40,8 +39,6 @@ import de.markusressel.mkdocseditor.ui.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch.Patch
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.combine
 import java.util.*
 import javax.inject.Inject
 
@@ -189,25 +186,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
-
-            viewModel.editable.collect { editable ->
-                if (editable.not()) {
-                    if (viewModel.editModeActive.value == true) {
-                        viewModel.editModeActive.value = false
-                    }
-                }
-            }
-
-            viewModel.connectionStatus.combine(viewModel.editable) { status, editable ->
-                viewModel.editModeActive.value =
-                    (status?.connected ?: false)
-                            && editable
-                            && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue
-            }
-
-        }
-
         viewModel.apply {
             editModeActive.observe(viewLifecycleOwner) {
                 runOnUiThread {
@@ -289,7 +267,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
                                     action = {
                                         viewModel.onRetryClicked()
                                     })
-                            } else {
+                            } else if (viewModel.offlineModeManager.isEnabled().not()) {
                                 noConnectionSnackbar = codeEditorLayout.snack(
                                     text = R.string.not_connected,
                                     duration = Snackbar.LENGTH_INDEFINITE,

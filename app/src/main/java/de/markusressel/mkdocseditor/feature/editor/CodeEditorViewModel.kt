@@ -27,9 +27,9 @@ import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapLatest
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
@@ -51,7 +51,7 @@ class CodeEditorViewModel @Inject constructor(
         dataRepository.getDocument(documentId).asLiveData()
     }
 
-    val connectionStatus = MutableStateFlow<ConnectionStatus?>(null)
+    private val connectionStatus = MutableStateFlow<ConnectionStatus?>(null)
 
     /**
      * Indicates whether the edit mode can be activated or not
@@ -122,6 +122,48 @@ class CodeEditorViewModel @Inject constructor(
     )
 
     init {
+        viewModelScope.launch {
+            editable.collect { editable ->
+                if (editable.not()) {
+                    if (editModeActive.value == true) {
+                        editModeActive.value = false
+                    }
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            combine(
+                connectionStatus,
+                editable,
+                offlineModeManager.isEnabled
+            ) { status, editable, offlineModeEnabled ->
+                (status?.connected ?: false)
+                        && editable
+                        && offlineModeEnabled.not()
+                        && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue
+            }.collect {
+                editModeActive.value = it
+            }
+        }
+
+        viewModelScope.launch {
+            offlineModeManager.isEnabled.collect { enabled ->
+                when {
+                    enabled -> disconnect("Offline mode activated")
+                    else -> {
+                        if (preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.not()) {
+                            events.value = ConnectionStatus(
+                                connected = connectionStatus.value?.connected ?: false
+                            )
+                        } else {
+                            reconnectToServer()
+                        }
+                    }
+                }
+            }
+        }
+
         documentEntity.observeForever {
             when (it) {
                 is Success -> {
@@ -129,13 +171,6 @@ class CodeEditorViewModel @Inject constructor(
                         reconnectToServer()
                     }
                 }
-                else -> {}
-            }
-        }
-
-        offlineModeManager.isEnabled.onEach { enabled ->
-            when (enabled) {
-                true -> disconnect("Offline mode activated")
                 else -> {}
             }
         }
