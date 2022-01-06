@@ -177,7 +177,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase(), DefaultLifecycleObserver
                 animate = false
             )
         } else {
-            codeEditorLayout.text = ""
+            if (text != null) {
+                setEditorText(text)
+            }
         }
     }
 
