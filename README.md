@@ -67,21 +67,24 @@ and voila your done! :smile:
 
 ## How to build
 
-Building this project should be straight forward. Just check out the
-repo and let Android Studio handle the rest.
+Building this project should be straight forward. Just check out the repo and let Android Studio
+handle the rest.
 
 ## Gradle
-Since this project uses a Gradle version >= 4.6 and the Android Gradle Plugin
-only supports "configuration on demand" on lower versions you have to
-manually disable it in your IntelliJ/Android Studio project settings.
-See this page for more info: https://stackoverflow.com/a/49994951/1941623
 
+Since this project uses a Gradle version >= 4.6 and the Android Gradle Plugin only supports "
+configuration on demand" on lower versions you have to manually disable it in your IntelliJ/Android
+Studio project settings. See this page for more info: https://stackoverflow.com/a/49994951/1941623
+
+## Connecting to the Host from the Emulator
+
+The emulator host PC can be accessed from inside the emulator via IP `10.0.2.2`.
 
 # Contributing
-GitHub is for social coding: if you want to write code, I encourage
-contributions through pull requests from forks of this repository.
-Create GitHub tickets for bugs and new features and comment on the ones
-that you are interested in.
+
+GitHub is for social coding: if you want to write code, I encourage contributions through pull
+requests from forks of this repository. Create GitHub tickets for bugs and new features and comment
+on the ones that you are interested in.
 
 # License
 
