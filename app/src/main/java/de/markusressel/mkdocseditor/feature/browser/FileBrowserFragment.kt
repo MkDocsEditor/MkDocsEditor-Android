@@ -3,12 +3,7 @@ package de.markusressel.mkdocseditor.feature.browser
 import android.content.Context
 import android.os.Bundle
 import android.text.InputType
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.Toast
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
@@ -48,7 +43,6 @@ import de.markusressel.mkdocseditor.ui.fragment.base.ListFragmentBase
 import de.markusressel.mkdocseditor.util.Resource
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
-import kotlinx.coroutines.flow.collect
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -277,7 +271,7 @@ class FileBrowserFragment : ListFragmentBase() {
                 R.drawable.ic_search_24px
             )
             setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
-                override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
+                override fun onMenuItemActionExpand(item: MenuItem): Boolean {
                     val oldValue = viewModel.isSearchExpanded.value
                     if (oldValue == null || !oldValue) {
                         viewModel.isSearchExpanded.value = true
@@ -285,7 +279,7 @@ class FileBrowserFragment : ListFragmentBase() {
                     return true
                 }
 
-                override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
+                override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
                     val oldValue = viewModel.isSearchExpanded.value
                     if (oldValue == null || oldValue) {
                         viewModel.isSearchExpanded.value = false
