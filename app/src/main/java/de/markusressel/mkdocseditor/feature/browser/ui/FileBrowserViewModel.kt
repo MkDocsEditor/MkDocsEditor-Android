@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.feature.browser
+package de.markusressel.mkdocseditor.feature.browser.ui
 
 import androidx.lifecycle.*
 import androidx.lifecycle.Transformations.switchMap
@@ -6,15 +6,15 @@ import com.github.ajalt.timberkt.Timber
 import com.hadilq.liveevent.LiveEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.data.DataRepository
+import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
+import de.markusressel.mkdocseditor.feature.browser.SectionBackstackItem
 import de.markusressel.mkdocseditor.ui.viewmodel.EntityListViewModel
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
@@ -27,6 +27,10 @@ class FileBrowserViewModel @Inject constructor(
     private val restClient: MkDocsRestClient,
 ) : EntityListViewModel() {
 
+    // TODO: use savedState
+    private val _uiState = MutableStateFlow(UiState())
+    internal val uiState = _uiState.asStateFlow()
+
     private val backstack: Stack<SectionBackstackItem> = Stack()
         get() {
             if (field.size == 0) {
@@ -36,32 +40,29 @@ class FileBrowserViewModel @Inject constructor(
             return field
         }
 
-    val isSearchExpanded = MutableLiveData(false)
-    private val isSearching = currentSearchFilter.map {
-        it.isNotBlank()
-    }
-
-    val currentSearchResults =
-        currentSearchFilter.combine(isSearching) { searchString, isSearching ->
-            when {
-                isSearching -> dataRepository.find(searchString)
-                else -> emptyList()
-            }
+    internal val currentSearchResults: Flow<List<IdentifiableListItem>> = combine(
+        uiState.map { it.currentSearchFilter }.distinctUntilChanged(),
+        uiState.map { it.isSearching }.distinctUntilChanged(),
+    ) { currentSearchFilter, isSearching ->
+        when {
+            isSearching -> dataRepository.find(currentSearchFilter)
+            else -> emptyList()
         }
+    }
 
     private val currentSectionId = MutableLiveData(ROOT_SECTION_ID)
 
-    val currentSection: LiveData<Resource<SectionEntity?>> =
+    internal val currentSection: LiveData<Resource<SectionEntity?>> =
         switchMap(currentSectionId) { sectionId ->
             dataRepository.getSection(sectionId).asLiveData()
         }
 
-    val openDocumentEditorEvent = LiveEvent<String>()
-    val events = LiveEvent<FileBrowserEvent>()
+    internal val openDocumentEditorEvent = LiveEvent<String>()
+    internal val events = LiveEvent<FileBrowserEvent>()
 
     init {
         viewModelScope.launch {
-            isSearching.collect {
+            uiState.map { it.isSearching }.collect {
                 if (it.not()) {
                     showTopLevel()
                 }
@@ -87,7 +88,7 @@ class FileBrowserViewModel @Inject constructor(
         addToBackstack: Boolean = true,
     ) = viewModelScope.launch {
         if (
-            isSearching.stateIn(viewModelScope).value.not()
+            uiState.value.isSearching.not()
             && currentSectionId.value == sectionId
         ) {
             // ignore if no search is currently active and this section is already set
@@ -124,16 +125,20 @@ class FileBrowserViewModel @Inject constructor(
      * @return true if the value has changed, false otherwise
      */
     fun setSearch(text: String): Boolean {
-        return if (currentSearchFilter.value != text) {
-            currentSearchFilter.value = text
+        return if (uiState.value.currentSearchFilter != text) {
+            _uiState.value = uiState.value.copy(
+                currentSearchFilter = text
+            )
             true
         } else false
     }
 
     private fun clearSearch() {
         setSearch("")
-        if (isSearchExpanded.value != false) {
-            isSearchExpanded.value = false
+        if (uiState.value.isSearchExpanded) {
+            _uiState.value = uiState.value.copy(
+                isSearchExpanded = false
+            )
         }
     }
 
@@ -150,7 +155,7 @@ class FileBrowserViewModel @Inject constructor(
     }
 
     fun createNewDocument(documentName: String) = viewModelScope.launch {
-        val name = if (documentName.isEmpty()) "New Document" else documentName
+        val name = documentName.ifEmpty { "New Document" }
         val newDocumentId = dataRepository.createNewDocument(name, currentSectionId.value!!)
 
         reload()

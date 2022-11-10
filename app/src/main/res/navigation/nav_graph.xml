@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/fileBrowserPage"
-        android:name="de.markusressel.mkdocseditor.feature.browser.FileBrowserFragment"
+        android:name="de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserFragment"
         android:label="@string/menu_item_file_browser"
         tools:layout="@layout/fragment_recyclerview">
 

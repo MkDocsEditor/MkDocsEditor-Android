@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.feature.browser
+package de.markusressel.mkdocseditor.feature.browser.ui
 
 import android.content.Context
 import android.os.Bundle

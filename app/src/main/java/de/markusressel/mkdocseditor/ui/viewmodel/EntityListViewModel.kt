@@ -8,9 +8,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
  */
 abstract class EntityListViewModel : ViewModel() {
 
-    // TODO: use savedState
-    val currentSearchFilter = MutableStateFlow("")
-
     // TODO: save in state
     val lastScrollPosition = MutableStateFlow(0)
 
