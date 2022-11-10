@@ -57,7 +57,7 @@ dependencies {
     kaptTest "com.google.dagger:hilt-compiler:$hiltVersion"
 
     // Android Architecture Components
-    implementation 'androidx.annotation:annotation:1.3.0'
+    implementation 'androidx.annotation:annotation:1.5.0'
     implementation "androidx.core:core-ktx:$aacAndroidKtxVersion"
 
     // Preferences
@@ -79,6 +79,6 @@ dependencies {
 
 
     testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test:runner:1.4.0'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+    androidTestImplementation 'androidx.test:runner:1.5.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0'
 }

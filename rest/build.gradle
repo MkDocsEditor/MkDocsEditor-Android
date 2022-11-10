@@ -48,7 +48,7 @@ dependencies {
     //for JVM
     api "com.github.kittinunf.fuel:fuel:${rootProject.ext.fuelVersion}"
     //for Kotlin Coroutines
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4"
     api "com.github.kittinunf.fuel:fuel-coroutines:${rootProject.ext.fuelVersion}"
     //for moshi support
     implementation "com.github.kittinunf.fuel:fuel-moshi:${rootProject.ext.fuelVersion}"

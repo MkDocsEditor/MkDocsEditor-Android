@@ -1,15 +1,15 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
     ext {
-        kotlin_version = '1.6.10'
-        gradle_plugin_version = '7.2.0-alpha06'
+        kotlin_version = '1.7.20'
+        gradle_plugin_version = '7.3.1'
 
         minSdkVersion = 22
         versionName = "0.1.0"
         versionCode = 1
 
-        compileSdkVersion = 31
-        targetSdkVersion = 31
+        compileSdkVersion = 33
+        targetSdkVersion = 33
         buildToolsVersion = "30.0.3"
 
         // DEPENDENCIES
@@ -19,7 +19,7 @@ buildscript {
         navigationVersion = "2.4.0-rc01"
 
         javaxAnnotationVersion = "10.0-b28"
-        hiltVersion = "2.40.5"
+        hiltVersion = "2.44"
         aboutlibrariesVersion = "8.9.4"
         materialdrawerVersion = "8.4.5"
         iconicsVersion = "5.3.3"
@@ -74,13 +74,11 @@ dependencies {
 
 compileKotlin {
     kotlinOptions {
-        useIR = true
         jvmTarget = "1.8"
     }
 }
 compileTestKotlin {
     kotlinOptions {
-        useIR = true
         jvmTarget = "1.8"
     }
 }
