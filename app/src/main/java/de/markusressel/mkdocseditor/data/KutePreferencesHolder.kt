@@ -133,14 +133,14 @@ class KutePreferencesHolder @Inject constructor(
 
     val restConnectionPortPreference by lazy {
         KuteNumberPreference(key = R.string.connection_port_key,
-            title = context.getString(R.string.connection_port_title),
-            defaultValue = 8080,
-            minimum = 0,
-            maximum = 65535,
-            dataProvider = dataProvider,
-            onPreferenceChangedListener = { old, new ->
-                Bus.send(PortChangedEvent(new.toInt()))
-            })
+                title = context.getString(R.string.connection_port_title),
+                defaultValue = 7413,
+                minimum = 0,
+                maximum = 65535,
+                dataProvider = dataProvider,
+                onPreferenceChangedListener = { old, new ->
+                    Bus.send(PortChangedEvent(new.toInt()))
+                })
     }
 
     val restConnectionSslPreference by lazy {
