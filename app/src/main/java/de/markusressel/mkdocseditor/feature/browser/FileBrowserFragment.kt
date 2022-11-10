@@ -34,7 +34,6 @@ import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
 import de.markusressel.mkdocseditor.extensions.common.android.context
-import de.markusressel.mkdocseditor.feature.browser.FileBrowserViewModel.Event.*
 import de.markusressel.mkdocseditor.listItemDocument
 import de.markusressel.mkdocseditor.listItemResource
 import de.markusressel.mkdocseditor.listItemSection
@@ -152,10 +151,10 @@ class FileBrowserFragment : ListFragmentBase() {
 
         viewModel.events.observe(viewLifecycleOwner) { event ->
             when (event) {
-                is ReloadEvent -> {
+                is FileBrowserEvent.ReloadEvent -> {
                     // showEmpty()
                 }
-                is CreateDocumentEvent -> {
+                is FileBrowserEvent.CreateDocumentEvent -> {
                     val existingSections = emptyList<String>()
 
                     MaterialDialog(context()).show {
@@ -187,7 +186,7 @@ class FileBrowserFragment : ListFragmentBase() {
                         negativeButton(android.R.string.cancel)
                     }
                 }
-                is CreateSectionEvent -> {
+                is FileBrowserEvent.CreateSectionEvent -> {
                     val existingSections = emptyList<String>()
 
                     MaterialDialog(context()).show {
@@ -219,7 +218,7 @@ class FileBrowserFragment : ListFragmentBase() {
                         negativeButton(android.R.string.cancel)
                     }
                 }
-                is RenameDocumentEvent -> {
+                is FileBrowserEvent.RenameDocumentEvent -> {
 
                     val existingDocuments = emptyList<String>()
 
@@ -385,8 +384,8 @@ class FileBrowserFragment : ListFragmentBase() {
 
         navController.navigate(
             R.id.codeEditorPage, bundleOf(
-                "documentId" to documentId
-            )
+            "documentId" to documentId
+        )
         )
     }
 

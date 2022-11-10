@@ -1,23 +1,17 @@
 package de.markusressel.mkdocseditor.feature.browser
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.*
 import androidx.lifecycle.Transformations.switchMap
-import androidx.lifecycle.asLiveData
-import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
 import com.hadilq.liveevent.LiveEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.data.DataRepository
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.feature.browser.FileBrowserViewModel.Event.*
 import de.markusressel.mkdocseditor.ui.viewmodel.EntityListViewModel
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -63,7 +57,7 @@ class FileBrowserViewModel @Inject constructor(
         }
 
     val openDocumentEditorEvent = LiveEvent<String>()
-    val events = LiveEvent<Event>()
+    val events = LiveEvent<FileBrowserEvent>()
 
     init {
         viewModelScope.launch {
@@ -186,25 +180,19 @@ class FileBrowserViewModel @Inject constructor(
 
     fun onCreateSectionFabClicked() {
         val currentSectionId = currentSectionId.value!!
-        events.value = CreateSectionEvent(currentSectionId)
+        events.value = FileBrowserEvent.CreateSectionEvent(currentSectionId)
     }
 
     fun onCreateDocumentFabClicked() {
         val currentSectionId = currentSectionId.value!!
-        events.value = CreateDocumentEvent(currentSectionId)
+        events.value = FileBrowserEvent.CreateDocumentEvent(currentSectionId)
     }
 
     fun onDocumentLongClicked(entity: DocumentEntity): Boolean {
-        events.value = RenameDocumentEvent(entity)
+        events.value = FileBrowserEvent.RenameDocumentEvent(entity)
         return true
     }
 
-    sealed class Event {
-        object ReloadEvent : Event()
-        data class CreateSectionEvent(val parentId: String) : Event()
-        data class CreateDocumentEvent(val parentId: String) : Event()
-        data class RenameDocumentEvent(val entity: DocumentEntity) : Event()
-    }
 
     companion object {
         /** ID of the tree root section */

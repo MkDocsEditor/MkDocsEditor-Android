@@ -40,7 +40,7 @@ import javax.inject.Inject
  */
 @AndroidEntryPoint
 class CodeEditorFragment : DaggerSupportFragmentBase(),
-        SelectionChangedListener {
+    SelectionChangedListener {
 
     @Inject
     lateinit var chromeCustomTabManager: ChromeCustomTabManager
@@ -57,56 +57,56 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
 
     private val optionsMenuComponent: OptionsMenuComponent by lazy {
         OptionsMenuComponent(
-                this,
-                optionsMenuRes = R.menu.options_menu_editor,
-                onCreateOptionsMenu = { menu: Menu?, menuInflater: MenuInflater? ->
-                    // set refresh icon
-                    menu?.findItem(R.id.refresh)?.apply {
-                        val refreshIcon =
-                                iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_refresh)
-                        icon = refreshIcon
-                    }
+            this,
+            optionsMenuRes = R.menu.options_menu_editor,
+            onCreateOptionsMenu = { menu: Menu?, menuInflater: MenuInflater? ->
+                // set refresh icon
+                menu?.findItem(R.id.refresh)?.apply {
+                    val refreshIcon =
+                        iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_refresh)
+                    icon = refreshIcon
+                }
 
+                // set "edit" icon
+                viewModel.editModeActive.observe(viewLifecycleOwner) { editModeActive ->
+                    menu?.findItem(R.id.edit)?.apply {
+                        icon = if (editModeActive) {
+                            iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_eye)
+                        } else {
+                            iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_edit)
+                        }
+                    }
+                    activity?.invalidateOptionsMenu()
+                }
+
+                viewModel.editable.asLiveData().observe(viewLifecycleOwner) { editable ->
                     // set "edit" icon
-                    viewModel.editModeActive.observe(viewLifecycleOwner) { editModeActive ->
-                        menu?.findItem(R.id.edit)?.apply {
-                            icon = if (editModeActive) {
-                                iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_eye)
-                            } else {
-                                iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_edit)
-                            }
-                        }
-                        activity?.invalidateOptionsMenu()
+                    menu?.findItem(R.id.edit)?.apply {
+                        // invisible initially, until a server connection is established
+                        isVisible = viewModel.offlineModeManager.isEnabled().not() && editable
                     }
-
-                    viewModel.editable.asLiveData().observe(viewLifecycleOwner) { editable ->
-                        // set "edit" icon
-                        menu?.findItem(R.id.edit)?.apply {
-                            // invisible initially, until a server connection is established
-                            isVisible = viewModel.offlineModeManager.isEnabled().not() && editable
-                        }
-                        activity?.invalidateOptionsMenu()
+                    activity?.invalidateOptionsMenu()
+                }
+            },
+            onOptionsMenuItemClicked = {
+                when (it.itemId) {
+                    R.id.open_in_browser -> viewModel.onOpenInBrowserClicked()
+                    R.id.edit -> viewModel.onEditClicked()
+                    else -> false
+                }
+            },
+            onPrepareOptionsMenu = { menu ->
+                // set open in browser icon
+                menu?.findItem(R.id.open_in_browser)?.apply {
+                    val openInBrowserIcon =
+                        iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_open_in_browser)
+                    icon = openInBrowserIcon
+                    if (viewModel.preferencesHolder.webUriPreference.persistedValue.isBlank()) {
+                        isVisible = false
+                        isEnabled = false
                     }
-                },
-                onOptionsMenuItemClicked = {
-                    when (it.itemId) {
-                        R.id.open_in_browser -> viewModel.onOpenInBrowserClicked()
-                        R.id.edit -> viewModel.onEditClicked()
-                        else -> false
-                    }
-                },
-                onPrepareOptionsMenu = { menu ->
-                    // set open in browser icon
-                    menu?.findItem(R.id.open_in_browser)?.apply {
-                        val openInBrowserIcon =
-                                iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_open_in_browser)
-                        icon = openInBrowserIcon
-                        if (viewModel.preferencesHolder.webUriPreference.persistedValue.isBlank()) {
-                            isVisible = false
-                            isEnabled = false
-                        }
-                    }
-                })
+                }
+            })
     }
 
     override fun onAttach(context: Context) {
@@ -116,9 +116,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
     }
 
     override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View {
         binding = FragmentEditorBinding.inflate(layoutInflater, container, false).apply {
             lifecycleOwner = this@CodeEditorFragment
@@ -149,8 +149,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
      * @param text the new text to use, or null to keep the current text
      */
     private fun restoreEditorState(
-            entity: DocumentEntity? = null,
-            text: String? = null
+        entity: DocumentEntity? = null,
+        text: String? = null
     ) {
         val content = entity?.content?.target
         if (content != null) {
@@ -163,10 +163,10 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
 
             val absolutePosition = computeAbsolutePosition(PointF(content.panX, content.panY))
             codeEditorLayout.codeEditorView.moveTo(
-                    content.zoomLevel,
-                    absolutePosition.x,
-                    absolutePosition.y,
-                    animate = false
+                content.zoomLevel,
+                absolutePosition.x,
+                absolutePosition.y,
+                animate = false
             )
         } else {
             if (text != null) {
@@ -205,10 +205,10 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
                         MaterialDialog(context()).show {
                             title(R.string.error)
                             message(
-                                    text = getString(
-                                            R.string.error_and_no_offline_version,
-                                            resource.error?.localizedMessage
-                                    )
+                                text = getString(
+                                    R.string.error_and_no_offline_version,
+                                    resource.error?.localizedMessage
+                                )
                             )
                             negativeButton(android.R.string.ok, click = {
                                 it.dismiss()
@@ -254,20 +254,20 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
                             if (event.throwable != null) {
                                 Timber.e(event.throwable) { "Websocket error code: ${event.errorCode}" }
                                 noConnectionSnackbar = codeEditorLayout.snack(
-                                        text = R.string.server_unavailable,
-                                        duration = Snackbar.LENGTH_INDEFINITE,
-                                        actionTitle = R.string.retry,
-                                        action = {
-                                            viewModel.onRetryClicked()
-                                        })
+                                    text = R.string.server_unavailable,
+                                    duration = Snackbar.LENGTH_INDEFINITE,
+                                    actionTitle = R.string.retry,
+                                    action = {
+                                        viewModel.onRetryClicked()
+                                    })
                             } else if (viewModel.offlineModeManager.isEnabled().not()) {
                                 noConnectionSnackbar = codeEditorLayout.snack(
-                                        text = R.string.not_connected,
-                                        duration = Snackbar.LENGTH_INDEFINITE,
-                                        actionTitle = R.string.connect,
-                                        action = {
-                                            viewModel.onConnectClicked()
-                                        })
+                                    text = R.string.not_connected,
+                                    duration = Snackbar.LENGTH_INDEFINITE,
+                                    actionTitle = R.string.connect,
+                                    action = {
+                                        viewModel.onConnectClicked()
+                                    })
                             }
                         }
                     }
@@ -280,14 +280,14 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
                         Timber.e(event.throwable) { "Error" }
                         noConnectionSnackbar?.dismiss()
                         noConnectionSnackbar = codeEditorLayout.snack(
-                                text = event.message
-                                        ?: event.throwable?.localizedMessage
-                                        ?: getString(R.string.unknown_error),
-                                duration = Snackbar.LENGTH_INDEFINITE,
-                                actionTitle = getString(R.string.retry),
-                                action = {
-                                    viewModel.onRetryClicked()
-                                })
+                            text = event.message
+                                ?: event.throwable?.localizedMessage
+                                ?: getString(R.string.unknown_error),
+                            duration = Snackbar.LENGTH_INDEFINITE,
+                            actionTitle = getString(R.string.retry),
+                            action = {
+                                viewModel.onRetryClicked()
+                            })
                     }
                 }
             }
@@ -298,24 +298,24 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
             minimapGravity = Gravity.BOTTOM or Gravity.END
             languageRuleBook = MarkdownRuleBook()
             codeEditorView.codeEditText.addTextChangedListener(
-                    onTextChanged = { text, start, before, count ->
-                        viewModel.currentText.value = text.toString()
-                    },
+                onTextChanged = { text, start, before, count ->
+                    viewModel.currentText.value = text.toString()
+                },
             )
             codeEditorView.engine.addListener(
-                    object : ZoomEngine.Listener {
-                        override fun onIdle(engine: ZoomEngine) {
-                            saveEditorState()
-                        }
+                object : ZoomEngine.Listener {
+                    override fun onIdle(engine: ZoomEngine) {
+                        saveEditorState()
+                    }
 
-                        override fun onUpdate(engine: ZoomEngine, matrix: Matrix) {
-                            viewModel.currentPosition.set(
-                                    codeEditorLayout.codeEditorView.panX,
-                                    codeEditorLayout.codeEditorView.panY
-                            )
-                            viewModel.currentZoom.value = codeEditorLayout.codeEditorView.zoom
-                        }
-                    })
+                    override fun onUpdate(engine: ZoomEngine, matrix: Matrix) {
+                        viewModel.currentPosition.set(
+                            codeEditorLayout.codeEditorView.panX,
+                            codeEditorLayout.codeEditorView.panY
+                        )
+                        viewModel.currentZoom.value = codeEditorLayout.codeEditorView.zoom
+                    }
+                })
 
             codeEditorView.selectionChangedListener = this@CodeEditorFragment
 
@@ -333,9 +333,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
      * @param selectionEnd optional selection end index
      */
     private fun setEditorText(
-            text: String,
-            selectionStart: Int? = null,
-            selectionEnd: Int? = null
+        text: String,
+        selectionStart: Int? = null,
+        selectionEnd: Int? = null
     ) {
         codeEditorLayout.codeEditorView.apply {
             // we don't listen to selection changes when the text is changed via code
@@ -353,8 +353,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
     private fun setEditorSelection(maxIndex: Int, selectionStart: Int, selectionEnd: Int?) {
         val endIndex = selectionEnd ?: selectionStart
         codeEditorLayout.codeEditorView.codeEditText.setSelection(
-                selectionStart.coerceIn(0, maxIndex),
-                endIndex.coerceIn(0, maxIndex)
+            selectionStart.coerceIn(0, maxIndex),
+            endIndex.coerceIn(0, maxIndex)
         )
     }
 
@@ -369,9 +369,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
 
         // set new cursor position
         val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, patches)
-                .coerceIn(0, newText.length)
+            .coerceIn(0, newText.length)
         val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
-                .coerceIn(0, newText.length)
+            .coerceIn(0, newText.length)
 
         setEditorText(newText, newSelectionStart, newSelectionEnd)
         saveEditorState()
@@ -384,8 +384,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
      */
     private fun getCurrentPositionPercentage() = codeEditorLayout.codeEditorView.engine.run {
         PointF(
-                computeHorizontalScrollOffset().toFloat() / computeHorizontalScrollRange(),
-                computeVerticalScrollOffset().toFloat() / computeVerticalScrollRange()
+            computeHorizontalScrollOffset().toFloat() / computeHorizontalScrollRange(),
+            computeVerticalScrollOffset().toFloat() / computeVerticalScrollRange()
         )
     }
 
@@ -395,17 +395,17 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
      * @return a point with horizontal (x) and vertical (y) absolute, scale-independent, positioning coordinate values
      */
     private fun computeAbsolutePosition(percentage: PointF) =
-            codeEditorLayout.codeEditorView.engine.run {
-                PointF(
-                        -1 * percentage.x * (computeHorizontalScrollRange() / realZoom),
-                        -1 * percentage.y * (computeVerticalScrollRange() / realZoom)
-                )
-            }
+        codeEditorLayout.codeEditorView.engine.run {
+            PointF(
+                -1 * percentage.x * (computeHorizontalScrollRange() / realZoom),
+                -1 * percentage.y * (computeVerticalScrollRange() / realZoom)
+            )
+        }
 
 
     private fun calculateNewSelectionIndex(
-            oldSelection: Int,
-            patches: LinkedList<Patch>
+        oldSelection: Int,
+        patches: LinkedList<Patch>
     ): Int {
         var newSelection = oldSelection
 
@@ -454,9 +454,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
         }
 
         viewModel.saveEditorState(
-                selection = codeEditorLayout.codeEditorView.codeEditText.selectionStart,
-                panX = positioningPercentage.x,
-                panY = positioningPercentage.y
+            selection = codeEditorLayout.codeEditorView.codeEditText.selectionStart,
+            panX = positioningPercentage.x,
+            panY = positioningPercentage.y
         )
     }
 
