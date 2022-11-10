@@ -3,20 +3,15 @@ package de.markusressel.mkdocseditor.feature.editor
 import android.graphics.PointF
 import android.view.View
 import androidx.annotation.UiThread
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.*
 import androidx.lifecycle.Transformations.switchMap
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.asLiveData
-import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocseditor.data.DataRepository
 import de.markusressel.mkdocseditor.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
-import de.markusressel.mkdocseditor.feature.editor.CodeEditorViewModel.CodeEditorEvent.*
+import de.markusressel.mkdocseditor.feature.editor.CodeEditorEvent.*
 import de.markusressel.mkdocseditor.network.NetworkManager
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.util.Resource
@@ -27,7 +22,6 @@ import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.launch
@@ -35,15 +29,15 @@ import java.util.*
 import javax.inject.Inject
 
 @HiltViewModel
-class CodeEditorViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
-    private val dataRepository: DataRepository,
-    val preferencesHolder: KutePreferencesHolder,
-    val networkManager: NetworkManager,
-    val offlineModeManager: OfflineModeManager,
+internal class CodeEditorViewModel @Inject constructor(
+        private val savedStateHandle: SavedStateHandle,
+        private val dataRepository: DataRepository,
+        val preferencesHolder: KutePreferencesHolder,
+        val networkManager: NetworkManager,
+        val offlineModeManager: OfflineModeManager,
 ) : ViewModel() {
 
-    val events = MutableLiveData<CodeEditorEvent>()
+    internal val events = MutableLiveData<CodeEditorEvent>()
 
     private val documentId = savedStateHandle.getLiveData<String>("documentId")
 
@@ -57,9 +51,9 @@ class CodeEditorViewModel @Inject constructor(
      * Indicates whether the edit mode can be activated or not
      */
     val editable =
-        offlineModeManager.isEnabled.combine(connectionStatus) { offlineModeEnabled, connectionStatus ->
-            offlineModeEnabled.not() && (connectionStatus?.connected ?: false)
-        }
+            offlineModeManager.isEnabled.combine(connectionStatus) { offlineModeEnabled, connectionStatus ->
+                offlineModeEnabled.not() && (connectionStatus?.connected ?: false)
+            }
 
     /**
      * Indicates whether the CodeEditor is in "edit" mode or not
@@ -82,43 +76,43 @@ class CodeEditorViewModel @Inject constructor(
     val currentZoom = MutableLiveData(1F)
 
     private val documentSyncManager = DocumentSyncManager(
-        hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue,
-        port = preferencesHolder.restConnectionPortPreference.persistedValue.toInt(),
-        ssl = preferencesHolder.restConnectionSslPreference.persistedValue,
-        basicAuthConfig = BasicAuthConfig(
-            preferencesHolder.basicAuthUserPreference.persistedValue,
-            preferencesHolder.basicAuthPasswordPreference.persistedValue
-        ),
-        documentId = documentId.value!!,
-        currentText = {
-            currentText.value.orEmpty()
-        },
-        onConnectionStatusChanged = { connected, errorCode, throwable ->
-            runOnUiThread {
-                val status = ConnectionStatus(connected, errorCode, throwable)
-                connectionStatus.value = status
-                events.value = status
-            }
-        },
-        onInitialText = {
-            currentText.value = it
-            loading.value = false
+            hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue,
+            port = preferencesHolder.restConnectionPortPreference.persistedValue.toInt(),
+            ssl = preferencesHolder.restConnectionSslPreference.persistedValue,
+            basicAuthConfig = BasicAuthConfig(
+                    preferencesHolder.basicAuthUserPreference.persistedValue,
+                    preferencesHolder.basicAuthPasswordPreference.persistedValue
+            ),
+            documentId = documentId.value!!,
+            currentText = {
+                currentText.value.orEmpty()
+            },
+            onConnectionStatusChanged = { connected, errorCode, throwable ->
+                runOnUiThread {
+                    val status = ConnectionStatus(connected, errorCode, throwable)
+                    connectionStatus.value = status
+                    events.value = status
+                }
+            },
+            onInitialText = {
+                currentText.value = it
+                loading.value = false
 
-            // when an entity exists and a new text is given update the entity
-            documentId.value?.let { documentId ->
-                updateDocumentContentInCache(
-                    documentId = documentId,
-                    text = it
-                )
-            }
+                // when an entity exists and a new text is given update the entity
+                documentId.value?.let { documentId ->
+                    updateDocumentContentInCache(
+                            documentId = documentId,
+                            text = it
+                    )
+                }
 
-            events.value = InitialText(it)
+                events.value = InitialText(it)
 
-            // launch coroutine to continuously watch for changes
-            watchTextChanges()
-        },
-        onTextChanged = ::onTextChanged,
-        readOnly = editModeActive.value?.not() ?: true
+                // launch coroutine to continuously watch for changes
+                watchTextChanges()
+            },
+            onTextChanged = ::onTextChanged,
+            readOnly = editModeActive.value?.not() ?: true
     )
 
     init {
@@ -134,9 +128,9 @@ class CodeEditorViewModel @Inject constructor(
 
         viewModelScope.launch {
             combine(
-                connectionStatus,
-                editable,
-                offlineModeManager.isEnabled
+                    connectionStatus,
+                    editable,
+                    offlineModeManager.isEnabled
             ) { status, editable, offlineModeEnabled ->
                 (status?.connected ?: false)
                         && editable
@@ -154,7 +148,7 @@ class CodeEditorViewModel @Inject constructor(
                     else -> {
                         if (preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.not()) {
                             events.value = ConnectionStatus(
-                                connected = connectionStatus.value?.connected ?: false
+                                    connected = connectionStatus.value?.connected ?: false
                             )
                         } else {
                             reconnectToServer()
@@ -240,19 +234,19 @@ class CodeEditorViewModel @Inject constructor(
     }
 
     private fun updateDocumentContentInCache(documentId: String, text: String) =
-        viewModelScope.launch {
-            dataRepository.updateDocumentContentInCache(documentId, text)
-        }
+            viewModelScope.launch {
+                dataRepository.updateDocumentContentInCache(documentId, text)
+            }
 
 
     fun saveEditorState(selection: Int, panX: Float, panY: Float) = viewModelScope.launch {
         dataRepository.saveEditorState(
-            documentId.value!!,
-            currentText.value,
-            selection,
-            currentZoom.value!!,
-            panX,
-            panY
+                documentId.value!!,
+                currentText.value,
+                selection,
+                currentZoom.value!!,
+                panX,
+                panY
         )
     }
 
@@ -302,30 +296,6 @@ class CodeEditorViewModel @Inject constructor(
 
     fun isCachedContentAvailable(): Boolean {
         return documentEntity.value?.data?.content?.target?.text != null
-    }
-
-    sealed class CodeEditorEvent {
-        data class ConnectionStatus(
-            val connected: Boolean,
-            val errorCode: Int? = null,
-            val throwable: Throwable? = null
-        ) : CodeEditorEvent()
-
-        data class InitialText(val text: String) : CodeEditorEvent()
-
-        data class TextChange(
-            val newText: String,
-            val patches: LinkedList<diff_match_patch.Patch>
-        ) : CodeEditorEvent()
-
-        data class OpenWebView(
-            val url: String
-        ) : CodeEditorEvent()
-
-        data class Error(
-            val message: String? = null,
-            val throwable: Throwable? = null
-        ) : CodeEditorEvent()
     }
 
 }
