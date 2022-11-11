@@ -6,6 +6,7 @@ import com.hadilq.liveevent.LiveEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.data.DataRepository
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.feature.browser.SectionBackstackItem
 import de.markusressel.mkdocseditor.ui.viewmodel.EntityListViewModel
@@ -185,12 +186,12 @@ class FileBrowserViewModel @Inject constructor(
     }
 
     fun createNewSection(sectionName: String) = viewModelScope.launch {
-        dataRepository.createNewSection(sectionName, currentSectionId.value!!)
+        dataRepository.createNewSection(sectionName, currentSectionId.value)
     }
 
     fun createNewDocument(documentName: String) = viewModelScope.launch {
         val name = documentName.ifEmpty { "New Document" }
-        val newDocumentId = dataRepository.createNewDocument(name, currentSectionId.value!!)
+        val newDocumentId = dataRepository.createNewDocument(name, currentSectionId.value)
 
         reload()
 
@@ -218,18 +219,33 @@ class FileBrowserViewModel @Inject constructor(
     }
 
     fun onCreateSectionFabClicked() {
-        val currentSectionId = currentSectionId.value!!
+        val currentSectionId = currentSectionId.value
         events.value = FileBrowserEvent.CreateSectionEvent(currentSectionId)
     }
 
     fun onCreateDocumentFabClicked() {
-        val currentSectionId = currentSectionId.value!!
+        val currentSectionId = currentSectionId.value
         events.value = FileBrowserEvent.CreateDocumentEvent(currentSectionId)
     }
 
     fun onDocumentLongClicked(entity: DocumentEntity): Boolean {
         events.value = FileBrowserEvent.RenameDocumentEvent(entity)
         return true
+    }
+
+    fun onDocumentClicked(entity: DocumentEntity) {
+        events.value = FileBrowserEvent.OpenDocumentEditorEvent(entity)
+    }
+
+    fun onResourceClicked(entity: ResourceEntity) {
+        events.value = FileBrowserEvent.DownloadResourceEvent(entity)
+    }
+
+    fun onSectionClicked(entity: SectionEntity) {
+        openSection(
+            sectionId = entity.id,
+            addToBackstack = true
+        )
     }
 
 

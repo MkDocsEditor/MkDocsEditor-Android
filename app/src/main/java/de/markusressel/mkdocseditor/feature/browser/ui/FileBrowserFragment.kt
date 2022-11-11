@@ -98,6 +98,13 @@ class FileBrowserFragment : DaggerSupportFragmentBase() {
 
         viewModel.events.observe(viewLifecycleOwner) { event ->
             when (event) {
+                is FileBrowserEvent.OpenDocumentEditorEvent -> {
+                    openDocumentEditor(event.entity.id)
+                }
+                is FileBrowserEvent.DownloadResourceEvent -> {
+                    // TODO: download resource
+                    Toast.makeText(requireContext(), "Not implemented :(", Toast.LENGTH_SHORT).show()
+                }
                 is FileBrowserEvent.ReloadEvent -> {
                     // showEmpty()
                 }

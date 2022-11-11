@@ -11,5 +11,16 @@ internal fun FileBrowserScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    FileBrowserList(uiState.listItems)
+    FileBrowserList(
+        items = uiState.listItems,
+        onDocumentClicked = {
+            viewModel.onDocumentClicked(it)
+        },
+        onResourceClicked = {
+            viewModel.onResourceClicked(it)
+        },
+        onSectionClicked = {
+            viewModel.onSectionClicked(it)
+        },
+    )
 }
