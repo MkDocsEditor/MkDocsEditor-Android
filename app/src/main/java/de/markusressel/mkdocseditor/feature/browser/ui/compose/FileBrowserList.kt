@@ -2,9 +2,13 @@ package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
 import android.view.View
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -48,7 +52,9 @@ internal fun FileBrowserList(
     onResourceClicked: (ResourceEntity) -> Unit,
     onSectionClicked: (SectionEntity) -> Unit,
 ) {
-    Column {
+    Column(
+        modifier = Modifier.verticalScroll(rememberScrollState())
+    ) {
         items.forEachIndexed { index, item ->
             FileBrowserListEntry(
                 item = item,
@@ -61,6 +67,8 @@ internal fun FileBrowserList(
                 Divider()
             }
         }
+
+        Spacer(modifier = Modifier.height(128.dp))
     }
 }
 
@@ -114,23 +122,33 @@ internal fun DocumentListEntry(
         onClick = { onClick(item) },
         elevation = 4.dp,
     ) {
-        Column(
+        Row(
             modifier = Modifier.padding(8.dp),
-            verticalArrangement = Arrangement.Center
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Image(
-                MaterialDesignIconic.Icon.gmi_file,
-                colorFilter = ColorFilter.tint(MaterialTheme.colors.primary),
-            )
-
-            if (item.offlineAvailableVisibility == View.VISIBLE) {
+            Box {
                 Image(
-                    MaterialDesignIconic.Icon.gmi_save,
+                    modifier = Modifier
+                        .size(32.dp),
+                    asset = MaterialDesignIconic.Icon.gmi_file,
                     colorFilter = ColorFilter.tint(MaterialTheme.colors.primary),
                 )
+
+                if (item.offlineAvailableVisibility == View.VISIBLE) {
+                    Image(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .align(Alignment.BottomEnd),
+                        asset = MaterialDesignIconic.Icon.gmi_save,
+                        colorFilter = ColorFilter.tint(Color.Companion.White),
+                    )
+                }
             }
 
-            Text(text = item.name)
+            Text(
+                modifier = Modifier.padding(start = 8.dp),
+                text = item.name
+            )
         }
     }
 }
@@ -151,15 +169,21 @@ internal fun ResourceListEntry(
         onClick = { onClick(item) },
         elevation = 4.dp,
     ) {
-        Column(
+        Row(
             modifier = Modifier.padding(8.dp),
-            verticalArrangement = Arrangement.Center
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Image(
-                MaterialDesignIconic.Icon.gmi_attachment,
+                modifier = Modifier
+                    .size(32.dp),
+                asset = MaterialDesignIconic.Icon.gmi_attachment,
                 colorFilter = ColorFilter.tint(MaterialTheme.colors.primary),
             )
-            Text(text = item.name)
+
+            Text(
+                modifier = Modifier.padding(start = 8.dp),
+                text = item.name
+            )
         }
     }
 }
@@ -180,15 +204,21 @@ internal fun SectionListEntry(
         onClick = { onClick(item) },
         elevation = 4.dp,
     ) {
-        Column(
+        Row(
             modifier = Modifier.padding(8.dp),
-            verticalArrangement = Arrangement.Center
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Image(
-                MaterialDesignIconic.Icon.gmi_folder,
+                modifier = Modifier
+                    .size(32.dp),
+                asset = MaterialDesignIconic.Icon.gmi_folder,
                 colorFilter = ColorFilter.tint(MaterialTheme.colors.primary),
             )
-            Text(text = item.name)
+
+            Text(
+                modifier = Modifier.padding(start = 8.dp),
+                text = item.name
+            )
         }
     }
 }
