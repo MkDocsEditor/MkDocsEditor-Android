@@ -35,7 +35,6 @@ import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
 import de.markusressel.mkdocseditor.extensions.common.android.context
 import de.markusressel.mkdocseditor.feature.browser.ui.compose.FileBrowserScreen
 import de.markusressel.mkdocseditor.ui.fragment.base.DaggerSupportFragmentBase
-import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import kotlinx.coroutines.flow.collectLatest
@@ -49,23 +48,6 @@ import java.util.concurrent.TimeUnit
 class FileBrowserFragment : DaggerSupportFragmentBase() {
 
     private val viewModel by activityViewModels<FileBrowserViewModel>()
-
-    private val fabConfig = FabConfig(
-        right = listOf(
-            FabConfig.Fab(id = 0,
-                description = R.string.create_document,
-                icon = MaterialDesignIconic.Icon.gmi_file_add,
-                onClick = {
-                    viewModel.onCreateDocumentFabClicked()
-                }),
-            FabConfig.Fab(id = 1,
-                description = R.string.create_section,
-                icon = MaterialDesignIconic.Icon.gmi_folder,
-                onClick = {
-                    viewModel.onCreateSectionFabClicked()
-                })
-        )
-    )
 
     private var searchView: SearchView? = null
     private var searchMenuItem: MenuItem? = null

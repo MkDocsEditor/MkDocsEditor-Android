@@ -3,13 +3,16 @@ package de.markusressel.mkdocseditor.feature.browser.ui
 import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
 import com.hadilq.liveevent.LiveEvent
+import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import dagger.hilt.android.lifecycle.HiltViewModel
+import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.DataRepository
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.feature.browser.SectionBackstackItem
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.GetSectionContentUseCase
+import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.ui.viewmodel.EntityListViewModel
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
@@ -30,6 +33,21 @@ internal class FileBrowserViewModel @Inject constructor(
     // TODO: use savedState
     private val _uiState = MutableStateFlow(UiState())
     internal val uiState = _uiState.asStateFlow()
+
+    internal val fabConfig = FabConfig(
+        right = listOf(
+            FabConfig.Fab(id = 0,
+                description = R.string.create_document,
+                icon = MaterialDesignIconic.Icon.gmi_file_add,
+                onClick = { onCreateDocumentFabClicked() }
+            ),
+            FabConfig.Fab(id = 1,
+                description = R.string.create_section,
+                icon = MaterialDesignIconic.Icon.gmi_folder,
+                onClick = { onCreateSectionFabClicked() }
+            )
+        )
+    )
 
     private val backstack: Stack<SectionBackstackItem> = Stack()
         get() {
