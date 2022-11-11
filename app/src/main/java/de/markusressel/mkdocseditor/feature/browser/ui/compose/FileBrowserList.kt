@@ -1,16 +1,45 @@
 package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.material.Card
-import androidx.compose.material.Divider
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.Text
+import android.view.View
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.mikepenz.iconics.compose.Image
+import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
+
+@Preview
+@Composable
+private fun FileBrowserListPreview() {
+    FileBrowserList(
+        items = listOf(
+            SectionEntity(
+                name = "Subsection",
+            ),
+            DocumentEntity(
+                name = "Sample File.md"
+            ).apply {
+                content.target = DocumentContentEntity(
+                    text = "Text"
+                )
+            },
+            ResourceEntity(
+                name = "Sample Ressource.png"
+            )
+        ),
+        onDocumentClicked = {},
+        onResourceClicked = {},
+        onSectionClicked = {},
+    )
+}
 
 @Composable
 internal fun FileBrowserList(
@@ -60,7 +89,7 @@ internal fun FileBrowserListEntry(
 
 @Preview
 @Composable
-fun DocumentListEntryPreview() {
+private fun DocumentListEntryPreview() {
     DocumentListEntry(
         item = DocumentEntity(
             name = "Sample File.md"
@@ -76,9 +105,33 @@ internal fun DocumentListEntry(
     onClick: (DocumentEntity) -> Unit,
 ) {
     Card(
-        onClick = { onClick(item) }
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = 8.dp,
+                vertical = 4.dp
+            ),
+        onClick = { onClick(item) },
+        elevation = 4.dp,
     ) {
-        Text(text = item.name)
+        Column(
+            modifier = Modifier.padding(8.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Image(
+                MaterialDesignIconic.Icon.gmi_file,
+                colorFilter = ColorFilter.tint(MaterialTheme.colors.primary),
+            )
+
+            if (item.offlineAvailableVisibility == View.VISIBLE) {
+                Image(
+                    MaterialDesignIconic.Icon.gmi_save,
+                    colorFilter = ColorFilter.tint(MaterialTheme.colors.primary),
+                )
+            }
+
+            Text(text = item.name)
+        }
     }
 }
 
@@ -89,9 +142,25 @@ internal fun ResourceListEntry(
     onClick: (ResourceEntity) -> Unit
 ) {
     Card(
-        onClick = { onClick(item) }
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = 8.dp,
+                vertical = 4.dp
+            ),
+        onClick = { onClick(item) },
+        elevation = 4.dp,
     ) {
-        Text(text = item.name)
+        Column(
+            modifier = Modifier.padding(8.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Image(
+                MaterialDesignIconic.Icon.gmi_attachment,
+                colorFilter = ColorFilter.tint(MaterialTheme.colors.primary),
+            )
+            Text(text = item.name)
+        }
     }
 }
 
@@ -102,8 +171,24 @@ internal fun SectionListEntry(
     onClick: (SectionEntity) -> Unit
 ) {
     Card(
-        onClick = { onClick(item) }
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = 8.dp,
+                vertical = 4.dp
+            ),
+        onClick = { onClick(item) },
+        elevation = 4.dp,
     ) {
-        Text(text = item.name)
+        Column(
+            modifier = Modifier.padding(8.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Image(
+                MaterialDesignIconic.Icon.gmi_folder,
+                colorFilter = ColorFilter.tint(MaterialTheme.colors.primary),
+            )
+            Text(text = item.name)
+        }
     }
 }

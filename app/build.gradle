@@ -142,6 +142,8 @@ dependencies {
     implementation "com.mikepenz:iconics-core:${iconicsVersion}@aar"
     //this adds all ui view widgets (IconicsButton, IconicsImageView, ...)
     implementation "com.mikepenz:iconics-views:${iconicsVersion}@aar"
+    implementation "com.mikepenz:iconics-compose:${iconicsVersion}"
+
     // fonts
     implementation 'com.mikepenz:google-material-typeface:4.0.0.1-kotlin@aar'
     implementation 'com.mikepenz:material-design-iconic-typeface:2.2.0.8-kotlin@aar'

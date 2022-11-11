@@ -48,7 +48,7 @@ import java.util.concurrent.TimeUnit
 @AndroidEntryPoint
 class FileBrowserFragment : DaggerSupportFragmentBase() {
 
-    val viewModel by activityViewModels<FileBrowserViewModel>()
+    private val viewModel by activityViewModels<FileBrowserViewModel>()
 
     private val fabConfig = FabConfig(
         right = listOf(

@@ -9,19 +9,22 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.feature.browser.SectionBackstackItem
+import de.markusressel.mkdocseditor.feature.browser.ui.usecase.GetSectionContentUseCase
 import de.markusressel.mkdocseditor.ui.viewmodel.EntityListViewModel
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.*
 import javax.inject.Inject
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
-class FileBrowserViewModel @Inject constructor(
+internal class FileBrowserViewModel @Inject constructor(
     private val dataRepository: DataRepository,
     private val restClient: MkDocsRestClient,
+    private val getSectionContentUseCase: GetSectionContentUseCase,
 ) : EntityListViewModel() {
 
     // TODO: use savedState
@@ -48,11 +51,7 @@ class FileBrowserViewModel @Inject constructor(
     }
 
     private val currentSectionId = MutableStateFlow(ROOT_SECTION_ID)
-
-    @OptIn(FlowPreview::class)
-    internal val currentSection: Flow<Resource<SectionEntity?>> = currentSectionId.mapLatest { sectionId ->
-        dataRepository.getSection(sectionId)
-    }.flattenConcat()
+    private val currentSection = getSectionContentUseCase(currentSectionId)
 
     internal val openDocumentEditorEvent = LiveEvent<String>()
     internal val events = LiveEvent<FileBrowserEvent>()
