@@ -71,13 +71,15 @@ abstract class SupportActivityBase : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
 
-        restClient.setHostname(preferencesHolder.restConnectionHostnamePreference.persistedValue)
-        restClient.setPort(preferencesHolder.restConnectionPortPreference.persistedValue.toInt())
-        restClient.setUseSSL(preferencesHolder.restConnectionSslPreference.persistedValue)
+        restClient.setHostname(preferencesHolder.restConnectionHostnamePreference.persistedValue.value)
+        restClient.setPort(preferencesHolder.restConnectionPortPreference.persistedValue.value.toInt())
+        restClient.setUseSSL(preferencesHolder.restConnectionSslPreference.persistedValue.value)
         restClient.setBasicAuthConfig(
             BasicAuthConfig(
-                username = preferencesHolder.basicAuthUserPreference.persistedValue,
-                password = preferencesHolder.basicAuthPasswordPreference.persistedValue
+                username = preferencesHolder.basicAuthUserPreference.persistedValue.value,
+                password = "",
+                // TODO: implement password preference
+                //password = preferencesHolder.basicAuthPasswordPreference.persistedValue
             )
         )
 

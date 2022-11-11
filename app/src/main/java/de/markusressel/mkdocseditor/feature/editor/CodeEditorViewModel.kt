@@ -76,12 +76,14 @@ internal class CodeEditorViewModel @Inject constructor(
     val currentZoom = MutableLiveData(1F)
 
     private val documentSyncManager = DocumentSyncManager(
-        hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue,
-        port = preferencesHolder.restConnectionPortPreference.persistedValue.toInt(),
-        ssl = preferencesHolder.restConnectionSslPreference.persistedValue,
+        hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue.value,
+        port = preferencesHolder.restConnectionPortPreference.persistedValue.value.toInt(),
+        ssl = preferencesHolder.restConnectionSslPreference.persistedValue.value,
         basicAuthConfig = BasicAuthConfig(
-            preferencesHolder.basicAuthUserPreference.persistedValue,
-            preferencesHolder.basicAuthPasswordPreference.persistedValue
+            preferencesHolder.basicAuthUserPreference.persistedValue.value,
+            "",
+            // TODO: implement password preference
+            //preferencesHolder.basicAuthPasswordPreference.persistedValue
         ),
         documentId = documentId.value!!,
         currentText = {
@@ -135,7 +137,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 (status?.connected ?: false)
                     && editable
                     && offlineModeEnabled.not()
-                    && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue
+                    && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
             }.collect {
                 editModeActive.value = it
             }
@@ -146,7 +148,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 when {
                     enabled -> disconnect("Offline mode activated")
                     else -> {
-                        if (preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.not()) {
+                        if (preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value.not()) {
                             events.value = ConnectionStatus(
                                 connected = connectionStatus.value?.connected ?: false
                             )
@@ -175,7 +177,7 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     private fun watchTextChanges() {
-        val syncInterval = preferencesHolder.codeEditorSyncIntervalPreference.persistedValue
+        val syncInterval = preferencesHolder.codeEditorSyncIntervalPreference.persistedValue.value
 
         viewModelScope.launch {
             try {
@@ -251,7 +253,7 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     fun onOpenInBrowserClicked(): Boolean {
-        val webBaseUri = preferencesHolder.webUriPreference.persistedValue
+        val webBaseUri = preferencesHolder.webUriPreference.persistedValue.value
         if (webBaseUri.isBlank()) {
             return false
         }

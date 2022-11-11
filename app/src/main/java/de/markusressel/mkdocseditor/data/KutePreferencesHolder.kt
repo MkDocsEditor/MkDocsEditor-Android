@@ -1,18 +1,17 @@
 package de.markusressel.mkdocseditor.data
 
+//import de.markusressel.kutepreferences.core.preference.action.KuteAction
+//import de.markusressel.kutepreferences.core.preference.text.password.KutePasswordPreference
 import android.content.Context
 import com.eightbitlab.rxbus.Bus
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
-import de.markusressel.commons.android.material.toast
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
-import de.markusressel.kutepreferences.core.preference.action.KuteAction
+import de.markusressel.kutepreferences.core.preference.bool.KuteBooleanPreference
 import de.markusressel.kutepreferences.core.preference.category.KuteCategory
+import de.markusressel.kutepreferences.core.preference.number.KuteNumberPreference
 import de.markusressel.kutepreferences.core.preference.section.KuteSection
-import de.markusressel.kutepreferences.preference.bool.KuteBooleanPreference
-import de.markusressel.kutepreferences.preference.number.KuteNumberPreference
-import de.markusressel.kutepreferences.preference.selection.single.KuteSingleSelectStringPreference
-import de.markusressel.kutepreferences.preference.text.KuteTextPreference
-import de.markusressel.kutepreferences.preference.text.password.KutePasswordPreference
+import de.markusressel.kutepreferences.core.preference.select.KuteSingleSelectStringPreference
+import de.markusressel.kutepreferences.core.preference.text.KuteTextPreference
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
@@ -61,7 +60,7 @@ class KutePreferencesHolder @Inject constructor(
                     title = context.getString(R.string.divider_basic_auth_title),
                     children = listOf(
                         basicAuthUserPreference,
-                        basicAuthPasswordPreference
+//                        basicAuthPasswordPreference
                     )
                 ), KuteSection(
                     key = R.string.section_web_key,
@@ -86,35 +85,35 @@ class KutePreferencesHolder @Inject constructor(
                     title = context.getString(R.string.section_background_sync_title),
                     children = listOf(
                         lastOfflineCacheUpdate,
-                        forceOfflineCacheUpdatePreference,
-                        clearOfflineCache
+//                        forceOfflineCacheUpdatePreference,
+//                        clearOfflineCache
                     )
                 )
             )
         )
     }
 
-    val forceOfflineCacheUpdatePreference = KuteAction(
-        key = R.string.action_force_offline_cache_update_key,
-        title = context.getString(R.string.action_force_offline_cache_update_title),
-        description = "",
-        onClickAction = { context, action ->
-            offlineModeManager.scheduleOfflineCacheUpdate(evenInOfflineMode = true)
-        })
+//    val forceOfflineCacheUpdatePreference = KuteAction(
+//        key = R.string.action_force_offline_cache_update_key,
+//        title = context.getString(R.string.action_force_offline_cache_update_title),
+//        description = "",
+//        onClickAction = { context, action ->
+//            offlineModeManager.scheduleOfflineCacheUpdate(evenInOfflineMode = true)
+//        })
 
-    val clearOfflineCache by lazy {
-        KuteAction(key = R.string.clear_offline_cache_key,
-            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_delete),
-            title = context.getString(R.string.clear_offline_cache_title),
-            description = "",
-            onClickAction = { context, _ ->
-                documentContentPersistenceManager.standardOperation().removeAll()
-                resourcePersistenceManager.standardOperation().removeAll()
-                documentPersistenceManager.standardOperation().removeAll()
-                sectionPersistenceManager.standardOperation().removeAll()
-                context.toast("DB cleared")
-            })
-    }
+//    val clearOfflineCache by lazy {
+//        KuteAction(key = R.string.clear_offline_cache_key,
+//            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_delete),
+//            title = context.getString(R.string.clear_offline_cache_title),
+//            description = "",
+//            onClickAction = { context, _ ->
+//                documentContentPersistenceManager.standardOperation().removeAll()
+//                resourcePersistenceManager.standardOperation().removeAll()
+//                documentPersistenceManager.standardOperation().removeAll()
+//                sectionPersistenceManager.standardOperation().removeAll()
+//                context.toast("DB cleared")
+//            })
+//    }
 
     val lastOfflineCacheUpdate by lazy {
         LastOfflineCacheUpdatePreferenceItem()
@@ -163,15 +162,15 @@ class KutePreferencesHolder @Inject constructor(
             })
     }
 
-    val basicAuthPasswordPreference by lazy {
-        KutePasswordPreference(key = R.string.connection_basic_auth_password_key,
-            title = context.getString(R.string.connection_basic_auth_password_title),
-            defaultValue = "",
-            dataProvider = dataProvider,
-            onPreferenceChangedListener = { old, new ->
-                Bus.send(BasicAuthPasswordChangedEvent(new))
-            })
-    }
+//    val basicAuthPasswordPreference by lazy {
+//        KutePasswordPreference(key = R.string.connection_basic_auth_password_key,
+//            title = context.getString(R.string.connection_basic_auth_password_title),
+//            defaultValue = "",
+//            dataProvider = dataProvider,
+//            onPreferenceChangedListener = { old, new ->
+//                Bus.send(BasicAuthPasswordChangedEvent(new))
+//            })
+//    }
 
     val webUriPreference by lazy {
         KuteTextPreference(key = R.string.connection_web_url_key,

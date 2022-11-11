@@ -1,28 +1,24 @@
 package de.markusressel.mkdocseditor.feature.browser.ui
 
-import androidx.lifecycle.*
-import androidx.lifecycle.Transformations.switchMap
+import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
 import com.hadilq.liveevent.LiveEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.data.DataRepository
-import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.feature.browser.SectionBackstackItem
 import de.markusressel.mkdocseditor.ui.viewmodel.EntityListViewModel
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.*
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class FileBrowserViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
     private val dataRepository: DataRepository,
     private val restClient: MkDocsRestClient,
 ) : EntityListViewModel() {
@@ -40,7 +36,7 @@ class FileBrowserViewModel @Inject constructor(
             return field
         }
 
-    internal val currentSearchResults: Flow<List<IdentifiableListItem>> = combine(
+    internal val currentSearchResults = combine(
         uiState.map { it.currentSearchFilter }.distinctUntilChanged(),
         uiState.map { it.isSearching }.distinctUntilChanged(),
     ) { currentSearchFilter, isSearching ->
@@ -50,12 +46,12 @@ class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private val currentSectionId = MutableLiveData(ROOT_SECTION_ID)
+    private val currentSectionId = MutableStateFlow(ROOT_SECTION_ID)
 
-    internal val currentSection: LiveData<Resource<SectionEntity?>> =
-        switchMap(currentSectionId) { sectionId ->
-            dataRepository.getSection(sectionId).asLiveData()
-        }
+    @OptIn(FlowPreview::class)
+    internal val currentSection: Flow<Resource<SectionEntity?>> = currentSectionId.mapLatest { sectionId ->
+        dataRepository.getSection(sectionId)
+    }.flattenConcat()
 
     internal val openDocumentEditorEvent = LiveEvent<String>()
     internal val events = LiveEvent<FileBrowserEvent>()
@@ -66,6 +62,44 @@ class FileBrowserViewModel @Inject constructor(
                 if (it.not()) {
                     showTopLevel()
                 }
+            }
+        }
+
+        viewModelScope.launch {
+            currentSection.collectLatest { resource ->
+                val section = resource.data
+
+                if (resource is Resource.Error) {
+                    // TODO: show error
+                    //context?.toast("Error: ${resource.error?.message}", Toast.LENGTH_LONG)
+                }
+
+                if (resource is Resource.Loading && section == null) {
+                    //showLoading()
+                } else {
+                    //showContent()
+                }
+
+                if (section != null) {
+                    if (section.subsections.isEmpty() and section.documents.isEmpty() and section.resources.isEmpty()) {
+//                        showEmpty()
+                    } else {
+//                        hideEmpty()
+                    }
+                } else {
+                    // in theory this will navigate back until a section is found
+                    // or otherwise show the "empty" screen
+                    if (!navigateUp()) {
+                        // TODO
+//                        showEmpty()
+                    }
+                }
+
+                _uiState.value = uiState.value.copy(
+                    listItems = (section?.documents ?: emptyList())
+                        + (section?.resources ?: emptyList())
+                        + (section?.subsections ?: emptyList())
+                )
             }
         }
     }

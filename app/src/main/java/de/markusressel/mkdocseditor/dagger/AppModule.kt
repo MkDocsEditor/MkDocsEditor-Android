@@ -6,6 +6,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import de.markusressel.kutepreferences.core.DefaultKuteNavigator
+import de.markusressel.kutepreferences.core.KuteNavigator
 import de.markusressel.kutepreferences.core.persistence.DefaultKutePreferenceDataProvider
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.mkdocseditor.data.persistence.entity.MyObjectBox
@@ -25,6 +27,12 @@ class AppModule {
     @Singleton
     fun provideContext(@ApplicationContext context: Context): Context {
         return context
+    }
+
+    @Provides
+    @Singleton
+    fun provideKuteNavigator(): KuteNavigator {
+        return DefaultKuteNavigator()
     }
 
     @Provides

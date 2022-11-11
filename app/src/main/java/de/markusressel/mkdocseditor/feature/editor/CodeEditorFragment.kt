@@ -101,7 +101,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
                     val openInBrowserIcon =
                         iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_open_in_browser)
                     icon = openInBrowserIcon
-                    if (viewModel.preferencesHolder.webUriPreference.persistedValue.isBlank()) {
+                    if (viewModel.preferencesHolder.webUriPreference.persistedValue.value.isBlank()) {
                         isVisible = false
                         isEnabled = false
                     }

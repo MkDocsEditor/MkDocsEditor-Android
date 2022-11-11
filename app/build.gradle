@@ -1,9 +1,11 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-parcelize'
-apply plugin: 'kotlin-kapt'
-//apply plugin: 'androidx.navigation.safeargs.kotlin'
-apply plugin: 'dagger.hilt.android.plugin'
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'kotlin-parcelize'
+    id 'kotlin-kapt'
+    // id 'androidx.navigation.safeargs.kotlin'
+    id 'dagger.hilt.android.plugin'
+}
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
@@ -60,6 +62,8 @@ android {
         dataBinding true
         compose true
     }
+
+//    experimental.legacyTransform.forceNonIncremental true
 
     composeOptions {
         kotlinCompilerExtensionVersion compose_compiler_version
@@ -156,6 +160,25 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.5.1"
     implementation "androidx.lifecycle:lifecycle-common-java8:2.5.1"
 
+    def paging_version = "3.1.1"
+    implementation "androidx.paging:paging-runtime-ktx:$paging_version"
+    // optional - RxJava2 support
+    implementation "androidx.paging:paging-rxjava2-ktx:$paging_version"
+    // optional - Jetpack Compose integration
+    implementation "androidx.paging:paging-compose:1.0.0-alpha17"
+
+    implementation("io.reactivex.rxjava2:rxkotlin:2.3.0")
+
+    implementation 'com.jakewharton.rxbinding2:rxbinding:2.2.0'
+//    implementation 'com.jakewharton.rxbinding4:rxbinding-core:2.2.0'
+
+    implementation 'com.trello.rxlifecycle2:rxlifecycle:2.2.2'
+//    implementation 'com.trello.rxlifecycle2:rxlifecycle-components:2.2.2'
+    implementation 'com.trello.rxlifecycle2:rxlifecycle-kotlin:2.2.2'
+//    implementation 'com.trello.rxlifecycle2:rxlifecycle-android:2.2.2'
+//    implementation 'com.trello.rxlifecycle2:rxlifecycle-android-lifecycle:2.2.2'
+    implementation 'com.trello.rxlifecycle2:rxlifecycle-android-lifecycle-kotlin:2.2.2'
+
     // WorkManager
     def work_version = "2.7.1"
     implementation "androidx.work:work-runtime-ktx:$work_version"
@@ -172,12 +195,6 @@ dependencies {
     implementation "com.mikepenz:materialdrawer:${materialdrawerVersion}"
     implementation "com.mikepenz:materialdrawer-nav:${materialdrawerVersion}"
     implementation "com.mikepenz:materialdrawer-iconics:${materialdrawerVersion}"
-
-    // Epoxy - Recyclerview for dummies
-    implementation "com.airbnb.android:epoxy:$epoxyVersion"
-    implementation "com.airbnb.android:epoxy-databinding:$epoxyVersion"
-    implementation "com.airbnb.android:epoxy-paging:$epoxyVersion"
-    kapt "com.airbnb.android:epoxy-processor:$epoxyVersion"
 
     // Multi-FABs
     implementation "com.leinardi.android:speed-dial:3.1.1"

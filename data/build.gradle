@@ -1,8 +1,10 @@
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-parcelize'
-apply plugin: 'kotlin-kapt'
-apply plugin: 'io.objectbox'
+plugins {
+    id 'com.android.library'
+    id 'kotlin-android'
+    id 'kotlin-parcelize'
+    id 'kotlin-kapt'
+    id 'io.objectbox'
+}
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
@@ -62,15 +64,10 @@ dependencies {
 
     // Preferences
 //    def kutePreferencesVersion = "v2.0.0"
-    def kutePreferencesVersion = "master-SNAPSHOT"
+    def kutePreferencesVersion = "compose-SNAPSHOT"
     // choose the ones you need
     api("com.github.markusressel.KutePreferences:core:${kutePreferencesVersion}")
-    api("com.github.markusressel.KutePreferences:bool:${kutePreferencesVersion}")
-    api("com.github.markusressel.KutePreferences:color:${kutePreferencesVersion}")
-    api("com.github.markusressel.KutePreferences:date:${kutePreferencesVersion}")
-    api("com.github.markusressel.KutePreferences:number:${kutePreferencesVersion}")
-    api("com.github.markusressel.KutePreferences:selection:${kutePreferencesVersion}")
-    api("com.github.markusressel.KutePreferences:text:${kutePreferencesVersion}")
+    api("com.github.markusressel.KutePreferences:ui:${kutePreferencesVersion}")
 
     // ObjectBox
     api "io.objectbox:objectbox-android:$objectboxVersion"

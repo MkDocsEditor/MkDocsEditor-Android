@@ -12,7 +12,6 @@ import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesign
 import com.mikepenz.iconics.utils.color
 import com.mikepenz.iconics.utils.paddingDp
 import com.mikepenz.iconics.utils.sizeDp
-import de.markusressel.mkdocseditor.R
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -117,10 +116,11 @@ class IconHandler @Inject constructor() {
      * @return an icon for a preference
      */
     fun getPreferenceIcon(icon: IIcon): Drawable {
-        val color = themeHelper.getThemeAttrColor(
-            context,
-            R.attr.kute_preferences__setting__default_icon_color
-        )
+        val color = Color.WHITE
+//        themeHelper.getThemeAttrColor(
+//            context,
+//            R.attr.kute_preferences__setting__default_icon_color
+//        )
         return getIcon(icon, color = color, sizeDp = 36)
     }
 

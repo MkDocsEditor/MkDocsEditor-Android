@@ -13,13 +13,10 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <com.airbnb.epoxy.EpoxyRecyclerView
+        <androidx.compose.ui.platform.ComposeView
             android:id="@+id/recyclerView"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:fadeScrollbars="false"
-            android:scrollbars="vertical"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+            android:layout_height="match_parent" />
 
         <include
             android:id="@+id/layout_empty_list"

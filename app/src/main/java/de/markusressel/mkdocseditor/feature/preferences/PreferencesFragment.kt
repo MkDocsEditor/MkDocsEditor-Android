@@ -1,24 +1,55 @@
 package de.markusressel.mkdocseditor.feature.preferences
 
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.unit.dp
+import androidx.fragment.app.viewModels
 import dagger.hilt.android.AndroidEntryPoint
-import de.markusressel.kutepreferences.core.KutePreferenceListItem
-import de.markusressel.kutepreferences.core.view.KutePreferencesMainFragment
-import de.markusressel.mkdocseditor.data.KutePreferencesHolder
-import javax.inject.Inject
+import de.markusressel.kutepreferences.ui.theme.KutePreferencesTheme
+import de.markusressel.kutepreferences.ui.views.KuteOverview
+import de.markusressel.mkdocseditor.ui.fragment.base.DaggerSupportFragmentBase
 
 @AndroidEntryPoint
-class PreferencesFragment : KutePreferencesMainFragment() {
+class PreferencesFragment : DaggerSupportFragmentBase() {
 
-    @Inject
-    lateinit var preferenceHolder: KutePreferencesHolder
+    private val viewModel: PreferencesViewModel by viewModels()
 
-    override fun initPreferenceTree(): Array<KutePreferenceListItem> {
-        return arrayOf(
-            preferenceHolder.connectionCategory,
-            preferenceHolder.offlineCacheCategory,
-            preferenceHolder.uxCategory,
-            preferenceHolder.themePreference
-        )
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View = ComposeView(requireContext()).apply {
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+            Surface {
+                KutePreferencesTheme {
+                    val currentItems by viewModel.currentPreferenceItems.collectAsState(initial = emptyList())
+
+                    KuteOverview(
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .fillMaxWidth(),
+                        items = currentItems
+                    )
+                }
+            }
+        }
     }
 
+    /**
+     * Called when the user presses the back button
+     *
+     * @return true, if the back button event was consumed, false otherwise
+     */
+    fun onBackPressed() = viewModel.navigateUp()
 }
