@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,16 +32,18 @@ class PreferencesFragment : DaggerSupportFragmentBase() {
     ): View = ComposeView(requireContext()).apply {
         setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         setContent {
-            Surface {
-                KutePreferencesTheme {
-                    val currentItems by viewModel.currentPreferenceItems.collectAsState(initial = emptyList())
+            MaterialTheme {
+                Surface {
+                    KutePreferencesTheme {
+                        val currentItems by viewModel.currentPreferenceItems.collectAsState(initial = emptyList())
 
-                    KuteOverview(
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .fillMaxWidth(),
-                        items = currentItems
-                    )
+                        KuteOverview(
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .fillMaxWidth(),
+                            items = currentItems
+                        )
+                    }
                 }
             }
         }

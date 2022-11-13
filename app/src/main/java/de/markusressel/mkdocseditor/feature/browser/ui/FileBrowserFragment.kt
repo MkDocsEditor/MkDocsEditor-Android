@@ -7,6 +7,7 @@ import android.text.InputType
 import android.view.*
 import android.widget.SearchView
 import android.widget.Toast
+import androidx.compose.material.MaterialTheme
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.os.bundleOf
 import androidx.fragment.app.activityViewModels
@@ -195,9 +196,11 @@ class FileBrowserFragment : DaggerSupportFragmentBase() {
 
         return ComposeView(requireContext()).apply {
             setContent {
-                FileBrowserScreen(
-                    viewModel = viewModel
-                )
+                MaterialTheme {
+                    FileBrowserScreen(
+                        viewModel = viewModel
+                    )
+                }
             }
         }
     }

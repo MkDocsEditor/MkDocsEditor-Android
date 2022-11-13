@@ -113,10 +113,15 @@ internal class FileBrowserViewModel @Inject constructor(
                     }
                 }
 
+                val sections = (section?.subsections
+                    ?: emptyList<SectionEntity>()).sortedBy { it.name }
+                val documents = (section?.documents
+                    ?: emptyList<DocumentEntity>()).sortedBy { it.name }
+                val resources = (section?.resources
+                    ?: emptyList<ResourceEntity>()).sortedBy { it.name }
+
                 _uiState.value = uiState.value.copy(
-                    listItems = (section?.documents ?: emptyList())
-                        + (section?.resources ?: emptyList())
-                        + (section?.subsections ?: emptyList())
+                    listItems = (sections + documents + resources)
                 )
             }
         }
