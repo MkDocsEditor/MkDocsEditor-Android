@@ -17,7 +17,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
-import de.markusressel.kutepreferences.ui.util.modifyIf
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 
@@ -38,12 +37,14 @@ fun ExpandableFabPreview() {
                 icon = MaterialDesignIconic.Icon.gmi_folder,
             ),
         ),
+        onItemClicked = {}
     )
 }
 
 @Composable
 fun ExpandableFab(
     items: List<FabConfig.Fab>,
+    onItemClicked: (FabConfig.Fab) -> Unit,
     modifier: Modifier = Modifier,
     horizontalAlignment: Alignment.Horizontal = Alignment.End,
 ) {
@@ -67,9 +68,7 @@ fun ExpandableFab(
             ) {
                 items.forEach {
                     Row(
-                        modifier = Modifier.modifyIf({ it.onClick != null }) {
-                            clickable { it.onClick?.invoke() }
-                        },
+                        modifier = Modifier.clickable { onItemClicked(it) },
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.End,
                     ) {
@@ -95,7 +94,7 @@ fun ExpandableFab(
                         FloatingActionButton(
                             modifier = Modifier.size(38.dp),
                             onClick = {
-                                it.onClick?.invoke()
+                                onItemClicked(it)
                             }
                         ) {
                             Image(

@@ -3,9 +3,7 @@ package de.markusressel.mkdocseditor.feature.browser.ui
 import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
 import com.hadilq.liveevent.LiveEvent
-import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import dagger.hilt.android.lifecycle.HiltViewModel
-import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.DataRepository
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
@@ -23,6 +21,14 @@ import kotlinx.coroutines.withContext
 import java.util.*
 import javax.inject.Inject
 
+internal sealed class UiEvent {
+    data class DocumentClicked(val item: DocumentEntity) : UiEvent()
+    data class ResourceClicked(val item: ResourceEntity) : UiEvent()
+    data class SectionClicked(val item: SectionEntity) : UiEvent()
+
+    data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
+}
+
 @HiltViewModel
 internal class FileBrowserViewModel @Inject constructor(
     private val dataRepository: DataRepository,
@@ -33,21 +39,6 @@ internal class FileBrowserViewModel @Inject constructor(
     // TODO: use savedState
     private val _uiState = MutableStateFlow(UiState())
     internal val uiState = _uiState.asStateFlow()
-
-    internal val fabConfig = FabConfig(
-        right = listOf(
-            FabConfig.Fab(id = 0,
-                description = R.string.create_document,
-                icon = MaterialDesignIconic.Icon.gmi_file_add,
-                onClick = { onCreateDocumentFabClicked() }
-            ),
-            FabConfig.Fab(id = 1,
-                description = R.string.create_section,
-                icon = MaterialDesignIconic.Icon.gmi_folder,
-                onClick = { onCreateSectionFabClicked() }
-            )
-        )
-    )
 
     private val backstack: Stack<SectionBackstackItem> = Stack()
         get() {
@@ -124,6 +115,17 @@ internal class FileBrowserViewModel @Inject constructor(
                     listItems = (sections + documents + resources)
                 )
             }
+        }
+    }
+
+    internal fun onUiEvent(event: UiEvent) = when (event) {
+        is UiEvent.DocumentClicked -> onDocumentClicked(event.item)
+        is UiEvent.ResourceClicked -> onResourceClicked(event.item)
+        is UiEvent.SectionClicked -> onSectionClicked(event.item)
+        is UiEvent.ExpandableFabItemSelected -> when (event.item.id) {
+            FAB_ID_CREATE_DOCUMENT -> onCreateDocumentFabClicked()
+            FAB_ID_CREATE_SECTION -> onCreateSectionFabClicked()
+            else -> TODO("Unhandled FAB: ${event.item}")
         }
     }
 
@@ -240,12 +242,12 @@ internal class FileBrowserViewModel @Inject constructor(
         currentSectionId.value = currentSectionId.value
     }
 
-    fun onCreateSectionFabClicked() {
+    private fun onCreateSectionFabClicked() {
         val currentSectionId = currentSectionId.value
         events.value = FileBrowserEvent.CreateSectionEvent(currentSectionId)
     }
 
-    fun onCreateDocumentFabClicked() {
+    private fun onCreateDocumentFabClicked() {
         val currentSectionId = currentSectionId.value
         events.value = FileBrowserEvent.CreateDocumentEvent(currentSectionId)
     }
@@ -255,15 +257,15 @@ internal class FileBrowserViewModel @Inject constructor(
         return true
     }
 
-    fun onDocumentClicked(entity: DocumentEntity) {
+    private fun onDocumentClicked(entity: DocumentEntity) {
         events.value = FileBrowserEvent.OpenDocumentEditorEvent(entity)
     }
 
-    fun onResourceClicked(entity: ResourceEntity) {
+    private fun onResourceClicked(entity: ResourceEntity) {
         events.value = FileBrowserEvent.DownloadResourceEvent(entity)
     }
 
-    fun onSectionClicked(entity: SectionEntity) {
+    private fun onSectionClicked(entity: SectionEntity) {
         openSection(
             sectionId = entity.id,
             addToBackstack = true

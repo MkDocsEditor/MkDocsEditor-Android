@@ -14,8 +14,6 @@ data class FabConfig(val left: List<Fab> = emptyList(), val right: List<Fab> = e
         @StringRes val description: Int,
         val icon: IIcon,
         @ColorRes val color: Int? = null,
-        val onClick: (() -> Unit)? = null,
-        val onLongClick: (() -> Boolean)? = null
     )
 
 }
