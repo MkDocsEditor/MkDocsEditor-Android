@@ -28,6 +28,7 @@ import de.markusressel.mkdocseditor.feature.main.ui.ContentLayoutType
 import de.markusressel.mkdocseditor.feature.main.ui.DevicePosture
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
 import de.markusressel.mkdocseditor.feature.main.ui.NavigationLayoutType
+import de.markusressel.mkdocseditor.feature.preferences.ui.compose.PreferencesScreen
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.activity.MainViewModel
 import de.markusressel.mkdocseditor.ui.activity.UiEvent
@@ -153,14 +154,12 @@ private fun MainScreenLayout(
         }
     }
 
-    val selectedDestination = NavItem.FileBrowser
-
     if (navigationType == NavigationLayoutType.PERMANENT_NAVIGATION_DRAWER) {
         PermanentNavigationDrawer(
             drawerContent = {
                 PermanentDrawerSheet {
                     NavigationDrawerContent(
-                        selectedDestination = selectedDestination,
+                        selectedDestination = uiState.selectedBottomBarItem,
                         onHamburgerIconClicked = {
                             //onUiEvent(UiEvent.DrawerNavItemClicked(it))
                         }
@@ -172,7 +171,8 @@ private fun MainScreenLayout(
                 navigationType = navigationType,
                 contentType = contentType,
                 uiState = uiState,
-                onUiEvent = onUiEvent
+                onUiEvent = onUiEvent,
+                selectedDestination = uiState.selectedBottomBarItem,
             )
         }
     } else {
@@ -180,7 +180,7 @@ private fun MainScreenLayout(
             drawerContent = {
                 ModalDrawerSheet {
                     NavigationDrawerContent(
-                        selectedDestination,
+                        uiState.selectedBottomBarItem,
                         onHamburgerIconClicked = {
                             onUiEvent(UiEvent.ToggleNavDrawer)
                         }
@@ -194,6 +194,7 @@ private fun MainScreenLayout(
                 contentType = contentType,
                 uiState = uiState,
                 onUiEvent = onUiEvent,
+                selectedDestination = uiState.selectedBottomBarItem,
             )
         }
     }
@@ -205,6 +206,7 @@ private fun MainScreenContent(
     contentType: ContentLayoutType,
     uiState: UiState,
     onUiEvent: (UiEvent) -> Unit,
+    selectedDestination: NavItem,
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(visible = navigationType == NavigationLayoutType.NAVIGATION_RAIL) {
@@ -220,14 +222,19 @@ private fun MainScreenContent(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.inverseOnSurface)
         ) {
-            if (contentType == ContentLayoutType.LIST_AND_DOCUMENT) {
-                MkDocsEditorListAndDocumentContent(
-                    uiState = uiState,
-                    modifier = Modifier.weight(1f),
-                )
-            } else {
-                MkDocsEditorListOnlyContent(
-                    uiState = uiState,
+            when (selectedDestination) {
+                NavItem.FileBrowser -> if (contentType == ContentLayoutType.LIST_AND_DOCUMENT) {
+                    MkDocsEditorListAndDocumentContent(
+                        uiState = uiState,
+                        modifier = Modifier.weight(1f),
+                    )
+                } else {
+                    MkDocsEditorListOnlyContent(
+                        uiState = uiState,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                NavItem.Settings -> PreferencesScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
