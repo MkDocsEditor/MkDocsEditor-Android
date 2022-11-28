@@ -4,11 +4,16 @@ import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
 import android.text.InputType
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.widget.SearchView
 import android.widget.Toast
-import androidx.compose.material.MaterialTheme
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.os.bundleOf
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -35,6 +40,7 @@ import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
 import de.markusressel.mkdocseditor.extensions.common.android.context
 import de.markusressel.mkdocseditor.feature.browser.ui.compose.FileBrowserScreen
+import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.fragment.base.DaggerSupportFragmentBase
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
@@ -86,7 +92,8 @@ class FileBrowserFragment : DaggerSupportFragmentBase() {
                 }
                 is FileBrowserEvent.DownloadResourceEvent -> {
                     // TODO: download resource
-                    Toast.makeText(requireContext(), "Not implemented :(", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Not implemented :(", Toast.LENGTH_SHORT)
+                        .show()
                 }
                 is FileBrowserEvent.ReloadEvent -> {
                     // showEmpty()
@@ -195,8 +202,9 @@ class FileBrowserFragment : DaggerSupportFragmentBase() {
         }
 
         return ComposeView(requireContext()).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                MaterialTheme {
+                MkDocsEditorTheme {
                     FileBrowserScreen(
                         viewModel = viewModel
                     )
@@ -266,8 +274,8 @@ class FileBrowserFragment : DaggerSupportFragmentBase() {
 
         navController.navigate(
             R.id.codeEditorPage, bundleOf(
-            "documentId" to documentId
-        )
+                "documentId" to documentId
+            )
         )
     }
 

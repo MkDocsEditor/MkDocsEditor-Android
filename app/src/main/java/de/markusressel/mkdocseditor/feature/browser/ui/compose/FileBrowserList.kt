@@ -5,10 +5,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -106,7 +108,7 @@ private fun DocumentListEntryPreview() {
     )
 }
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DocumentListEntry(
     item: DocumentEntity,
@@ -120,7 +122,6 @@ internal fun DocumentListEntry(
                 vertical = 4.dp
             ),
         onClick = { onClick(item) },
-        elevation = 4.dp,
     ) {
         Row(
             modifier = Modifier.padding(8.dp),
@@ -131,7 +132,7 @@ internal fun DocumentListEntry(
                     modifier = Modifier
                         .size(32.dp),
                     asset = MaterialDesignIconic.Icon.gmi_file,
-                    colorFilter = ColorFilter.tint(MaterialTheme.colors.primary),
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
                 )
 
                 if (item.offlineAvailableVisibility == View.VISIBLE) {
@@ -140,20 +141,22 @@ internal fun DocumentListEntry(
                             .size(16.dp)
                             .align(Alignment.BottomEnd),
                         asset = MaterialDesignIconic.Icon.gmi_save,
-                        colorFilter = ColorFilter.tint(Color.Companion.White),
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary),
                     )
                 }
             }
 
             Text(
                 modifier = Modifier.padding(start = 8.dp),
-                text = item.name
+                text = item.name,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ResourceListEntry(
     item: ResourceEntity,
@@ -167,7 +170,6 @@ internal fun ResourceListEntry(
                 vertical = 4.dp
             ),
         onClick = { onClick(item) },
-        elevation = 4.dp,
     ) {
         Row(
             modifier = Modifier.padding(8.dp),
@@ -177,18 +179,19 @@ internal fun ResourceListEntry(
                 modifier = Modifier
                     .size(32.dp),
                 asset = MaterialDesignIconic.Icon.gmi_attachment,
-                colorFilter = ColorFilter.tint(MaterialTheme.colors.primary),
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
             )
 
             Text(
                 modifier = Modifier.padding(start = 8.dp),
-                text = item.name
+                text = item.name,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SectionListEntry(
     item: SectionEntity,
@@ -202,7 +205,6 @@ internal fun SectionListEntry(
                 vertical = 4.dp
             ),
         onClick = { onClick(item) },
-        elevation = 4.dp,
     ) {
         Row(
             modifier = Modifier.padding(8.dp),
@@ -212,12 +214,13 @@ internal fun SectionListEntry(
                 modifier = Modifier
                     .size(32.dp),
                 asset = MaterialDesignIconic.Icon.gmi_folder,
-                colorFilter = ColorFilter.tint(MaterialTheme.colors.primary),
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
             )
 
             Text(
                 modifier = Modifier.padding(start = 8.dp),
-                text = item.name
+                text = item.name,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
     }

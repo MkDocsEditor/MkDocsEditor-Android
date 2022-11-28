@@ -14,10 +14,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.Card
 import androidx.compose.material.FloatingActionButton
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -115,7 +115,7 @@ fun ExpandableFab(
                             Image(
                                 modifier = Modifier.size(16.dp),
                                 asset = it.icon,
-                                colorFilter = ColorFilter.tint(MaterialTheme.colors.primary),
+                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
                             )
                         }
                     }
@@ -129,13 +129,14 @@ fun ExpandableFab(
 
         // main button to toggle options
         FloatingActionButton(
+            backgroundColor = MaterialTheme.colorScheme.secondary,
             onClick = {
                 expanded = expanded.not()
             }
         ) {
             Image(
                 asset = MaterialDesignIconic.Icon.gmi_plus,
-                colorFilter = ColorFilter.tint(MaterialTheme.colors.primary),
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSecondary),
             )
         }
     }
