@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 internal data class UiState(
+    val navDrawerOpen: Boolean = false,
     val selectedBottomBarItem: NavItem = NavItem.FileBrowser,
     val bottomBarNavItems: List<NavItem> = listOf(
         NavItem.FileBrowser,
@@ -18,6 +19,8 @@ internal data class UiState(
 
 internal sealed class UiEvent {
     data class BottomNavItemSelected(val item: NavItem) : UiEvent()
+    data class DrawerNavItemClicked(val item: NavItem) : UiEvent()
+    object ToggleNavDrawer : UiEvent()
 }
 
 @HiltViewModel
@@ -31,7 +34,15 @@ internal class MainViewModel @Inject constructor(
     internal fun onUiEvent(event: UiEvent) {
         when (event) {
             is UiEvent.BottomNavItemSelected -> selectBottomNavItem(event.item)
+            is UiEvent.DrawerNavItemClicked -> selectBottomNavItem(event.item)
+            UiEvent.ToggleNavDrawer -> toggleNavDrawerState()
         }
+    }
+
+    private fun toggleNavDrawerState() {
+        _uiState.value = uiState.value.copy(
+            navDrawerOpen = uiState.value.navDrawerOpen.not()
+        )
     }
 
     private fun selectBottomNavItem(item: NavItem) {

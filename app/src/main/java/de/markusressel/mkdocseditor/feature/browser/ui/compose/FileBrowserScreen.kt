@@ -2,13 +2,12 @@ package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel
 import de.markusressel.mkdocseditor.feature.browser.ui.UiEvent
 import de.markusressel.mkdocseditor.feature.browser.ui.UiState
@@ -16,11 +15,13 @@ import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
 
 @Composable
 internal fun FileBrowserScreen(
-    viewModel: FileBrowserViewModel,
+    viewModel: FileBrowserViewModel = hiltViewModel(),
+    modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     FileBrowserScreenContent(
+        modifier = modifier,
         uiState = uiState,
         onUiEvent = viewModel::onUiEvent
     )
@@ -44,12 +45,10 @@ private fun FileBrowserScreenContentPreview() {
 private fun FileBrowserScreenContent(
     uiState: UiState,
     onUiEvent: (UiEvent) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = Modifier.padding(
-            vertical = 8.dp,
-            horizontal = 8.dp,
-        )
+        modifier = modifier
     ) {
         FileBrowserList(
             items = uiState.listItems,

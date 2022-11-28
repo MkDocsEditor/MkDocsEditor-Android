@@ -143,6 +143,8 @@ dependencies {
 
     // Hilt WorkManager integration
     implementation 'androidx.hilt:hilt-work:1.0.0'
+    // Hilt Compose integration
+    implementation 'androidx.hilt:hilt-navigation-compose:1.0.0'
 
     // SingleLiveEvent similar implementation
     implementation "com.github.hadilq.liveevent:liveevent:1.2.0"

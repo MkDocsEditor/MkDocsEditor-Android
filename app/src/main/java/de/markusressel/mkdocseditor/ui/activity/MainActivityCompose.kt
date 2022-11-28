@@ -2,10 +2,8 @@ package de.markusressel.mkdocseditor.ui.activity
 
 import android.Manifest
 import android.os.Bundle
-import android.os.PersistableBundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.collectAsState
@@ -34,14 +32,9 @@ import kotlinx.coroutines.flow.stateIn
 @AndroidEntryPoint
 class MainActivityCompose : ComponentActivity() {
 
-    private val viewModel: MainViewModel by viewModels()
-
-    @OptIn(
-        ExperimentalMaterial3WindowSizeClassApi::class,
-        ExperimentalMaterial3WindowSizeClassApi::class
-    )
-    override fun onCreate(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
-        super.onCreate(savedInstanceState, persistentState)
+    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
         /**
          * Flow of [DevicePosture] that emits every time there's a change in the windowLayoutInfo
@@ -74,7 +67,6 @@ class MainActivityCompose : ComponentActivity() {
                 val windowSize = calculateWindowSizeClass(this)
                 val devicePosture by devicePostureFlow.collectAsState()
                 MainScreen(
-                    mainViewModel = viewModel,
                     windowSize = windowSize.widthSizeClass,
                     devicePosture = devicePosture,
                 )

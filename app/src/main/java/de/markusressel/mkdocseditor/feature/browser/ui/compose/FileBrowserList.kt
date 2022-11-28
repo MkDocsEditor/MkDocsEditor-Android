@@ -55,7 +55,12 @@ internal fun FileBrowserList(
     onSectionClicked: (SectionEntity) -> Unit,
 ) {
     Column(
-        modifier = Modifier.verticalScroll(rememberScrollState())
+        modifier = Modifier
+            .verticalScroll(rememberScrollState())
+            .padding(
+                vertical = 8.dp,
+                horizontal = 8.dp,
+            )
     ) {
         items.forEachIndexed { index, item ->
             FileBrowserListEntry(

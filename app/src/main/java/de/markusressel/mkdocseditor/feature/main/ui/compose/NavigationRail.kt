@@ -1,27 +1,36 @@
 package de.markusressel.mkdocseditor.feature.main.ui.compose
 
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
 
 @Composable
-fun BottomBar(
-    selectedNavItem: NavItem,
+fun MkDocsEditorNavigationRail(
     navItems: List<NavItem>,
+    selectedNavItem: NavItem,
     onItemSelected: (NavItem) -> Unit,
+    onToggleMenu: () -> Unit,
 ) {
-    NavigationBar(modifier = Modifier.fillMaxWidth()) {
+    NavigationRail(modifier = Modifier.fillMaxHeight()) {
+
+        NavigationRailItem(
+            selected = false,
+            onClick = onToggleMenu,
+            icon = { Icon(imageVector = Icons.Default.Menu, contentDescription = "") }
+        )
+
         for (item in navItems) {
-            NavigationBarItem(
+            NavigationRailItem(
                 icon = {
                     Icon(
                         imageVector = when (item) {

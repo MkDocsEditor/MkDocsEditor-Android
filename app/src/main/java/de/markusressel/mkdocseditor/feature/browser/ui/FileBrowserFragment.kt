@@ -206,7 +206,7 @@ class FileBrowserFragment : DaggerSupportFragmentBase() {
             setContent {
                 MkDocsEditorTheme {
                     FileBrowserScreen(
-                        viewModel = viewModel
+                        viewModel = viewModel,
                     )
                 }
             }

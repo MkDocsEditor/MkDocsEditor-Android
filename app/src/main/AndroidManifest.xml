@@ -24,7 +24,7 @@
         android:usesCleartextTraffic="true">
 
         <activity
-            android:name="de.markusressel.mkdocseditor.ui.activity.MainActivity"
+            android:name="de.markusressel.mkdocseditor.ui.activity.MainActivityCompose"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
