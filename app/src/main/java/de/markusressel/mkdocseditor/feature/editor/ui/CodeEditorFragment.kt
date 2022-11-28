@@ -1,10 +1,16 @@
-package de.markusressel.mkdocseditor.feature.editor
+package de.markusressel.mkdocseditor.feature.editor.ui
 
 import android.content.Context
 import android.graphics.Matrix
 import android.graphics.PointF
 import android.os.Bundle
-import android.view.*
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import androidx.annotation.CallSuper
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.viewModels

@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.feature.editor
+package de.markusressel.mkdocseditor.feature.editor.ui
 
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import java.util.*

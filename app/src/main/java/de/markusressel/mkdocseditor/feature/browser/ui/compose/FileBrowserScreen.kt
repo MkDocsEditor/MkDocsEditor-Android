@@ -10,7 +10,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel
 import de.markusressel.mkdocseditor.feature.browser.ui.UiEvent
 import de.markusressel.mkdocseditor.feature.browser.ui.UiState
-import de.markusressel.mkdocseditor.ui.compose.ExpandableFab
+import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
 
 @Composable
 internal fun FileBrowserScreen(

@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.feature.preferences
+package de.markusressel.mkdocseditor.feature.preferences.domain
 
 
 import de.markusressel.kutepreferences.core.preference.KutePreferenceListItem

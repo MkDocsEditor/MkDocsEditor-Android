@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.feature.preferences
+package de.markusressel.mkdocseditor.feature.preferences.ui
 
 import android.os.Bundle
 import android.view.LayoutInflater

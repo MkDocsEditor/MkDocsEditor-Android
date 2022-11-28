@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.feature.main
+package de.markusressel.mkdocseditor.feature.main.ui.compose
 
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem

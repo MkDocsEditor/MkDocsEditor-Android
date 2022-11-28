@@ -9,8 +9,8 @@ import androidx.annotation.LayoutRes
 import androidx.appcompat.app.AppCompatActivity
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.databinding.ActivityMainBinding
+import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.ui.IconHandler
 import de.markusressel.mkdocseditor.ui.ThemeHelper
 import de.markusressel.mkdocsrestclient.BasicAuthConfig

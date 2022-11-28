@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.data
+package de.markusressel.mkdocseditor.feature.preferences.data
 
 //import de.markusressel.kutepreferences.core.preference.action.KuteAction
 //import de.markusressel.kutepreferences.core.preference.text.password.KutePasswordPreference
@@ -17,8 +17,12 @@ import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceM
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
-import de.markusressel.mkdocseditor.event.*
-import de.markusressel.mkdocseditor.feature.preferences.LastOfflineCacheUpdatePreferenceItem
+import de.markusressel.mkdocseditor.event.BasicAuthUserChangedEvent
+import de.markusressel.mkdocseditor.event.HostChangedEvent
+import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
+import de.markusressel.mkdocseditor.event.PortChangedEvent
+import de.markusressel.mkdocseditor.event.ThemeChangedEvent
+import de.markusressel.mkdocseditor.feature.preferences.domain.LastOfflineCacheUpdatePreferenceItem
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.ui.IconHandler
 import javax.inject.Inject

@@ -1,9 +1,9 @@
-package de.markusressel.mkdocseditor.feature.preferences
+package de.markusressel.mkdocseditor.feature.preferences.ui
 
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.kutepreferences.core.KuteNavigator
 import de.markusressel.kutepreferences.ui.vm.KutePreferencesViewModel
-import de.markusressel.mkdocseditor.data.KutePreferencesHolder
+import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import javax.inject.Inject
 
 @HiltViewModel

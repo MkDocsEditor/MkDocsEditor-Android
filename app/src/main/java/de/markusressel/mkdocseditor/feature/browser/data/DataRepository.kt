@@ -1,8 +1,5 @@
-package de.markusressel.mkdocseditor.data
+package de.markusressel.mkdocseditor.feature.browser.data
 
-import androidx.lifecycle.asFlow
-import androidx.paging.LivePagedListBuilder
-import androidx.paging.PagedList
 import com.github.ajalt.timberkt.Timber
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
@@ -13,13 +10,11 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntit
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.networkBoundResource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
-import io.objectbox.android.ObjectBoxDataSource.Factory
 import io.objectbox.kotlin.query
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -103,46 +98,6 @@ class DataRepository @Inject constructor(
                 failure = { error ->
                     Timber.e(error)
                     throw error
-                }
-            )
-        },
-        shouldFetch = {
-            offlineModeManager.isEnabled().not()
-        }
-    )
-
-    /**
-     * Get a section with the given id
-     */
-    fun getSectionPaged(
-        sectionId: String,
-        pageSize: Int
-    ): Flow<Resource<PagedList<SectionEntity>>> = networkBoundResource(
-        query = {
-            LivePagedListBuilder(
-                Factory(
-                    sectionPersistenceManager.standardOperation().query {
-                        equal(SectionEntity_.id, sectionId)
-                        // TODO: implement sorting with inhomogeneous types
-                        // sort(TYPE_COMPARATOR)
-                    }),
-//                documentPersistenceManager!!.standardOperation().query {
-//
-//                }),
-                pageSize
-            ).build().asFlow()
-        },
-        fetch = {
-            restClient.getItemTree()
-        },
-        saveFetchResult = {
-            it.fold(
-                success = { sectionModel ->
-                    val entity = sectionModel.asEntity(documentContentPersistenceManager)
-                    sectionPersistenceManager.insertOrUpdateRoot(entity)
-                },
-                failure = { error ->
-                    Timber.e(error)
                 }
             )
         },

@@ -3,6 +3,7 @@ package de.markusressel.mkdocseditor.service
 import android.app.job.JobParameters
 import android.app.job.JobService
 import android.os.Handler
+import android.os.Looper
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.AndroidEntryPoint
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
@@ -26,7 +27,7 @@ class OfflineCacheSyncService : JobService() {
     @Inject
     internal lateinit var documentContentPersistenceManager: DocumentContentPersistenceManager
 
-    private val handler = Handler()
+    private val handler = Handler(Looper.getMainLooper())
 
     override fun onStartJob(params: JobParameters): Boolean {
         val documentIds = params.extras.getStringArray(DOCUMENT_IDS_KEY)
