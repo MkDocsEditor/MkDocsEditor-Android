@@ -11,12 +11,14 @@ import de.markusressel.kutepreferences.core.preference.category.KuteCategory
 import de.markusressel.kutepreferences.core.preference.number.KuteNumberPreference
 import de.markusressel.kutepreferences.core.preference.section.KuteSection
 import de.markusressel.kutepreferences.core.preference.select.KuteSingleSelectStringPreference
+import de.markusressel.kutepreferences.core.preference.text.KutePasswordPreference
 import de.markusressel.kutepreferences.core.preference.text.KuteTextPreference
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
+import de.markusressel.mkdocseditor.event.BasicAuthPasswordChangedEvent
 import de.markusressel.mkdocseditor.event.BasicAuthUserChangedEvent
 import de.markusressel.mkdocseditor.event.HostChangedEvent
 import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
@@ -64,7 +66,7 @@ class KutePreferencesHolder @Inject constructor(
                     title = context.getString(R.string.divider_basic_auth_title),
                     children = listOf(
                         basicAuthUserPreference,
-//                        basicAuthPasswordPreference
+                        basicAuthPasswordPreference
                     )
                 ), KuteSection(
                     key = R.string.section_web_key,
@@ -136,14 +138,14 @@ class KutePreferencesHolder @Inject constructor(
 
     val restConnectionPortPreference by lazy {
         KuteNumberPreference(key = R.string.connection_port_key,
-                title = context.getString(R.string.connection_port_title),
-                defaultValue = 7413,
-                minimum = 0,
-                maximum = 65535,
-                dataProvider = dataProvider,
-                onPreferenceChangedListener = { old, new ->
-                    Bus.send(PortChangedEvent(new.toInt()))
-                })
+            title = context.getString(R.string.connection_port_title),
+            defaultValue = 7413,
+            minimum = 0,
+            maximum = 65535,
+            dataProvider = dataProvider,
+            onPreferenceChangedListener = { old, new ->
+                Bus.send(PortChangedEvent(new.toInt()))
+            })
     }
 
     val restConnectionSslPreference by lazy {
@@ -166,15 +168,15 @@ class KutePreferencesHolder @Inject constructor(
             })
     }
 
-//    val basicAuthPasswordPreference by lazy {
-//        KutePasswordPreference(key = R.string.connection_basic_auth_password_key,
-//            title = context.getString(R.string.connection_basic_auth_password_title),
-//            defaultValue = "",
-//            dataProvider = dataProvider,
-//            onPreferenceChangedListener = { old, new ->
-//                Bus.send(BasicAuthPasswordChangedEvent(new))
-//            })
-//    }
+    val basicAuthPasswordPreference by lazy {
+        KutePasswordPreference(key = R.string.connection_basic_auth_password_key,
+            title = context.getString(R.string.connection_basic_auth_password_title),
+            defaultValue = "",
+            dataProvider = dataProvider,
+            onPreferenceChangedListener = { old, new ->
+                Bus.send(BasicAuthPasswordChangedEvent(new))
+            })
+    }
 
     val webUriPreference by lazy {
         KuteTextPreference(key = R.string.connection_web_url_key,

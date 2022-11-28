@@ -77,9 +77,7 @@ abstract class SupportActivityBase : AppCompatActivity() {
         restClient.setBasicAuthConfig(
             BasicAuthConfig(
                 username = preferencesHolder.basicAuthUserPreference.persistedValue.value,
-                password = "",
-                // TODO: implement password preference
-                //password = preferencesHolder.basicAuthPasswordPreference.persistedValue
+                password = preferencesHolder.basicAuthPasswordPreference.persistedValue.value
             )
         )
 

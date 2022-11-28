@@ -86,9 +86,7 @@ internal class CodeEditorViewModel @Inject constructor(
         ssl = preferencesHolder.restConnectionSslPreference.persistedValue.value,
         basicAuthConfig = BasicAuthConfig(
             preferencesHolder.basicAuthUserPreference.persistedValue.value,
-            "",
-            // TODO: implement password preference
-            //preferencesHolder.basicAuthPasswordPreference.persistedValue
+            preferencesHolder.basicAuthPasswordPreference.persistedValue.value
         ),
         documentId = documentId.value!!,
         currentText = {
@@ -140,9 +138,9 @@ internal class CodeEditorViewModel @Inject constructor(
                 offlineModeManager.isEnabled
             ) { status, editable, offlineModeEnabled ->
                 (status?.connected ?: false)
-                    && editable
-                    && offlineModeEnabled.not()
-                    && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
+                        && editable
+                        && offlineModeEnabled.not()
+                        && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
             }.collect {
                 editModeActive.value = it
             }
