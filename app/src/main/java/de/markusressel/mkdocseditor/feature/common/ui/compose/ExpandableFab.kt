@@ -1,10 +1,13 @@
 package de.markusressel.mkdocseditor.feature.common.ui.compose
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
+import androidx.compose.animation.core.Spring.StiffnessMedium
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,11 +29,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
@@ -73,10 +79,18 @@ fun ExpandableFab(
         verticalArrangement = Arrangement.Bottom,
         horizontalAlignment = horizontalAlignment,
     ) {
+        val density = LocalDensity.current
         AnimatedVisibility(
+            modifier = Modifier.zIndex(90F),
             visible = expanded,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically(),
+            enter = fadeIn() + slideInVertically {
+                with(density) { 20.dp.roundToPx() }
+            },
+            exit = fadeOut(
+                animationSpec = spring(stiffness = StiffnessMedium)
+            ) + slideOutVertically {
+                with(density) { 20.dp.roundToPx() }
+            },
         ) {
             Column(
                 modifier = Modifier.padding(end = 8.dp),
@@ -133,8 +147,16 @@ fun ExpandableFab(
             }
         }
 
+        val animatedRotation by animateFloatAsState(
+            targetValue = when {
+                expanded -> 360F + 45F
+                else -> 0F
+            }
+        )
+
         // main button to toggle options
         FloatingActionButton(
+            modifier = Modifier.zIndex(100F),
             backgroundColor = MaterialTheme.colorScheme.secondary,
             onClick = {
                 expanded = expanded.not()
@@ -142,6 +164,9 @@ fun ExpandableFab(
             contentColor = MaterialTheme.colorScheme.onSecondary
         ) {
             Image(
+                modifier = Modifier
+                    .size(24.dp)
+                    .rotate(animatedRotation),
                 asset = MaterialDesignIconic.Icon.gmi_plus,
                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSecondary),
             )
