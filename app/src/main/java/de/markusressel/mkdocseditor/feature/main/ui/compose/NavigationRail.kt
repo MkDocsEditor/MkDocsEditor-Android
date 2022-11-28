@@ -26,7 +26,13 @@ fun MkDocsEditorNavigationRail(
         NavigationRailItem(
             selected = false,
             onClick = onToggleMenu,
-            icon = { Icon(imageVector = Icons.Default.Menu, contentDescription = "") }
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = "",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         )
 
         for (item in navItems) {
