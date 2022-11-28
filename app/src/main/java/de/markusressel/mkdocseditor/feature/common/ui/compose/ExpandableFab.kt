@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.Text
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -93,6 +94,9 @@ fun ExpandableFab(
                                 bottom = 4.dp,
                                 start = 8.dp,
                                 end = 16.dp,
+                            ),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.tertiary
                             )
                         ) {
                             Column(
@@ -101,7 +105,8 @@ fun ExpandableFab(
                                 Text(
                                     modifier = Modifier.padding(8.dp),
                                     textAlign = TextAlign.Center,
-                                    text = stringResource(id = it.description)
+                                    text = stringResource(id = it.description),
+                                    color = MaterialTheme.colorScheme.onTertiary,
                                 )
                             }
                         }
@@ -110,12 +115,13 @@ fun ExpandableFab(
                             modifier = Modifier.size(38.dp),
                             onClick = {
                                 onItemClicked(it)
-                            }
+                            },
+                            backgroundColor = MaterialTheme.colorScheme.tertiaryContainer,
                         ) {
                             Image(
                                 modifier = Modifier.size(16.dp),
                                 asset = it.icon,
-                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
+                                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onTertiaryContainer),
                             )
                         }
                     }
@@ -132,7 +138,8 @@ fun ExpandableFab(
             backgroundColor = MaterialTheme.colorScheme.secondary,
             onClick = {
                 expanded = expanded.not()
-            }
+            },
+            contentColor = MaterialTheme.colorScheme.onSecondary
         ) {
             Image(
                 asset = MaterialDesignIconic.Icon.gmi_plus,
