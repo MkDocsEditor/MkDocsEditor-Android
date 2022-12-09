@@ -88,7 +88,7 @@ internal class FileBrowserViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            currentSection.filterNotNull().collectLatest { response: StoreResponse<SectionEntity> ->
+            currentSection.filterNotNull().collect { response: StoreResponse<SectionEntity> ->
                 if (response is StoreResponse.Error) {
                     showError(errorMessage = response.errorMessageOrNull() ?: "Error fetching data")
                 }
@@ -96,18 +96,13 @@ internal class FileBrowserViewModel @Inject constructor(
                 val section = response.dataOrNull()
 
                 if (response is StoreResponse.Loading && section == null) {
+                    _uiState.value = uiState.value.copy(
+                        isLoading = true
+                    )
                     //showLoading()
-                } else {
-                    //showContent()
                 }
 
-                if (section != null) {
-                    if (section.subsections.isEmpty() and section.documents.isEmpty() and section.resources.isEmpty()) {
-//                        showEmpty()
-                    } else {
-//                        hideEmpty()
-                    }
-                } else {
+                if (section == null) {
                     // in theory this will navigate back until a section is found
                     // or otherwise show the "empty" screen
                     if (!navigateUp()) {
@@ -126,6 +121,12 @@ internal class FileBrowserViewModel @Inject constructor(
                 _uiState.value = uiState.value.copy(
                     listItems = (sections + documents + resources)
                 )
+
+                if (response is StoreResponse.Error || response is StoreResponse.NoNewData || response is StoreResponse.Data) {
+                    _uiState.value = uiState.value.copy(
+                        isLoading = false
+                    )
+                }
             }
         }
     }
