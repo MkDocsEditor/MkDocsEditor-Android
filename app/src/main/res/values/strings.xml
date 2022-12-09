@@ -12,6 +12,8 @@
     <string name="error_and_no_offline_version">There was an error connecting to the server and there is
     no offline version available for read-only mode: %1$s</string>
 
+    <string name="file_browser_empty">No files</string>
+
     <string name="refresh">Refresh</string>
     <string name="open_in_browser">Open in browser</string>
     <string name="code_editor_edit_mode">Edit Mode</string>

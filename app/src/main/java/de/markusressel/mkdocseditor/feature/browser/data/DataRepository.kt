@@ -1,16 +1,8 @@
 package de.markusressel.mkdocseditor.feature.browser.data
 
 import com.github.ajalt.timberkt.Timber
-import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
-import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
+import de.markusressel.mkdocseditor.data.persistence.*
+import de.markusressel.mkdocseditor.data.persistence.entity.*
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.networkBoundResource
@@ -185,7 +177,7 @@ class DataRepository @Inject constructor(
         val parentSection = sectionPersistenceManager.findById(parentSectionId)
             ?: throw IllegalStateException(
                 "Parent section could not be found in persistence" +
-                        " while trying to create a new document in it"
+                    " while trying to create a new document in it"
             )
 
         return restClient.createDocument(parentSectionId, documentName).fold<String>(
@@ -196,9 +188,9 @@ class DataRepository @Inject constructor(
                 )
                 return it.id
             }, failure = {
-                Timber.e(it) { "Error creating document" }
-                throw it
-            })
+            Timber.e(it) { "Error creating document" }
+            throw it
+        })
     }
 
     suspend fun updateDocumentContentInCache(documentId: String, text: String) {
@@ -223,6 +215,19 @@ class DataRepository @Inject constructor(
             zoomLevel = zoomLevel,
             panX = panX,
             panY = panY
+        )
+    }
+
+    suspend fun loadFileTree() {
+        restClient.getItemTree().fold(
+            success = { sectionModel ->
+                val entity = sectionModel.asEntity(documentContentPersistenceManager)
+                sectionPersistenceManager.insertOrUpdateRoot(entity)
+            },
+            failure = { error ->
+                Timber.e(error)
+                throw error
+            }
         )
     }
 

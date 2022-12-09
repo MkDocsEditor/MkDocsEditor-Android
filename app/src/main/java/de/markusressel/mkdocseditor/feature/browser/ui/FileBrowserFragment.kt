@@ -4,12 +4,7 @@ import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
 import android.text.InputType
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.SearchView
 import android.widget.Toast
 import androidx.compose.ui.platform.ComposeView
@@ -87,6 +82,9 @@ class FileBrowserFragment : DaggerSupportFragmentBase() {
 
         viewModel.events.observe(viewLifecycleOwner) { event ->
             when (event) {
+                is FileBrowserEvent.ErrorEvent -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                }
                 is FileBrowserEvent.OpenDocumentEditorEvent -> {
                     openDocumentEditor(event.entity.id)
                 }

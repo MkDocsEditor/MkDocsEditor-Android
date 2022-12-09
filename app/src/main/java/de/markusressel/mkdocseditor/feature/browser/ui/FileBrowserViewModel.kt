@@ -9,24 +9,23 @@ import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.browser.data.SectionBackstackItem
+import de.markusressel.mkdocseditor.feature.browser.ui.usecase.CreateNewSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.GetSectionContentUseCase
+import de.markusressel.mkdocseditor.feature.browser.ui.usecase.ReloadFileTreeUseCase
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.ui.viewmodel.EntityListViewModel
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
 import javax.inject.Inject
 
 internal sealed class UiEvent {
+    object Refresh : UiEvent()
+
     data class DocumentClicked(val item: DocumentEntity) : UiEvent()
     data class ResourceClicked(val item: ResourceEntity) : UiEvent()
     data class SectionClicked(val item: SectionEntity) : UiEvent()
@@ -38,7 +37,9 @@ internal sealed class UiEvent {
 internal class FileBrowserViewModel @Inject constructor(
     private val dataRepository: DataRepository,
     private val restClient: MkDocsRestClient,
+    private val reloadFileTreeUseCase: ReloadFileTreeUseCase,
     private val getSectionContentUseCase: GetSectionContentUseCase,
+    private val createNewSectionUseCase: CreateNewSectionUseCase,
 ) : EntityListViewModel() {
 
     // TODO: use savedState
@@ -85,7 +86,8 @@ internal class FileBrowserViewModel @Inject constructor(
 
                 if (resource is Resource.Error) {
                     // TODO: show error
-                    //context?.toast("Error: ${resource.error?.message}", Toast.LENGTH_LONG)
+                    events.value = FileBrowserEvent.ErrorEvent(resource.error?.message
+                        ?: "Error fetching data")
                 }
 
                 if (resource is Resource.Loading && section == null) {
@@ -124,6 +126,7 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     internal fun onUiEvent(event: UiEvent) = when (event) {
+        is UiEvent.Refresh -> reload()
         is UiEvent.DocumentClicked -> onDocumentClicked(event.item)
         is UiEvent.ResourceClicked -> onResourceClicked(event.item)
         is UiEvent.SectionClicked -> onSectionClicked(event.item)
@@ -215,7 +218,7 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     fun createNewSection(sectionName: String) = viewModelScope.launch {
-        dataRepository.createNewSection(sectionName, currentSectionId.value)
+        createNewSectionUseCase(sectionName, currentSectionId.value)
     }
 
     fun createNewDocument(documentName: String) = viewModelScope.launch {

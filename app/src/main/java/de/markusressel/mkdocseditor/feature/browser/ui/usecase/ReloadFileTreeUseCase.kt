@@ -1,0 +1,12 @@
+package de.markusressel.mkdocseditor.feature.browser.ui.usecase
+
+import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
+import javax.inject.Inject
+
+internal class ReloadFileTreeUseCase @Inject constructor(
+    private val dataRepository: DataRepository,
+) {
+    suspend operator fun invoke() {
+        dataRepository.loadFileTree()
+    }
+}
