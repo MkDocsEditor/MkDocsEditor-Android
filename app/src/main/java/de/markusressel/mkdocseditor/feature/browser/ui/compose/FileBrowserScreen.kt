@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,9 +29,20 @@ internal fun FileBrowserScreen(
     onNavigationEvent: (NavigationEvent) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: FileBrowserViewModel = hiltViewModel(),
+    onBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+
+    BackHandler(
+        enabled = uiState.canGoUp,
+        onBack = {
+            val consumed = viewModel.navigateUp()
+            if (consumed.not()) {
+                onBack()
+            }
+        },
+    )
 
     // Runs only on initial composition
     LaunchedEffect(key1 = Unit) {

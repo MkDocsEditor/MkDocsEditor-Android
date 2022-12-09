@@ -206,6 +206,10 @@ internal class FileBrowserViewModel @Inject constructor(
 
         // set the section id on the ViewModel
         currentSectionId.value = sectionId
+
+        _uiState.value = uiState.value.copy(
+            canGoUp = (currentSectionId.value == ROOT_SECTION_ID || backstack.size <= 1).not()
+        )
     }
 
     /**
@@ -252,6 +256,9 @@ internal class FileBrowserViewModel @Inject constructor(
     private fun showTopLevel() {
         backstack.clear()
         currentSectionId.value = ROOT_SECTION_ID
+        _uiState.value = uiState.value.copy(
+            canGoUp = false
+        )
     }
 
     fun createNewSection(sectionName: String) = viewModelScope.launch {

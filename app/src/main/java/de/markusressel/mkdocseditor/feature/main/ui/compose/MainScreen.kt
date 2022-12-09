@@ -232,22 +232,24 @@ private fun MainScreenContent(
                 when (selectedDestination) {
                     NavItem.FileBrowser -> if (contentType == ContentLayoutType.LIST_AND_DOCUMENT) {
                         MkDocsEditorListAndDocumentContent(
+                            modifier = Modifier.weight(1f),
                             //onNavigationEvent = onNavigationEvent,
                             mainUiState = uiState,
-                            modifier = Modifier.weight(1f),
+                            onBack = onBack,
                         )
                     } else {
                         MkDocsEditorListOnlyContent(
+                            modifier = Modifier.weight(1f),
                             //onNavigationEvent = onNavigationEvent,
                             uiState = uiState,
-                            modifier = Modifier.weight(1f)
+                            onBack = onBack
                         )
                     }
                     NavItem.Settings -> PreferencesScreen(
                         modifier = Modifier.weight(1f),
-                    onBack = {
-                        onUiEvent(UiEvent.BottomNavItemSelected(NavItem.FileBrowser))
-                    }
+                        onBack = {
+                            onUiEvent(UiEvent.BottomNavItemSelected(NavItem.FileBrowser))
+                        }
                     )
                 }
 
@@ -269,6 +271,7 @@ private fun MkDocsEditorListOnlyContent(
     codeEditorViewModel: CodeEditorViewModel = hiltViewModel(),
     uiState: UiState,
     modifier: Modifier = Modifier,
+    onBack: () -> Unit,
 ) {
     val documentId by codeEditorViewModel.documentId.collectAsState()
     if (documentId != null) {
@@ -285,7 +288,8 @@ private fun MkDocsEditorListOnlyContent(
                     }
                 }
             },
-            modifier = modifier
+            modifier = modifier,
+            onBack = onBack
         )
     }
 }
@@ -297,6 +301,7 @@ private fun MkDocsEditorListAndDocumentContent(
     modifier: Modifier = Modifier,
     fileBrowserViewModel: FileBrowserViewModel = hiltViewModel(),
     codeEditorViewModel: CodeEditorViewModel = hiltViewModel(),
+    onBack: () -> Unit,
 ) {
 
     val uiState by fileBrowserViewModel.uiState.collectAsState()
@@ -311,6 +316,7 @@ private fun MkDocsEditorListAndDocumentContent(
                     }
                 }
             },
+            onBack = onBack,
         )
 
         val documentId by codeEditorViewModel.documentId.collectAsState()
