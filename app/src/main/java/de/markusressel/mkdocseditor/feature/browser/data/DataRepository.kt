@@ -1,16 +1,18 @@
 package de.markusressel.mkdocseditor.feature.browser.data
 
+import com.dropbox.android.external.store4.Fetcher
+import com.dropbox.android.external.store4.SourceOfTruth
+import com.dropbox.android.external.store4.Store
+import com.dropbox.android.external.store4.StoreBuilder
 import com.github.ajalt.timberkt.Timber
 import de.markusressel.mkdocseditor.data.persistence.*
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.*
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.util.NetworkBoundResource
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.networkBoundResource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
+import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.objectbox.kotlin.query
 import io.objectbox.kotlin.toFlow
 import io.objectbox.query.QueryBuilder
@@ -54,6 +56,29 @@ class DataRepository @Inject constructor(
 
         return sections + documents + resources
     }
+
+    val sectionStore: Store<String, SectionEntity> = StoreBuilder
+        .from(
+            fetcher = Fetcher.of { sectionId ->
+                val rootSectionModel = restClient.getItemTree().get()
+                // NOTE: this always fetches the whole tree
+                rootSectionModel
+            },
+            sourceOfTruth = SourceOfTruth.of<String, SectionModel, SectionEntity>(
+                reader = { sectionId -> sectionPersistenceManager.findByIdFlow(sectionId) },
+                writer = { key, input ->
+                    // NOTE: this always stores the whole tree
+                    val entity = input.asEntity(documentContentPersistenceManager)
+                    sectionPersistenceManager.insertOrUpdateRoot(entity)
+                },
+                delete = { sectionId ->
+                    sectionPersistenceManager.delete(sectionId)
+                },
+                deleteAll = {
+                    sectionPersistenceManager.deleteAll()
+                }
+            )
+        ).build()
 
     fun getSection(sectionId: String) = NetworkBoundResource(
         query = {

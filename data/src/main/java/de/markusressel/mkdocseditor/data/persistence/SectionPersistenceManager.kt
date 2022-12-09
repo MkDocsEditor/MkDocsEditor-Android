@@ -160,6 +160,23 @@ class SectionPersistenceManager @Inject constructor(
         resourcePersistenceManager.standardOperation().removeByIds(missingResourceIds.toList())
     }
 
+    /**
+     * Deletes the section with the given [sectionId] from the persistence.
+     *
+     * @param sectionId ID of the section
+     */
+    fun delete(sectionId: String) {
+        val existingSectionIds = standardOperation().query {
+            equal(SectionEntity_.id, sectionId, QueryBuilder.StringOrder.CASE_INSENSITIVE)
+        }.findIds()
+
+        standardOperation().removeByIds(existingSectionIds.toList())
+    }
+
+    fun deleteAll() {
+        standardOperation().removeAll()
+    }
+
     companion object {
 
         /**

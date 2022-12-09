@@ -34,8 +34,7 @@
         {
           "id": "5:6896572699860369712",
           "name": "filesize",
-          "type": 6,
-          "flags": 4
+          "type": 6
         },
         {
           "id": "6:682055277767430250",
@@ -47,7 +46,7 @@
           "name": "parentSectionId",
           "indexId": "1:7990348667738896496",
           "type": 11,
-          "flags": 1548,
+          "flags": 520,
           "relationTarget": "SectionEntity"
         },
         {
@@ -60,7 +59,7 @@
           "name": "contentId",
           "indexId": "7:5786982190605967800",
           "type": 11,
-          "flags": 1548,
+          "flags": 520,
           "relationTarget": "DocumentContentEntity"
         }
       ],
@@ -97,8 +96,7 @@
         {
           "id": "5:4807809307958319444",
           "name": "filesize",
-          "type": 6,
-          "flags": 4
+          "type": 6
         },
         {
           "id": "6:6856905628506227446",
@@ -110,7 +108,7 @@
           "name": "parentSectionId",
           "indexId": "2:7773549802821406266",
           "type": 11,
-          "flags": 1548,
+          "flags": 520,
           "relationTarget": "SectionEntity"
         }
       ],
@@ -172,38 +170,33 @@
           "name": "documentEntityId",
           "indexId": "4:1862623307980537823",
           "type": 11,
-          "flags": 1548,
+          "flags": 520,
           "relationTarget": "DocumentEntity"
         },
         {
           "id": "5:3855238911964327630",
           "name": "zoomLevel",
-          "type": 7,
-          "flags": 4
+          "type": 7
         },
         {
           "id": "6:6797550487402286039",
           "name": "panX",
-          "type": 7,
-          "flags": 4
+          "type": 7
         },
         {
           "id": "7:7940162275998274710",
           "name": "panY",
-          "type": 7,
-          "flags": 4
+          "type": 7
         },
         {
           "id": "8:5804734994323400310",
           "name": "selection",
-          "type": 5,
-          "flags": 4
+          "type": 5
         },
         {
           "id": "9:6831743925540741243",
           "name": "date",
-          "type": 6,
-          "flags": 4
+          "type": 6
         }
       ],
       "relations": []
