@@ -74,6 +74,9 @@ dependencies {
     api "io.objectbox:objectbox-kotlin:$objectboxVersion"
     kapt "io.objectbox:objectbox-processor:$objectboxVersion"
 
+    // Store
+    def store_version = "4.0.7"
+    api "org.mobilenativefoundation.store:store4:${store_version}"
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test:runner:1.5.1'

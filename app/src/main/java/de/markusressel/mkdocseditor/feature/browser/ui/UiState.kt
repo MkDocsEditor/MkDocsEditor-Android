@@ -22,6 +22,7 @@ internal data class UiState(
     ),
 
     val isLoading: Boolean = false,
+    val error: String? = null,
 
     val isSearchExpanded: Boolean = false,
     val currentSearchFilter: String = "",

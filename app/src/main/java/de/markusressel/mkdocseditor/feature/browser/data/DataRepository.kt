@@ -1,23 +1,23 @@
 package de.markusressel.mkdocseditor.feature.browser.data
 
+import com.dropbox.android.external.store4.Fetcher
+import com.dropbox.android.external.store4.SourceOfTruth
+import com.dropbox.android.external.store4.Store
+import com.dropbox.android.external.store4.StoreBuilder
 import com.github.ajalt.timberkt.Timber
-import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
-import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
+import de.markusressel.mkdocseditor.data.persistence.*
+import de.markusressel.mkdocseditor.data.persistence.entity.*
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.networkBoundResource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
+import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.objectbox.kotlin.query
+import io.objectbox.kotlin.toFlow
+import io.objectbox.query.QueryBuilder
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -56,63 +56,35 @@ class DataRepository @Inject constructor(
         return sections + documents + resources
     }
 
-    /**
-     * Get the root section
-     */
-    fun getRootSection() = networkBoundResource(
-        query = {
-            flowOf(sectionPersistenceManager.getRootSection())
-        },
-        fetch = {
-            restClient.getItemTree()
-        },
-        saveFetchResult = {
-            it.fold(
-                success = { sectionModel ->
-                    val entity = sectionModel.asEntity(documentContentPersistenceManager)
+    val sectionStore: Store<String, SectionEntity> = StoreBuilder
+        .from(
+            fetcher = Fetcher.of { sectionId ->
+                val rootSectionModel = restClient.getItemTree().get()
+                // NOTE: this always fetches the whole tree
+                rootSectionModel
+            },
+            sourceOfTruth = SourceOfTruth.of<String, SectionModel, SectionEntity>(
+                reader = { sectionId -> sectionPersistenceManager.findByIdFlow(sectionId) },
+                writer = { key, input ->
+                    // NOTE: this always stores the whole tree
+                    val entity = input.asEntity(documentContentPersistenceManager)
                     sectionPersistenceManager.insertOrUpdateRoot(entity)
                 },
-                failure = { error ->
-                    Timber.e(error)
-                }
-            )
-        },
-        shouldFetch = {
-            offlineModeManager.isEnabled().not()
-        }
-    )
-
-    fun getSection(sectionId: String): Flow<Resource<SectionEntity?>> = networkBoundResource(
-        query = {
-            flowOf(sectionPersistenceManager.findById(sectionId))
-        },
-        fetch = {
-            restClient.getItemTree()
-        },
-        saveFetchResult = {
-            it.fold(
-                success = { sectionModel ->
-                    val entity = sectionModel.asEntity(documentContentPersistenceManager)
-                    sectionPersistenceManager.insertOrUpdateRoot(entity)
+                delete = { sectionId ->
+                    sectionPersistenceManager.delete(sectionId)
                 },
-                failure = { error ->
-                    Timber.e(error)
-                    throw error
+                deleteAll = {
+                    sectionPersistenceManager.deleteAll()
                 }
             )
-        },
-        shouldFetch = {
-            offlineModeManager.isEnabled().not()
-        }
-    )
+        ).build()
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun getDocumentContent(documentId: String) = networkBoundResource(
         query = {
-            flowOf(
-                documentContentPersistenceManager.standardOperation().query {
-                    equal(DocumentContentEntity_.documentId, documentId)
-                }.findFirst()
-            )
+            documentContentPersistenceManager.standardOperation().query {
+                equal(DocumentContentEntity_.documentId, documentId, QueryBuilder.StringOrder.CASE_INSENSITIVE)
+            }.subscribe().toFlow().map { it.firstOrNull() }
         },
         fetch = {
             restClient.getDocumentContent(documentId)
@@ -135,13 +107,12 @@ class DataRepository @Inject constructor(
         }
     )
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun getDocument(documentId: String): Flow<Resource<DocumentEntity?>> = networkBoundResource(
         query = {
-            flowOf(
-                documentPersistenceManager.standardOperation().query {
-                    equal(DocumentEntity_.id, documentId)
-                }.findFirst()
-            )
+            documentPersistenceManager.standardOperation().query {
+                equal(DocumentEntity_.id, documentId, QueryBuilder.StringOrder.CASE_INSENSITIVE)
+            }.subscribe().toFlow().map { it.firstOrNull() }
         },
         fetch = {
             restClient.getItemTree()
@@ -185,7 +156,7 @@ class DataRepository @Inject constructor(
         val parentSection = sectionPersistenceManager.findById(parentSectionId)
             ?: throw IllegalStateException(
                 "Parent section could not be found in persistence" +
-                        " while trying to create a new document in it"
+                    " while trying to create a new document in it"
             )
 
         return restClient.createDocument(parentSectionId, documentName).fold<String>(
@@ -196,9 +167,9 @@ class DataRepository @Inject constructor(
                 )
                 return it.id
             }, failure = {
-                Timber.e(it) { "Error creating document" }
-                throw it
-            })
+            Timber.e(it) { "Error creating document" }
+            throw it
+        })
     }
 
     suspend fun updateDocumentContentInCache(documentId: String, text: String) {

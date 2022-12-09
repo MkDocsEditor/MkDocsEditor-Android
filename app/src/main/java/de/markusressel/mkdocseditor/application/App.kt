@@ -15,6 +15,7 @@ import de.markusressel.mkdocseditor.event.BasicAuthPasswordChangedEvent
 import de.markusressel.mkdocseditor.event.BasicAuthUserChangedEvent
 import de.markusressel.mkdocseditor.event.HostChangedEvent
 import de.markusressel.mkdocseditor.event.PortChangedEvent
+import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
@@ -33,6 +34,9 @@ class App : Application(), Configuration.Provider {
 
     @Inject
     internal lateinit var restClient: MkDocsRestClient
+
+    @Inject
+    internal lateinit var preferencesHolder: KutePreferencesHolder
 
     @Inject
     internal lateinit var offlineModeManager: OfflineModeManager
@@ -58,6 +62,20 @@ class App : Application(), Configuration.Provider {
         initializeEmojiCompat()
 
         initOfflineMode()
+
+        initRestClient()
+    }
+
+    private fun initRestClient() {
+        restClient.setHostname(preferencesHolder.restConnectionHostnamePreference.persistedValue.value)
+        restClient.setPort(preferencesHolder.restConnectionPortPreference.persistedValue.value.toInt())
+        restClient.setUseSSL(preferencesHolder.restConnectionSslPreference.persistedValue.value)
+        restClient.setBasicAuthConfig(
+            BasicAuthConfig(
+                username = preferencesHolder.basicAuthUserPreference.persistedValue.value,
+                password = preferencesHolder.basicAuthPasswordPreference.persistedValue.value
+            )
+        )
     }
 
     private fun setupErrorHandlers() {

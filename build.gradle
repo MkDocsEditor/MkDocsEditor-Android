@@ -30,7 +30,7 @@ buildscript {
         gsonVersion = "2.8.7"
         kotsonVersion = "2.5.0"
 
-        objectboxVersion = "2.9.1"
+        objectboxVersion = "3.5.0"
 
         fuelVersion = "2.3.1"
         flowBindingVersion = "1.0.0"

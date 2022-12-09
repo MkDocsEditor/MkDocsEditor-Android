@@ -12,15 +12,28 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
+import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
+
+@Preview
+@Composable
+private fun FileBrowserListEmptyPreview() {
+    FileBrowserList(
+        items = listOf(),
+        onDocumentClicked = {},
+        onResourceClicked = {},
+        onSectionClicked = {},
+    )
+}
 
 @Preview
 @Composable
@@ -56,26 +69,53 @@ internal fun FileBrowserList(
 ) {
     Column(
         modifier = Modifier
+            .fillMaxHeight()
             .verticalScroll(rememberScrollState())
             .padding(
                 vertical = 8.dp,
                 horizontal = 8.dp,
             )
     ) {
-        items.forEachIndexed { index, item ->
-            FileBrowserListEntry(
-                item = item,
-                onDocumentClicked = onDocumentClicked,
-                onResourceClicked = onResourceClicked,
-                onSectionClicked = onSectionClicked,
-            )
 
-            if (index < items.size) {
-                Divider()
+        if (items.isEmpty()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Image(
+                    modifier = Modifier
+                        .size(32.dp),
+                    asset = MaterialDesignIconic.Icon.gmi_folder,
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant),
+                )
+
+                Text(
+                    modifier = Modifier.padding(16.dp),
+                    text = stringResource(id = R.string.file_browser_empty),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                )
             }
-        }
+        } else {
+            items.forEachIndexed { index, item ->
+                FileBrowserListEntry(
+                    item = item,
+                    onDocumentClicked = onDocumentClicked,
+                    onResourceClicked = onResourceClicked,
+                    onSectionClicked = onSectionClicked,
+                )
 
-        Spacer(modifier = Modifier.height(128.dp))
+                if (index < items.size) {
+                    Divider()
+                }
+            }
+
+            Spacer(modifier = Modifier.height(128.dp))
+        }
     }
 }
 

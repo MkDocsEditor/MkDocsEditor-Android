@@ -13,7 +13,6 @@ import de.markusressel.mkdocseditor.databinding.ActivityMainBinding
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.ui.IconHandler
 import de.markusressel.mkdocseditor.ui.ThemeHelper
-import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import java.util.*
 import javax.inject.Inject
@@ -70,16 +69,6 @@ abstract class SupportActivityBase : AppCompatActivity() {
         }
 
         super.onCreate(savedInstanceState)
-
-        restClient.setHostname(preferencesHolder.restConnectionHostnamePreference.persistedValue.value)
-        restClient.setPort(preferencesHolder.restConnectionPortPreference.persistedValue.value.toInt())
-        restClient.setUseSSL(preferencesHolder.restConnectionSslPreference.persistedValue.value)
-        restClient.setBasicAuthConfig(
-            BasicAuthConfig(
-                username = preferencesHolder.basicAuthUserPreference.persistedValue.value,
-                password = preferencesHolder.basicAuthPasswordPreference.persistedValue.value
-            )
-        )
 
         // inflate view manually so it can be altered in plugins
         binding = ActivityMainBinding.inflate(layoutInflater)

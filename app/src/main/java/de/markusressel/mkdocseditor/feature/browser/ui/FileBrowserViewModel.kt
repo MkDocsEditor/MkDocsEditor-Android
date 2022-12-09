@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.feature.browser.ui
 
 import androidx.lifecycle.viewModelScope
+import com.dropbox.android.external.store4.StoreResponse
 import com.github.ajalt.timberkt.Timber
 import com.hadilq.liveevent.LiveEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -9,10 +10,11 @@ import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.browser.data.SectionBackstackItem
+import de.markusressel.mkdocseditor.feature.browser.ui.usecase.CreateNewSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.GetSectionContentUseCase
+import de.markusressel.mkdocseditor.feature.browser.ui.usecase.RefreshSectionUseCase
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.ui.viewmodel.EntityListViewModel
-import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -23,12 +25,16 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
 import javax.inject.Inject
 
 internal sealed class UiEvent {
+    object Refresh : UiEvent()
+
     data class DocumentClicked(val item: DocumentEntity) : UiEvent()
     data class ResourceClicked(val item: ResourceEntity) : UiEvent()
     data class SectionClicked(val item: SectionEntity) : UiEvent()
@@ -40,7 +46,9 @@ internal sealed class UiEvent {
 internal class FileBrowserViewModel @Inject constructor(
     private val dataRepository: DataRepository,
     private val restClient: MkDocsRestClient,
+    private val refreshSectionUseCase: RefreshSectionUseCase,
     private val getSectionContentUseCase: GetSectionContentUseCase,
+    private val createNewSectionUseCase: CreateNewSectionUseCase,
 ) : EntityListViewModel() {
 
     // TODO: use savedState
@@ -67,7 +75,10 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private val currentSectionId = MutableStateFlow(ROOT_SECTION_ID)
-    private val currentSection = getSectionContentUseCase(currentSectionId)
+    private val currentSection: StateFlow<StoreResponse<SectionEntity>?> = getSectionContentUseCase(
+        sectionId = currentSectionId,
+        refresh = true
+    ).stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     internal val openDocumentEditorEvent = LiveEvent<String>()
 
@@ -84,27 +95,21 @@ internal class FileBrowserViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            currentSection.collectLatest { resource ->
-                val section = resource.data
-
-                if (resource is Resource.Error) {
-                    // TODO: show error
-                    //context?.toast("Error: ${resource.error?.message}", Toast.LENGTH_LONG)
+            currentSection.filterNotNull().collect { response: StoreResponse<SectionEntity> ->
+                if (response is StoreResponse.Error) {
+                    showError(errorMessage = response.errorMessageOrNull() ?: "Error fetching data")
                 }
 
-                if (resource is Resource.Loading && section == null) {
+                val section = response.dataOrNull()
+
+                if (response is StoreResponse.Loading && section == null) {
+                    _uiState.value = uiState.value.copy(
+                        isLoading = true
+                    )
                     //showLoading()
-                } else {
-                    //showContent()
                 }
 
-                if (section != null) {
-                    if (section.subsections.isEmpty() and section.documents.isEmpty() and section.resources.isEmpty()) {
-//                        showEmpty()
-                    } else {
-//                        hideEmpty()
-                    }
-                } else {
+                if (section == null) {
                     // in theory this will navigate back until a section is found
                     // or otherwise show the "empty" screen
                     if (!navigateUp()) {
@@ -123,11 +128,28 @@ internal class FileBrowserViewModel @Inject constructor(
                 _uiState.value = uiState.value.copy(
                     listItems = (sections + documents + resources)
                 )
+
+                if (response is StoreResponse.Error || response is StoreResponse.NoNewData || response is StoreResponse.Data) {
+                    _uiState.value = uiState.value.copy(
+                        isLoading = false
+                    )
+                }
             }
         }
     }
 
+    private suspend fun showError(errorMessage: String) {
+        _uiState.value = uiState.value.copy(
+            error = errorMessage
+        )
+        val errorEvent = FileBrowserEvent.ErrorEvent(
+            message = errorMessage
+        )
+        events.send(errorEvent)
+    }
+
     internal fun onUiEvent(event: UiEvent) = when (event) {
+        is UiEvent.Refresh -> reload()
         is UiEvent.DocumentClicked -> onDocumentClicked(event.item)
         is UiEvent.ResourceClicked -> onResourceClicked(event.item)
         is UiEvent.SectionClicked -> onSectionClicked(event.item)
@@ -219,7 +241,7 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     fun createNewSection(sectionName: String) = viewModelScope.launch {
-        dataRepository.createNewSection(sectionName, currentSectionId.value)
+        createNewSectionUseCase(sectionName, currentSectionId.value)
     }
 
     fun createNewDocument(documentName: String) = viewModelScope.launch {
@@ -248,7 +270,17 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private fun reload() {
-        currentSectionId.value = currentSectionId.value
+        _uiState.value = uiState.value.copy(
+            error = "",
+        )
+        viewModelScope.launch {
+            try {
+                refreshSectionUseCase(currentSectionId.value)
+            } catch (ex: Exception) {
+                Timber.e(ex)
+                showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
+            }
+        }
     }
 
     private fun onCreateSectionFabClicked() {

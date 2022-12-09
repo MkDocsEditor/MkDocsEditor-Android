@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.preferences.ui.compose
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,9 +16,20 @@ import de.markusressel.mkdocseditor.feature.preferences.ui.PreferencesViewModel
 
 @Composable
 internal fun PreferencesScreen(
-    viewModel: PreferencesViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
+    viewModel: PreferencesViewModel = hiltViewModel(),
+    onBack: () -> Unit,
 ) {
+    BackHandler(
+        enabled = true,
+        onBack = {
+            val consumed = viewModel.navigateUp()
+            if (consumed.not()) {
+                onBack()
+            }
+        },
+    )
+
     Box(modifier = modifier) {
         KutePreferencesTheme {
             val currentItems by viewModel.currentPreferenceItems.collectAsState(initial = emptyList())
