@@ -9,25 +9,26 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
+import de.markusressel.mkdocseditor.feature.browser.data.ROOT_SECTION
 import de.markusressel.mkdocseditor.feature.browser.data.SectionBackstackItem
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.CreateNewSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.GetSectionContentUseCase
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.RefreshSectionUseCase
+import de.markusressel.mkdocseditor.feature.browser.ui.usecase.SearchUseCase
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.ui.viewmodel.EntityListViewModel
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
@@ -50,17 +51,21 @@ internal class FileBrowserViewModel @Inject constructor(
     private val refreshSectionUseCase: RefreshSectionUseCase,
     private val getSectionContentUseCase: GetSectionContentUseCase,
     private val createNewSectionUseCase: CreateNewSectionUseCase,
+    private val searchUseCase: SearchUseCase,
 ) : EntityListViewModel() {
 
     // TODO: use savedState
     private val _uiState = MutableStateFlow(UiState())
     internal val uiState = _uiState.asStateFlow()
 
+    private val _events = Channel<FileBrowserEvent>(Channel.BUFFERED)
+    internal val events = _events.receiveAsFlow()
+
     private val backstack: Stack<SectionBackstackItem> = Stack()
         get() {
             if (field.size == 0) {
                 // root is always the first element in the backstack
-                field.add(SectionBackstackItem(ROOT_SECTION_ID))
+                field.add(ROOT_SECTION)
             }
             return field
         }
@@ -70,70 +75,78 @@ internal class FileBrowserViewModel @Inject constructor(
         uiState.map { it.isSearching }.distinctUntilChanged(),
     ) { currentSearchFilter, isSearching ->
         when {
-            isSearching -> dataRepository.find(currentSearchFilter)
+            isSearching -> searchUseCase(currentSearchFilter)
             else -> emptyList()
         }
     }
 
     private val currentSectionId = MutableStateFlow(ROOT_SECTION_ID)
-    private val currentSection: StateFlow<StoreResponse<SectionEntity>?> = getSectionContentUseCase(
-        sectionId = currentSectionId,
-        refresh = true
-    ).stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     internal val openDocumentEditorEvent = LiveEvent<String>()
 
-    private val _events = Channel<FileBrowserEvent>(Channel.BUFFERED)
-    internal val events = _events.receiveAsFlow()
-
     init {
         viewModelScope.launch {
-            uiState.map { it.isSearching }.collect {
-                if (it.not()) {
+            uiState.map { it.isSearching }.distinctUntilChanged().collect { isSearching ->
+                if (isSearching.not()) {
                     showTopLevel()
                 }
             }
         }
 
+        var sectionJob: Job? = null
         viewModelScope.launch {
-            currentSection.filterNotNull().collect { response: StoreResponse<SectionEntity> ->
-                if (response is StoreResponse.Error) {
-                    showError(errorMessage = response.errorMessageOrNull() ?: "Error fetching data")
-                }
+            currentSectionId.collectLatest { sectionId ->
+                sectionJob?.cancel()
+                sectionJob = launch {
+                    try {
+                        getSectionContentUseCase(
+                            sectionId = sectionId,
+                            refresh = true
+                        ).collect { response ->
+                            if (response is StoreResponse.Error) {
+                                showError(
+                                    errorMessage = response.errorMessageOrNull()
+                                        ?: "Error fetching data"
+                                )
+                            }
 
-                val section = response.dataOrNull()
+                            val section = response.dataOrNull()
 
-                if (response is StoreResponse.Loading && section == null) {
-                    _uiState.value = uiState.value.copy(
-                        isLoading = true
-                    )
-                    //showLoading()
-                }
+                            if (response is StoreResponse.Loading && section == null) {
+                                _uiState.value = uiState.value.copy(
+                                    isLoading = true
+                                )
+                            }
 
-                if (section == null) {
-                    // in theory this will navigate back until a section is found
-                    // or otherwise show the "empty" screen
-                    if (!navigateUp()) {
-                        // TODO
+                            val sections = (section?.subsections
+                                ?: emptyList<SectionEntity>()).sortedBy { it.name }
+                            val documents = (section?.documents
+                                ?: emptyList<DocumentEntity>()).sortedBy { it.name }
+                            val resources = (section?.resources
+                                ?: emptyList<ResourceEntity>()).sortedBy { it.name }
+
+                            _uiState.value = uiState.value.copy(
+                                listItems = (sections + documents + resources)
+                            )
+
+                            if (response is StoreResponse.Error || response is StoreResponse.NoNewData || response is StoreResponse.Data) {
+                                _uiState.value = uiState.value.copy(
+                                    isLoading = false
+                                )
+
+                                if (section == null) {
+                                    // in theory this will navigate back until a section is found
+                                    // or otherwise show the "empty" screen
+                                    if (!navigateUp()) {
+                                        // TODO
 //                        showEmpty()
+                                    }
+                                }
+                            }
+                        }
+                    } catch (ex: CancellationException) {
+                        Timber.d { "sectionJob $sectionJob cancelled" }
                     }
-                }
-
-                val sections = (section?.subsections
-                    ?: emptyList<SectionEntity>()).sortedBy { it.name }
-                val documents = (section?.documents
-                    ?: emptyList<DocumentEntity>()).sortedBy { it.name }
-                val resources = (section?.resources
-                    ?: emptyList<ResourceEntity>()).sortedBy { it.name }
-
-                _uiState.value = uiState.value.copy(
-                    listItems = (sections + documents + resources)
-                )
-
-                if (response is StoreResponse.Error || response is StoreResponse.NoNewData || response is StoreResponse.Data) {
-                    _uiState.value = uiState.value.copy(
-                        isLoading = false
-                    )
                 }
             }
         }
@@ -328,6 +341,6 @@ internal class FileBrowserViewModel @Inject constructor(
 
     companion object {
         /** ID of the tree root section */
-        const val ROOT_SECTION_ID = "root"
+        const val ROOT_SECTION_ID: String = "root"
     }
 }
