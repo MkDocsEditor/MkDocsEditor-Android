@@ -1,10 +1,10 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
+//import com.otaliastudios.zoom.ZoomEngine
+//import de.markusressel.kodeeditor.library.view.CodeEditorLayout
+//import de.markusressel.kodeeditor.library.view.SelectionChangedListener
 import android.content.Context
-import android.graphics.Matrix
-import android.graphics.PointF
 import android.os.Bundle
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
@@ -12,7 +12,6 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.CallSuper
-import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.lifecycleScope
@@ -21,13 +20,8 @@ import com.afollestad.materialdialogs.callbacks.onDismiss
 import com.github.ajalt.timberkt.Timber
 import com.google.android.material.snackbar.Snackbar
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
-import com.otaliastudios.zoom.ZoomEngine
 import dagger.hilt.android.AndroidEntryPoint
 import de.markusressel.commons.android.core.runOnUiThread
-import de.markusressel.commons.android.material.snack
-import de.markusressel.kodeeditor.library.view.CodeEditorLayout
-import de.markusressel.kodeeditor.library.view.SelectionChangedListener
-import de.markusressel.kodehighlighter.language.markdown.MarkdownRuleBook
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.databinding.FragmentEditorBinding
@@ -48,8 +42,9 @@ import javax.inject.Inject
  * Created by Markus on 07.01.2018.
  */
 @AndroidEntryPoint
-class CodeEditorFragment : DaggerSupportFragmentBase(),
-    SelectionChangedListener {
+class CodeEditorFragment : DaggerSupportFragmentBase()
+//    SelectionChangedListener
+{
 
     @Inject
     lateinit var chromeCustomTabManager: ChromeCustomTabManager
@@ -58,7 +53,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
 
     private lateinit var binding: FragmentEditorBinding
 
-    private lateinit var codeEditorLayout: CodeEditorLayout
+//    private lateinit var codeEditorLayout: CodeEditorLayout
 
     private var noConnectionSnackbar: Snackbar? = null
 
@@ -170,13 +165,13 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
                 setEditorText(content.text, content.selection)
             }
 
-            val absolutePosition = computeAbsolutePosition(PointF(content.panX, content.panY))
-            codeEditorLayout.codeEditorView.moveTo(
-                content.zoomLevel,
-                absolutePosition.x,
-                absolutePosition.y,
-                animate = false
-            )
+//            val absolutePosition = computeAbsolutePosition(PointF(content.panX, content.panY))
+//            codeEditorLayout.codeEditorView.moveTo(
+//                content.zoomLevel,
+//                absolutePosition.x,
+//                absolutePosition.y,
+//                animate = false
+//            )
         } else {
             if (text != null) {
                 setEditorText(text)
@@ -191,7 +186,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
         viewModel.apply {
             editModeActive.observe(viewLifecycleOwner) {
                 runOnUiThread {
-                    codeEditorLayout.editable = it
+//                    codeEditorLayout.editable = it
                 }
             }
 
@@ -259,26 +254,26 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
 
                         if (event.connected) {
                             runOnUiThread {
-                                codeEditorLayout.snack(R.string.connected, Snackbar.LENGTH_SHORT)
+//                                codeEditorLayout.snack(R.string.connected, Snackbar.LENGTH_SHORT)
                             }
                         } else {
                             if (event.throwable != null) {
                                 Timber.e(event.throwable) { "Websocket error code: ${event.errorCode}" }
-                                noConnectionSnackbar = codeEditorLayout.snack(
-                                    text = R.string.server_unavailable,
-                                    duration = Snackbar.LENGTH_INDEFINITE,
-                                    actionTitle = R.string.retry,
-                                    action = {
-                                        viewModel.onRetryClicked()
-                                    })
+//                                noConnectionSnackbar = codeEditorLayout.snack(
+//                                    text = R.string.server_unavailable,
+//                                    duration = Snackbar.LENGTH_INDEFINITE,
+//                                    actionTitle = R.string.retry,
+//                                    action = {
+//                                        viewModel.onRetryClicked()
+//                                    })
                             } else if (viewModel.offlineModeManager.isEnabled().not()) {
-                                noConnectionSnackbar = codeEditorLayout.snack(
-                                    text = R.string.not_connected,
-                                    duration = Snackbar.LENGTH_INDEFINITE,
-                                    actionTitle = R.string.connect,
-                                    action = {
-                                        viewModel.onConnectClicked()
-                                    })
+//                                noConnectionSnackbar = codeEditorLayout.snack(
+//                                    text = R.string.not_connected,
+//                                    duration = Snackbar.LENGTH_INDEFINITE,
+//                                    actionTitle = R.string.connect,
+//                                    action = {
+//                                        viewModel.onConnectClicked()
+//                                    })
                             }
                         }
                     }
@@ -295,50 +290,50 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
                     is CodeEditorEvent.Error -> {
                         Timber.e(event.throwable) { "Error" }
                         noConnectionSnackbar?.dismiss()
-                        noConnectionSnackbar = codeEditorLayout.snack(
-                            text = event.message
-                                ?: event.throwable?.localizedMessage
-                                ?: getString(R.string.unknown_error),
-                            duration = Snackbar.LENGTH_INDEFINITE,
-                            actionTitle = getString(R.string.retry),
-                            action = {
-                                viewModel.onRetryClicked()
-                            })
+//                        noConnectionSnackbar = codeEditorLayout.snack(
+//                            text = event.message
+//                                ?: event.throwable?.localizedMessage
+//                                ?: getString(R.string.unknown_error),
+//                            duration = Snackbar.LENGTH_INDEFINITE,
+//                            actionTitle = getString(R.string.retry),
+//                            action = {
+//                                viewModel.onRetryClicked()
+//                            })
                     }
                 }
             }
         }
 
-        codeEditorLayout = view.findViewById(R.id.codeEditorLayout)
-        codeEditorLayout.apply {
-            minimapGravity = Gravity.BOTTOM or Gravity.END
-            languageRuleBook = MarkdownRuleBook()
-            codeEditorView.codeEditText.addTextChangedListener(
-                onTextChanged = { text, start, before, count ->
-                    viewModel.currentText.value = text.toString()
-                },
-            )
-            codeEditorView.engine.addListener(
-                object : ZoomEngine.Listener {
-                    override fun onIdle(engine: ZoomEngine) {
-                        saveEditorState()
-                    }
-
-                    override fun onUpdate(engine: ZoomEngine, matrix: Matrix) {
-                        viewModel.currentPosition.set(
-                            codeEditorLayout.codeEditorView.panX,
-                            codeEditorLayout.codeEditorView.panY
-                        )
-                        viewModel.currentZoom.value = codeEditorLayout.codeEditorView.zoom
-                    }
-                })
-
-            codeEditorView.selectionChangedListener = this@CodeEditorFragment
-
-            // disable user input by default, it will be enabled automatically once connected to the server
-            // if not disabled in preferences
-            editable = false
-        }
+//        codeEditorLayout = view.findViewById(R.id.codeEditorLayout)
+//        codeEditorLayout.apply {
+//            minimapGravity = Gravity.BOTTOM or Gravity.END
+//            languageRuleBook = MarkdownRuleBook()
+//            codeEditorView.codeEditText.addTextChangedListener(
+//                onTextChanged = { text, start, before, count ->
+//                    viewModel.currentText.value = text.toString()
+//                },
+//            )
+//            codeEditorView.engine.addListener(
+//                object : ZoomEngine.Listener {
+//                    override fun onIdle(engine: ZoomEngine) {
+//                        saveEditorState()
+//                    }
+//
+//                    override fun onUpdate(engine: ZoomEngine, matrix: Matrix) {
+//                        viewModel.currentPosition.set(
+//                            codeEditorLayout.codeEditorView.panX,
+//                            codeEditorLayout.codeEditorView.panY
+//                        )
+//                        viewModel.currentZoom.value = codeEditorLayout.codeEditorView.zoom
+//                    }
+//                })
+//
+//            codeEditorView.selectionChangedListener = this@CodeEditorFragment
+//
+//            // disable user input by default, it will be enabled automatically once connected to the server
+//            // if not disabled in preferences
+//            editable = false
+//        }
     }
 
     /**
@@ -353,70 +348,70 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
         selectionStart: Int? = null,
         selectionEnd: Int? = null
     ) {
-        codeEditorLayout.codeEditorView.apply {
-            // we don't listen to selection changes when the text is changed via code
-            // because the selection will be restored from persistence anyway
-            // and the listener would override this
-            selectionChangedListener = null
-            this.text = text
-            selectionStart?.let {
-                setEditorSelection(text.length, it, selectionEnd)
-            }
-            selectionChangedListener = this@CodeEditorFragment
-        }
+//        codeEditorLayout.codeEditorView.apply {
+//            // we don't listen to selection changes when the text is changed via code
+//            // because the selection will be restored from persistence anyway
+//            // and the listener would override this
+//            selectionChangedListener = null
+//            this.text = text
+//            selectionStart?.let {
+//                setEditorSelection(text.length, it, selectionEnd)
+//            }
+//            selectionChangedListener = this@CodeEditorFragment
+//        }
     }
 
     private fun setEditorSelection(maxIndex: Int, selectionStart: Int, selectionEnd: Int?) {
         val endIndex = selectionEnd ?: selectionStart
-        codeEditorLayout.codeEditorView.codeEditText.setSelection(
-            selectionStart.coerceIn(0, maxIndex),
-            endIndex.coerceIn(0, maxIndex)
-        )
+//        codeEditorLayout.codeEditorView.codeEditText.setSelection(
+//            selectionStart.coerceIn(0, maxIndex),
+//            endIndex.coerceIn(0, maxIndex)
+//        )
     }
 
-    override fun onSelectionChanged(start: Int, end: Int, hasSelection: Boolean) {
-        saveEditorState()
-    }
+//    override fun onSelectionChanged(start: Int, end: Int, hasSelection: Boolean) {
+//        saveEditorState()
+//    }
 
     private fun handleExternalTextChange(newText: String, patches: LinkedList<Patch>) {
-        val oldSelectionStart = codeEditorLayout.codeEditorView.codeEditText.selectionStart
-        val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
-        viewModel.currentText.value = newText
+//        val oldSelectionStart = codeEditorLayout.codeEditorView.codeEditText.selectionStart
+//        val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
+//        viewModel.currentText.value = newText
 
         // set new cursor position
-        val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, patches)
-            .coerceIn(0, newText.length)
-        val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
-            .coerceIn(0, newText.length)
-
-        setEditorText(newText, newSelectionStart, newSelectionEnd)
-        saveEditorState()
+//        val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, patches)
+//            .coerceIn(0, newText.length)
+//        val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
+//            .coerceIn(0, newText.length)
+//
+//        setEditorText(newText, newSelectionStart, newSelectionEnd)
+//        saveEditorState()
     }
 
-    /**
-     * Calculates the positioning percentages for x and y axis
-     *
-     * @return a point with horizontal (x) and vertical (y) positioning percentages
-     */
-    private fun getCurrentPositionPercentage() = codeEditorLayout.codeEditorView.engine.run {
-        PointF(
-            computeHorizontalScrollOffset().toFloat() / computeHorizontalScrollRange(),
-            computeVerticalScrollOffset().toFloat() / computeVerticalScrollRange()
-        )
-    }
-
-    /**
-     * Takes a point with percentage values and returns a point with the actual absolute coordinates
-     *
-     * @return a point with horizontal (x) and vertical (y) absolute, scale-independent, positioning coordinate values
-     */
-    private fun computeAbsolutePosition(percentage: PointF) =
-        codeEditorLayout.codeEditorView.engine.run {
-            PointF(
-                -1 * percentage.x * (computeHorizontalScrollRange() / realZoom),
-                -1 * percentage.y * (computeVerticalScrollRange() / realZoom)
-            )
-        }
+//    /**
+//     * Calculates the positioning percentages for x and y axis
+//     *
+//     * @return a point with horizontal (x) and vertical (y) positioning percentages
+//     */
+//    private fun getCurrentPositionPercentage() = codeEditorLayout.codeEditorView.engine.run {
+//        PointF(
+//            computeHorizontalScrollOffset().toFloat() / computeHorizontalScrollRange(),
+//            computeVerticalScrollOffset().toFloat() / computeVerticalScrollRange()
+//        )
+//    }
+//
+//    /**
+//     * Takes a point with percentage values and returns a point with the actual absolute coordinates
+//     *
+//     * @return a point with horizontal (x) and vertical (y) absolute, scale-independent, positioning coordinate values
+//     */
+//    private fun computeAbsolutePosition(percentage: PointF) =
+//        codeEditorLayout.codeEditorView.engine.run {
+//            PointF(
+//                -1 * percentage.x * (computeHorizontalScrollRange() / realZoom),
+//                -1 * percentage.y * (computeVerticalScrollRange() / realZoom)
+//            )
+//        }
 
 
     private fun calculateNewSelectionIndex(
@@ -456,39 +451,29 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
      * Saves the current editor state in a persistent cache
      */
     fun saveEditorState() {
-        // TODO: this will probably cause problems when deleting all characters in a document
-        if (viewModel.currentText.value.isNullOrEmpty()) {
-            // skip if there is no text to save
-            return
-        }
-
-        val positioningPercentage = getCurrentPositionPercentage()
-
-        if (positioningPercentage.x.isNaN() || positioningPercentage.y.isNaN()) {
-            // don't save the state if it is incomplete
-            return
-        }
-
-        viewModel.saveEditorState(
-            selection = codeEditorLayout.codeEditorView.codeEditText.selectionStart,
-            panX = positioningPercentage.x,
-            panY = positioningPercentage.y
-        )
+//        // TODO: this will probably cause problems when deleting all characters in a document
+//        if (viewModel.currentText.value.isNullOrEmpty()) {
+//            // skip if there is no text to save
+//            return
+//        }
+//
+//        val positioningPercentage = getCurrentPositionPercentage()
+//
+//        if (positioningPercentage.x.isNaN() || positioningPercentage.y.isNaN()) {
+//            // don't save the state if it is incomplete
+//            return
+//        }
+//
+//        viewModel.saveEditorState(
+//            selection = codeEditorLayout.codeEditorView.codeEditText.selectionStart,
+//            panX = positioningPercentage.x,
+//            panY = positioningPercentage.y
+//        )
     }
 
     override fun onPause() {
         saveEditorState()
         super.onPause()
-    }
-
-    override fun onStop() {
-        viewModel.disconnect(reason = "Editor was closed")
-        super.onStop()
-    }
-
-    override fun onDestroy() {
-        noConnectionSnackbar?.dismiss()
-        super.onDestroy()
     }
 
 }
