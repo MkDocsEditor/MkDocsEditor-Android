@@ -157,6 +157,7 @@ private fun MainScreenLayout(
             drawerContent = {
                 PermanentDrawerSheet {
                     NavigationDrawerContent(
+                        navItems = uiState.drawerNavItems,
                         selectedDestination = uiState.selectedBottomBarItem,
                         onHamburgerIconClicked = {
                             //onUiEvent(UiEvent.DrawerNavItemClicked(it))
@@ -179,7 +180,8 @@ private fun MainScreenLayout(
             drawerContent = {
                 ModalDrawerSheet {
                     NavigationDrawerContent(
-                        uiState.selectedBottomBarItem,
+                        navItems = uiState.drawerNavItems,
+                        selectedDestination = uiState.selectedBottomBarItem,
                         onHamburgerIconClicked = {
                             onUiEvent(UiEvent.ToggleNavDrawer)
                         }
@@ -253,14 +255,6 @@ private fun MainScreenContent(
             }
         }
     }
-}
-
-@Composable
-private fun NavigationDrawerContent(
-    selectedDestination: NavItem,
-    onHamburgerIconClicked: (NavItem) -> Unit,
-) {
-    Text(text = "Navigation Drawer Content")
 }
 
 @Composable

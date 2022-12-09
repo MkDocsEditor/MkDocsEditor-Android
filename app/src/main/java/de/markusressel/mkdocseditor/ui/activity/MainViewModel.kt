@@ -11,6 +11,12 @@ import javax.inject.Inject
 
 internal data class UiState(
     val navDrawerOpen: Boolean = false,
+
+    val drawerNavItems: List<NavItem> = listOf(
+        NavItem.FileBrowser,
+        NavItem.Settings
+    ),
+
     val selectedBottomBarItem: NavItem = NavItem.FileBrowser,
     val bottomBarNavItems: List<NavItem> = listOf(
         NavItem.FileBrowser,
