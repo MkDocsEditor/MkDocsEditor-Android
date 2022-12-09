@@ -67,14 +67,13 @@ private fun FileBrowserScreenContent(
     onUiEvent: (UiEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    PullToRefresh(
-        state = rememberPullToRefreshState(
-            isRefreshing = uiState.isLoading
-        ),
-        onRefresh = { onUiEvent(UiEvent.Refresh) },
-    ) {
-        Box(
-            modifier = modifier
+    Box {
+        PullToRefresh(
+            modifier = modifier,
+            state = rememberPullToRefreshState(
+                isRefreshing = uiState.isLoading
+            ),
+            onRefresh = { onUiEvent(UiEvent.Refresh) },
         ) {
             FileBrowserList(
                 items = uiState.listItems,
@@ -88,14 +87,14 @@ private fun FileBrowserScreenContent(
                     onUiEvent(UiEvent.SectionClicked(it))
                 },
             )
-
-            ExpandableFab(
-                modifier = Modifier.fillMaxSize(),
-                items = uiState.fabConfig.right,
-                onItemClicked = {
-                    onUiEvent(UiEvent.ExpandableFabItemSelected(item = it))
-                }
-            )
         }
+
+        ExpandableFab(
+            modifier = Modifier.fillMaxSize(),
+            items = uiState.fabConfig.right,
+            onItemClicked = {
+                onUiEvent(UiEvent.ExpandableFabItemSelected(item = it))
+            }
+        )
     }
 }

@@ -2,6 +2,8 @@ package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
 import android.view.View
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -68,7 +70,7 @@ internal fun FileBrowserList(
     Column(
         modifier = Modifier
             .fillMaxHeight()
-            //.verticalScroll(rememberScrollState())
+            .verticalScroll(rememberScrollState())
             .padding(
                 vertical = 8.dp,
                 horizontal = 8.dp,
@@ -77,7 +79,9 @@ internal fun FileBrowserList(
 
         if (items.isEmpty()) {
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
