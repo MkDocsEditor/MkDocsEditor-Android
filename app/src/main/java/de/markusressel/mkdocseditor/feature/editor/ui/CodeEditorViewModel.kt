@@ -3,36 +3,40 @@ package de.markusressel.mkdocseditor.feature.editor.ui
 import android.graphics.PointF
 import android.view.View
 import androidx.annotation.UiThread
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.Transformations.switchMap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.runOnUiThread
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.*
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.NetworkManager
 import de.markusressel.mkdocseditor.network.OfflineModeManager
-import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.Resource.Success
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @HiltViewModel
 internal class CodeEditorViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
@@ -44,11 +48,15 @@ internal class CodeEditorViewModel @Inject constructor(
 
     internal val events = MutableLiveData<CodeEditorEvent>()
 
-    private val documentId = savedStateHandle.getLiveData<String>("documentId")
+    val documentId =
+        MutableStateFlow<String?>(null) //  savedStateHandle.getStateFlow<String?>("documentId", null)
 
-    val documentEntity: LiveData<Resource<DocumentEntity?>> = switchMap(documentId) { documentId ->
-        dataRepository.getDocument(documentId).asLiveData()
-    }
+    val documentEntity = documentId
+        .filterNotNull()
+        .mapLatest { documentId ->
+            dataRepository.getDocument(documentId)
+        }.flattenConcat()
+        .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     private val connectionStatus = MutableStateFlow<ConnectionStatus?>(null)
 
@@ -88,7 +96,7 @@ internal class CodeEditorViewModel @Inject constructor(
             preferencesHolder.basicAuthUserPreference.persistedValue.value,
             preferencesHolder.basicAuthPasswordPreference.persistedValue.value
         ),
-        documentId = documentId.value!!,
+        documentId = documentId.value ?: "",
         currentText = {
             currentText.value.orEmpty()
         },
@@ -163,14 +171,16 @@ internal class CodeEditorViewModel @Inject constructor(
             }
         }
 
-        documentEntity.observeForever {
-            when (it) {
-                is Success -> {
-                    if (offlineModeManager.isEnabled().not()) {
-                        reconnectToServer()
+        viewModelScope.launch {
+            documentEntity.collectLatest { resource ->
+                when (resource) {
+                    is Success -> {
+                        if (offlineModeManager.isEnabled().not()) {
+                            reconnectToServer()
+                        }
                     }
+                    else -> {}
                 }
-                else -> {}
             }
         }
 

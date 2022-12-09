@@ -15,6 +15,7 @@ import androidx.annotation.CallSuper
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.asLiveData
+import androidx.lifecycle.lifecycleScope
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.callbacks.onDismiss
 import com.github.ajalt.timberkt.Timber
@@ -38,6 +39,8 @@ import de.markusressel.mkdocseditor.ui.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch.Patch
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterNotNull
 import java.util.*
 import javax.inject.Inject
 
@@ -199,23 +202,42 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
                 }
             }
 
-            documentEntity.observe(viewLifecycleOwner) { resource ->
-                loading.value = resource is Resource.Loading
+            lifecycleScope.launchWhenCreated {
+                documentEntity.filterNotNull().collectLatest { resource ->
+                    loading.value = resource is Resource.Loading
 
-                if (resource is Resource.Error) {
-                    Timber.e(resource.error)
-                    if (viewModel.isCachedContentAvailable()) {
-                        // fallback to offline mode, if available
-                        events.postValue(CodeEditorEvent.Error(resource.error?.message))
-                    } else {
-                        MaterialDialog(context()).show {
-                            title(R.string.error)
-                            message(
-                                text = getString(
-                                    R.string.error_and_no_offline_version,
-                                    resource.error?.localizedMessage
+                    if (resource is Resource.Error) {
+                        Timber.e(resource.error)
+                        if (viewModel.isCachedContentAvailable()) {
+                            // fallback to offline mode, if available
+                            events.postValue(CodeEditorEvent.Error(resource.error?.message))
+                        } else {
+                            MaterialDialog(context()).show {
+                                title(R.string.error)
+                                message(
+                                    text = getString(
+                                        R.string.error_and_no_offline_version,
+                                        resource.error?.localizedMessage
+                                    )
                                 )
-                            )
+                                negativeButton(android.R.string.ok, click = {
+                                    it.dismiss()
+                                })
+                                onDismiss {
+                                    navController.navigateUp()
+                                }
+                            }
+                        }
+                        return@collectLatest
+                    }
+
+                    val entity = resource.data
+                    val content = entity?.content?.target?.text
+
+                    if (offlineModeManager.isEnabled() && content == null) {
+                        MaterialDialog(context()).show {
+                            title(R.string.no_offline_version_title)
+                            message(R.string.no_offline_version)
                             negativeButton(android.R.string.ok, click = {
                                 it.dismiss()
                             })
@@ -223,26 +245,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
                                 navController.navigateUp()
                             }
                         }
+                    } else {
+                        restoreEditorState(entity = entity)
                     }
-                    return@observe
-                }
-
-                val entity = resource.data
-                val content = entity?.content?.target?.text
-
-                if (offlineModeManager.isEnabled() && content == null) {
-                    MaterialDialog(context()).show {
-                        title(R.string.no_offline_version_title)
-                        message(R.string.no_offline_version)
-                        negativeButton(android.R.string.ok, click = {
-                            it.dismiss()
-                        })
-                        onDismiss {
-                            navController.navigateUp()
-                        }
-                    }
-                } else {
-                    restoreEditorState(entity = entity)
                 }
             }
 
@@ -280,8 +285,13 @@ class CodeEditorFragment : DaggerSupportFragmentBase(),
                     is CodeEditorEvent.InitialText -> {
                         restoreEditorState(viewModel.documentEntity.value?.data, event.text)
                     }
-                    is CodeEditorEvent.TextChange -> handleExternalTextChange(event.newText, event.patches)
-                    is CodeEditorEvent.OpenWebView -> chromeCustomTabManager.openChromeCustomTab(event.url)
+                    is CodeEditorEvent.TextChange -> handleExternalTextChange(
+                        event.newText,
+                        event.patches
+                    )
+                    is CodeEditorEvent.OpenWebView -> chromeCustomTabManager.openChromeCustomTab(
+                        event.url
+                    )
                     is CodeEditorEvent.Error -> {
                         Timber.e(event.throwable) { "Error" }
                         noConnectionSnackbar?.dismiss()

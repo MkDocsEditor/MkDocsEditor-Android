@@ -8,19 +8,33 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
+data class SnackbarData(
+    val text: String,
+    val action: String,
+)
+
 internal data class UiState(
     val navDrawerOpen: Boolean = false,
     val selectedBottomBarItem: NavItem = NavItem.FileBrowser,
     val bottomBarNavItems: List<NavItem> = listOf(
         NavItem.FileBrowser,
         NavItem.Settings
-    )
+    ),
+
+    val snackbar: SnackbarData? = SnackbarData(
+        text = "Snackbar!",
+        action = "OK"
+    ),
+
+    val documentId: String? = null,
 )
 
 internal sealed class UiEvent {
     data class BottomNavItemSelected(val item: NavItem) : UiEvent()
     data class DrawerNavItemClicked(val item: NavItem) : UiEvent()
     object ToggleNavDrawer : UiEvent()
+
+    object SnackbarActionTriggered : UiEvent()
 }
 
 @HiltViewModel
@@ -36,7 +50,12 @@ internal class MainViewModel @Inject constructor(
             is UiEvent.BottomNavItemSelected -> selectBottomNavItem(event.item)
             is UiEvent.DrawerNavItemClicked -> selectBottomNavItem(event.item)
             UiEvent.ToggleNavDrawer -> toggleNavDrawerState()
+            UiEvent.SnackbarActionTriggered -> onSnackbarAction()
         }
+    }
+
+    private fun onSnackbarAction() {
+
     }
 
     private fun toggleNavDrawerState() {

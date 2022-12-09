@@ -23,10 +23,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
+import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel
 import de.markusressel.mkdocseditor.feature.browser.ui.compose.FileBrowserScreen
+import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreen
 import de.markusressel.mkdocseditor.feature.main.ui.ContentLayoutType
 import de.markusressel.mkdocseditor.feature.main.ui.DevicePosture
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
+import de.markusressel.mkdocseditor.feature.main.ui.NavigationEvent
 import de.markusressel.mkdocseditor.feature.main.ui.NavigationLayoutType
 import de.markusressel.mkdocseditor.feature.preferences.ui.compose.PreferencesScreen
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
@@ -160,9 +164,7 @@ private fun MainScreenLayout(
                 PermanentDrawerSheet {
                     NavigationDrawerContent(
                         selectedDestination = uiState.selectedBottomBarItem,
-                        onHamburgerIconClicked = {
-                            //onUiEvent(UiEvent.DrawerNavItemClicked(it))
-                        }
+                        onHamburgerIconClicked = { }
                     )
                 }
             }
@@ -208,43 +210,48 @@ private fun MainScreenContent(
     onUiEvent: (UiEvent) -> Unit,
     selectedDestination: NavItem,
 ) {
-    Row(modifier = Modifier.fillMaxSize()) {
-        AnimatedVisibility(visible = navigationType == NavigationLayoutType.NAVIGATION_RAIL) {
-            MkDocsEditorNavigationRail(
-                selectedNavItem = uiState.selectedBottomBarItem,
-                navItems = uiState.bottomBarNavItems,
-                onItemSelected = { onUiEvent(UiEvent.BottomNavItemSelected(it)) },
-                onToggleMenu = { onUiEvent(UiEvent.ToggleNavDrawer) },
-            )
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.inverseOnSurface)
-        ) {
-            when (selectedDestination) {
-                NavItem.FileBrowser -> if (contentType == ContentLayoutType.LIST_AND_DOCUMENT) {
-                    MkDocsEditorListAndDocumentContent(
-                        uiState = uiState,
-                        modifier = Modifier.weight(1f),
-                    )
-                } else {
-                    MkDocsEditorListOnlyContent(
-                        uiState = uiState,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                NavItem.Settings -> PreferencesScreen(
-                    modifier = Modifier.weight(1f)
-                )
-            }
+    Box(modifier = Modifier.fillMaxSize()) {
 
-            AnimatedVisibility(visible = navigationType == NavigationLayoutType.BOTTOM_NAVIGATION) {
-                BottomBar(
+        Row(modifier = Modifier.fillMaxSize()) {
+            AnimatedVisibility(visible = navigationType == NavigationLayoutType.NAVIGATION_RAIL) {
+                MkDocsEditorNavigationRail(
                     selectedNavItem = uiState.selectedBottomBarItem,
                     navItems = uiState.bottomBarNavItems,
                     onItemSelected = { onUiEvent(UiEvent.BottomNavItemSelected(it)) },
+                    onToggleMenu = { onUiEvent(UiEvent.ToggleNavDrawer) },
                 )
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.inverseOnSurface)
+            ) {
+                when (selectedDestination) {
+                    NavItem.FileBrowser -> if (contentType == ContentLayoutType.LIST_AND_DOCUMENT) {
+                        MkDocsEditorListAndDocumentContent(
+                            //onNavigationEvent = onNavigationEvent,
+                            mainUiState = uiState,
+                            modifier = Modifier.weight(1f),
+                        )
+                    } else {
+                        MkDocsEditorListOnlyContent(
+                            //onNavigationEvent = onNavigationEvent,
+                            uiState = uiState,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    NavItem.Settings -> PreferencesScreen(
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                AnimatedVisibility(visible = navigationType == NavigationLayoutType.BOTTOM_NAVIGATION) {
+                    BottomBar(
+                        selectedNavItem = uiState.selectedBottomBarItem,
+                        navItems = uiState.bottomBarNavItems,
+                        onItemSelected = { onUiEvent(UiEvent.BottomNavItemSelected(it)) },
+                    )
+                }
             }
         }
     }
@@ -260,20 +267,61 @@ private fun NavigationDrawerContent(
 
 @Composable
 private fun MkDocsEditorListOnlyContent(
+    //onNavigationEvent: (NavigationEvent) -> Unit,
+    codeEditorViewModel: CodeEditorViewModel = hiltViewModel(),
     uiState: UiState,
     modifier: Modifier = Modifier,
 ) {
-    FileBrowserScreen(
-        modifier = modifier
-    )
+    val documentId by codeEditorViewModel.documentId.collectAsState()
+    if (documentId != null) {
+        CodeEditorScreen(
+            uiState = uiState,
+            documentId = requireNotNull(documentId)
+        )
+    } else {
+        FileBrowserScreen(
+            onNavigationEvent = { event ->
+                when (event) {
+                    is NavigationEvent.NavigateToCodeEditor -> {
+                        codeEditorViewModel.documentId.value = event.documentId
+                    }
+                }
+            },
+            modifier = modifier
+        )
+    }
 }
 
 @Composable
 private fun MkDocsEditorListAndDocumentContent(
-    uiState: UiState,
+    //onNavigationEvent: (NavigationEvent) -> Unit,
+    mainUiState: UiState,
     modifier: Modifier = Modifier,
+    fileBrowserViewModel: FileBrowserViewModel = hiltViewModel(),
+    codeEditorViewModel: CodeEditorViewModel = hiltViewModel(),
 ) {
-    Box(modifier = modifier) {
-        Text(text = "List And Document")
+
+    val uiState by fileBrowserViewModel.uiState.collectAsState()
+
+    Row(modifier = modifier) {
+        FileBrowserScreen(
+            modifier = modifier,
+            onNavigationEvent = { event ->
+                when (event) {
+                    is NavigationEvent.NavigateToCodeEditor -> {
+                        codeEditorViewModel.documentId.value = event.documentId
+                    }
+                }
+            },
+        )
+
+        val documentId by codeEditorViewModel.documentId.collectAsState()
+
+        if (documentId != null) {
+            CodeEditorScreen(
+                uiState = mainUiState,
+                documentId = requireNotNull(documentId)
+            )
+        }
     }
 }

@@ -15,12 +15,14 @@ import de.markusressel.mkdocseditor.ui.viewmodel.EntityListViewModel
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
@@ -68,7 +70,9 @@ internal class FileBrowserViewModel @Inject constructor(
     private val currentSection = getSectionContentUseCase(currentSectionId)
 
     internal val openDocumentEditorEvent = LiveEvent<String>()
-    internal val events = LiveEvent<FileBrowserEvent>()
+
+    private val _events = Channel<FileBrowserEvent>(Channel.BUFFERED)
+    internal val events = _events.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -249,25 +253,36 @@ internal class FileBrowserViewModel @Inject constructor(
 
     private fun onCreateSectionFabClicked() {
         val currentSectionId = currentSectionId.value
-        events.value = FileBrowserEvent.CreateSectionEvent(currentSectionId)
+        viewModelScope.launch {
+            _events.send(FileBrowserEvent.CreateSectionEvent(currentSectionId))
+        }
+
     }
 
     private fun onCreateDocumentFabClicked() {
         val currentSectionId = currentSectionId.value
-        events.value = FileBrowserEvent.CreateDocumentEvent(currentSectionId)
+        viewModelScope.launch {
+            _events.send(FileBrowserEvent.CreateDocumentEvent(currentSectionId))
+        }
     }
 
     fun onDocumentLongClicked(entity: DocumentEntity): Boolean {
-        events.value = FileBrowserEvent.RenameDocumentEvent(entity)
+        viewModelScope.launch {
+            _events.send(FileBrowserEvent.RenameDocumentEvent(entity))
+        }
         return true
     }
 
     private fun onDocumentClicked(entity: DocumentEntity) {
-        events.value = FileBrowserEvent.OpenDocumentEditorEvent(entity)
+        viewModelScope.launch {
+            _events.send(FileBrowserEvent.OpenDocumentEditorEvent(entity))
+        }
     }
 
     private fun onResourceClicked(entity: ResourceEntity) {
-        events.value = FileBrowserEvent.DownloadResourceEvent(entity)
+        viewModelScope.launch {
+            _events.send(FileBrowserEvent.DownloadResourceEvent(entity))
+        }
     }
 
     private fun onSectionClicked(entity: SectionEntity) {
