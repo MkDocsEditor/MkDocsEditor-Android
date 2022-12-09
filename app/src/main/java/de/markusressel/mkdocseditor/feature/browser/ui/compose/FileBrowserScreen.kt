@@ -2,7 +2,9 @@ package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -28,7 +30,7 @@ internal fun FileBrowserScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(key1 = Unit) {
-        viewModel.events.observeForever { event ->
+        viewModel.eventsFlow.collect { event ->
             when (event) {
                 is FileBrowserEvent.ErrorEvent -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
@@ -75,18 +77,24 @@ private fun FileBrowserScreenContent(
             ),
             onRefresh = { onUiEvent(UiEvent.Refresh) },
         ) {
-            FileBrowserList(
-                items = uiState.listItems,
-                onDocumentClicked = {
-                    onUiEvent(UiEvent.DocumentClicked(it))
-                },
-                onResourceClicked = {
-                    onUiEvent(UiEvent.ResourceClicked(it))
-                },
-                onSectionClicked = {
-                    onUiEvent(UiEvent.SectionClicked(it))
-                },
-            )
+            Column {
+                if (uiState.error != null) {
+                    Text(text = uiState.error)
+                }
+
+                FileBrowserList(
+                    items = uiState.listItems,
+                    onDocumentClicked = {
+                        onUiEvent(UiEvent.DocumentClicked(it))
+                    },
+                    onResourceClicked = {
+                        onUiEvent(UiEvent.ResourceClicked(it))
+                    },
+                    onSectionClicked = {
+                        onUiEvent(UiEvent.SectionClicked(it))
+                    },
+                )
+            }
         }
 
         ExpandableFab(

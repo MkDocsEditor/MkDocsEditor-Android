@@ -5,6 +5,7 @@ import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.objectbox.annotation.Backlink
 import io.objectbox.annotation.Entity
 import io.objectbox.kotlin.query
+import io.objectbox.query.QueryBuilder
 import io.objectbox.relation.ToMany
 
 /**
@@ -30,7 +31,7 @@ fun SectionModel.asEntity(documentContentPersistenceManager: DocumentContentPers
 
     s.documents.addAll(this.documents.map {
         val contentEntity = documentContentPersistenceManager.standardOperation().query {
-            equal(DocumentContentEntity_.documentId, it.id)
+            equal(DocumentContentEntity_.documentId, it.id, QueryBuilder.StringOrder.CASE_INSENSITIVE)
         }.findUnique()
         it.asEntity(s, contentEntity)
     })

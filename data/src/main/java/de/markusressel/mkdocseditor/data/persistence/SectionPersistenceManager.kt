@@ -3,6 +3,11 @@ package de.markusressel.mkdocseditor.data.persistence
 import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
 import de.markusressel.mkdocseditor.data.persistence.entity.*
 import io.objectbox.kotlin.query
+import io.objectbox.kotlin.toFlow
+import io.objectbox.query.QueryBuilder
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,8 +30,18 @@ class SectionPersistenceManager @Inject constructor(
      */
     fun findById(sectionId: String): SectionEntity? {
         return standardOperation().query {
-            equal(SectionEntity_.id, sectionId)
+            equal(SectionEntity_.id, sectionId, QueryBuilder.StringOrder.CASE_INSENSITIVE)
         }.findUnique()
+    }
+
+    /**
+     * Find a section by it's document id (not the database entity id)
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun findByIdFlow(sectionId: String): Flow<SectionEntity?> {
+        return standardOperation().query {
+            equal(SectionEntity_.id, sectionId, QueryBuilder.StringOrder.CASE_INSENSITIVE)
+        }.subscribe().toFlow().map { it.firstOrNull() }
     }
 
     /**
@@ -53,7 +68,7 @@ class SectionPersistenceManager @Inject constructor(
     ): SectionEntity {
         // use existing section or insert new one
         val sectionEntity = standardOperation().query {
-            equal(SectionEntity_.id, section.id)
+            equal(SectionEntity_.id, section.id, QueryBuilder.StringOrder.CASE_INSENSITIVE)
         }.findUnique() ?: run {
             val newSection = standardOperation().get(standardOperation().put(section))
             parentSection?.subsections?.add(newSection)
@@ -62,7 +77,7 @@ class SectionPersistenceManager @Inject constructor(
 
         section.documents.forEach { newDocument ->
             val documentEntity = documentPersistenceManager.standardOperation().query {
-                equal(DocumentEntity_.id, newDocument.id)
+                equal(DocumentEntity_.id, newDocument.id, QueryBuilder.StringOrder.CASE_INSENSITIVE)
             }.findUnique()?.apply {
                 filesize = newDocument.filesize
                 modtime = newDocument.modtime
@@ -71,7 +86,7 @@ class SectionPersistenceManager @Inject constructor(
 
             val documentContentEntity =
                 documentContentPersistenceManager.standardOperation().query {
-                    equal(DocumentContentEntity_.documentId, documentEntity.id)
+                    equal(DocumentContentEntity_.documentId, documentEntity.id, QueryBuilder.StringOrder.CASE_INSENSITIVE)
                 }.findUnique()
             documentEntity.content.target = documentContentEntity
 
@@ -80,7 +95,7 @@ class SectionPersistenceManager @Inject constructor(
 
         section.resources.forEach { newResource ->
             val resourceEntity = resourcePersistenceManager.standardOperation().query {
-                equal(ResourceEntity_.id, newResource.id)
+                equal(ResourceEntity_.id, newResource.id, QueryBuilder.StringOrder.CASE_INSENSITIVE)
             }.findUnique()?.apply {
                 filesize = newResource.filesize
                 modtime = newResource.modtime
@@ -110,7 +125,7 @@ class SectionPersistenceManager @Inject constructor(
 
         // remove stale sections
         val existingSectionIds = standardOperation().query {
-            `in`(SectionEntity_.id, sectionIds.toTypedArray())
+            `in`(SectionEntity_.id, sectionIds.toTypedArray(), QueryBuilder.StringOrder.CASE_INSENSITIVE)
         }.findIds()
 
         // find others
@@ -122,7 +137,7 @@ class SectionPersistenceManager @Inject constructor(
 
         // remove stale documents
         val existingDocumentIds = documentPersistenceManager.standardOperation().query {
-            `in`(DocumentEntity_.id, documentIds.toTypedArray())
+            `in`(DocumentEntity_.id, documentIds.toTypedArray(), QueryBuilder.StringOrder.CASE_INSENSITIVE)
         }.findIds()
 
         // find others
@@ -134,7 +149,7 @@ class SectionPersistenceManager @Inject constructor(
 
         // remove stale resources
         val existingResourceIds = resourcePersistenceManager.standardOperation().query {
-            `in`(ResourceEntity_.id, resourceIds.toTypedArray())
+            `in`(ResourceEntity_.id, resourceIds.toTypedArray(), QueryBuilder.StringOrder.CASE_INSENSITIVE)
         }.findIds()
 
         // find others

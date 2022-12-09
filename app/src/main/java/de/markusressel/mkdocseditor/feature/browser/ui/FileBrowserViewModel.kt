@@ -17,6 +17,7 @@ import de.markusressel.mkdocseditor.ui.viewmodel.EntityListViewModel
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -66,10 +67,19 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private val currentSectionId = MutableStateFlow(ROOT_SECTION_ID)
-    private val currentSection = getSectionContentUseCase(currentSectionId)
+    private val currentSectionResource = getSectionContentUseCase(currentSectionId).onEach {
+        it.fetchNow()
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private val currentSection = currentSectionResource.filterNotNull().mapNotNull {
+        it.state.value
+    }
 
     internal val openDocumentEditorEvent = LiveEvent<String>()
     internal val events = LiveEvent<FileBrowserEvent>()
+
+    private val eventChannel = Channel<FileBrowserEvent>(Channel.BUFFERED)
+    val eventsFlow = eventChannel.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -85,9 +95,13 @@ internal class FileBrowserViewModel @Inject constructor(
                 val section = resource.data
 
                 if (resource is Resource.Error) {
-                    // TODO: show error
-                    events.value = FileBrowserEvent.ErrorEvent(resource.error?.message
+                    _uiState.value = uiState.value.copy(
+                        error = resource.error?.message ?: "Error fetching data"
+                    )
+                    val errorEvent = FileBrowserEvent.ErrorEvent(resource.error?.message
                         ?: "Error fetching data")
+                    events.value = errorEvent
+                    eventChannel.send(errorEvent)
                 }
 
                 if (resource is Resource.Loading && section == null) {
@@ -247,7 +261,16 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private fun reload() {
-        currentSectionId.value = currentSectionId.value
+        _uiState.value = uiState.value.copy(
+            error = "",
+        )
+        viewModelScope.launch {
+            try {
+                currentSectionResource.value?.fetchNow()
+            } catch (ex: Exception) {
+                Timber.e(ex)
+            }
+        }
     }
 
     private fun onCreateSectionFabClicked() {

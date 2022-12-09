@@ -5,6 +5,7 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntit
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
 import io.objectbox.kotlin.query
+import io.objectbox.query.QueryBuilder
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,7 +30,7 @@ class DocumentContentPersistenceManager @Inject constructor(
         panY: Float? = null
     ) {
         val entity = standardOperation().query {
-            equal(DocumentContentEntity_.documentId, documentId)
+            equal(DocumentContentEntity_.documentId, documentId, QueryBuilder.StringOrder.CASE_INSENSITIVE)
         }.findUnique()
             ?: DocumentContentEntity(
                 entityId = 0,
@@ -40,7 +41,7 @@ class DocumentContentPersistenceManager @Inject constructor(
         // attach parent if necessary
         if (entity.documentEntity.isNull) {
             val documentEntity = documentPersistenceManager.standardOperation().query {
-                equal(DocumentEntity_.id, documentId)
+                equal(DocumentEntity_.id, documentId, QueryBuilder.StringOrder.CASE_INSENSITIVE)
             }.findUnique()
             entity.documentEntity.target = documentEntity
         }
