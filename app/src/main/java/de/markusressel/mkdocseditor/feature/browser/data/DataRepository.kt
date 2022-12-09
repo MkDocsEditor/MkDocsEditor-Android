@@ -8,7 +8,6 @@ import com.github.ajalt.timberkt.Timber
 import de.markusressel.mkdocseditor.data.persistence.*
 import de.markusressel.mkdocseditor.data.persistence.entity.*
 import de.markusressel.mkdocseditor.network.OfflineModeManager
-import de.markusressel.mkdocseditor.util.NetworkBoundResource
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.networkBoundResource
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
@@ -79,30 +78,6 @@ class DataRepository @Inject constructor(
                 }
             )
         ).build()
-
-    fun getSection(sectionId: String) = NetworkBoundResource(
-        query = {
-            sectionPersistenceManager.findByIdFlow(sectionId)
-        },
-        fetch = {
-            restClient.getItemTree()
-        },
-        saveFetchResult = {
-            it.fold(
-                success = { sectionModel ->
-                    val entity = sectionModel.asEntity(documentContentPersistenceManager)
-                    sectionPersistenceManager.insertOrUpdateRoot(entity)
-                },
-                failure = { error ->
-                    Timber.e(error)
-                    throw error
-                }
-            )
-        },
-        shouldFetch = {
-            offlineModeManager.isEnabled().not()
-        }
-    )
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getDocumentContent(documentId: String) = networkBoundResource(
@@ -219,19 +194,6 @@ class DataRepository @Inject constructor(
             zoomLevel = zoomLevel,
             panX = panX,
             panY = panY
-        )
-    }
-
-    suspend fun loadFileTree() {
-        restClient.getItemTree().fold(
-            success = { sectionModel ->
-                val entity = sectionModel.asEntity(documentContentPersistenceManager)
-                sectionPersistenceManager.insertOrUpdateRoot(entity)
-            },
-            failure = { error ->
-                Timber.e(error)
-                throw error
-            }
         )
     }
 
