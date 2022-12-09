@@ -67,7 +67,7 @@ private fun FileBrowserScreenContent(
     onUiEvent: (UiEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box {
+    Box(modifier = modifier) {
         PullToRefresh(
             modifier = modifier,
             state = rememberPullToRefreshState(
