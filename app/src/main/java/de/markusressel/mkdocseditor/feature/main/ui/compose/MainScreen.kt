@@ -6,15 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.PermanentDrawerSheet
-import androidx.compose.material3.PermanentNavigationDrawer
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.*
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +30,7 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun MainScreen(
     mainViewModel: MainViewModel = hiltViewModel(),
+    onBack: () -> Unit,
     windowSize: Any,
     devicePosture: DevicePosture
 ) {
@@ -46,6 +39,7 @@ internal fun MainScreen(
     MainScreenLayout(
         uiState = uiState,
         onUiEvent = mainViewModel::onUiEvent,
+        onBack = onBack,
         windowSize = windowSize,
         devicePosture = devicePosture,
     )
@@ -59,6 +53,7 @@ private fun MainScreenPreview() {
         MainScreenLayout(
             uiState = UiState(),
             onUiEvent = {},
+            onBack = {},
             windowSize = WindowWidthSizeClass.Compact,
             devicePosture = DevicePosture.NormalPosture,
         )
@@ -72,6 +67,7 @@ private fun MainScreenPreviewTablet() {
         MainScreenLayout(
             uiState = UiState(),
             onUiEvent = {},
+            onBack = {},
             windowSize = WindowWidthSizeClass.Medium,
             devicePosture = DevicePosture.NormalPosture,
         )
@@ -85,6 +81,7 @@ private fun MainScreenPreviewDesktop() {
         MainScreenLayout(
             uiState = UiState(),
             onUiEvent = {},
+            onBack = {},
             windowSize = WindowWidthSizeClass.Expanded,
             devicePosture = DevicePosture.NormalPosture,
         )
@@ -96,6 +93,7 @@ private fun MainScreenPreviewDesktop() {
 private fun MainScreenLayout(
     uiState: UiState,
     onUiEvent: (UiEvent) -> Unit,
+    onBack: () -> Unit,
     windowSize: Any,
     devicePosture: DevicePosture,
 ) {
@@ -172,6 +170,7 @@ private fun MainScreenLayout(
                 contentType = contentType,
                 uiState = uiState,
                 onUiEvent = onUiEvent,
+                onBack = onBack,
                 selectedDestination = uiState.selectedBottomBarItem,
             )
         }
@@ -194,6 +193,7 @@ private fun MainScreenLayout(
                 contentType = contentType,
                 uiState = uiState,
                 onUiEvent = onUiEvent,
+                onBack = onBack,
                 selectedDestination = uiState.selectedBottomBarItem,
             )
         }
@@ -206,8 +206,10 @@ private fun MainScreenContent(
     contentType: ContentLayoutType,
     uiState: UiState,
     onUiEvent: (UiEvent) -> Unit,
+    onBack: () -> Unit,
     selectedDestination: NavItem,
 ) {
+
     Row(modifier = Modifier.fillMaxSize()) {
         AnimatedVisibility(visible = navigationType == NavigationLayoutType.NAVIGATION_RAIL) {
             MkDocsEditorNavigationRail(
@@ -235,7 +237,10 @@ private fun MainScreenContent(
                     )
                 }
                 NavItem.Settings -> PreferencesScreen(
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    onBack = {
+                        onUiEvent(UiEvent.BottomNavItemSelected(NavItem.FileBrowser))
+                    }
                 )
             }
 

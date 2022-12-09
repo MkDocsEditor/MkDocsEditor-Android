@@ -69,6 +69,9 @@ class MainActivityCompose : ComponentActivity() {
                 MainScreen(
                     windowSize = windowSize.widthSizeClass,
                     devicePosture = devicePosture,
+                    onBack = {
+                        finish()
+                    }
                 )
             }
         }

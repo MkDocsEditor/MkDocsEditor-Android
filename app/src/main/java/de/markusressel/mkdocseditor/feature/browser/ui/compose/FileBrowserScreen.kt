@@ -15,8 +15,8 @@ import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
 
 @Composable
 internal fun FileBrowserScreen(
-    viewModel: FileBrowserViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
+    viewModel: FileBrowserViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
