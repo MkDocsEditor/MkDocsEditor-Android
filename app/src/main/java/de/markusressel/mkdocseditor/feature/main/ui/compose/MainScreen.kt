@@ -266,9 +266,9 @@ private fun MainScreenContent(
 @Composable
 private fun MkDocsEditorListOnlyContent(
     //onNavigationEvent: (NavigationEvent) -> Unit,
+    modifier: Modifier = Modifier,
     codeEditorViewModel: CodeEditorViewModel = hiltViewModel(),
     uiState: UiState,
-    modifier: Modifier = Modifier,
     onBack: () -> Unit,
 ) {
     val documentId by codeEditorViewModel.documentId.collectAsState()
