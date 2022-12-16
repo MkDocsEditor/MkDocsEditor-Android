@@ -20,19 +20,10 @@ import de.markusressel.mkdocseditor.util.Resource.Success
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.mapLatest
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
 
@@ -146,9 +137,9 @@ internal class CodeEditorViewModel @Inject constructor(
                 offlineModeManager.isEnabled
             ) { status, editable, offlineModeEnabled ->
                 (status?.connected ?: false)
-                        && editable
-                        && offlineModeEnabled.not()
-                        && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
+                    && editable
+                    && offlineModeEnabled.not()
+                    && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
             }.collect {
                 editModeActive.value = it
             }
@@ -311,6 +302,10 @@ internal class CodeEditorViewModel @Inject constructor(
 
     fun isCachedContentAvailable(): Boolean {
         return documentEntity.value?.data?.content?.target?.text != null
+    }
+
+    fun onClose() {
+        documentId.value = null
     }
 
 }

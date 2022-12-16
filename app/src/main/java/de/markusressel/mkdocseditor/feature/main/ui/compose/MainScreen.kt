@@ -19,11 +19,7 @@ import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel
 import de.markusressel.mkdocseditor.feature.browser.ui.compose.FileBrowserScreen
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreen
-import de.markusressel.mkdocseditor.feature.main.ui.ContentLayoutType
-import de.markusressel.mkdocseditor.feature.main.ui.DevicePosture
-import de.markusressel.mkdocseditor.feature.main.ui.NavItem
-import de.markusressel.mkdocseditor.feature.main.ui.NavigationEvent
-import de.markusressel.mkdocseditor.feature.main.ui.NavigationLayoutType
+import de.markusressel.mkdocseditor.feature.main.ui.*
 import de.markusressel.mkdocseditor.feature.preferences.ui.compose.PreferencesScreen
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.activity.MainViewModel
@@ -277,7 +273,11 @@ private fun MkDocsEditorListOnlyContent(
     if (documentId != null) {
         CodeEditorScreen(
             uiState = uiState,
-            documentId = requireNotNull(documentId)
+            documentId = requireNotNull(documentId),
+            onBack = {
+                codeEditorViewModel.onClose()
+
+            }
         )
     } else {
         FileBrowserScreen(
@@ -303,7 +303,6 @@ private fun MkDocsEditorListAndDocumentContent(
     codeEditorViewModel: CodeEditorViewModel = hiltViewModel(),
     onBack: () -> Unit,
 ) {
-
     val uiState by fileBrowserViewModel.uiState.collectAsState()
 
     Row(modifier = modifier) {
@@ -321,11 +320,18 @@ private fun MkDocsEditorListAndDocumentContent(
 
         val documentId by codeEditorViewModel.documentId.collectAsState()
 
-        if (documentId != null) {
-            CodeEditorScreen(
-                uiState = mainUiState,
-                documentId = requireNotNull(documentId)
-            )
+        AnimatedVisibility(visible = documentId != null) {
+            // TODO: not sure if this "if" is necessary, even in a "AnimatedVisibility" composable
+            if (documentId != null) {
+                CodeEditorScreen(
+                    uiState = mainUiState,
+                    documentId = requireNotNull(documentId),
+                    onBack = {
+                        codeEditorViewModel.onClose()
+
+                    }
+                )
+            }
         }
     }
 }

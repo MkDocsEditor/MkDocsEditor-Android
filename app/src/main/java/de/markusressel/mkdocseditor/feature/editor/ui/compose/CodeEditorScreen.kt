@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,8 +23,14 @@ import de.markusressel.mkdocseditor.ui.activity.UiState
 @Composable
 internal fun CodeEditorScreen(
     uiState: UiState,
-    documentId: String
+    documentId: String,
+    onBack: () -> Unit,
 ) {
+    BackHandler(
+        enabled = true,
+        onBack = onBack,
+    )
+
     Box(modifier = Modifier.fillMaxSize()) {
         CodeEditorLayout(
             text = TextFieldValue(""),

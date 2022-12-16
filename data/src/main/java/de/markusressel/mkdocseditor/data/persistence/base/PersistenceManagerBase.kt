@@ -8,8 +8,6 @@ import kotlin.reflect.KClass
 
 /**
  * Base class of a persistance manager for a specific type
- *
- * Created by Markus on 30.01.2018.
  */
 open class PersistenceManagerBase<EntityType : Any>(val entityType: KClass<EntityType>) {
 
