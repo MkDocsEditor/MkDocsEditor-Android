@@ -43,10 +43,15 @@ internal fun NavigationDrawerContent(
     onHamburgerIconClicked: (NavItem) -> Unit,
 ) {
     Column(
-        modifier = Modifier.padding(vertical = 8.dp)
+        modifier = Modifier
+            .sizeIn(maxWidth = 256.dp)
+            .fillMaxHeight()
+            .padding(vertical = 8.dp)
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 8.dp)
+            modifier = Modifier
+                .wrapContentWidth()
+                .padding(horizontal = 8.dp)
         ) {
             Text(
                 text = stringResource(id = R.string.app_name),
@@ -63,13 +68,17 @@ internal fun NavigationDrawerContent(
             )
         }
 
-        Divider(
-            modifier = Modifier.padding(
-                top = 16.dp,
-                bottom = 8.dp
-            ),
-            color = MaterialTheme.colorScheme.onSecondary,
-        )
+        Row {
+            Divider(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(
+                        top = 16.dp,
+                        bottom = 8.dp
+                    ),
+                color = MaterialTheme.colorScheme.onSecondary,
+            )
+        }
 
         for (item in navItems) {
             DrawerNavItem(
@@ -103,7 +112,7 @@ private fun DrawerNavItem(
     ) {
         Icon(
             modifier = Modifier
-                .size(36.dp),
+                .size(32.dp),
             imageVector = when (item) {
                 is NavItem.FileBrowser -> Icons.Default.Home
                 is NavItem.Settings -> Icons.Default.Settings

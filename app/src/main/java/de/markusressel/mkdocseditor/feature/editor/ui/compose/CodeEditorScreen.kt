@@ -24,7 +24,7 @@ import de.markusressel.mkdocseditor.ui.activity.UiState
 internal fun CodeEditorScreen(
     uiState: UiState,
     onBack: () -> Unit,
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
 ) {
     BackHandler(
         enabled = true,

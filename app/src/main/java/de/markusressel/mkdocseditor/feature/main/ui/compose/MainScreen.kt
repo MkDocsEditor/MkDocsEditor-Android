@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel
 import de.markusressel.mkdocseditor.feature.browser.ui.compose.FileBrowserScreen
@@ -214,7 +215,10 @@ private fun MainScreenContent(
     Box(modifier = Modifier.fillMaxSize()) {
 
         Row(modifier = Modifier.fillMaxSize()) {
-            AnimatedVisibility(visible = navigationType == NavigationLayoutType.NAVIGATION_RAIL) {
+            AnimatedVisibility(
+                modifier = Modifier.zIndex(1000f),
+                visible = navigationType == NavigationLayoutType.NAVIGATION_RAIL
+            ) {
                 MkDocsEditorNavigationRail(
                     selectedNavItem = uiState.selectedBottomBarItem,
                     navItems = uiState.bottomBarNavItems,
@@ -251,7 +255,10 @@ private fun MainScreenContent(
                     )
                 }
 
-                AnimatedVisibility(visible = navigationType == NavigationLayoutType.BOTTOM_NAVIGATION) {
+                AnimatedVisibility(
+                    modifier = Modifier.zIndex(1000f),
+                    visible = navigationType == NavigationLayoutType.BOTTOM_NAVIGATION
+                ) {
                     BottomBar(
                         selectedNavItem = uiState.selectedBottomBarItem,
                         navItems = uiState.bottomBarNavItems,
@@ -354,7 +361,7 @@ private fun MkDocsEditorListAndDocumentContent(
             ),
         ) {
             CodeEditorScreen(
-                modifier = modifier,
+                modifier = Modifier,
                 uiState = mainUiState,
                 onBack = {
                     codeEditorViewModel.onClose()
