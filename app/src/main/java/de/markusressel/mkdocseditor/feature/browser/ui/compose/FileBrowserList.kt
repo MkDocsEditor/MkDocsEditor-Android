@@ -108,10 +108,6 @@ internal fun FileBrowserList(
                     onResourceClicked = onResourceClicked,
                     onSectionClicked = onSectionClicked,
                 )
-
-                if (index < items.size) {
-                    Divider()
-                }
             }
 
             Spacer(modifier = Modifier.height(128.dp))

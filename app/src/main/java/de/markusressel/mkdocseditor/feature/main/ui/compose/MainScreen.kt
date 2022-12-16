@@ -272,6 +272,7 @@ private fun MkDocsEditorListOnlyContent(
     val documentId by codeEditorViewModel.documentId.collectAsState()
     if (documentId != null) {
         CodeEditorScreen(
+            modifier = modifier,
             uiState = uiState,
             documentId = requireNotNull(documentId),
             onBack = {
@@ -324,12 +325,13 @@ private fun MkDocsEditorListAndDocumentContent(
             // TODO: not sure if this "if" is necessary, even in a "AnimatedVisibility" composable
             if (documentId != null) {
                 CodeEditorScreen(
+                    modifier = modifier,
                     uiState = mainUiState,
                     documentId = requireNotNull(documentId),
                     onBack = {
                         codeEditorViewModel.onClose()
 
-                    }
+                    },
                 )
             }
         }

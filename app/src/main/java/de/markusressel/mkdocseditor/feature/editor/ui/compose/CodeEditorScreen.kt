@@ -2,15 +2,15 @@ package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.Box
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -25,36 +25,46 @@ internal fun CodeEditorScreen(
     uiState: UiState,
     documentId: String,
     onBack: () -> Unit,
+    modifier: Modifier,
 ) {
     BackHandler(
         enabled = true,
         onBack = onBack,
     )
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    // TODO: in the future this has to come from the viewmodel/documentsyncmanager
+    var text by remember {
+        mutableStateOf(TextFieldValue(""))
+    }
+
+    Column(
+        modifier = modifier,
+    ) {
         CodeEditorLayout(
-            text = TextFieldValue(""),
-            onTextChanged = {},
+            modifier = Modifier.fillMaxSize(),
+            text = text,
+            onTextChanged = {
+                text = it
+            },
         )
 
-        AnimatedVisibility(visible = uiState.snackbar != null) {
-            Box(
+        AnimatedVisibility(
+            visible = uiState.snackbar != null,
+            enter = slideInVertically(),
+            exit = slideOutVertically(),
+        ) {
+            Snackbar(
                 modifier = Modifier
-                    .wrapContentHeight()
-                    .align(Alignment.BottomCenter)
-            ) {
-                Snackbar(
-                    modifier = Modifier.padding(4.dp),
-                    action = {
-                        TextButton(onClick = {
-                            // onUiEvent(UiEvent.SnackbarActionTriggered)
-                        }) {
-                            Text(text = uiState.snackbar?.action ?: "")
-                        }
+                    .padding(4.dp),
+                action = {
+                    TextButton(onClick = {
+                        // onUiEvent(UiEvent.SnackbarActionTriggered)
+                    }) {
+                        Text(text = uiState.snackbar?.action ?: "")
                     }
-                ) {
-                    Text(text = uiState.snackbar?.text ?: "")
                 }
+            ) {
+                Text(text = uiState.snackbar?.text ?: "")
             }
         }
     }
@@ -64,9 +74,10 @@ internal fun CodeEditorScreen(
 private fun CodeEditorLayout(
     text: TextFieldValue,
     onTextChanged: (TextFieldValue) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     KodeTextField(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier,
         value = text,
         languageRuleBook = MarkdownRuleBook(),
         colorScheme = DarkBackgroundColorSchemeWithSpanStyle(),
