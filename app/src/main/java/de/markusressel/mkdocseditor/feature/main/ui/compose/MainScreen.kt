@@ -1,6 +1,6 @@
 package de.markusressel.mkdocseditor.feature.main.ui.compose
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel
@@ -270,28 +272,49 @@ private fun MkDocsEditorListOnlyContent(
     onBack: () -> Unit,
 ) {
     val documentId by codeEditorViewModel.documentId.collectAsState()
-    if (documentId != null) {
-        CodeEditorScreen(
-            modifier = modifier,
-            uiState = uiState,
-            documentId = requireNotNull(documentId),
-            onBack = {
-                codeEditorViewModel.onClose()
 
-            }
-        )
-    } else {
-        FileBrowserScreen(
-            onNavigationEvent = { event ->
-                when (event) {
-                    is NavigationEvent.NavigateToCodeEditor -> {
-                        codeEditorViewModel.documentId.value = event.documentId
-                    }
+    Box(modifier = modifier) {
+        AnimatedVisibility(
+            visible = documentId != null,
+            enter = slideInHorizontally(
+                initialOffsetX = { fullWidth -> fullWidth }
+            ),
+            exit = slideOutHorizontally(
+                targetOffsetX = { fullWidth -> fullWidth }
+            ),
+        ) {
+            CodeEditorScreen(
+                modifier = Modifier.background(Color.Transparent),
+                uiState = uiState,
+                onBack = {
+                    codeEditorViewModel.onClose()
+
                 }
-            },
+            )
+        }
+
+        AnimatedVisibility(
             modifier = modifier,
-            onBack = onBack
-        )
+            visible = documentId == null,
+            enter = slideInHorizontally(
+                initialOffsetX = { fullWidth -> -fullWidth }
+            ),
+            exit = slideOutHorizontally(
+                targetOffsetX = { fullWidth -> -fullWidth }
+            ),
+        ) {
+            FileBrowserScreen(
+                modifier = Modifier.background(Color.Transparent),
+                onNavigationEvent = { event ->
+                    when (event) {
+                        is NavigationEvent.NavigateToCodeEditor -> {
+                            codeEditorViewModel.documentId.value = event.documentId
+                        }
+                    }
+                },
+                onBack = onBack
+            )
+        }
     }
 }
 
@@ -308,7 +331,7 @@ private fun MkDocsEditorListAndDocumentContent(
 
     Row(modifier = modifier) {
         FileBrowserScreen(
-            modifier = modifier,
+            modifier = modifier.weight(0.33f),
             onNavigationEvent = { event ->
                 when (event) {
                     is NavigationEvent.NavigateToCodeEditor -> {
@@ -321,19 +344,22 @@ private fun MkDocsEditorListAndDocumentContent(
 
         val documentId by codeEditorViewModel.documentId.collectAsState()
 
-        AnimatedVisibility(visible = documentId != null) {
-            // TODO: not sure if this "if" is necessary, even in a "AnimatedVisibility" composable
-            if (documentId != null) {
-                CodeEditorScreen(
-                    modifier = modifier,
-                    uiState = mainUiState,
-                    documentId = requireNotNull(documentId),
-                    onBack = {
-                        codeEditorViewModel.onClose()
-
-                    },
-                )
-            }
+        AnimatedVisibility(
+            visible = documentId != null,
+            enter = expandHorizontally(
+                expandFrom = Alignment.Start,
+            ),
+            exit = shrinkHorizontally(
+                shrinkTowards = Alignment.End,
+            ),
+        ) {
+            CodeEditorScreen(
+                modifier = modifier,
+                uiState = mainUiState,
+                onBack = {
+                    codeEditorViewModel.onClose()
+                },
+            )
         }
     }
 }

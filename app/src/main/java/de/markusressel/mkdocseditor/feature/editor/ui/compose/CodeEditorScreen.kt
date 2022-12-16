@@ -23,7 +23,6 @@ import de.markusressel.mkdocseditor.ui.activity.UiState
 @Composable
 internal fun CodeEditorScreen(
     uiState: UiState,
-    documentId: String,
     onBack: () -> Unit,
     modifier: Modifier,
 ) {
@@ -34,7 +33,11 @@ internal fun CodeEditorScreen(
 
     // TODO: in the future this has to come from the viewmodel/documentsyncmanager
     var text by remember {
-        mutableStateOf(TextFieldValue(""))
+        mutableStateOf(
+            TextFieldValue(
+                "This is a sample text, so the editor isn't always empty when opening"
+            )
+        )
     }
 
     Column(
