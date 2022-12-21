@@ -237,7 +237,8 @@ private fun FileBrowserScreenContent(
             SectionPath(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .defaultMinSize(minHeight = 48.dp),
+                    .defaultMinSize(minHeight = 48.dp)
+                    .padding(horizontal = 4.dp),
                 path = uiState.currentSectionPath,
                 onSectionClicked = { section ->
                     onUiEvent(UiEvent.NavigateUpToSection(section))
