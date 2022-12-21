@@ -30,6 +30,8 @@ internal data class UiState(
     val currentSearchFilter: String = "",
     val isSearching: Boolean = false,
 
+    val currentSectionPath: String = "/",
+
     val listItems: List<IdentifiableListItem> = emptyList()
 )
 

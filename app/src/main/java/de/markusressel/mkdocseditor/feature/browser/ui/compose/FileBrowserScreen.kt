@@ -2,17 +2,25 @@ package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.github.fengdai.compose.pulltorefresh.PullToRefresh
 import com.github.fengdai.compose.pulltorefresh.rememberPullToRefreshState
@@ -20,6 +28,7 @@ import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserEvent
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel
 import de.markusressel.mkdocseditor.feature.browser.ui.UiEvent
 import de.markusressel.mkdocseditor.feature.browser.ui.UiState
+import de.markusressel.mkdocseditor.feature.common.ui.compose.ErrorCard
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
 import de.markusressel.mkdocseditor.feature.main.ui.NavigationEvent
 import kotlinx.coroutines.flow.collectLatest
@@ -209,23 +218,43 @@ private fun FileBrowserScreenContent(
             ),
             onRefresh = { onUiEvent(UiEvent.Refresh) },
         ) {
-            Column {
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentSize()
+            ) {
                 if (uiState.error != null) {
+                    ErrorCard(
+                        modifier = Modifier
+                            .zIndex(100F)
+                            .padding(16.dp)
+                            .align(Alignment.TopCenter),
+                        text = uiState.error
+                    )
+
                     Text(text = uiState.error)
                 }
 
-                FileBrowserList(
-                    items = uiState.listItems,
-                    onDocumentClicked = {
-                        onUiEvent(UiEvent.DocumentClicked(it))
-                    },
-                    onResourceClicked = {
-                        onUiEvent(UiEvent.ResourceClicked(it))
-                    },
-                    onSectionClicked = {
-                        onUiEvent(UiEvent.SectionClicked(it))
-                    },
-                )
+                Column {
+                    SectionPath(
+                        modifier = Modifier.fillMaxWidth(),
+                        path = uiState.currentSectionPath
+                    )
+
+                    FileBrowserList(
+                        items = uiState.listItems,
+                        onDocumentClicked = {
+                            onUiEvent(UiEvent.DocumentClicked(it))
+                        },
+                        onResourceClicked = {
+                            onUiEvent(UiEvent.ResourceClicked(it))
+                        },
+                        onSectionClicked = {
+                            onUiEvent(UiEvent.SectionClicked(it))
+                        },
+                    )
+                }
             }
         }
 
@@ -235,6 +264,24 @@ private fun FileBrowserScreenContent(
             onItemClicked = {
                 onUiEvent(UiEvent.ExpandableFabItemSelected(item = it))
             }
+        )
+    }
+}
+
+@Composable
+fun SectionPath(
+    path: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = Modifier
+            .background(color = MaterialTheme.colorScheme.primaryContainer)
+            .then(modifier)
+    ) {
+        Text(
+            modifier = Modifier.padding(4.dp),
+            text = path,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
         )
     }
 }

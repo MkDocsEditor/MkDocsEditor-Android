@@ -12,6 +12,7 @@ import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.browser.data.ROOT_SECTION
 import de.markusressel.mkdocseditor.feature.browser.data.SectionBackstackItem
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.CreateNewSectionUseCase
+import de.markusressel.mkdocseditor.feature.browser.ui.usecase.GetCurrentSectionPathUseCase
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.GetSectionContentUseCase
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.RefreshSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.SearchUseCase
@@ -52,6 +53,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private val getSectionContentUseCase: GetSectionContentUseCase,
     private val createNewSectionUseCase: CreateNewSectionUseCase,
     private val searchUseCase: SearchUseCase,
+    private val getCurrentSectionPathUseCase: GetCurrentSectionPathUseCase,
 ) : EntityListViewModel() {
 
     // TODO: use savedState
@@ -175,13 +177,6 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     /**
-     * Removes all items in the backstack
-     */
-    internal fun clearBackstack() {
-        backstack.clear()
-    }
-
-    /**
      * Open a specific section
      *
      * @param sectionId the section to open
@@ -189,6 +184,7 @@ internal class FileBrowserViewModel @Inject constructor(
      */
     internal fun openSection(
         sectionId: String,
+        sectionName: String?,
         addToBackstack: Boolean = true,
     ) = viewModelScope.launch {
         if (
@@ -201,13 +197,14 @@ internal class FileBrowserViewModel @Inject constructor(
 
         Timber.d { "Opening Section '${sectionId}'" }
         if (addToBackstack) {
-            backstack.push(SectionBackstackItem(sectionId))
+            backstack.push(SectionBackstackItem(sectionId, sectionName))
         }
 
         // set the section id on the ViewModel
         currentSectionId.value = sectionId
 
         _uiState.value = uiState.value.copy(
+            currentSectionPath = getCurrentSectionPathUseCase(backstack),
             canGoUp = (currentSectionId.value == ROOT_SECTION_ID || backstack.size <= 1).not()
         )
     }
@@ -223,7 +220,7 @@ internal class FileBrowserViewModel @Inject constructor(
         }
 
         backstack.pop()
-        openSection(backstack.peek().sectionId, false)
+        openSection(backstack.peek().sectionId, backstack.peek().sectionName, false)
         return true
     }
 
@@ -257,6 +254,7 @@ internal class FileBrowserViewModel @Inject constructor(
         backstack.clear()
         currentSectionId.value = ROOT_SECTION_ID
         _uiState.value = uiState.value.copy(
+            currentSectionPath = getCurrentSectionPathUseCase(backstack),
             canGoUp = false
         )
     }
@@ -341,6 +339,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private fun onSectionClicked(entity: SectionEntity) {
         openSection(
             sectionId = entity.id,
+            sectionName = entity.name,
             addToBackstack = true
         )
     }

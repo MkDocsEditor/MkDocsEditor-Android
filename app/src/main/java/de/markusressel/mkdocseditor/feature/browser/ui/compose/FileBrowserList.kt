@@ -78,28 +78,11 @@ internal fun FileBrowserList(
     ) {
 
         if (items.isEmpty()) {
-            Column(
+            EmptyPathView(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Image(
-                    modifier = Modifier
-                        .size(32.dp),
-                    asset = MaterialDesignIconic.Icon.gmi_folder,
-                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant),
-                )
-
-                Text(
-                    modifier = Modifier.padding(16.dp),
-                    text = stringResource(id = R.string.file_browser_empty),
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.onSurface
-                    ),
-                )
-            }
+                    .fillMaxWidth()
+            )
         } else {
             items.forEachIndexed { index, item ->
                 FileBrowserListEntry(
@@ -112,6 +95,32 @@ internal fun FileBrowserList(
 
             Spacer(modifier = Modifier.height(128.dp))
         }
+    }
+}
+
+@Composable
+private fun EmptyPathView(
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Image(
+            modifier = Modifier
+                .size(32.dp),
+            asset = MaterialDesignIconic.Icon.gmi_folder,
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant),
+        )
+
+        Text(
+            modifier = Modifier.padding(16.dp),
+            text = stringResource(id = R.string.file_browser_empty),
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurface
+            ),
+        )
     }
 }
 

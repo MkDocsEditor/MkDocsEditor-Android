@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 internal fun MainScreen(
     mainViewModel: MainViewModel = hiltViewModel(),
     onBack: () -> Unit,
-    windowSize: Any,
+    windowSize: WindowWidthSizeClass,
     devicePosture: DevicePosture
 ) {
     val uiState by mainViewModel.uiState.collectAsState()
@@ -97,7 +97,7 @@ private fun MainScreenLayout(
     uiState: UiState,
     onUiEvent: (UiEvent) -> Unit,
     onBack: () -> Unit,
-    windowSize: Any,
+    windowSize: WindowWidthSizeClass,
     devicePosture: DevicePosture,
 ) {
     val navigationType: NavigationLayoutType
@@ -120,7 +120,8 @@ private fun MainScreenLayout(
             navigationType = if (devicePosture is DevicePosture.BookPosture) {
                 NavigationLayoutType.NAVIGATION_RAIL
             } else {
-                NavigationLayoutType.PERMANENT_NAVIGATION_DRAWER
+                NavigationLayoutType.NAVIGATION_RAIL
+                //NavigationLayoutType.PERMANENT_NAVIGATION_DRAWER
             }
             contentType = ContentLayoutType.LIST_AND_DOCUMENT
         }
@@ -155,50 +156,54 @@ private fun MainScreenLayout(
         }
     }
 
-    if (navigationType == NavigationLayoutType.PERMANENT_NAVIGATION_DRAWER) {
-        PermanentNavigationDrawer(
-            drawerContent = {
-                PermanentDrawerSheet {
-                    NavigationDrawerContent(
-                        navItems = uiState.drawerNavItems,
-                        selectedDestination = uiState.selectedBottomBarItem,
-                        onHamburgerIconClicked = { }
-                    )
+    when (navigationType) {
+        NavigationLayoutType.PERMANENT_NAVIGATION_DRAWER -> {
+            PermanentNavigationDrawer(
+                drawerContent = {
+                    PermanentDrawerSheet {
+                        NavigationDrawerContent(
+                            navItems = uiState.drawerNavItems,
+                            selectedDestination = uiState.selectedBottomBarItem,
+                            onHamburgerIconClicked = { }
+                        )
+                    }
                 }
+            ) {
+                MainScreenContent(
+                    navigationType = navigationType,
+                    contentType = contentType,
+                    uiState = uiState,
+                    onUiEvent = onUiEvent,
+                    onBack = onBack,
+                    selectedDestination = uiState.selectedBottomBarItem,
+                )
             }
-        ) {
-            MainScreenContent(
-                navigationType = navigationType,
-                contentType = contentType,
-                uiState = uiState,
-                onUiEvent = onUiEvent,
-                onBack = onBack,
-                selectedDestination = uiState.selectedBottomBarItem,
-            )
         }
-    } else {
-        ModalNavigationDrawer(
-            drawerContent = {
-                ModalDrawerSheet {
-                    NavigationDrawerContent(
-                        navItems = uiState.drawerNavItems,
-                        selectedDestination = uiState.selectedBottomBarItem,
-                        onHamburgerIconClicked = {
-                            onUiEvent(UiEvent.ToggleNavDrawer)
-                        }
-                    )
-                }
-            },
-            drawerState = drawerState
-        ) {
-            MainScreenContent(
-                navigationType = navigationType,
-                contentType = contentType,
-                uiState = uiState,
-                onUiEvent = onUiEvent,
-                onBack = onBack,
-                selectedDestination = uiState.selectedBottomBarItem,
-            )
+        NavigationLayoutType.BOTTOM_NAVIGATION,
+        NavigationLayoutType.NAVIGATION_RAIL -> {
+            ModalNavigationDrawer(
+                drawerContent = {
+                    ModalDrawerSheet {
+                        NavigationDrawerContent(
+                            navItems = uiState.drawerNavItems,
+                            selectedDestination = uiState.selectedBottomBarItem,
+                            onHamburgerIconClicked = {
+                                onUiEvent(UiEvent.ToggleNavDrawer)
+                            }
+                        )
+                    }
+                },
+                drawerState = drawerState
+            ) {
+                MainScreenContent(
+                    navigationType = navigationType,
+                    contentType = contentType,
+                    uiState = uiState,
+                    onUiEvent = onUiEvent,
+                    onBack = onBack,
+                    selectedDestination = uiState.selectedBottomBarItem,
+                )
+            }
         }
     }
 }
