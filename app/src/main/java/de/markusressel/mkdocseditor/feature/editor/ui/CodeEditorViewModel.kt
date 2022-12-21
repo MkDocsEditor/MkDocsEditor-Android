@@ -3,6 +3,8 @@ package de.markusressel.mkdocseditor.feature.editor.ui
 import android.graphics.PointF
 import android.view.View
 import androidx.annotation.UiThread
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextRange
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -20,10 +22,22 @@ import de.markusressel.mkdocseditor.util.Resource.Success
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flattenConcat
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
 
@@ -36,6 +50,9 @@ internal class CodeEditorViewModel @Inject constructor(
     val networkManager: NetworkManager,
     val offlineModeManager: OfflineModeManager,
 ) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(UiState())
+    internal val uiState = _uiState.asStateFlow()
 
     internal val events = MutableLiveData<CodeEditorEvent>()
 
@@ -58,11 +75,6 @@ internal class CodeEditorViewModel @Inject constructor(
         offlineModeManager.isEnabled.combine(connectionStatus) { offlineModeEnabled, connectionStatus ->
             offlineModeEnabled.not() && (connectionStatus?.connected ?: false)
         }
-
-    /**
-     * Indicates whether the CodeEditor is in "edit" mode or not
-     */
-    val editModeActive = MutableLiveData(false)
 
     val offlineModeBannerVisibility = offlineModeManager.isEnabled.mapLatest {
         when (it) {
@@ -111,20 +123,28 @@ internal class CodeEditorViewModel @Inject constructor(
             }
 
             events.value = InitialText(it)
+            _uiState.value = uiState.value.copy(
+                text = AnnotatedString(it),
+                selection = TextRange.Zero,
+            )
 
             // launch coroutine to continuously watch for changes
             watchTextChanges()
         },
         onTextChanged = ::onTextChanged,
-        readOnly = editModeActive.value?.not() ?: true
+        readOnly = uiState.value.editModeActive.not()
     )
 
     init {
         viewModelScope.launch {
             editable.collect { editable ->
                 if (editable.not()) {
-                    if (editModeActive.value == true) {
-                        editModeActive.value = false
+                    // automatically disable edit mode, if (for whatever reason)
+                    // editing is currently not possible
+                    if (uiState.value.editModeActive) {
+                        _uiState.value = uiState.value.copy(
+                            editModeActive = false
+                        )
                     }
                 }
             }
@@ -137,11 +157,13 @@ internal class CodeEditorViewModel @Inject constructor(
                 offlineModeManager.isEnabled
             ) { status, editable, offlineModeEnabled ->
                 (status?.connected ?: false)
-                    && editable
-                    && offlineModeEnabled.not()
-                    && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
+                        && editable
+                        && offlineModeEnabled.not()
+                        && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
             }.collect {
-                editModeActive.value = it
+                _uiState.value = uiState.value.copy(
+                    editModeActive = it
+                )
             }
         }
 
@@ -175,8 +197,10 @@ internal class CodeEditorViewModel @Inject constructor(
             }
         }
 
-        editModeActive.observeForever {
-            documentSyncManager.readOnly = it.not()
+        viewModelScope.launch {
+            uiState.map { it.editModeActive }.distinctUntilChanged().collectLatest {
+                documentSyncManager.readOnly = it.not()
+            }
         }
     }
 
@@ -211,6 +235,13 @@ internal class CodeEditorViewModel @Inject constructor(
         loading.value = false
     }
 
+    internal fun onUserTextInput(text: AnnotatedString, selection: TextRange) {
+        _uiState.value = uiState.value.copy(
+            text = text,
+            selection = selection,
+        )
+    }
+
     private fun onTextChanged(newText: String, patches: LinkedList<diff_match_patch.Patch>) {
         events.value = TextChange(newText, patches)
     }
@@ -233,7 +264,9 @@ internal class CodeEditorViewModel @Inject constructor(
      * @param throwable an (optional) exception that is causing the disconnect
      */
     fun disconnect(reason: String = "None", throwable: Throwable? = null) {
-        editModeActive.value = false
+        _uiState.value = uiState.value.copy(
+            editModeActive = false
+        )
 
         documentSyncManager.disconnect(1000, reason)
         events.value = ConnectionStatus(connected = false, throwable = throwable)
@@ -281,7 +314,9 @@ internal class CodeEditorViewModel @Inject constructor(
      */
     fun onEditClicked(): Boolean {
         // invert state of edit mode
-        editModeActive.value = editModeActive.value != true
+        _uiState.value = uiState.value.copy(
+            editModeActive = uiState.value.editModeActive.not()
+        )
         return true
     }
 

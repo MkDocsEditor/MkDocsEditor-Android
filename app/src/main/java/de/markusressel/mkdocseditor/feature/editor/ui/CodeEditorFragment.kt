@@ -72,16 +72,16 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
                 }
 
                 // set "edit" icon
-                viewModel.editModeActive.observe(viewLifecycleOwner) { editModeActive ->
-                    menu?.findItem(R.id.edit)?.apply {
-                        icon = if (editModeActive) {
-                            iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_eye)
-                        } else {
-                            iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_edit)
-                        }
-                    }
-                    activity?.invalidateOptionsMenu()
-                }
+//                viewModel.editModeActive.observe(viewLifecycleOwner) { editModeActive ->
+//                    menu?.findItem(R.id.edit)?.apply {
+//                        icon = if (editModeActive) {
+//                            iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_eye)
+//                        } else {
+//                            iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_edit)
+//                        }
+//                    }
+//                    activity?.invalidateOptionsMenu()
+//                }
 
                 viewModel.editable.asLiveData().observe(viewLifecycleOwner) { editable ->
                     // set "edit" icon
@@ -184,12 +184,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
         super.onViewCreated(view, savedInstanceState)
 
         viewModel.apply {
-            editModeActive.observe(viewLifecycleOwner) {
-                runOnUiThread {
-//                    codeEditorLayout.editable = it
-                }
-            }
-
             loading.observe(viewLifecycleOwner) { loading ->
                 when {
                     loading -> loadingComponent.showLoading()

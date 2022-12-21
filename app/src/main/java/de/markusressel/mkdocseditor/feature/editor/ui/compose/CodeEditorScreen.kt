@@ -10,13 +10,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import de.markusressel.kodehighlighter.core.ui.KodeTextField
 import de.markusressel.kodehighlighter.language.markdown.MarkdownRuleBook
 import de.markusressel.kodehighlighter.language.markdown.colorscheme.DarkBackgroundColorSchemeWithSpanStyle
+import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
 import de.markusressel.mkdocseditor.ui.activity.UiState
 
 
@@ -25,30 +31,28 @@ internal fun CodeEditorScreen(
     uiState: UiState,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    codeEditorViewModel: CodeEditorViewModel = hiltViewModel(),
 ) {
     BackHandler(
         enabled = true,
         onBack = onBack,
     )
 
-    // TODO: in the future this has to come from the viewmodel/documentsyncmanager
-    var text by remember {
-        mutableStateOf(
-            TextFieldValue(
-                "This is a sample text, so the editor isn't always empty when opening"
-            )
-        )
-    }
+    val editorUiState by codeEditorViewModel.uiState.collectAsState()
 
     Column(
         modifier = modifier,
     ) {
         CodeEditorLayout(
             modifier = Modifier.fillMaxSize(),
-            text = text,
+            text = TextFieldValue(
+                annotatedString = editorUiState.text ?: AnnotatedString(""),
+                selection = editorUiState.selection ?: TextRange.Zero,
+            ),
             onTextChanged = {
-                text = it
+                codeEditorViewModel.onUserTextInput(it.annotatedString, it.selection)
             },
+            // readOnly = editorUiState.editModeActive.not()
         )
 
         AnimatedVisibility(

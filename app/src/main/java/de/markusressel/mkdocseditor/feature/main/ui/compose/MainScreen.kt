@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.*
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -28,7 +27,6 @@ import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.activity.MainViewModel
 import de.markusressel.mkdocseditor.ui.activity.UiEvent
 import de.markusressel.mkdocseditor.ui.activity.UiState
-import kotlinx.coroutines.launch
 
 @Composable
 internal fun MainScreen(
@@ -131,30 +129,30 @@ private fun MainScreenLayout(
         }
     }
 
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    LaunchedEffect(key1 = drawerState) {
-        if (drawerState.isAnimationRunning.not()
-            && drawerState.targetValue == drawerState.currentValue
-        ) {
-            val newNavDrawerOpenValue = when (drawerState.targetValue) {
-                DrawerValue.Closed -> false
-                DrawerValue.Open -> true
-            }
-
-            if (uiState.navDrawerOpen != newNavDrawerOpenValue) {
-                onUiEvent(UiEvent.ToggleNavDrawer)
-            }
-        }
-    }
-    LaunchedEffect(key1 = uiState.navDrawerOpen) {
-        launch {
-            if (uiState.navDrawerOpen) {
-                drawerState.open()
-            } else {
-                drawerState.close()
-            }
-        }
-    }
+//    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+//    LaunchedEffect(key1 = drawerState) {
+//        if (drawerState.isAnimationRunning.not()
+//            && drawerState.targetValue == drawerState.currentValue
+//        ) {
+//            val newNavDrawerOpenValue = when (drawerState.targetValue) {
+//                DrawerValue.Closed -> false
+//                DrawerValue.Open -> true
+//            }
+//
+//            if (uiState.navDrawerOpen != newNavDrawerOpenValue) {
+//                onUiEvent(UiEvent.ToggleNavDrawer)
+//            }
+//        }
+//    }
+//    LaunchedEffect(key1 = uiState.navDrawerOpen) {
+//        launch {
+//            if (uiState.navDrawerOpen) {
+//                drawerState.open()
+//            } else {
+//                drawerState.close()
+//            }
+//        }
+//    }
 
     when (navigationType) {
         NavigationLayoutType.PERMANENT_NAVIGATION_DRAWER -> {
@@ -181,29 +179,29 @@ private fun MainScreenLayout(
         }
         NavigationLayoutType.BOTTOM_NAVIGATION,
         NavigationLayoutType.NAVIGATION_RAIL -> {
-            ModalNavigationDrawer(
-                drawerContent = {
-                    ModalDrawerSheet {
-                        NavigationDrawerContent(
-                            navItems = uiState.drawerNavItems,
-                            selectedDestination = uiState.selectedBottomBarItem,
-                            onHamburgerIconClicked = {
-                                onUiEvent(UiEvent.ToggleNavDrawer)
-                            }
-                        )
-                    }
-                },
-                drawerState = drawerState
-            ) {
-                MainScreenContent(
-                    navigationType = navigationType,
-                    contentType = contentType,
-                    uiState = uiState,
-                    onUiEvent = onUiEvent,
-                    onBack = onBack,
-                    selectedDestination = uiState.selectedBottomBarItem,
-                )
-            }
+//            ModalNavigationDrawer(
+//                drawerContent = {
+//                    ModalDrawerSheet {
+//                        NavigationDrawerContent(
+//                            navItems = uiState.drawerNavItems,
+//                            selectedDestination = uiState.selectedBottomBarItem,
+//                            onHamburgerIconClicked = {
+//                                onUiEvent(UiEvent.ToggleNavDrawer)
+//                            }
+//                        )
+//                    }
+//                },
+//                drawerState = drawerState
+//            ) {
+            MainScreenContent(
+                navigationType = navigationType,
+                contentType = contentType,
+                uiState = uiState,
+                onUiEvent = onUiEvent,
+                onBack = onBack,
+                selectedDestination = uiState.selectedBottomBarItem,
+            )
+//            }
         }
     }
 }
