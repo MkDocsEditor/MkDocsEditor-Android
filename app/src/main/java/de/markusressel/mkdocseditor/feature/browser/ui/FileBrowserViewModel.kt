@@ -16,6 +16,7 @@ import de.markusressel.mkdocseditor.feature.browser.ui.usecase.GetCurrentSection
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.GetSectionContentUseCase
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.RefreshSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.SearchUseCase
+import de.markusressel.mkdocseditor.feature.browser.ui.usecase.SectionItem
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.ui.viewmodel.EntityListViewModel
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
@@ -41,6 +42,8 @@ internal sealed class UiEvent {
     data class DocumentClicked(val item: DocumentEntity) : UiEvent()
     data class ResourceClicked(val item: ResourceEntity) : UiEvent()
     data class SectionClicked(val item: SectionEntity) : UiEvent()
+
+    data class NavigateUpToSection(val section: SectionItem) : UiEvent()
 
     data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
 }
@@ -164,15 +167,18 @@ internal class FileBrowserViewModel @Inject constructor(
         _events.send(errorEvent)
     }
 
-    internal fun onUiEvent(event: UiEvent) = when (event) {
-        is UiEvent.Refresh -> reload()
-        is UiEvent.DocumentClicked -> onDocumentClicked(event.item)
-        is UiEvent.ResourceClicked -> onResourceClicked(event.item)
-        is UiEvent.SectionClicked -> onSectionClicked(event.item)
-        is UiEvent.ExpandableFabItemSelected -> when (event.item.id) {
-            FAB_ID_CREATE_DOCUMENT -> onCreateDocumentFabClicked()
-            FAB_ID_CREATE_SECTION -> onCreateSectionFabClicked()
-            else -> TODO("Unhandled FAB: ${event.item}")
+    internal fun onUiEvent(event: UiEvent) {
+        when (event) {
+            is UiEvent.Refresh -> reload()
+            is UiEvent.DocumentClicked -> onDocumentClicked(event.item)
+            is UiEvent.ResourceClicked -> onResourceClicked(event.item)
+            is UiEvent.SectionClicked -> onSectionClicked(event.item)
+            is UiEvent.NavigateUpToSection -> navigateUp(event.section.id)
+            is UiEvent.ExpandableFabItemSelected -> when (event.item.id) {
+                FAB_ID_CREATE_DOCUMENT -> onCreateDocumentFabClicked()
+                FAB_ID_CREATE_SECTION -> onCreateSectionFabClicked()
+                else -> TODO("Unhandled FAB: ${event.item}")
+            }
         }
     }
 
@@ -214,12 +220,23 @@ internal class FileBrowserViewModel @Inject constructor(
      *
      * @return true, when there was an item on the backstack and a navigation was done, false otherwise
      */
-    fun navigateUp(): Boolean {
+    fun navigateUp(targetSectionId: String? = null): Boolean {
+        if (
+            targetSectionId != null
+            && (backstack.none { it.sectionId == targetSectionId } || backstack.peek().sectionId == targetSectionId)
+        ) return false
+
         if (currentSectionId.value == ROOT_SECTION_ID || backstack.size <= 1) {
             return false
         }
 
-        backstack.pop()
+        if (targetSectionId != null) {
+            while (backstack.peek().sectionId != targetSectionId) {
+                backstack.pop()
+            }
+        } else {
+            backstack.pop()
+        }
         openSection(backstack.peek().sectionId, backstack.peek().sectionName, false)
         return true
     }

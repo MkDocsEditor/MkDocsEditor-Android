@@ -2,15 +2,16 @@ package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -58,7 +59,7 @@ internal fun FileBrowserScreen(
         viewModel.events.collectLatest { event ->
             when (event) {
                 is FileBrowserEvent.ErrorEvent -> {
-                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                    //Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
                 is FileBrowserEvent.OpenDocumentEditorEvent -> {
                     onNavigationEvent(NavigationEvent.NavigateToCodeEditor(documentId = event.entity.id))
@@ -211,49 +212,67 @@ private fun FileBrowserScreenContent(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
-        PullToRefresh(
-            modifier = modifier,
-            state = rememberPullToRefreshState(
-                isRefreshing = uiState.isLoading
-            ),
-            onRefresh = { onUiEvent(UiEvent.Refresh) },
-        ) {
 
-            Box(
+        AnimatedVisibility(
+            modifier = Modifier
+                .zIndex(100F)
+                .fillMaxWidth()
+                .align(Alignment.TopCenter),
+            visible = uiState.error.isNullOrBlank().not(),
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            ErrorCard(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(16.dp),
+                text = uiState.error ?: "Error",
+                onRetry = {
+                    onUiEvent(UiEvent.Refresh)
+                }
+            )
+        }
+
+        Column {
+            SectionPath(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .wrapContentSize()
-            ) {
-                if (uiState.error != null) {
-                    ErrorCard(
-                        modifier = Modifier
-                            .zIndex(100F)
-                            .padding(16.dp)
-                            .align(Alignment.TopCenter),
-                        text = uiState.error
-                    )
-
-                    Text(text = uiState.error)
+                    .defaultMinSize(minHeight = 48.dp),
+                path = uiState.currentSectionPath,
+                onSectionClicked = { section ->
+                    onUiEvent(UiEvent.NavigateUpToSection(section))
                 }
+            )
 
-                Column {
-                    SectionPath(
-                        modifier = Modifier.fillMaxWidth(),
-                        path = uiState.currentSectionPath
-                    )
+            PullToRefresh(
+                //modifier = modifier,
+                state = rememberPullToRefreshState(
+                    isRefreshing = uiState.isLoading
+                ),
+                onRefresh = { onUiEvent(UiEvent.Refresh) },
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentSize()
+                ) {
 
-                    FileBrowserList(
-                        items = uiState.listItems,
-                        onDocumentClicked = {
-                            onUiEvent(UiEvent.DocumentClicked(it))
-                        },
-                        onResourceClicked = {
-                            onUiEvent(UiEvent.ResourceClicked(it))
-                        },
-                        onSectionClicked = {
-                            onUiEvent(UiEvent.SectionClicked(it))
-                        },
-                    )
+                    Column {
+
+
+                        FileBrowserList(
+                            items = uiState.listItems,
+                            onDocumentClicked = {
+                                onUiEvent(UiEvent.DocumentClicked(it))
+                            },
+                            onResourceClicked = {
+                                onUiEvent(UiEvent.ResourceClicked(it))
+                            },
+                            onSectionClicked = {
+                                onUiEvent(UiEvent.SectionClicked(it))
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -268,20 +287,3 @@ private fun FileBrowserScreenContent(
     }
 }
 
-@Composable
-fun SectionPath(
-    path: String,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = Modifier
-            .background(color = MaterialTheme.colorScheme.primaryContainer)
-            .then(modifier)
-    ) {
-        Text(
-            modifier = Modifier.padding(4.dp),
-            text = path,
-            color = MaterialTheme.colorScheme.onPrimaryContainer
-        )
-    }
-}

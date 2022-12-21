@@ -4,12 +4,20 @@ import de.markusressel.mkdocseditor.feature.browser.data.SectionBackstackItem
 import java.util.*
 import javax.inject.Inject
 
+internal data class SectionItem(
+    val id: String,
+    val name: String,
+)
+
 internal class GetCurrentSectionPathUseCase @Inject constructor() {
     operator fun invoke(
         backstack: Stack<SectionBackstackItem>
-    ) = backstack.map {
-        it.sectionName
-    }.filter {
-        it.isNullOrEmpty().not()
-    }.joinToString(prefix = "/", separator = "/")
+    ) = backstack.filter {
+        it.sectionName.isNullOrEmpty().not()
+    }.map {
+        SectionItem(
+            id = it.sectionId,
+            name = it.sectionName ?: "/",
+        )
+    }
 }

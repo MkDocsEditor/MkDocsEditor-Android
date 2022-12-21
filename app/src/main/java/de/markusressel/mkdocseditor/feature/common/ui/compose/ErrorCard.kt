@@ -1,35 +1,62 @@
 package de.markusressel.mkdocseditor.feature.common.ui.compose
 
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.mikepenz.iconics.compose.Image
+import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 
 @Preview
 @Composable
 private fun ErrorCardPreview() {
     ErrorCard(
-        text = "Something went wrong :("
+        text = "Something went wrong :(",
+        onRetry = {}
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ErrorCard(modifier: Modifier = Modifier, text: String) {
+fun ErrorCard(
+    modifier: Modifier = Modifier,
+    text: String,
+    onRetry: () -> Unit
+) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer
         ),
+        onClick = onRetry,
     ) {
-        Text(
-            modifier = Modifier.padding(8.dp),
-            text = text,
-            color = MaterialTheme.colorScheme.onErrorContainer
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                modifier = Modifier
+                    .padding(8.dp),
+                text = text,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+
+            Image(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .size(32.dp),
+                asset = MaterialDesignIconic.Icon.gmi_refresh,
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onErrorContainer),
+            )
+        }
     }
 }
