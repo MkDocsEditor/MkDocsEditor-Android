@@ -19,30 +19,17 @@ import com.github.ajalt.timberkt.Timber
 import com.mikepenz.materialdrawer.R.string.material_drawer_close
 import com.mikepenz.materialdrawer.R.string.material_drawer_open
 import com.mikepenz.materialdrawer.interfaces.OnCheckedChangeListener
-import com.mikepenz.materialdrawer.model.DividerDrawerItem
-import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
-import com.mikepenz.materialdrawer.model.ProfileDrawerItem
-import com.mikepenz.materialdrawer.model.SecondaryDrawerItem
-import com.mikepenz.materialdrawer.model.SwitchDrawerItem
-import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
-import com.mikepenz.materialdrawer.model.interfaces.IProfile
-import com.mikepenz.materialdrawer.model.interfaces.descriptionText
-import com.mikepenz.materialdrawer.model.interfaces.iconDrawable
-import com.mikepenz.materialdrawer.model.interfaces.iconRes
-import com.mikepenz.materialdrawer.model.interfaces.nameRes
-import com.mikepenz.materialdrawer.model.interfaces.nameText
+import com.mikepenz.materialdrawer.model.*
+import com.mikepenz.materialdrawer.model.interfaces.*
 import com.mikepenz.materialdrawer.widget.AccountHeaderView
 import com.mikepenz.materialdrawer.widget.MaterialDrawerSliderView
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.event.ThemeChangedEvent
-import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserFragment
-import de.markusressel.mkdocseditor.feature.preferences.ui.PreferencesFragment
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.ui.navigation.DrawerItemHolder
 import de.markusressel.mkdocseditor.ui.navigation.DrawerItemHolder.About
 import de.markusressel.mkdocseditor.ui.navigation.DrawerItemHolder.FileBrowser
 import de.markusressel.mkdocseditor.ui.navigation.DrawerItemHolder.OfflineMode
-import de.markusressel.mkdocseditor.ui.navigation.DrawerItemHolder.Settings
 import de.markusressel.mkdocseditor.ui.navigation.DrawerMenuItem
 import java.util.*
 import javax.inject.Inject
@@ -197,7 +184,6 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
             arrayOf(
                 createPrimaryMenuItem(FileBrowser, clickListener),
                 DividerDrawerItem(),
-                createPrimaryMenuItem(Settings, clickListener),
                 createSecondaryMenuItem(About, clickListener),
                 DividerDrawerItem(),
                 createOfflineModeMenuItem(
@@ -274,12 +260,6 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
         val navHost = supportFragmentManager.findFragmentById(R.id.navHostFragment)
         val currentlyVisibleFragment = navHost?.childFragmentManager?.primaryNavigationFragment
         when (currentlyVisibleFragment) {
-            is PreferencesFragment -> if (currentlyVisibleFragment.onBackPressed()) {
-                return
-            }
-            is FileBrowserFragment -> if (currentlyVisibleFragment.onBackPressed()) {
-                return
-            }
         }
 
         if (navController.navigateUp()) {

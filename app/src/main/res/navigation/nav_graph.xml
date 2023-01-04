@@ -27,11 +27,6 @@
     </fragment>
 
     <fragment
-        android:id="@+id/preferencesPage"
-        android:name="de.markusressel.mkdocseditor.feature.preferences.ui.PreferencesFragment"
-        android:label="@string/menu_item_settings" />
-
-    <fragment
         android:id="@+id/aboutPage"
         android:name="de.markusressel.mkdocseditor.feature.about.ui.AboutPage"
         android:label="@string/menu_item_about" />

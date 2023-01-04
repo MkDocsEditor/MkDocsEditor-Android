@@ -16,13 +16,6 @@ object DrawerItemHolder {
         selectable = true
     )
 
-    val Settings = DrawerMenuItem(
-        id = R.id.preferencesPage,
-        title = R.string.menu_item_settings,
-        icon = MaterialDesignIconic.Icon.gmi_settings,
-        selectable = true
-    )
-
     val About = DrawerMenuItem(
         id = R.id.aboutPage,
         title = R.string.menu_item_about,
@@ -40,7 +33,6 @@ object DrawerItemHolder {
     fun fromId(drawerItemIdentifier: Int): DrawerMenuItem? {
         return when (drawerItemIdentifier) {
             FileBrowser.id -> FileBrowser
-            Settings.id -> Settings
             About.id -> About
             else -> {
                 Timber.w { "Unknown menu item identifier: $drawerItemIdentifier" }
