@@ -5,11 +5,7 @@ import android.view.View
 import androidx.annotation.UiThread
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.asLiveData
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.runOnUiThread
@@ -22,22 +18,8 @@ import de.markusressel.mkdocseditor.util.Resource.Success
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flattenConcat
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapLatest
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import java.util.*
 import javax.inject.Inject
 
@@ -56,8 +38,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
     internal val events = MutableLiveData<CodeEditorEvent>()
 
-    val documentId =
-        MutableStateFlow<String?>(null) //  savedStateHandle.getStateFlow<String?>("documentId", null)
+    val documentId = savedStateHandle.getStateFlow<String?>("documentId", null)
 
     val documentEntity = documentId
         .filterNotNull()
@@ -85,57 +66,73 @@ internal class CodeEditorViewModel @Inject constructor(
 
     val loading = MutableLiveData(true)
 
-    // TODO: this property should not exist. only the [DocumentSyncManager] should have this.
-    var currentText: MutableLiveData<String?> = MutableLiveData(null)
-
     val currentPosition = PointF()
     val currentZoom = MutableLiveData(1F)
 
-    private val documentSyncManager = DocumentSyncManager(
-        hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue.value,
-        port = preferencesHolder.restConnectionPortPreference.persistedValue.value.toInt(),
-        ssl = preferencesHolder.restConnectionSslPreference.persistedValue.value,
-        basicAuthConfig = BasicAuthConfig(
-            preferencesHolder.basicAuthUserPreference.persistedValue.value,
-            preferencesHolder.basicAuthPasswordPreference.persistedValue.value
-        ),
-        documentId = documentId.value ?: "",
-        currentText = {
-            currentText.value.orEmpty()
-        },
-        onConnectionStatusChanged = { connected, errorCode, throwable ->
-            runOnUiThread {
-                val status = ConnectionStatus(connected, errorCode, throwable)
-                connectionStatus.value = status
-                events.value = status
-            }
-        },
-        onInitialText = {
-            currentText.value = it
-            loading.value = false
-
-            // when an entity exists and a new text is given update the entity
-            documentId.value?.let { documentId ->
-                updateDocumentContentInCache(
-                    documentId = documentId,
-                    text = it
-                )
-            }
-
-            events.value = InitialText(it)
-            _uiState.value = uiState.value.copy(
-                text = AnnotatedString(it),
-                selection = TextRange.Zero,
-            )
-
-            // launch coroutine to continuously watch for changes
-            watchTextChanges()
-        },
-        onTextChanged = ::onTextChanged,
-        readOnly = uiState.value.editModeActive.not()
-    )
+    private lateinit var documentSyncManager: DocumentSyncManager
 
     init {
+        viewModelScope.launch {
+            documentId.collect { documentId ->
+                if (::documentSyncManager.isInitialized) {
+                    documentSyncManager.disconnect(
+                        code = 1000,
+                        reason = when (documentId) {
+                            null -> "Document closed."
+                            else -> "Document ID changed."
+                        }
+                    )
+                }
+
+                if (documentId != null) {
+                    documentSyncManager =
+                        DocumentSyncManager(
+                            hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue.value,
+                            port = preferencesHolder.restConnectionPortPreference.persistedValue.value.toInt(),
+                            ssl = preferencesHolder.restConnectionSslPreference.persistedValue.value,
+                            basicAuthConfig = BasicAuthConfig(
+                                preferencesHolder.basicAuthUserPreference.persistedValue.value,
+                                preferencesHolder.basicAuthPasswordPreference.persistedValue.value
+                            ),
+                            documentId = documentId,
+                            currentText = {
+                                uiState.value.text?.toString() ?: ""
+                            },
+                            onConnectionStatusChanged = { connected, errorCode, throwable ->
+                                runOnUiThread {
+                                    val status = ConnectionStatus(connected, errorCode, throwable)
+                                    connectionStatus.value = status
+                                    events.value = status
+                                }
+                            },
+                            onInitialText = { initialText ->
+                                _uiState.value = uiState.value.copy(
+                                    text = AnnotatedString(initialText),
+                                    selection = TextRange.Zero,
+                                )
+                                loading.value = false
+
+                                // when an entity exists and a new text is given update the entity
+                                this@CodeEditorViewModel.documentId.value?.let { documentId ->
+                                    updateDocumentContentInCache(
+                                        documentId = documentId,
+                                        text = initialText
+                                    )
+                                }
+
+                                events.value = InitialText(initialText)
+
+                                // launch coroutine to continuously watch for changes
+                                watchTextChanges()
+                            },
+                            onTextChanged = ::onTextChanged,
+                            readOnly = uiState.value.editModeActive.not()
+                        )
+                }
+            }
+        }
+
+
         viewModelScope.launch {
             editable.collect { editable ->
                 if (editable.not()) {
@@ -157,9 +154,9 @@ internal class CodeEditorViewModel @Inject constructor(
                 offlineModeManager.isEnabled
             ) { status, editable, offlineModeEnabled ->
                 (status?.connected ?: false)
-                        && editable
-                        && offlineModeEnabled.not()
-                        && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
+                    && editable
+                    && offlineModeEnabled.not()
+                    && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
             }.collect {
                 _uiState.value = uiState.value.copy(
                     editModeActive = it
@@ -188,9 +185,9 @@ internal class CodeEditorViewModel @Inject constructor(
             documentEntity.collectLatest { resource ->
                 when (resource) {
                     is Success -> {
-                        if (offlineModeManager.isEnabled().not()) {
-                            reconnectToServer()
-                        }
+                        //if (offlineModeManager.isEnabled().not()) {
+                        reconnectToServer()
+                        //}
                     }
                     else -> {}
                 }
@@ -199,7 +196,9 @@ internal class CodeEditorViewModel @Inject constructor(
 
         viewModelScope.launch {
             uiState.map { it.editModeActive }.distinctUntilChanged().collectLatest {
-                documentSyncManager.readOnly = it.not()
+                if (::documentSyncManager.isInitialized) {
+                    documentSyncManager.readOnly = it.not()
+                }
             }
         }
     }
@@ -281,7 +280,7 @@ internal class CodeEditorViewModel @Inject constructor(
     fun saveEditorState(selection: Int, panX: Float, panY: Float) = viewModelScope.launch {
         dataRepository.saveEditorState(
             documentId.value!!,
-            currentText.value,
+            uiState.value.text?.toString(),
             selection,
             currentZoom.value!!,
             panX,
@@ -340,7 +339,7 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     fun onClose() {
-        documentId.value = null
+        documentSyncManager.disconnect(1000, "Closed")
     }
 
 }

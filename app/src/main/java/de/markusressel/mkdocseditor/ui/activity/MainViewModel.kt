@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
+import de.markusressel.mkdocseditor.feature.main.ui.NavigationEvent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
@@ -42,6 +43,8 @@ internal sealed class UiEvent {
     object ToggleNavDrawer : UiEvent()
     object NavigateBack : UiEvent()
 
+    data class UpdateCurrentDocumentId(val documentId: String?) : UiEvent()
+
     object SnackbarActionTriggered : UiEvent()
 }
 
@@ -58,12 +61,21 @@ internal class MainViewModel @Inject constructor(
         when (event) {
             is UiEvent.BottomNavItemSelected -> selectBottomNavItem(event.item)
             is UiEvent.DrawerNavItemClicked -> selectBottomNavItem(event.item)
+            is UiEvent.UpdateCurrentDocumentId -> {
+                _uiState.value = uiState.value.copy(
+                    documentId = event.documentId
+                )
+            }
             UiEvent.ToggleNavDrawer -> toggleNavDrawerState()
             UiEvent.SnackbarActionTriggered -> onSnackbarAction()
             UiEvent.NavigateBack -> {
                 Timber.d { "Back navigation handled by system" }
             }
         }
+    }
+
+    fun onUiEvent(event: NavigationEvent) {
+
     }
 
     private fun onSnackbarAction() {

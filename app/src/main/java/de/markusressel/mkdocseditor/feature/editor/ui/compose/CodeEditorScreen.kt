@@ -11,13 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
@@ -34,7 +28,7 @@ import de.markusressel.mkdocseditor.ui.activity.UiState
 
 @Composable
 internal fun CodeEditorScreen(
-    uiState: UiState,
+    mainUiState: UiState,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     codeEditorViewModel: CodeEditorViewModel = hiltViewModel(),
@@ -75,11 +69,11 @@ internal fun CodeEditorScreen(
                 codeEditorViewModel.onUserTextInput(it.annotatedString, it.selection)
                 tfv = it
             },
-            // readOnly = editorUiState.editModeActive.not()
+            readOnly = editorUiState.editModeActive.not()
         )
 
         AnimatedVisibility(
-            visible = uiState.snackbar != null,
+            visible = mainUiState.snackbar != null,
             enter = slideInVertically(),
             exit = slideOutVertically(),
         ) {
@@ -90,11 +84,11 @@ internal fun CodeEditorScreen(
                     TextButton(onClick = {
                         // onUiEvent(UiEvent.SnackbarActionTriggered)
                     }) {
-                        Text(text = uiState.snackbar?.action ?: "")
+                        Text(text = mainUiState.snackbar?.action ?: "")
                     }
                 }
             ) {
-                Text(text = uiState.snackbar?.text ?: "")
+                Text(text = mainUiState.snackbar?.text ?: "")
             }
         }
     }
@@ -104,6 +98,7 @@ internal fun CodeEditorScreen(
 private fun CodeEditorLayout(
     text: TextFieldValue,
     onTextChanged: (TextFieldValue) -> Unit,
+    readOnly: Boolean,
     modifier: Modifier = Modifier,
 ) {
     KodeTextField(
@@ -115,5 +110,6 @@ private fun CodeEditorLayout(
         colors = KodeTextFieldDefaults.textFieldColors(
             textColor = MaterialTheme.colorScheme.onBackground
         ),
+        readOnly = readOnly
     )
 }

@@ -17,6 +17,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel
 import de.markusressel.mkdocseditor.feature.browser.ui.compose.FileBrowserScreen
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
@@ -33,7 +38,7 @@ internal fun MainScreen(
     mainViewModel: MainViewModel = hiltViewModel(),
     onBack: () -> Unit,
     windowSize: WindowWidthSizeClass,
-    devicePosture: DevicePosture
+    devicePosture: DevicePosture,
 ) {
     val uiState by mainViewModel.uiState.collectAsState()
 
@@ -241,13 +246,15 @@ private fun MainScreenContent(
                             //onNavigationEvent = onNavigationEvent,
                             mainUiState = uiState,
                             onBack = onBack,
+                            onUiEvent = onUiEvent
                         )
                     } else {
                         MkDocsEditorListOnlyContent(
                             modifier = Modifier.weight(1f),
                             //onNavigationEvent = onNavigationEvent,
-                            uiState = uiState,
-                            onBack = onBack
+                            mainUiState = uiState,
+                            onBack = onBack,
+                            onUiEvent = onUiEvent
                         )
                     }
                     NavItem.Settings -> PreferencesScreen(
@@ -278,14 +285,14 @@ private fun MkDocsEditorListOnlyContent(
     //onNavigationEvent: (NavigationEvent) -> Unit,
     modifier: Modifier = Modifier,
     codeEditorViewModel: CodeEditorViewModel = hiltViewModel(),
-    uiState: UiState,
+    mainUiState: UiState,
     onBack: () -> Unit,
+    onUiEvent: (UiEvent) -> Unit,
 ) {
-    val documentId by codeEditorViewModel.documentId.collectAsState()
 
     Box(modifier = modifier) {
         AnimatedVisibility(
-            visible = documentId != null,
+            visible = mainUiState.documentId != null,
             enter = slideInHorizontally(
                 initialOffsetX = { fullWidth -> fullWidth }
             ),
@@ -293,19 +300,20 @@ private fun MkDocsEditorListOnlyContent(
                 targetOffsetX = { fullWidth -> fullWidth }
             ),
         ) {
+            Text(text = "Test!")
+
             CodeEditorScreen(
                 modifier = Modifier.background(Color.Transparent),
-                uiState = uiState,
+                mainUiState = mainUiState,
                 onBack = {
                     codeEditorViewModel.onClose()
-
                 }
             )
         }
 
         AnimatedVisibility(
-            modifier = modifier,
-            visible = documentId == null,
+            modifier = Modifier,
+            visible = mainUiState.documentId == null,
             enter = slideInHorizontally(
                 initialOffsetX = { fullWidth -> -fullWidth }
             ),
@@ -318,7 +326,7 @@ private fun MkDocsEditorListOnlyContent(
                 onNavigationEvent = { event ->
                     when (event) {
                         is NavigationEvent.NavigateToCodeEditor -> {
-                            codeEditorViewModel.documentId.value = event.documentId
+                            onUiEvent(UiEvent.UpdateCurrentDocumentId(event.documentId))
                         }
                     }
                 },
@@ -336,6 +344,7 @@ private fun MkDocsEditorListAndDocumentContent(
     fileBrowserViewModel: FileBrowserViewModel = hiltViewModel(),
     codeEditorViewModel: CodeEditorViewModel = hiltViewModel(),
     onBack: () -> Unit,
+    onUiEvent: (UiEvent) -> Unit,
 ) {
     val uiState by fileBrowserViewModel.uiState.collectAsState()
 
@@ -345,7 +354,7 @@ private fun MkDocsEditorListAndDocumentContent(
             onNavigationEvent = { event ->
                 when (event) {
                     is NavigationEvent.NavigateToCodeEditor -> {
-                        codeEditorViewModel.documentId.value = event.documentId
+                        onUiEvent(UiEvent.UpdateCurrentDocumentId(event.documentId))
                     }
                 }
             },
@@ -363,13 +372,21 @@ private fun MkDocsEditorListAndDocumentContent(
                 shrinkTowards = Alignment.End,
             ),
         ) {
-            CodeEditorScreen(
-                modifier = Modifier,
-                uiState = mainUiState,
-                onBack = {
-                    codeEditorViewModel.onClose()
-                },
-            )
+            val navController = rememberNavController()
+            NavHost(navController = navController, startDestination = "codeEditor/${documentId}") {
+                composable(
+                    "codeEditor/{documentId}",
+                    arguments = listOf(navArgument("documentId") { type = NavType.StringType })
+                ) {
+                    CodeEditorScreen(
+                        modifier = Modifier,
+                        mainUiState = mainUiState,
+                        onBack = {
+                            codeEditorViewModel.onClose()
+                        },
+                    )
+                }
+            }
         }
     }
 }
