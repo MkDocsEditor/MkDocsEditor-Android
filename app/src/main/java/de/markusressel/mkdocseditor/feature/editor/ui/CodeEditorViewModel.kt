@@ -5,21 +5,41 @@ import android.view.View
 import androidx.annotation.UiThread
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
-import androidx.lifecycle.*
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.runOnUiThread
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.*
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.NetworkManager
 import de.markusressel.mkdocseditor.network.OfflineModeManager
+import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.Resource.Success
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
 
@@ -38,14 +58,18 @@ internal class CodeEditorViewModel @Inject constructor(
 
     internal val events = MutableLiveData<CodeEditorEvent>()
 
-    val documentId = savedStateHandle.getStateFlow<String?>("documentId", null)
+    //val documentId = savedStateHandle.getStateFlow<String?>("documentId", null)
+    val documentId = MutableStateFlow<String?>(null)
 
-    val documentEntity = documentId
+    private val documentEntityFlow = documentId
         .filterNotNull()
         .mapLatest { documentId ->
             dataRepository.getDocument(documentId)
-        }.flattenConcat()
-        .stateIn(viewModelScope, SharingStarted.Lazily, null)
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private val currentResource: MutableStateFlow<Resource<DocumentEntity?>?> =
+        MutableStateFlow(null)
 
     private val connectionStatus = MutableStateFlow<ConnectionStatus?>(null)
 
@@ -69,22 +93,22 @@ internal class CodeEditorViewModel @Inject constructor(
     val currentPosition = PointF()
     val currentZoom = MutableLiveData(1F)
 
-    private lateinit var documentSyncManager: DocumentSyncManager
+    private var documentSyncManager: DocumentSyncManager? = null
 
     init {
         viewModelScope.launch {
             documentId.collect { documentId ->
-                if (::documentSyncManager.isInitialized) {
-                    documentSyncManager.disconnect(
-                        code = 1000,
-                        reason = when (documentId) {
-                            null -> "Document closed."
-                            else -> "Document ID changed."
-                        }
-                    )
-                }
+                documentSyncManager?.disconnect(
+                    code = 1000,
+                    reason = when (documentId) {
+                        null -> "Document closed."
+                        else -> "Document ID changed."
+                    }
+                )
 
-                if (documentId != null) {
+                if (documentId == null) {
+                    documentSyncManager = null
+                } else {
                     documentSyncManager =
                         DocumentSyncManager(
                             hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue.value,
@@ -154,9 +178,9 @@ internal class CodeEditorViewModel @Inject constructor(
                 offlineModeManager.isEnabled
             ) { status, editable, offlineModeEnabled ->
                 (status?.connected ?: false)
-                    && editable
-                    && offlineModeEnabled.not()
-                    && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
+                        && editable
+                        && offlineModeEnabled.not()
+                        && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
             }.collect {
                 _uiState.value = uiState.value.copy(
                     editModeActive = it
@@ -182,25 +206,42 @@ internal class CodeEditorViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            documentEntity.collectLatest { resource ->
-                when (resource) {
-                    is Success -> {
-                        //if (offlineModeManager.isEnabled().not()) {
-                        reconnectToServer()
-                        //}
+            var job: Job? = null
+
+            documentEntityFlow.collectLatest { entityFlow ->
+                job?.cancel()
+                job = viewModelScope.launch {
+                    entityFlow?.collectLatest { resource ->
+                        currentResource.value = resource
+                        when (resource) {
+                            is Success -> {
+                                //if (offlineModeManager.isEnabled().not()) {
+                                reconnectToServer()
+                                //}
+                            }
+                            is Resource.Loading -> {}
+                            is Resource.Error -> Timber.e(resource.error)
+                            else -> {
+                                Timber.d { "$resource" }
+                            }
+                        }
                     }
-                    else -> {}
                 }
             }
         }
 
         viewModelScope.launch {
             uiState.map { it.editModeActive }.distinctUntilChanged().collectLatest {
-                if (::documentSyncManager.isInitialized) {
-                    documentSyncManager.readOnly = it.not()
-                }
+                documentSyncManager?.readOnly = it.not()
             }
         }
+    }
+
+    /**
+     *
+     */
+    fun loadDocument(documentId: String?) {
+        this.documentId.value = documentId
     }
 
     private fun watchTextChanges() {
@@ -209,8 +250,8 @@ internal class CodeEditorViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 try {
-                    while (documentSyncManager.isConnected) {
-                        documentSyncManager.sync()
+                    while (documentSyncManager?.isConnected == true) {
+                        documentSyncManager?.sync()
                         delay(syncInterval)
                     }
                 } catch (ex: CancellationException) {
@@ -250,10 +291,10 @@ internal class CodeEditorViewModel @Inject constructor(
      */
     private fun reconnectToServer() {
         loading.value = true
-        if (documentSyncManager.isConnected) {
-            documentSyncManager.disconnect(1000, reason = "Editor want's to refresh connection")
+        if (documentSyncManager?.isConnected == true) {
+            documentSyncManager?.disconnect(1000, reason = "Editor want's to refresh connection")
         }
-        documentSyncManager.connect()
+        documentSyncManager?.connect()
     }
 
     /**
@@ -267,7 +308,7 @@ internal class CodeEditorViewModel @Inject constructor(
             editModeActive = false
         )
 
-        documentSyncManager.disconnect(1000, reason)
+        documentSyncManager?.disconnect(1000, reason)
         events.value = ConnectionStatus(connected = false, throwable = throwable)
     }
 
@@ -294,7 +335,7 @@ internal class CodeEditorViewModel @Inject constructor(
             return false
         }
 
-        documentEntity.value?.data?.let { document ->
+        currentResource.value?.data?.let { document ->
             val pagePath = when (document.url) {
                 "index/" -> ""
                 else -> document.url
@@ -335,11 +376,11 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     fun isCachedContentAvailable(): Boolean {
-        return documentEntity.value?.data?.content?.target?.text != null
+        return currentResource.value?.data?.content?.target?.text != null
     }
 
     fun onClose() {
-        documentSyncManager.disconnect(1000, "Closed")
+        documentSyncManager?.disconnect(1000, "Closed")
     }
 
 }

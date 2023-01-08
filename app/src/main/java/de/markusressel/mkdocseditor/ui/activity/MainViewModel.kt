@@ -44,6 +44,7 @@ internal sealed class UiEvent {
     object NavigateBack : UiEvent()
 
     data class UpdateCurrentDocumentId(val documentId: String?) : UiEvent()
+    object CloseDocumentEditor : UiEvent()
 
     object SnackbarActionTriggered : UiEvent()
 }
@@ -56,7 +57,6 @@ internal class MainViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(UiState())
     internal val uiState = _uiState.asStateFlow()
 
-
     internal fun onUiEvent(event: UiEvent) {
         when (event) {
             is UiEvent.BottomNavItemSelected -> selectBottomNavItem(event.item)
@@ -64,6 +64,11 @@ internal class MainViewModel @Inject constructor(
             is UiEvent.UpdateCurrentDocumentId -> {
                 _uiState.value = uiState.value.copy(
                     documentId = event.documentId
+                )
+            }
+            is UiEvent.CloseDocumentEditor -> {
+                _uiState.value = uiState.value.copy(
+                    documentId = null
                 )
             }
             UiEvent.ToggleNavDrawer -> toggleNavDrawerState()

@@ -7,7 +7,7 @@ data class UiState(
     /**
      * Indicates whether the CodeEditor is in "edit" mode or not
      */
-    val editModeActive: Boolean = false,
+    val editModeActive: Boolean = true,
 
     val text: AnnotatedString? = null,
     val selection: TextRange? = null,

@@ -300,13 +300,12 @@ private fun MkDocsEditorListOnlyContent(
                 targetOffsetX = { fullWidth -> fullWidth }
             ),
         ) {
-            Text(text = "Test!")
-
             CodeEditorScreen(
-                modifier = Modifier.background(Color.Transparent),
+                //modifier = Modifier.background(Color.Transparent),
                 mainUiState = mainUiState,
                 onBack = {
                     codeEditorViewModel.onClose()
+                    onUiEvent(UiEvent.CloseDocumentEditor)
                 }
             )
         }
@@ -383,6 +382,7 @@ private fun MkDocsEditorListAndDocumentContent(
                         mainUiState = mainUiState,
                         onBack = {
                             codeEditorViewModel.onClose()
+                            onUiEvent(UiEvent.CloseDocumentEditor)
                         },
                     )
                 }
