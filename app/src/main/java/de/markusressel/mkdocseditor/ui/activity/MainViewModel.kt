@@ -29,10 +29,7 @@ internal data class UiState(
         NavItem.Settings
     ),
 
-    val snackbar: SnackbarData? = SnackbarData(
-        text = "Snackbar!",
-        action = "OK"
-    ),
+    val snackbar: SnackbarData? = null,
 
     val documentId: String? = null,
 )

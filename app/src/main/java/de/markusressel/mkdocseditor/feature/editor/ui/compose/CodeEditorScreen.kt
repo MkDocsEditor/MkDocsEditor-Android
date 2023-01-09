@@ -4,7 +4,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -69,9 +70,10 @@ internal fun CodeEditorScreen(
         derivedStateOf { true }
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .then(modifier),
     ) {
         CodeEditorLayout(
@@ -121,8 +123,12 @@ private fun CodeEditorLayout(
         colorScheme = DarkBackgroundColorSchemeWithSpanStyle(),
         onValueChange = onTextChanged,
         colors = KodeEditorDefaults.editorColors(
+            textFieldBackgroundColor = MaterialTheme.colorScheme.background,
+            lineNumberTextColor = MaterialTheme.colorScheme.onBackground,
+            lineNumberBackgroundColor = MaterialTheme.colorScheme.background,
             textFieldColors = KodeTextFieldDefaults.textFieldColors(
-                textColor = MaterialTheme.colorScheme.onBackground
+                textColor = MaterialTheme.colorScheme.onBackground,
+                cursorColor = MaterialTheme.colorScheme.primary
             )
         ),
         readOnly = readOnly
