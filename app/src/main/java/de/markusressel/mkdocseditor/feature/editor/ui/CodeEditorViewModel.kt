@@ -76,10 +76,12 @@ internal class CodeEditorViewModel @Inject constructor(
     /**
      * Indicates whether the edit mode can be activated or not
      */
-    val editable =
-        offlineModeManager.isEnabled.combine(connectionStatus) { offlineModeEnabled, connectionStatus ->
-            offlineModeEnabled.not() && (connectionStatus?.connected ?: false)
-        }
+    val editable = combine(
+        offlineModeManager.isEnabled,
+        connectionStatus
+    ) { offlineModeEnabled, connectionStatus ->
+        offlineModeEnabled.not() && (connectionStatus?.connected ?: false)
+    }
 
     val offlineModeBannerVisibility = offlineModeManager.isEnabled.mapLatest {
         when (it) {

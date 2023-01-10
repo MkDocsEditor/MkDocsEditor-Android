@@ -131,6 +131,7 @@ private fun CodeEditorLayout(
                 cursorColor = MaterialTheme.colorScheme.primary
             )
         ),
+        enabled = true,
         readOnly = readOnly
     )
 }
