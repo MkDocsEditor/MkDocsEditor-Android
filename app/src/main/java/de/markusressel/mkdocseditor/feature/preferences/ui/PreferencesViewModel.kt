@@ -20,7 +20,7 @@ internal class PreferencesViewModel @Inject constructor(
                 preferencesHolder.connectionCategory,
                 preferencesHolder.offlineCacheCategory,
                 preferencesHolder.uxCategory,
-                preferencesHolder.themePreference
+                preferencesHolder.uiCategory,
             )
         )
     }

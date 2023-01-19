@@ -14,6 +14,7 @@
 
     <string name="action_force_offline_cache_update_key">action_force_offline_cache_update_key</string>
     <string name="action_force_offline_cache_update_title">Schedule update now</string>
+    <string name="action_force_offline_cache_update_description">Force an immediate offline cache update.</string>
 
     <string name="connection_host_key" translatable="false">connection_host_key</string>
     <string name="connection_host_title">Hostname</string>
@@ -49,12 +50,20 @@
     <string name="theme_dark_value_name">Dark</string>
     <string name="theme_light_value_name">Light</string>
 
-    <!-- Theme -->
+    <!-- UI -->
+    <string name="category_ui_key" translatable="false">category_ui</string>
+    <string name="category_ui_title">UI</string>
+    <string name="category_ui_description">Settings to fine-tune the user interface</string>
+
+    <string name="section_general_ui_key" translatable="false">section_general_ui_key</string>
+    <string name="section_general_ui_title">General</string>
+
     <string name="theme_key">theme</string>
 
     <string name="offline_mode_key" translatable="false">offline_mode</string>
     <string name="clear_offline_cache_key" translatable="false">clear_offline_cache_key</string>
     <string name="clear_offline_cache_title">Clear offline cache</string>
+    <string name="clear_offline_cache_description">Removes all locally cached documents.</string>
 
     <string name="last_offline_cache_update_key" translatable="false">last_offline_cache_update_key</string>
 

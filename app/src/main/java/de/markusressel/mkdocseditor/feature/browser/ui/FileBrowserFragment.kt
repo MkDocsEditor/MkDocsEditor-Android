@@ -1,12 +1,9 @@
 package de.markusressel.mkdocseditor.feature.browser.ui
 
 import android.content.Context
-import android.graphics.Color
 import android.os.Bundle
 import android.text.InputType
 import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
@@ -16,7 +13,6 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.os.bundleOf
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.WhichButton
@@ -27,12 +23,6 @@ import com.afollestad.materialdialogs.lifecycle.lifecycleOwner
 import com.eightbitlab.rxbus.Bus
 import com.eightbitlab.rxbus.registerInBus
 import com.github.ajalt.timberkt.Timber
-import com.jakewharton.rxbinding2.widget.RxSearchView
-import com.mikepenz.iconics.IconicsDrawable
-import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
-import com.mikepenz.iconics.utils.colorInt
-import com.mikepenz.iconics.utils.sizeDp
-import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindUntilEvent
 import dagger.hilt.android.AndroidEntryPoint
 import de.markusressel.commons.android.material.toast
 import de.markusressel.mkdocseditor.R
@@ -42,10 +32,7 @@ import de.markusressel.mkdocseditor.extensions.common.android.context
 import de.markusressel.mkdocseditor.feature.browser.ui.compose.FileBrowserScreen
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.fragment.base.DaggerSupportFragmentBase
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.rxkotlin.subscribeBy
 import kotlinx.coroutines.flow.collectLatest
-import java.util.concurrent.TimeUnit
 
 
 /**
@@ -224,44 +211,44 @@ class FileBrowserFragment : DaggerSupportFragmentBase() {
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.options_menu_list, menu)
-
-        searchMenuItem = menu.findItem(R.id.search)
-        searchMenuItem?.apply {
-            icon = IconicsDrawable(requireContext(), MaterialDesignIconic.Icon.gmi_search).apply {
-                colorInt = Color.RED
-                sizeDp = 24
-            }
-            setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
-                override fun onMenuItemActionExpand(item: MenuItem): Boolean {
-                    // TODO: what is this for?
-                    val oldValue = viewModel.uiState.value.isSearchExpanded
-                    return true
-                }
-
-                override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
-                    val oldValue = viewModel.uiState.value.isSearchExpanded
-                    return true
-                }
-            })
-        }
-
-        searchView = searchMenuItem?.actionView as SearchView
-        searchView?.let {
-            RxSearchView
-                .queryTextChanges(it)
-                .skipInitialValue()
-                .bindUntilEvent(viewLifecycleOwner, Lifecycle.Event.ON_DESTROY)
-                .debounce(300, TimeUnit.MILLISECONDS)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeBy(onNext = { text ->
-                    viewModel.setSearch(text.toString())
-                }, onError = { error ->
-                    Timber.e(error) { "Error filtering list" }
-                })
-        }
-    }
+//    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+//        inflater.inflate(R.menu.options_menu_list, menu)
+//
+//        searchMenuItem = menu.findItem(R.id.search)
+//        searchMenuItem?.apply {
+//            icon = IconicsDrawable(requireContext(), MaterialDesignIconic.Icon.gmi_search).apply {
+//                colorInt = Color.RED
+//                sizeDp = 24
+//            }
+//            setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
+//                override fun onMenuItemActionExpand(item: MenuItem): Boolean {
+//                    // TODO: what is this for?
+//                    val oldValue = viewModel.uiState.value.isSearchExpanded
+//                    return true
+//                }
+//
+//                override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
+//                    val oldValue = viewModel.uiState.value.isSearchExpanded
+//                    return true
+//                }
+//            })
+//        }
+//
+//        searchView = searchMenuItem?.actionView as SearchView
+//        searchView?.let {
+//            RxSearchView
+//                .queryTextChanges(it)
+//                .skipInitialValue()
+//                .bindUntilEvent(viewLifecycleOwner, Lifecycle.Event.ON_DESTROY)
+//                .debounce(300, TimeUnit.MILLISECONDS)
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .subscribeBy(onNext = { text ->
+//                    viewModel.setSearch(text.toString())
+//                }, onError = { error ->
+//                    Timber.e(error) { "Error filtering list" }
+//                })
+//        }
+//    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

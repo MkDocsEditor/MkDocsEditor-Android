@@ -19,8 +19,18 @@ import com.github.ajalt.timberkt.Timber
 import com.mikepenz.materialdrawer.R.string.material_drawer_close
 import com.mikepenz.materialdrawer.R.string.material_drawer_open
 import com.mikepenz.materialdrawer.interfaces.OnCheckedChangeListener
-import com.mikepenz.materialdrawer.model.*
-import com.mikepenz.materialdrawer.model.interfaces.*
+import com.mikepenz.materialdrawer.model.DividerDrawerItem
+import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
+import com.mikepenz.materialdrawer.model.ProfileDrawerItem
+import com.mikepenz.materialdrawer.model.SecondaryDrawerItem
+import com.mikepenz.materialdrawer.model.SwitchDrawerItem
+import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
+import com.mikepenz.materialdrawer.model.interfaces.IProfile
+import com.mikepenz.materialdrawer.model.interfaces.descriptionText
+import com.mikepenz.materialdrawer.model.interfaces.iconDrawable
+import com.mikepenz.materialdrawer.model.interfaces.iconRes
+import com.mikepenz.materialdrawer.model.interfaces.nameRes
+import com.mikepenz.materialdrawer.model.interfaces.nameText
 import com.mikepenz.materialdrawer.widget.AccountHeaderView
 import com.mikepenz.materialdrawer.widget.MaterialDrawerSliderView
 import de.markusressel.mkdocseditor.R
@@ -250,22 +260,22 @@ abstract class NavigationDrawerActivity : SupportActivityBase() {
         }
     }
 
-    override fun onBackPressed() {
-        if (binding.drawerLayout.isDrawerOpen(binding.slider)) {
-            binding.drawerLayout.closeDrawer(binding.slider)
-            return
-        }
-
-        // pass onBack event to fragments
-        val navHost = supportFragmentManager.findFragmentById(R.id.navHostFragment)
-        val currentlyVisibleFragment = navHost?.childFragmentManager?.primaryNavigationFragment
-        when (currentlyVisibleFragment) {
-        }
-
-        if (navController.navigateUp()) {
-            return
-        }
-
-        super.onBackPressed()
-    }
+//    override fun onBackPressed() {
+//        if (binding.drawerLayout.isDrawerOpen(binding.slider)) {
+//            binding.drawerLayout.closeDrawer(binding.slider)
+//            return
+//        }
+//
+//        // pass onBack event to fragments
+//        val navHost = supportFragmentManager.findFragmentById(R.id.navHostFragment)
+//        val currentlyVisibleFragment = navHost?.childFragmentManager?.primaryNavigationFragment
+//        when (currentlyVisibleFragment) {
+//        }
+//
+//        if (navController.navigateUp()) {
+//            return
+//        }
+//
+//        super.onBackPressed()
+//    }
 }

@@ -8,7 +8,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.CallSuper
@@ -127,19 +126,19 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
         return loadingComponent.onCreateView(inflater, parent, savedInstanceState)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
-        optionsMenuComponent.onCreateOptionsMenu(menu, inflater)
-    }
-
-    override fun onPrepareOptionsMenu(menu: Menu) {
-        super.onPrepareOptionsMenu(menu)
-        optionsMenuComponent.onPrepareOptionsMenu(menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return super.onOptionsItemSelected(item) || optionsMenuComponent.onOptionsItemSelected(item)
-    }
+//    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+//        super.onCreateOptionsMenu(menu, inflater)
+//        optionsMenuComponent.onCreateOptionsMenu(menu, inflater)
+//    }
+//
+//    override fun onPrepareOptionsMenu(menu: Menu) {
+//        super.onPrepareOptionsMenu(menu)
+//        optionsMenuComponent.onPrepareOptionsMenu(menu)
+//    }
+//
+//    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+//        return super.onOptionsItemSelected(item) || optionsMenuComponent.onOptionsItemSelected(item)
+//    }
 
     /**
      * Restores the editor state from persistence
