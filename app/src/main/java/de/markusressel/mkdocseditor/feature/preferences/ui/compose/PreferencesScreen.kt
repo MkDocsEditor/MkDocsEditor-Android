@@ -2,11 +2,14 @@ package de.markusressel.mkdocseditor.feature.preferences.ui.compose
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import de.markusressel.kutepreferences.ui.theme.KutePreferencesTheme
 import de.markusressel.kutepreferences.ui.views.KuteOverview
@@ -33,9 +36,11 @@ internal fun PreferencesScreen(
             val currentItems by viewModel.currentPreferenceItems.collectAsState(initial = emptyList())
 
             KuteOverview(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxSize(),
                 items = currentItems
             )
+
+            Spacer(modifier = Modifier.height(48.dp))
         }
     }
 }
