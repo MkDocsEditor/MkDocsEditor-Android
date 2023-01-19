@@ -1,7 +1,5 @@
 package de.markusressel.mkdocseditor.feature.preferences.data
 
-//import de.markusressel.kutepreferences.core.preference.action.KuteAction
-//import de.markusressel.kutepreferences.core.preference.text.password.KutePasswordPreference
 import android.content.Context
 import com.eightbitlab.rxbus.Bus
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
@@ -143,6 +141,7 @@ class KutePreferencesHolder @Inject constructor(
 
     val restConnectionPortPreference by lazy {
         KuteNumberPreference(key = R.string.connection_port_key,
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_circle_o),
             title = context.getString(R.string.connection_port_title),
             defaultValue = 7413,
             minimum = 0,
@@ -165,6 +164,7 @@ class KutePreferencesHolder @Inject constructor(
 
     val basicAuthUserPreference by lazy {
         KuteTextPreference(key = R.string.connection_basic_auth_user_key,
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_account),
             title = context.getString(R.string.connection_basic_auth_user_title),
             defaultValue = "",
             dataProvider = dataProvider,
@@ -175,6 +175,7 @@ class KutePreferencesHolder @Inject constructor(
 
     val basicAuthPasswordPreference by lazy {
         KutePasswordPreference(key = R.string.connection_basic_auth_password_key,
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_key),
             title = context.getString(R.string.connection_basic_auth_password_title),
             defaultValue = "",
             dataProvider = dataProvider,
