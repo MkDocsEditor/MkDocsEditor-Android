@@ -38,10 +38,11 @@ android {
             signingConfig signingConfigs.debug
         }
     }
-
-    lintOptions {
+    lint {
         abortOnError false
     }
+    namespace 'de.markusressel.mkdocseditor.data'
+
 
 }
 
