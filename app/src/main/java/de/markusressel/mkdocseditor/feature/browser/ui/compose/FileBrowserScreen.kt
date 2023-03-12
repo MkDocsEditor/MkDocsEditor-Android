@@ -19,7 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -32,6 +31,8 @@ import de.markusressel.mkdocseditor.feature.browser.ui.UiState
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ErrorCard
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
 import de.markusressel.mkdocseditor.feature.main.ui.NavigationEvent
+import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -192,17 +193,19 @@ internal fun FileBrowserScreen(
 }
 
 
-@Preview
+@CombinedPreview
 @Composable
 private fun FileBrowserScreenContentPreview() {
-    FileBrowserScreenContent(
-        uiState = UiState(
-            listItems = listOf(
+    MkDocsEditorTheme {
+        FileBrowserScreenContent(
+            uiState = UiState(
+                listItems = listOf(
 
-            )
-        ),
-        onUiEvent = {}
-    )
+                )
+            ),
+            onUiEvent = {}
+        )
+    }
 }
 
 @Composable

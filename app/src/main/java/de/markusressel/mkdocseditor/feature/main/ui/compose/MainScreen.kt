@@ -14,7 +14,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
@@ -33,6 +32,7 @@ import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.activity.MainViewModel
 import de.markusressel.mkdocseditor.ui.activity.UiEvent
 import de.markusressel.mkdocseditor.ui.activity.UiState
+import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
 internal fun MainScreen(
@@ -53,7 +53,7 @@ internal fun MainScreen(
 }
 
 
-@Preview(showBackground = true)
+@CombinedPreview
 @Composable
 private fun MainScreenPreview() {
     MkDocsEditorTheme {
@@ -67,7 +67,7 @@ private fun MainScreenPreview() {
     }
 }
 
-@Preview(showBackground = true, widthDp = 700)
+@CombinedPreview
 @Composable
 private fun MainScreenPreviewTablet() {
     MkDocsEditorTheme {
@@ -81,7 +81,7 @@ private fun MainScreenPreviewTablet() {
     }
 }
 
-@Preview(showBackground = true, widthDp = 1000)
+@CombinedPreview
 @Composable
 private fun MainScreenPreviewDesktop() {
     MkDocsEditorTheme {

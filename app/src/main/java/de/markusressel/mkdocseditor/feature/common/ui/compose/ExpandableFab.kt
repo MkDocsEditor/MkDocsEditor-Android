@@ -34,33 +34,36 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
+import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
-@Preview
+@CombinedPreview
 @Composable
 fun ExpandableFabPreview() {
-    ExpandableFab(
-        modifier = Modifier.fillMaxSize(),
-        items = listOf(
-            FabConfig.Fab(
-                id = 0,
-                description = R.string.create_document,
-                icon = MaterialDesignIconic.Icon.gmi_file_add,
+    MkDocsEditorTheme {
+        ExpandableFab(
+            modifier = Modifier.fillMaxSize(),
+            items = listOf(
+                FabConfig.Fab(
+                    id = 0,
+                    description = R.string.create_document,
+                    icon = MaterialDesignIconic.Icon.gmi_file_add,
+                ),
+                FabConfig.Fab(
+                    id = 1,
+                    description = R.string.create_section,
+                    icon = MaterialDesignIconic.Icon.gmi_folder,
+                ),
             ),
-            FabConfig.Fab(
-                id = 1,
-                description = R.string.create_section,
-                icon = MaterialDesignIconic.Icon.gmi_folder,
-            ),
-        ),
-        onItemClicked = {}
-    )
+            onItemClicked = {}
+        )
+    }
 }
 
 @Composable

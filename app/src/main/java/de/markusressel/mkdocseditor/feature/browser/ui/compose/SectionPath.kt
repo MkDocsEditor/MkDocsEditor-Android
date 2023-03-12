@@ -20,25 +20,28 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.SectionItem
+import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
-@Preview
+@CombinedPreview
 @Composable
 private fun SectionPathPreview() {
-    SectionPath(
-        modifier = Modifier.fillMaxWidth(),
-        path = listOf(
-            SectionItem("0", "/"),
-            SectionItem("1", "test"),
-            SectionItem("2", "folder"),
-            SectionItem("3", "a"),
-            SectionItem("4", "b"),
-            SectionItem("5", "c"),
-        ),
-        onSectionClicked = {}
-    )
+    MkDocsEditorTheme {
+        SectionPath(
+            modifier = Modifier.fillMaxWidth(),
+            path = listOf(
+                SectionItem("0", "/"),
+                SectionItem("1", "test"),
+                SectionItem("2", "folder"),
+                SectionItem("3", "a"),
+                SectionItem("4", "b"),
+                SectionItem("5", "c"),
+            ),
+            onSectionClicked = {}
+        )
+    }
 }
 
 

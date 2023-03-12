@@ -23,14 +23,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 
-@Preview
+@CombinedPreview
 @Composable
 fun NavigationDrawerContentPreview() {
     MkDocsEditorTheme {
