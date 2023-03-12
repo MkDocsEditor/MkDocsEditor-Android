@@ -16,7 +16,7 @@ fun AboutScreen() {
             backgroundColor = MaterialTheme.colorScheme.background,
             contentColor = MaterialTheme.colorScheme.contentColorFor(MaterialTheme.colorScheme.background),
             badgeBackgroundColor = MaterialTheme.colorScheme.primary,
-            badgeContentColor = MaterialTheme.colorScheme.onPrimary,
+            badgeContentColor = MaterialTheme.colorScheme.contentColorFor(MaterialTheme.colorScheme.primary),
         ),
     )
 }
