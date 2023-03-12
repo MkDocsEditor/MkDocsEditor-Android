@@ -179,9 +179,8 @@ dependencies {
     implementation 'com.karumi:dexter:6.2.2'
 
     // Dialogs
-    implementation 'com.afollestad.material-dialogs:core:3.3.0'
-    implementation 'com.afollestad.material-dialogs:input:3.3.0'
-    implementation 'com.afollestad.material-dialogs:lifecycle:3.3.0'
+    implementation "io.github.vanpra.compose-material-dialogs:core:0.9.0"
+    implementation "io.github.vanpra.compose-material-dialogs:datetime:0.9.0"
 
     // Code editor
     //def codeEditorVersion = "v4.0.1"
@@ -201,7 +200,7 @@ dependencies {
     }
 
     // Tutorial messages
-    implementation 'com.github.markusressel:TutorialTooltip:v2.0.0'
+    //implementation 'com.github.markusressel:TutorialTooltip:v2.0.0'
 
     // AboutLibraries ("About" screen)
     implementation("com.mikepenz:aboutlibraries:$aboutlibrariesVersion@aar") {
