@@ -44,23 +44,6 @@
         <!--        <item name="aboutLibrariesSpecialButtonText">@color/about_libraries_special_button_openSource</item>-->
         <!--        <item name="aboutLibrariesOpenSourceDivider">@color/opensource_divider</item>-->
 
-        <!-- MaterialDrawer specific values -->
-        <item name="materialDrawerStyle">@style/Widget.MaterialDrawerStyle</item>
-        <item name="materialDrawerHeaderStyle">@style/Widget.MaterialDrawerHeaderStyle</item>
-
-        <!-- KutePreferences -->
-        <!--        <item name="kute_preferences__menu__icon_color">#fff</item>-->
-        <!--        <item name="kute_preferences__search__highlighted_text_color">#ff0</item>-->
-        <!--        <item name="kute_preferences__setting__default_icon_color">-->
-        <!--            @color/preference_item__default_icon_colorLight-->
-        <!--        </item>-->
-
-        <!--        <item name="kute_preferences__category__title_text_color">?attr/colorAccent</item>-->
-
-        <!--        <item name="kute_preferences__section__text_color">?android:attr/textColorPrimaryInverse-->
-        <!--        </item>-->
-        <!--        <item name="kute_preferences__section__background">?attr/colorAccent</item>-->
-
     </style>
 
     <!-- Base application theme. -->
@@ -105,23 +88,6 @@
         <!--        <item name="aboutLibrariesOpenSourceText">?android:textColorSecondary</item>-->
         <!--        <item name="aboutLibrariesSpecialButtonText">?android:textColorPrimary</item>-->
         <!--        <item name="aboutLibrariesOpenSourceDivider">@color/opensource_divider</item>-->
-
-        <!--  MaterialDrawer -->
-        <item name="materialDrawerStyle">@style/Widget.MaterialDrawerStyle</item>
-        <item name="materialDrawerHeaderStyle">@style/Widget.MaterialDrawerHeaderStyle</item>
-
-
-        <!-- KutePreferences -->
-        <!--        <item name="kute_preferences__menu__icon_color">#fff</item>-->
-        <!--        <item name="kute_preferences__search__highlighted_text_color">#8ff0</item>-->
-        <!--        <item name="kute_preferences__setting__default_icon_color">-->
-        <!--            @color/preference_item__default_icon_colorDark-->
-        <!--        </item>-->
-
-        <!--        <item name="kute_preferences__category__title_text_color">?attr/colorAccent</item>-->
-
-        <!--        <item name="kute_preferences__section__text_color">?android:attr/textColorPrimary</item>-->
-        <!--        <item name="kute_preferences__section__background">?attr/colorAccent</item>-->
 
     </style>
 

@@ -22,7 +22,6 @@ buildscript {
         javaxAnnotationVersion = "10.0-b28"
         hiltVersion = "2.44"
         aboutlibrariesVersion = "8.9.4"
-        materialdrawerVersion = "8.4.5"
         iconicsVersion = "5.4.0"
 
         timberKtVersion = "1.5.1"
