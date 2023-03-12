@@ -20,13 +20,15 @@ internal data class UiState(
 
     val drawerNavItems: List<NavItem> = listOf(
         NavItem.FileBrowser,
-        NavItem.Settings
+        NavItem.Settings,
+        NavItem.About,
     ),
 
     val selectedBottomBarItem: NavItem = NavItem.FileBrowser,
     val bottomBarNavItems: List<NavItem> = listOf(
         NavItem.FileBrowser,
-        NavItem.Settings
+        NavItem.Settings,
+        NavItem.About,
     ),
 
     val snackbar: SnackbarData? = null,

@@ -1,9 +1,18 @@
 package de.markusressel.mkdocseditor.feature.main.ui.compose
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
@@ -116,6 +125,7 @@ private fun DrawerNavItem(
             imageVector = when (item) {
                 is NavItem.FileBrowser -> Icons.Default.Home
                 is NavItem.Settings -> Icons.Default.Settings
+                is NavItem.About -> Icons.Default.Info
             },
             contentDescription = "",
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -124,10 +134,13 @@ private fun DrawerNavItem(
         Text(
             modifier = Modifier
                 .padding(start = 8.dp),
-            text = when (item) {
-                is NavItem.FileBrowser -> "Files"
-                is NavItem.Settings -> "Settings"
-            },
+            text = stringResource(
+                id = when (item) {
+                    is NavItem.FileBrowser -> R.string.bottom_navigation_item_files
+                    is NavItem.Settings -> R.string.bottom_navigation_item_settings
+                    is NavItem.About -> R.string.bottom_navigation_item_about
+                }
+            ),
             color = MaterialTheme.colorScheme.onSurface,
         )
     }

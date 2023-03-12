@@ -5,6 +5,7 @@ plugins {
     id 'kotlin-kapt'
     // id 'androidx.navigation.safeargs.kotlin'
     id 'com.google.dagger.hilt.android'
+    id 'com.mikepenz.aboutlibraries.plugin'
 }
 
 android {
@@ -202,6 +203,9 @@ dependencies {
     //implementation 'com.github.markusressel:TutorialTooltip:v2.0.0'
 
     // AboutLibraries ("About" screen)
+    implementation "com.mikepenz:aboutlibraries-core:${aboutlibrariesVersion}"
+    implementation "com.mikepenz:aboutlibraries-compose:${aboutlibrariesVersion}"
+
     implementation("com.mikepenz:aboutlibraries:$aboutlibrariesVersion@aar") {
         transitive = true
     }

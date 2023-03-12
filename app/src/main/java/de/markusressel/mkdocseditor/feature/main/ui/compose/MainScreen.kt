@@ -22,6 +22,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import de.markusressel.mkdocseditor.feature.about.ui.compose.AboutScreen
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel
 import de.markusressel.mkdocseditor.feature.browser.ui.compose.FileBrowserScreen
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
@@ -263,6 +264,7 @@ private fun MainScreenContent(
                             onUiEvent(UiEvent.BottomNavItemSelected(NavItem.FileBrowser))
                         }
                     )
+                    NavItem.About -> AboutScreen()
                 }
 
                 AnimatedVisibility(
