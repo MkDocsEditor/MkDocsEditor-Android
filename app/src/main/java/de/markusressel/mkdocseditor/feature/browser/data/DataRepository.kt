@@ -58,14 +58,14 @@ class DataRepository @Inject constructor(
 
     val sectionStore: Store<String, SectionEntity> = StoreBuilder
         .from(
-            fetcher = Fetcher.of { sectionId ->
+            fetcher = Fetcher.of {
                 val rootSectionModel = restClient.getItemTree().get()
                 // NOTE: this always fetches the whole tree
                 rootSectionModel
             },
             sourceOfTruth = SourceOfTruth.of<String, SectionModel, SectionEntity>(
                 reader = { sectionId -> sectionPersistenceManager.findByIdFlow(sectionId) },
-                writer = { key, input ->
+                writer = { _, input ->
                     // NOTE: this always stores the whole tree
                     val entity = input.asEntity(documentContentPersistenceManager)
                     sectionPersistenceManager.insertOrUpdateRoot(entity)

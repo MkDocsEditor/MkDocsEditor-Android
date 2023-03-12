@@ -13,7 +13,6 @@ import android.view.ViewGroup
 import androidx.annotation.CallSuper
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.asLiveData
-import androidx.lifecycle.lifecycleScope
 import com.github.ajalt.timberkt.Timber
 import com.google.android.material.snackbar.Snackbar
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
@@ -56,7 +55,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
         OptionsMenuComponent(
             this,
             optionsMenuRes = R.menu.options_menu_editor,
-            onCreateOptionsMenu = { menu: Menu?, menuInflater: MenuInflater? ->
+            onCreateOptionsMenu = { menu: Menu?, _: MenuInflater? ->
                 // set refresh icon
                 menu?.findItem(R.id.refresh)?.apply {
                     val refreshIcon =
@@ -152,10 +151,10 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
         val content = entity?.content?.target
         if (content != null) {
             if (text != null) {
-                setEditorText(text)
+//                setEditorText(text)
             } else {
                 // restore values from cache
-                setEditorText(content.text, content.selection)
+//                setEditorText(content.text, content.selection)
             }
 
 //            val absolutePosition = computeAbsolutePosition(PointF(content.panX, content.panY))
@@ -167,7 +166,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
 //            )
         } else {
             if (text != null) {
-                setEditorText(text)
+//                setEditorText(text)
             }
         }
     }
@@ -184,7 +183,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
                 }
             }
 
-            lifecycleScope.launchWhenCreated {
+//            lifecycleScope.launchWhenCreated {
 //                documentEntityFlow.filterNotNull().collectLatest { resource ->
 //                    loading.value = resource is Resource.Loading
 //
@@ -231,7 +230,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
 //                        restoreEditorState(entity = entity)
 //                    }
 //                }
-            }
+//            }
 
             events.observe(viewLifecycleOwner) { event ->
                 when (event) {
@@ -267,10 +266,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
                     is CodeEditorEvent.InitialText -> {
 //                        restoreEditorState(viewModel.documentEntityFlow.value?.data, event.text)
                     }
-                    is CodeEditorEvent.TextChange -> handleExternalTextChange(
-                        event.newText,
-                        event.patches
-                    )
+                    is CodeEditorEvent.TextChange -> {
+//                        handleExternalTextChange(
+//                            event.newText,
+//                            event.patches
+//                        )
+                    }
                     is CodeEditorEvent.OpenWebView -> chromeCustomTabManager.openChromeCustomTab(
                         event.url
                     )
@@ -330,11 +331,11 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
      * @param selectionStart optional selection start index
      * @param selectionEnd optional selection end index
      */
-    private fun setEditorText(
-        text: String,
-        selectionStart: Int? = null,
-        selectionEnd: Int? = null
-    ) {
+//    private fun setEditorText(
+//        text: String,
+//        selectionStart: Int? = null,
+//        selectionEnd: Int? = null
+//    ) {
 //        codeEditorLayout.codeEditorView.apply {
 //            // we don't listen to selection changes when the text is changed via code
 //            // because the selection will be restored from persistence anyway
@@ -346,21 +347,21 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
 //            }
 //            selectionChangedListener = this@CodeEditorFragment
 //        }
-    }
+//    }
 
-    private fun setEditorSelection(maxIndex: Int, selectionStart: Int, selectionEnd: Int?) {
-        val endIndex = selectionEnd ?: selectionStart
+//    private fun setEditorSelection(maxIndex: Int, selectionStart: Int, selectionEnd: Int?) {
+//        val endIndex = selectionEnd ?: selectionStart
 //        codeEditorLayout.codeEditorView.codeEditText.setSelection(
 //            selectionStart.coerceIn(0, maxIndex),
 //            endIndex.coerceIn(0, maxIndex)
 //        )
-    }
+//    }
 
 //    override fun onSelectionChanged(start: Int, end: Int, hasSelection: Boolean) {
 //        saveEditorState()
 //    }
 
-    private fun handleExternalTextChange(newText: String, patches: LinkedList<Patch>) {
+//    private fun handleExternalTextChange(newText: String, patches: LinkedList<Patch>) {
 //        val oldSelectionStart = codeEditorLayout.codeEditorView.codeEditText.selectionStart
 //        val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
 //        viewModel.currentText.value = newText
@@ -373,7 +374,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
 //
 //        setEditorText(newText, newSelectionStart, newSelectionEnd)
 //        saveEditorState()
-    }
+//    }
 
 //    /**
 //     * Calculates the positioning percentages for x and y axis

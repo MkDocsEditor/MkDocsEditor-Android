@@ -84,7 +84,7 @@ internal fun FileBrowserList(
                     .fillMaxWidth()
             )
         } else {
-            items.forEachIndexed { index, item ->
+            items.forEachIndexed { _, item ->
                 FileBrowserListEntry(
                     item = item,
                     onDocumentClicked = onDocumentClicked,

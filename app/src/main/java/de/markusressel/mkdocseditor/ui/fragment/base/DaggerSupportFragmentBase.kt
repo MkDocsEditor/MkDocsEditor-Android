@@ -1,8 +1,6 @@
 package de.markusressel.mkdocseditor.ui.fragment.base
 
 import androidx.fragment.app.Fragment
-import androidx.navigation.NavController
-import androidx.navigation.fragment.findNavController
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.ui.IconHandler
 import javax.inject.Inject
@@ -20,8 +18,5 @@ abstract class DaggerSupportFragmentBase : Fragment() {
 
     @Inject
     protected lateinit var preferencesHolder: KutePreferencesHolder
-
-    protected val navController: NavController
-        get() = findNavController()
 
 }
