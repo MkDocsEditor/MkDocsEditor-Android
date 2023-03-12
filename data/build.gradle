@@ -60,7 +60,7 @@ dependencies {
     kaptTest "com.google.dagger:hilt-compiler:$hiltVersion"
 
     // Android Architecture Components
-    implementation 'androidx.annotation:annotation:1.5.0'
+    implementation 'androidx.annotation:annotation:1.6.0'
     implementation "androidx.core:core-ktx:$aacAndroidKtxVersion"
 
     // Preferences

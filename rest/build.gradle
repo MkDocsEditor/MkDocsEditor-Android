@@ -42,7 +42,7 @@ android {
 
 dependencies {
     // moshi
-    def moshiVersion = "1.13.0"
+    def moshiVersion = "1.14.0"
     implementation "com.squareup.moshi:moshi:$moshiVersion"
     implementation "com.squareup.moshi:moshi-kotlin:$moshiVersion"
     kapt "com.squareup.moshi:moshi-kotlin-codegen:$moshiVersion"

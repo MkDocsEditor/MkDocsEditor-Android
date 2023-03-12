@@ -2,7 +2,7 @@
 buildscript {
     ext {
         kotlin_version = '1.8.10'
-        gradle_plugin_version = '7.4.1'
+        gradle_plugin_version = '7.4.2'
         compose_compiler_version = '1.4.3'
 
         minSdkVersion = 28
@@ -17,7 +17,7 @@ buildscript {
 
         // Android Architecture Components
         aacAndroidKtxVersion = "1.9.0"
-        navigationVersion = "2.6.0-alpha04"
+        navigationVersion = "2.6.0-alpha07"
 
         javaxAnnotationVersion = "10.0-b28"
         hiltVersion = "2.44"
@@ -54,6 +54,10 @@ buildscript {
     }
 }
 
+plugins {
+    id 'com.google.dagger.hilt.android' version '2.45' apply false
+}
+
 apply plugin: 'kotlin'
 
 allprojects {
@@ -70,6 +74,7 @@ allprojects {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
 }
+
 
 compileKotlin {
     kotlinOptions {
