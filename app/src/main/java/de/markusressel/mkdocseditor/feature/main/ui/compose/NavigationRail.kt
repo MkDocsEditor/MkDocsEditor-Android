@@ -1,13 +1,9 @@
 package de.markusressel.mkdocseditor.feature.main.ui.compose
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
@@ -22,8 +18,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
@@ -41,21 +35,7 @@ fun MkDocsEditorNavigationRail(
         val primaryItems by remember { derivedStateOf { navItems.filterIsInstance<NavItem.Primary>() } }
         val secondaryItems by remember { derivedStateOf { navItems.filterIsInstance<NavItem.Secondary>() } }
 
-        Column(
-            modifier = Modifier
-                .background(
-                    color = Color(0xFF222222),
-                    shape = RoundedCornerShape(8.dp),
-                )
-        ) {
-            Image(
-                modifier = Modifier
-                    .width(52.dp)
-                    .padding(8.dp),
-                painter = painterResource(id = R.drawable.app_icon_no_padding),
-                contentDescription = "",
-            )
-        }
+        AppIconImage()
 
         Column(
             modifier = Modifier
