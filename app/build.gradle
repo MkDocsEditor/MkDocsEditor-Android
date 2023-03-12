@@ -101,9 +101,9 @@ dependencies {
 
     // Jetpack Compose
     implementation 'com.google.android.material:material:1.8.0'
-    def material3_version = "1.0.1"
+    def material3_version = "1.1.0-alpha08"
     implementation "androidx.compose.material3:material3:$material3_version"
-    implementation "androidx.compose.material3:material3-window-size-class:1.1.0-alpha08"
+    implementation "androidx.compose.material3:material3-window-size-class:$material3_version"
 
     ext.windowmanager_version = "1.0.0"
     implementation "androidx.window:window:$windowmanager_version"
