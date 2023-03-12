@@ -2,6 +2,7 @@ package de.markusressel.mkdocseditor.feature.main.ui.compose
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -43,72 +44,98 @@ fun MkDocsEditorNavigationRail(
                 .weight(1f),
             verticalArrangement = Arrangement.Center
         ) {
-            for (item in primaryItems) {
-                val icon = when (item) {
-                    is NavItem.FileBrowser -> Icons.Default.Home
-                    is NavItem.Settings -> Icons.Default.Settings
-                }
-                val label = stringResource(
-                    id = when (item) {
-                        is NavItem.FileBrowser -> R.string.bottom_navigation_item_files
-                        is NavItem.Settings -> R.string.bottom_navigation_item_settings
-                    }
-                )
-
-                NavigationRailItem(
-                    icon = {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = "",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    },
-                    label = {
-                        Text(
-                            text = label,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                    },
-                    selected = selectedNavItem == item,
-                    onClick = {
-                        onItemSelected(item)
-                    }
-                )
-            }
+            PrimaryNavRailItems(
+                items = primaryItems,
+                selectedNavItem = selectedNavItem,
+                onItemSelected = onItemSelected
+            )
         }
+
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
-            for (item in secondaryItems) {
-                val icon = when (item) {
-                    is NavItem.About -> Icons.Default.Info
-                }
-                val label = stringResource(
-                    id = when (item) {
-                        is NavItem.About -> R.string.bottom_navigation_item_about
-                    }
-                )
-
-                NavigationRailItem(
-                    icon = {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = "",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    },
-                    label = {
-                        Text(
-                            text = label,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                    },
-                    selected = selectedNavItem == item,
-                    onClick = {
-                        onItemSelected(item)
-                    }
-                )
-
-
-            }
+            SecondaryNavRailItems(
+                items = secondaryItems,
+                selectedNavItem = selectedNavItem,
+                onItemSelected = onItemSelected
+            )
         }
+    }
+}
+
+
+@Composable
+private fun ColumnScope.PrimaryNavRailItems(
+    items: List<NavItem.Primary>,
+    selectedNavItem: NavItem,
+    onItemSelected: (NavItem.Primary) -> Unit
+) {
+    for (item in items) {
+        val icon = when (item) {
+            is NavItem.FileBrowser -> Icons.Default.Home
+            is NavItem.Settings -> Icons.Default.Settings
+        }
+        val label = stringResource(
+            id = when (item) {
+                is NavItem.FileBrowser -> R.string.bottom_navigation_item_files
+                is NavItem.Settings -> R.string.bottom_navigation_item_settings
+            }
+        )
+
+        NavigationRailItem(
+            icon = {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = "",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
+            label = {
+                Text(
+                    text = label,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            },
+            selected = selectedNavItem == item,
+            onClick = {
+                onItemSelected(item)
+            }
+        )
+    }
+}
+
+@Composable
+private fun ColumnScope.SecondaryNavRailItems(
+    items: List<NavItem.Secondary>,
+    selectedNavItem: NavItem,
+    onItemSelected: (NavItem.Secondary) -> Unit
+) {
+    for (item in items) {
+        val icon = when (item) {
+            is NavItem.About -> Icons.Default.Info
+        }
+        val label = stringResource(
+            id = when (item) {
+                is NavItem.About -> R.string.bottom_navigation_item_about
+            }
+        )
+
+        NavigationRailItem(
+            icon = {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = "",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
+            label = {
+                Text(
+                    text = label,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            },
+            selected = selectedNavItem == item,
+            onClick = {
+                onItemSelected(item)
+            }
+        )
     }
 }
