@@ -8,7 +8,7 @@ import com.github.ajalt.timberkt.Timber
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
-import de.markusressel.mkdocsrestclient.MkDocsRestClient
+import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import kotlinx.coroutines.coroutineScope
 
 
@@ -16,7 +16,7 @@ import kotlinx.coroutines.coroutineScope
 class OfflineSyncWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
-    private val restClient: MkDocsRestClient,
+    private val restClient: IMkDocsRestClient,
     private val documentContentPersistenceManager: DocumentContentPersistenceManager
 ) : CoroutineWorker(appContext, workerParams) {
 

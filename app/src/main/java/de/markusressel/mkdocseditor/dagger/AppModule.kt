@@ -10,7 +10,10 @@ import de.markusressel.kutepreferences.core.DefaultKuteNavigator
 import de.markusressel.kutepreferences.core.KuteNavigator
 import de.markusressel.kutepreferences.core.persistence.DefaultKutePreferenceDataProvider
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
+import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.data.persistence.entity.MyObjectBox
+import de.markusressel.mkdocsrestclient.DummyMkDocsRestClient
+import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import io.objectbox.BoxStore
@@ -49,8 +52,12 @@ class AppModule {
 
     @Provides
     @Singleton
-    fun provideMkDocsRestClient(): MkDocsRestClient {
-        return MkDocsRestClient()
+    fun provideMkDocsRestClient(): IMkDocsRestClient {
+        return if (BuildConfig.DEBUG) {
+            DummyMkDocsRestClient()
+        } else {
+            MkDocsRestClient()
+        }
     }
 
     @Provides

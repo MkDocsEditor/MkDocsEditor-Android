@@ -43,29 +43,6 @@ import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
-@CombinedPreview
-@Composable
-fun ExpandableFabPreview() {
-    MkDocsEditorTheme {
-        ExpandableFab(
-            modifier = Modifier.fillMaxSize(),
-            items = listOf(
-                FabConfig.Fab(
-                    id = 0,
-                    description = R.string.create_document,
-                    icon = MaterialDesignIconic.Icon.gmi_file_add,
-                ),
-                FabConfig.Fab(
-                    id = 1,
-                    description = R.string.create_section,
-                    icon = MaterialDesignIconic.Icon.gmi_folder,
-                ),
-            ),
-            onItemClicked = {}
-        )
-    }
-}
-
 @Composable
 fun ExpandableFab(
     items: List<FabConfig.Fab>,
@@ -176,3 +153,28 @@ fun ExpandableFab(
         }
     }
 }
+
+
+@CombinedPreview
+@Composable
+private fun ExpandableFabPreview() {
+    MkDocsEditorTheme {
+        ExpandableFab(
+            modifier = Modifier.fillMaxSize(),
+            items = listOf(
+                FabConfig.Fab(
+                    id = 0,
+                    description = R.string.create_document,
+                    icon = MaterialDesignIconic.Icon.gmi_file_add,
+                ),
+                FabConfig.Fab(
+                    id = 1,
+                    description = R.string.create_section,
+                    icon = MaterialDesignIconic.Icon.gmi_folder,
+                ),
+            ),
+            onItemClicked = {}
+        )
+    }
+}
+

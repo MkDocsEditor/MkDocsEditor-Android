@@ -19,7 +19,7 @@ import de.markusressel.mkdocseditor.feature.browser.ui.usecase.RefreshSectionUse
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.SearchUseCase
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.SectionItem
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
-import de.markusressel.mkdocsrestclient.MkDocsRestClient
+import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -51,7 +51,7 @@ internal sealed class UiEvent {
 @HiltViewModel
 internal class FileBrowserViewModel @Inject constructor(
     private val dataRepository: DataRepository,
-    private val restClient: MkDocsRestClient,
+    private val restClient: IMkDocsRestClient,
     private val refreshSectionUseCase: RefreshSectionUseCase,
     private val getSectionContentUseCase: GetSectionContentUseCase,
     private val createNewSectionUseCase: CreateNewSectionUseCase,

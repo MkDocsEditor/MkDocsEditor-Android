@@ -25,26 +25,6 @@ import de.markusressel.mkdocseditor.feature.browser.ui.usecase.SectionItem
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
-@CombinedPreview
-@Composable
-private fun SectionPathPreview() {
-    MkDocsEditorTheme {
-        SectionPath(
-            modifier = Modifier.fillMaxWidth(),
-            path = listOf(
-                SectionItem("0", "/"),
-                SectionItem("1", "test"),
-                SectionItem("2", "folder"),
-                SectionItem("3", "a"),
-                SectionItem("4", "b"),
-                SectionItem("5", "c"),
-            ),
-            onSectionClicked = {}
-        )
-    }
-}
-
-
 @Composable
 internal fun SectionPath(
     path: List<SectionItem>,
@@ -117,6 +97,26 @@ private fun PathItemCard(
                 .padding(8.dp),
             text = text,
             color = MaterialTheme.colorScheme.onSecondaryContainer,
+        )
+    }
+}
+
+
+@CombinedPreview
+@Composable
+private fun SectionPathPreview() {
+    MkDocsEditorTheme {
+        SectionPath(
+            modifier = Modifier.fillMaxWidth(),
+            path = listOf(
+                SectionItem("0", "/"),
+                SectionItem("1", "test"),
+                SectionItem("2", "folder"),
+                SectionItem("3", "a"),
+                SectionItem("4", "b"),
+                SectionItem("5", "c"),
+            ),
+            onSectionClicked = {}
         )
     }
 }

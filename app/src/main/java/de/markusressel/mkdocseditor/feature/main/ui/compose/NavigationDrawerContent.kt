@@ -30,21 +30,6 @@ import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 
-@CombinedPreview
-@Composable
-fun NavigationDrawerContentPreview() {
-    MkDocsEditorTheme {
-        NavigationDrawerContent(
-            navItems = listOf(
-                NavItem.FileBrowser,
-                NavItem.Settings,
-            ),
-            selectedDestination = NavItem.FileBrowser,
-            onHamburgerIconClicked = {},
-        )
-    }
-}
-
 @Composable
 internal fun NavigationDrawerContent(
     navItems: List<NavItem>,
@@ -142,6 +127,22 @@ private fun DrawerNavItem(
                 }
             ),
             color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+
+@CombinedPreview
+@Composable
+private fun NavigationDrawerContentPreview() {
+    MkDocsEditorTheme {
+        NavigationDrawerContent(
+            navItems = listOf(
+                NavItem.FileBrowser,
+                NavItem.Settings,
+            ),
+            selectedDestination = NavItem.FileBrowser,
+            onHamburgerIconClicked = {},
         )
     }
 }

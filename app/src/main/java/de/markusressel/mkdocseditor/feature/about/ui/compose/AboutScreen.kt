@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.about.ui.compose
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.contentColorFor
@@ -18,7 +19,9 @@ fun AboutScreen(
         header = {
             item {
                 AboutHeader(
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(8.dp)
                 )
             }
         },
@@ -26,7 +29,7 @@ fun AboutScreen(
         showVersion = true,
         showLicenseBadges = true,
         colors = LibraryDefaults.libraryColors(
-            backgroundColor = MaterialTheme.colorScheme.background,
+            backgroundColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.contentColorFor(MaterialTheme.colorScheme.background),
             badgeBackgroundColor = MaterialTheme.colorScheme.primary,
             badgeContentColor = MaterialTheme.colorScheme.contentColorFor(MaterialTheme.colorScheme.primary),

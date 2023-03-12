@@ -7,7 +7,7 @@ import android.os.Looper
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.AndroidEntryPoint
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
-import de.markusressel.mkdocsrestclient.MkDocsRestClient
+import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,7 +22,7 @@ import javax.inject.Inject
 class OfflineCacheSyncService : JobService() {
 
     @Inject
-    internal lateinit var restClient: MkDocsRestClient
+    internal lateinit var restClient: IMkDocsRestClient
 
     @Inject
     internal lateinit var documentContentPersistenceManager: DocumentContentPersistenceManager

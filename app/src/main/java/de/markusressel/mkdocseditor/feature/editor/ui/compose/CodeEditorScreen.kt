@@ -23,16 +23,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import de.markusressel.kodeeditor.library.compose.KodeEditor
-import de.markusressel.kodeeditor.library.compose.KodeEditorDefaults
-import de.markusressel.kodehighlighter.core.ui.KodeTextFieldDefaults
-import de.markusressel.kodehighlighter.language.markdown.MarkdownRuleBook
-import de.markusressel.kodehighlighter.language.markdown.colorscheme.DarkBackgroundColorSchemeWithSpanStyle
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
+import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.activity.UiState
+import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 
 @Composable
@@ -53,6 +51,21 @@ internal fun CodeEditorScreen(
 
     val editorUiState by codeEditorViewModel.uiState.collectAsState()
 
+    CodeEditorScreenContent(
+        modifier = modifier,
+        mainUiState = mainUiState,
+        editorUiState = editorUiState,
+        onTextChanged = { codeEditorViewModel.onUserTextInput(it.annotatedString, it.selection) }
+    )
+}
+
+@Composable
+private fun CodeEditorScreenContent(
+    modifier: Modifier = Modifier,
+    mainUiState: UiState,
+    editorUiState: de.markusressel.mkdocseditor.feature.editor.ui.UiState,
+    onTextChanged: (TextFieldValue) -> Unit,
+) {
     var tfv: TextFieldValue by remember(mainUiState.documentId) {
         mutableStateOf(
             TextFieldValue(
@@ -81,7 +94,7 @@ internal fun CodeEditorScreen(
                 .fillMaxSize(),
             text = tfv,
             onTextChanged = {
-                codeEditorViewModel.onUserTextInput(it.annotatedString, it.selection)
+                onTextChanged(it)
                 tfv = it
             },
             readOnly = editorUiState.editModeActive.not()
@@ -109,29 +122,18 @@ internal fun CodeEditorScreen(
     }
 }
 
+@CombinedPreview
 @Composable
-private fun CodeEditorLayout(
-    text: TextFieldValue,
-    onTextChanged: (TextFieldValue) -> Unit,
-    readOnly: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    KodeEditor(
-        modifier = modifier,
-        text = text,
-        languageRuleBook = MarkdownRuleBook(),
-        colorScheme = DarkBackgroundColorSchemeWithSpanStyle(),
-        onValueChange = onTextChanged,
-        colors = KodeEditorDefaults.editorColors(
-            textFieldBackgroundColor = MaterialTheme.colorScheme.background,
-            lineNumberTextColor = MaterialTheme.colorScheme.onBackground,
-            lineNumberBackgroundColor = MaterialTheme.colorScheme.background,
-            textFieldColors = KodeTextFieldDefaults.textFieldColors(
-                textColor = MaterialTheme.colorScheme.onBackground,
-                cursorColor = MaterialTheme.colorScheme.primary
-            )
-        ),
-        enabled = true,
-        readOnly = readOnly
-    )
+private fun CodeEditorScreenContentPreview() {
+    MkDocsEditorTheme {
+        CodeEditorScreenContent(
+            mainUiState = UiState(
+
+            ),
+            editorUiState = de.markusressel.mkdocseditor.feature.editor.ui.UiState(
+                text = buildAnnotatedString { append("# Hallo Welt!") }
+            ),
+            onTextChanged = {}
+        )
+    }
 }

@@ -10,7 +10,7 @@ import de.markusressel.mkdocseditor.data.persistence.entity.*
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.networkBoundResource
-import de.markusressel.mkdocsrestclient.MkDocsRestClient
+import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.objectbox.kotlin.query
 import io.objectbox.kotlin.toFlow
@@ -24,7 +24,7 @@ import javax.inject.Singleton
 @Singleton
 class DataRepository @Inject constructor(
     private val offlineModeManager: OfflineModeManager,
-    private val restClient: MkDocsRestClient,
+    private val restClient: IMkDocsRestClient,
     private val sectionPersistenceManager: SectionPersistenceManager,
     private val documentPersistenceManager: DocumentPersistenceManager,
     private val documentContentPersistenceManager: DocumentContentPersistenceManager,

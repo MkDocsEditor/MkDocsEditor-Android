@@ -1,11 +1,15 @@
 package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
-import android.view.View
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,46 +28,6 @@ import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
-
-@CombinedPreview
-@Composable
-private fun FileBrowserListEmptyPreview() {
-    MkDocsEditorTheme {
-        FileBrowserList(
-            items = listOf(),
-            onDocumentClicked = {},
-            onResourceClicked = {},
-            onSectionClicked = {},
-        )
-    }
-}
-
-@CombinedPreview
-@Composable
-private fun FileBrowserListPreview() {
-    MkDocsEditorTheme {
-        FileBrowserList(
-            items = listOf(
-                SectionEntity(
-                    name = "Subsection",
-                ),
-                DocumentEntity(
-                    name = "Sample File.md"
-                ).apply {
-                    content.target = DocumentContentEntity(
-                        text = "Text"
-                    )
-                },
-                ResourceEntity(
-                    name = "Sample Ressource.png"
-                )
-            ),
-            onDocumentClicked = {},
-            onResourceClicked = {},
-            onSectionClicked = {},
-        )
-    }
-}
 
 @Composable
 internal fun FileBrowserList(
@@ -154,129 +118,41 @@ internal fun FileBrowserListEntry(
 
 @CombinedPreview
 @Composable
-private fun DocumentListEntryPreview() {
-    DocumentListEntry(
-        item = DocumentEntity(
-            name = "Sample File.md"
-        ),
-        onClick = {}
-    )
+private fun FileBrowserListEmptyPreview() {
+    MkDocsEditorTheme {
+        FileBrowserList(
+            items = listOf(),
+            onDocumentClicked = {},
+            onResourceClicked = {},
+            onSectionClicked = {},
+        )
+    }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@CombinedPreview
 @Composable
-internal fun DocumentListEntry(
-    item: DocumentEntity,
-    onClick: (DocumentEntity) -> Unit,
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = 8.dp,
-                vertical = 4.dp
-            ),
-        onClick = { onClick(item) },
-    ) {
-        Row(
-            modifier = Modifier.padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box {
-                Image(
-                    modifier = Modifier
-                        .size(32.dp),
-                    asset = MaterialDesignIconic.Icon.gmi_file,
-                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
-                )
-
-                if (item.offlineAvailableVisibility == View.VISIBLE) {
-                    Image(
-                        modifier = Modifier
-                            .size(16.dp)
-                            .align(Alignment.BottomEnd),
-                        asset = MaterialDesignIconic.Icon.gmi_save,
-                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary),
+private fun FileBrowserListPreview() {
+    MkDocsEditorTheme {
+        FileBrowserList(
+            items = listOf(
+                SectionEntity(
+                    name = "Subsection",
+                ),
+                DocumentEntity(
+                    name = "Sample File.md"
+                ).apply {
+                    content.target = DocumentContentEntity(
+                        text = "Text"
                     )
-                }
-            }
-
-            Text(
-                modifier = Modifier.padding(start = 8.dp),
-                text = item.name,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-        }
-    }
-}
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun ResourceListEntry(
-    item: ResourceEntity,
-    onClick: (ResourceEntity) -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = 8.dp,
-                vertical = 4.dp
+                },
+                ResourceEntity(
+                    name = "Sample Ressource.png"
+                )
             ),
-        onClick = { onClick(item) },
-    ) {
-        Row(
-            modifier = Modifier.padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Image(
-                modifier = Modifier
-                    .size(32.dp),
-                asset = MaterialDesignIconic.Icon.gmi_attachment,
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
-            )
-
-            Text(
-                modifier = Modifier.padding(start = 8.dp),
-                text = item.name,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-        }
+            onDocumentClicked = {},
+            onResourceClicked = {},
+            onSectionClicked = {},
+        )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun SectionListEntry(
-    item: SectionEntity,
-    onClick: (SectionEntity) -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = 8.dp,
-                vertical = 4.dp
-            ),
-        onClick = { onClick(item) },
-    ) {
-        Row(
-            modifier = Modifier.padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Image(
-                modifier = Modifier
-                    .size(32.dp),
-                asset = MaterialDesignIconic.Icon.gmi_folder,
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
-            )
-
-            Text(
-                modifier = Modifier.padding(start = 8.dp),
-                text = item.name,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-        }
-    }
-}

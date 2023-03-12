@@ -192,22 +192,6 @@ internal fun FileBrowserScreen(
     )
 }
 
-
-@CombinedPreview
-@Composable
-private fun FileBrowserScreenContentPreview() {
-    MkDocsEditorTheme {
-        FileBrowserScreenContent(
-            uiState = UiState(
-                listItems = listOf(
-
-                )
-            ),
-            onUiEvent = {}
-        )
-    }
-}
-
 @Composable
 private fun FileBrowserScreenContent(
     uiState: UiState,
@@ -291,3 +275,18 @@ private fun FileBrowserScreenContent(
     }
 }
 
+
+@CombinedPreview
+@Composable
+private fun FileBrowserScreenContentPreview() {
+    MkDocsEditorTheme {
+        FileBrowserScreenContent(
+            uiState = UiState(
+                listItems = listOf(
+
+                )
+            ),
+            onUiEvent = {}
+        )
+    }
+}

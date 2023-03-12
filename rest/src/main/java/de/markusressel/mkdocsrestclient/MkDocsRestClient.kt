@@ -21,69 +21,41 @@ class MkDocsRestClient constructor(
     sectionApi: SectionApi = SectionApiImpl(requestManager),
     documentApi: DocumentApi = DocumentApiImpl(requestManager),
     resourceApi: ResourceApi = ResourceApiImpl(requestManager)
-) : SectionApi by sectionApi,
+) : IMkDocsRestClient,
+    SectionApi by sectionApi,
     DocumentApi by documentApi,
     ResourceApi by resourceApi {
 
-    /**
-     * Set the url for this client
-     *
-     * @param hostname the new url
-     */
-    fun setHostname(hostname: String) {
+    override fun setHostname(hostname: String) {
         requestManager.hostname = hostname
     }
 
-    /**
-     * @return the url for this client
-     */
-    fun getHostname(): String {
+    override fun getHostname(): String {
         return requestManager.hostname
     }
 
-    /**
-     * Specify whether to use SSL
-     *
-     * @param enabled true enables ssl, false disables it
-     */
-    fun setUseSSL(enabled: Boolean) {
+    override fun setUseSSL(enabled: Boolean) {
         requestManager.ssl = enabled
     }
 
-    /**
-     * Specify the port to use
-     *
-     * @param port the port number
-     */
-    fun setPort(port: Int) {
+    override fun setPort(port: Int) {
         requestManager.port = port
     }
 
-    /**
-     * Set the BasicAuthConfig for this client
-     */
-    fun getBasicAuthConfig(): BasicAuthConfig? {
+    override fun getBasicAuthConfig(): BasicAuthConfig? {
         return requestManager.basicAuthConfig
     }
 
-    /**
-     * Set the BasicAuthConfig for this client
-     */
-    fun setBasicAuthConfig(basicAuthConfig: BasicAuthConfig) {
+    override fun setBasicAuthConfig(basicAuthConfig: BasicAuthConfig) {
         requestManager.basicAuthConfig = basicAuthConfig
     }
 
-    /**
-     * Check if the server is alive and reachable
-     */
-    suspend fun isHostAlive(): Result<String, FuelError> {
+    override suspend fun isHostAlive(): Result<String, FuelError> {
         return requestManager.doStatusRequest("/alive/", Method.GET)
     }
 
-    /**
-     * Get the complete item tree
-     */
-    suspend fun getItemTree(): Result<SectionModel, FuelError> {
+
+    override suspend fun getItemTree(): Result<SectionModel, FuelError> {
         return requestManager.doRequest("/tree/", Method.GET)
     }
 

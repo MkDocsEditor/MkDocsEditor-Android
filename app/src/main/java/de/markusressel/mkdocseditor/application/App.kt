@@ -18,7 +18,7 @@ import de.markusressel.mkdocseditor.event.PortChangedEvent
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
-import de.markusressel.mkdocsrestclient.MkDocsRestClient
+import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -33,7 +33,7 @@ class App : Application(), Configuration.Provider {
     lateinit var workerFactory: HiltWorkerFactory
 
     @Inject
-    internal lateinit var restClient: MkDocsRestClient
+    internal lateinit var restClient: IMkDocsRestClient
 
     @Inject
     internal lateinit var preferencesHolder: KutePreferencesHolder

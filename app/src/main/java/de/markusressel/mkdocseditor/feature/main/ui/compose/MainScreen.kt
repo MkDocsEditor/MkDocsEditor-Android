@@ -53,7 +53,6 @@ internal fun MainScreen(
     )
 }
 
-
 @CombinedPreview
 @Composable
 private fun MainScreenPreview() {
