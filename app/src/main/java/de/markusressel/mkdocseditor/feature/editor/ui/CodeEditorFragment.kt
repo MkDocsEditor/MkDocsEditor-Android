@@ -22,7 +22,6 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.databinding.FragmentEditorBinding
 import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
-import de.markusressel.mkdocseditor.ui.component.LoadingComponent
 import de.markusressel.mkdocseditor.ui.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.ui.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
@@ -48,8 +47,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
 //    private lateinit var codeEditorLayout: CodeEditorLayout
 
     private var noConnectionSnackbar: Snackbar? = null
-
-    private val loadingComponent by lazy { LoadingComponent(this) }
 
     private val optionsMenuComponent: OptionsMenuComponent by lazy {
         OptionsMenuComponent(
@@ -107,7 +104,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        loadingComponent
         optionsMenuComponent
     }
 
@@ -122,7 +118,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
         }
 
         val parent = binding.root as ViewGroup
-        return loadingComponent.onCreateView(inflater, parent, savedInstanceState)
+        return onCreateView(inflater, parent, savedInstanceState)
     }
 
 //    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -176,12 +172,12 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
         super.onViewCreated(view, savedInstanceState)
 
         viewModel.apply {
-            loading.observe(viewLifecycleOwner) { loading ->
-                when {
-                    loading -> loadingComponent.showLoading()
-                    else -> loadingComponent.showContent(animated = true)
-                }
-            }
+//            loading.observe(viewLifecycleOwner) { loading ->
+//                when {
+//                    loading -> loadingComponent.showLoading()
+//                    else -> loadingComponent.showContent(animated = true)
+//                }
+//            }
 
 //            lifecycleScope.launchWhenCreated {
 //                documentEntityFlow.filterNotNull().collectLatest { resource ->
