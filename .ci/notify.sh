@@ -50,7 +50,7 @@ EOF
 fi
 
 # find compiled .apk file
-APK_FILE=$(find "./app/build/outputs/apk/debug" -type f -name "*.apk")
+APK_FILE=$(find "./app/build/outputs/apk" -type f -name "*.apk")
 
 if [[ -n "${TELEGRAM_CHAT_ID}" ]]; then
   ./.ci/notify-telegram.sh "${MESSAGE}" "${APK_FILE}"

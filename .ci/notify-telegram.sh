@@ -9,6 +9,7 @@ if [[ -n "${APK_FILE}" ]]; then
   echo "Sending apk file..."
   MESSAGE_ID=$(curl \
     --silent \
+    --show-error \
     --form chat_id="${TELEGRAM_CHAT_ID}" \
     --form document=@"${APK_FILE}" \
     "${BASE_URL}/sendDocument" \
