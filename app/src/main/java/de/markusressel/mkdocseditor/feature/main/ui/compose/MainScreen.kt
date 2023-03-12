@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.*
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -240,31 +241,40 @@ private fun MainScreenContent(
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.inverseOnSurface)
             ) {
-                when (selectedDestination) {
-                    NavItem.FileBrowser -> if (contentType == ContentLayoutType.LIST_AND_DOCUMENT) {
-                        MkDocsEditorListAndDocumentContent(
-                            modifier = Modifier.weight(1f),
-                            //onNavigationEvent = onNavigationEvent,
-                            mainUiState = uiState,
-                            onBack = onBack,
-                            onUiEvent = onUiEvent
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+
+                    when (selectedDestination) {
+                        NavItem.FileBrowser -> if (contentType == ContentLayoutType.LIST_AND_DOCUMENT) {
+                            MkDocsEditorListAndDocumentContent(
+                                modifier = Modifier.fillMaxSize(),
+                                //onNavigationEvent = onNavigationEvent,
+                                mainUiState = uiState,
+                                onBack = onBack,
+                                onUiEvent = onUiEvent
+                            )
+                        } else {
+                            MkDocsEditorListOnlyContent(
+                                modifier = Modifier.fillMaxSize(),
+                                //onNavigationEvent = onNavigationEvent,
+                                mainUiState = uiState,
+                                onBack = onBack,
+                                onUiEvent = onUiEvent
+                            )
+                        }
+                        NavItem.Settings -> PreferencesScreen(
+                            modifier = Modifier.fillMaxSize(),
+                            onBack = {
+                                onUiEvent(UiEvent.BottomNavItemSelected(NavItem.FileBrowser))
+                            }
                         )
-                    } else {
-                        MkDocsEditorListOnlyContent(
-                            modifier = Modifier.weight(1f),
-                            //onNavigationEvent = onNavigationEvent,
-                            mainUiState = uiState,
-                            onBack = onBack,
-                            onUiEvent = onUiEvent
+                        NavItem.About -> AboutScreen(
+                            modifier = Modifier.fillMaxSize()
                         )
                     }
-                    NavItem.Settings -> PreferencesScreen(
-                        modifier = Modifier.weight(1f),
-                        onBack = {
-                            onUiEvent(UiEvent.BottomNavItemSelected(NavItem.FileBrowser))
-                        }
-                    )
-                    NavItem.About -> AboutScreen()
                 }
 
                 AnimatedVisibility(

@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.feature.about.ui.compose
 
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.contentColorFor
@@ -11,9 +10,11 @@ import com.mikepenz.aboutlibraries.ui.compose.LibrariesContainer
 import com.mikepenz.aboutlibraries.ui.compose.LibraryDefaults
 
 @Composable
-fun AboutScreen() {
+fun AboutScreen(
+    modifier: Modifier = Modifier,
+) {
     LibrariesContainer(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier,
         header = {
             item {
                 AboutHeader(
