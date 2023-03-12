@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
-import de.markusressel.mkdocseditor.feature.main.ui.NavigationEvent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
@@ -16,8 +15,6 @@ data class SnackbarData(
 )
 
 internal data class UiState(
-    val navDrawerOpen: Boolean = false,
-
     val drawerNavItems: List<NavItem> = listOf(
         NavItem.FileBrowser,
         NavItem.Settings,
@@ -39,7 +36,6 @@ internal data class UiState(
 internal sealed class UiEvent {
     data class BottomNavItemSelected(val item: NavItem) : UiEvent()
     data class DrawerNavItemClicked(val item: NavItem) : UiEvent()
-    object ToggleNavDrawer : UiEvent()
     object NavigateBack : UiEvent()
 
     data class UpdateCurrentDocumentId(val documentId: String?) : UiEvent()
@@ -70,7 +66,6 @@ internal class MainViewModel @Inject constructor(
                     documentId = null
                 )
             }
-            UiEvent.ToggleNavDrawer -> toggleNavDrawerState()
             UiEvent.SnackbarActionTriggered -> onSnackbarAction()
             UiEvent.NavigateBack -> {
                 Timber.d { "Back navigation handled by system" }
@@ -78,18 +73,8 @@ internal class MainViewModel @Inject constructor(
         }
     }
 
-    fun onUiEvent(event: NavigationEvent) {
-
-    }
-
     private fun onSnackbarAction() {
 
-    }
-
-    private fun toggleNavDrawerState() {
-        _uiState.value = uiState.value.copy(
-            navDrawerOpen = uiState.value.navDrawerOpen.not()
-        )
     }
 
     private fun selectBottomNavItem(item: NavItem) {

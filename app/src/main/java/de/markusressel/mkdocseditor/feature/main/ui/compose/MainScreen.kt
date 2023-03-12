@@ -232,7 +232,6 @@ private fun MainScreenContent(
                     selectedNavItem = uiState.selectedBottomBarItem,
                     navItems = uiState.bottomBarNavItems,
                     onItemSelected = { onUiEvent(UiEvent.BottomNavItemSelected(it)) },
-                    onToggleMenu = { onUiEvent(UiEvent.ToggleNavDrawer) },
                 )
             }
             Column(
