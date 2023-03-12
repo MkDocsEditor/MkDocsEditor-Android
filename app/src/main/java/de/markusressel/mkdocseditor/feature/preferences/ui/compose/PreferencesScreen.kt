@@ -1,7 +1,6 @@
 package de.markusressel.mkdocseditor.feature.preferences.ui.compose
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,56 +40,30 @@ internal fun PreferencesScreen(
 
     Box(modifier = modifier) {
         KutePreferencesTheme(
-            colors = when {
-                isSystemInDarkTheme() -> KuteColors(
-                    searchBar = SearchBarTheme(
-                        backgroundColor = Color.White.copy(alpha = 0.1f),
-                        textColor = Color.White.copy(alpha = 0.87f),
-                        hintColor = Color.White.copy(alpha = 0.6f),
-                        iconColor = Color.White.copy(alpha = 0.6f),
-                    ),
-                    section = SectionTheme(
-                        titleTextColor = Color.White.copy(alpha = 0.87f),
-                        titleBackgroundColor = MaterialTheme.colorScheme.surface,
-                        contentBackgroundColor = Color.White.copy(alpha = 0.1f),
-                    ),
-                    category = CategoryTheme(
-                        cardBackgroundColor = Color.White.copy(alpha = 0.1f),
-                        titleColor = Color.White.copy(alpha = 0.87f),
-                        subtitleColor = Color.White.copy(alpha = 0.87f),
-                        iconColor = Color.White.copy(alpha = 0.87f),
-                    ),
-                    defaultItem = DefaultItemTheme(
-                        titleColor = Color.White.copy(alpha = 0.87f),
-                        subtitleColor = Color.White.copy(alpha = 0.87f),
-                        iconColor = Color.White.copy(alpha = 0.87f),
-                    ),
-                )
-                else -> KuteColors(
-                    searchBar = SearchBarTheme(
-                        backgroundColor = Color.White,
-                        textColor = Color.Black.copy(alpha = 0.87f),
-                        hintColor = Color.Black.copy(alpha = 0.6f),
-                        iconColor = Color.Black.copy(alpha = 0.6f),
-                    ),
-                    section = SectionTheme(
-                        titleTextColor = Color.Black.copy(alpha = 0.87f),
-                        titleBackgroundColor = Color.White,
-                        contentBackgroundColor = Color.White,
-                    ),
-                    category = CategoryTheme(
-                        cardBackgroundColor = Color.White,
-                        titleColor = Color.Black.copy(alpha = 0.87f),
-                        subtitleColor = Color.Black.copy(alpha = 0.6f),
-                        iconColor = Color.Black.copy(alpha = 0.87f),
-                    ),
-                    defaultItem = DefaultItemTheme(
-                        titleColor = Color.Black.copy(alpha = 0.87f),
-                        subtitleColor = Color.Black.copy(alpha = 0.6f),
-                        iconColor = Color.Black.copy(alpha = 0.87f),
-                    ),
-                )
-            }
+            colors = KuteColors(
+                searchBar = SearchBarTheme(
+                    backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
+                    textColor = Color.White.copy(alpha = 0.87f),
+                    hintColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+                section = SectionTheme(
+                    titleBackgroundColor = MaterialTheme.colorScheme.surfaceVariant,
+                    titleTextColor = MaterialTheme.colorScheme.primary,
+                    contentBackgroundColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
+                category = CategoryTheme(
+                    cardBackgroundColor = MaterialTheme.colorScheme.surfaceVariant,
+                    titleColor = MaterialTheme.colorScheme.primary,
+                    subtitleColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+                defaultItem = DefaultItemTheme(
+                    titleColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    subtitleColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+            )
         ) {
             val currentItems by viewModel.currentPreferenceItems.collectAsState(initial = emptyList())
 
