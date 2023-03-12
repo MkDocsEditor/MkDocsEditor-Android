@@ -65,8 +65,7 @@ dependencies {
 
     // Preferences
 //    def kutePreferencesVersion = "v2.0.0"
-//    def kutePreferencesVersion = "compose-SNAPSHOT"
-    def kutePreferencesVersion = "c42f752cf7"
+    def kutePreferencesVersion = "compose-SNAPSHOT"
     // choose the ones you need
     api("com.github.markusressel.KutePreferences:core:${kutePreferencesVersion}") {
         changing = true
