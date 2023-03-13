@@ -88,5 +88,16 @@
     <string name="code_editor_sync_interval_key" translatable="false">code_editor_sync_interval_key</string>
     <string name="code_editor_sync_interval_title">Sync Interval</string>
 
+    <!-- Debug -->
+    <string name="category_debug_key" translatable="false">category_debug</string>
+    <string name="category_debug_title">Debug</string>
+    <string name="category_debug_description">Settings for developers. Use at your own risk!</string>
+
+    <string name="section_debug_global_key" translatable="false">section_debug_global_key</string>
+    <string name="section_debug_global_title">Global</string>
+
+    <string name="demo_mode_key" translatable="false">demo_mode_key</string>
+    <string name="demo_mode_title">Demo Mode</string>
+
 
 </resources>

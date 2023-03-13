@@ -14,6 +14,7 @@ import de.markusressel.kutepreferences.core.preference.select.KuteSingleSelectSt
 import de.markusressel.kutepreferences.core.preference.text.KutePasswordPreference
 import de.markusressel.kutepreferences.core.preference.text.KuteTextPreference
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.application.triggerAppRebirth
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
@@ -27,6 +28,10 @@ import de.markusressel.mkdocseditor.event.ThemeChangedEvent
 import de.markusressel.mkdocseditor.feature.preferences.domain.LastOfflineCacheUpdatePreferenceItem
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.ui.IconHandler
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -284,6 +289,44 @@ class KutePreferencesHolder @Inject constructor(
             defaultValue = false,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { old, new ->
+            })
+    }
+
+    val debugCategory by lazy {
+        KuteCategory(
+            key = R.string.category_debug_key,
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_developer_board),
+            title = context.getString(R.string.category_debug_title),
+            description = context.getString(R.string.category_debug_description),
+            children = listOf(
+                debugCommonSection,
+            )
+        )
+    }
+
+    val debugCommonSection by lazy {
+        KuteSection(
+            key = R.string.section_debug_global_key,
+            title = context.getString(R.string.section_debug_global_title),
+            children = listOf(
+                demoMode,
+            )
+        )
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    val demoMode by lazy {
+        KuteBooleanPreference(key = R.string.demo_mode_key,
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_present_to_all),
+            title = context.getString(R.string.demo_mode_title),
+            defaultValue = false,
+            dataProvider = dataProvider,
+            onPreferenceChangedListener = { old, new ->
+                context.toast("Restarting App...")
+                GlobalScope.launch {
+                    delay(1000)
+                    context.triggerAppRebirth()
+                }
             })
     }
 
