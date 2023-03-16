@@ -2,9 +2,12 @@ package de.markusressel.mkdocseditor.feature.preferences.ui
 
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.kutepreferences.core.KuteNavigator
+import de.markusressel.kutepreferences.ui.views.KuteStyleManager
 import de.markusressel.kutepreferences.ui.vm.KutePreferencesViewModel
 import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
+import de.markusressel.mkdocseditor.feature.preferences.domain.LastOfflineCacheUpdatePreferenceItem
+import de.markusressel.mkdocseditor.feature.preferences.ui.compose.LastOfflineCacheUpdatePreferenceItemView
 import javax.inject.Inject
 
 @HiltViewModel
@@ -16,6 +19,17 @@ internal class PreferencesViewModel @Inject constructor(
 ) {
 
     init {
+        KuteStyleManager.registerTypeHook { listItem ->
+            when (listItem) {
+                is LastOfflineCacheUpdatePreferenceItem -> {
+                    LastOfflineCacheUpdatePreferenceItemView(lastUpdate = "N/A")
+                    true
+                }
+                else -> false
+            }
+
+        }
+
         initPreferencesTree(
             listOf(
                 preferencesHolder.connectionCategory,
