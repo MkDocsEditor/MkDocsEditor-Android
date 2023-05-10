@@ -2,7 +2,7 @@
 buildscript {
     ext {
         kotlin_version = '1.8.10'
-        gradle_plugin_version = '7.4.2'
+        gradle_plugin_version = '8.0.0'
         compose_compiler_version = '1.4.3'
 
         minSdkVersion = 28
@@ -16,7 +16,7 @@ buildscript {
         // DEPENDENCIES
 
         // Android Architecture Components
-        aacAndroidKtxVersion = "1.9.0"
+        aacAndroidKtxVersion = "1.10.1"
         navigationVersion = "2.6.0-alpha07"
 
         javaxAnnotationVersion = "10.0-b28"
@@ -78,12 +78,12 @@ dependencies {
 
 compileKotlin {
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
 }
 compileTestKotlin {
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
 }
 

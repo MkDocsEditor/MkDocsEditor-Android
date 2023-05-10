@@ -6,13 +6,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import de.markusressel.kutepreferences.ui.theme.KutePreferencesTheme
-import de.markusressel.kutepreferences.ui.views.KuteOverview
+import de.markusressel.kutepreferences.ui.views.KutePreferencesScreen
 import de.markusressel.mkdocseditor.feature.preferences.ui.PreferencesViewModel
 
 @Composable
@@ -33,11 +31,9 @@ internal fun PreferencesScreen(
 
     Box(modifier = modifier) {
         KutePreferencesTheme {
-            val currentItems by viewModel.currentPreferenceItems.collectAsState(initial = emptyList())
-
-            KuteOverview(
+            KutePreferencesScreen(
                 modifier = Modifier.fillMaxSize(),
-                items = currentItems
+                kuteViewModel = viewModel
             )
 
             Spacer(modifier = Modifier.height(48.dp))
