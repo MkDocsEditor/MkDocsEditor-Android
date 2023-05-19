@@ -183,6 +183,10 @@ dependencies {
     implementation "io.github.vanpra.compose-material-dialogs:datetime:0.9.0"
 
     // Code editor
+    // not sure why but we need to explicitly specify this dependency even though it is
+    // marked as "api" within the KodeEditor library
+    implementation("com.otaliastudios:zoomlayout:1.9.0")
+
     //def codeEditorVersion = "v4.0.1"
 //    def codeEditorVersion = "master-SNAPSHOT"
     def codeEditorVersion = "compose-SNAPSHOT"
@@ -190,8 +194,7 @@ dependencies {
 
     // Syntax Highlighting
 //    def codeHighlighterVersion = "v3.1.0"
-    def codeHighlighterVersion = "master-SNAPSHOT"
-    //    def codeHighlighterVersion = "compose-SNAPSHOT"
+    def codeHighlighterVersion = "4.0.0"
     implementation("com.github.markusressel.KodeHighlighter:core:${codeHighlighterVersion}") {
         changing = true
     }
