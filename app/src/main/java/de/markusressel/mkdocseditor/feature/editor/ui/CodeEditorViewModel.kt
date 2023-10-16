@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
@@ -63,7 +64,18 @@ internal class CodeEditorViewModel @Inject constructor(
     private val documentEntityFlow = documentId
         .filterNotNull()
         .mapLatest { documentId ->
-            dataRepository.getDocument(documentId)
+            _uiState.update { old ->
+                old.copy(
+                    loading = true
+                )
+            }
+            val result = dataRepository.getDocument(documentId)
+            _uiState.update { old ->
+                old.copy(
+                    loading = false
+                )
+            }
+            result
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
@@ -89,8 +101,6 @@ internal class CodeEditorViewModel @Inject constructor(
         }
     }.asLiveData()
 
-    val loading = MutableLiveData(true)
-
     val currentPosition = PointF()
     val currentZoom = MutableLiveData(1F)
 
@@ -99,6 +109,9 @@ internal class CodeEditorViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             documentId.collect { documentId ->
+                _uiState.update { old ->
+                    old.copy(documentId = documentId)
+                }
                 documentSyncManager?.disconnect(
                     code = 1000,
                     reason = when (documentId) {
@@ -131,11 +144,13 @@ internal class CodeEditorViewModel @Inject constructor(
                                 }
                             },
                             onInitialText = { initialText ->
-                                _uiState.value = uiState.value.copy(
-                                    text = AnnotatedString(initialText),
-                                    selection = TextRange.Zero,
-                                )
-                                loading.value = false
+                                _uiState.update { old ->
+                                    old.copy(
+                                        loading = false,
+                                        text = AnnotatedString(initialText),
+                                        selection = TextRange.Zero,
+                                    )
+                                }
 
                                 // when an entity exists and a new text is given update the entity
                                 this@CodeEditorViewModel.documentId.value?.let { documentId ->
@@ -179,9 +194,9 @@ internal class CodeEditorViewModel @Inject constructor(
                 offlineModeManager.isEnabled
             ) { status, editable, offlineModeEnabled ->
                 (status?.connected ?: false)
-                        && editable
-                        && offlineModeEnabled.not()
-                        && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
+                    && editable
+                    && offlineModeEnabled.not()
+                    && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
             }.collect {
                 _uiState.value = uiState.value.copy(
                     editModeActive = it
@@ -220,6 +235,7 @@ internal class CodeEditorViewModel @Inject constructor(
                                 reconnectToServer()
                                 //}
                             }
+
                             is Resource.Loading -> {}
                             is Resource.Error -> Timber.e(resource.error)
                             else -> {
@@ -234,6 +250,34 @@ internal class CodeEditorViewModel @Inject constructor(
         viewModelScope.launch {
             uiState.map { it.editModeActive }.distinctUntilChanged().collectLatest {
                 documentSyncManager?.readOnly = it.not()
+            }
+        }
+
+        events.observeForever { event ->
+            when (event) {
+                is ConnectionStatus -> {
+                    _uiState.update { old ->
+                        old.copy(loading = false)
+                    }
+                }
+
+                is Error -> _uiState.update { old ->
+                    old.copy(loading = false)
+                }
+
+                is InitialText -> _uiState.update { old ->
+                    old.copy(loading = false)
+                }
+
+                else -> {}
+            }
+        }
+    }
+
+    fun onUiEvent(event: UiEvent) {
+        viewModelScope.launch {
+            when (event) {
+                is UiEvent.BackPressed -> onClose()
             }
         }
     }
@@ -273,7 +317,9 @@ internal class CodeEditorViewModel @Inject constructor(
      */
     @UiThread
     fun loadTextFromPersistence() {
-        loading.value = false
+        _uiState.update { old ->
+            old.copy(loading = false)
+        }
     }
 
     internal fun onUserTextInput(text: AnnotatedString, selection: TextRange) {
@@ -291,7 +337,9 @@ internal class CodeEditorViewModel @Inject constructor(
      * Disconnects from the server (if necessary) and tries to reestablish a connection
      */
     private fun reconnectToServer() {
-        loading.value = true
+        _uiState.update { old ->
+            old.copy(loading = true)
+        }
         if (documentSyncManager?.isConnected == true) {
             documentSyncManager?.disconnect(1000, reason = "Editor want's to refresh connection")
         }
@@ -384,4 +432,8 @@ internal class CodeEditorViewModel @Inject constructor(
         documentSyncManager?.disconnect(1000, "Closed")
     }
 
+}
+
+sealed class UiEvent {
+    object BackPressed : UiEvent()
 }

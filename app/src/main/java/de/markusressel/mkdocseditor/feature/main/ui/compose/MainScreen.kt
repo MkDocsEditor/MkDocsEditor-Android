@@ -1,34 +1,15 @@
 package de.markusressel.mkdocseditor.feature.main.ui.compose
 
 import androidx.compose.animation.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.*
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import de.markusressel.mkdocseditor.feature.about.ui.compose.AboutScreen
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel
-import de.markusressel.mkdocseditor.feature.browser.ui.compose.FileBrowserScreen
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
-import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreen
 import de.markusressel.mkdocseditor.feature.main.ui.*
-import de.markusressel.mkdocseditor.feature.preferences.ui.compose.PreferencesScreen
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.activity.MainViewModel
 import de.markusressel.mkdocseditor.ui.activity.UiEvent
@@ -38,11 +19,16 @@ import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 @Composable
 internal fun MainScreen(
     mainViewModel: MainViewModel = hiltViewModel(),
+    codeEditorViewModel: CodeEditorViewModel = hiltViewModel(),
+    fileBrowserViewModel: FileBrowserViewModel = hiltViewModel(),
     onBack: () -> Unit,
     windowSize: WindowWidthSizeClass,
     devicePosture: DevicePosture,
 ) {
     val uiState by mainViewModel.uiState.collectAsState()
+
+    val codeEditorUiState by codeEditorViewModel.uiState.collectAsState()
+    val fileBrowserUiState by fileBrowserViewModel.uiState.collectAsState()
 
     MainScreenLayout(
         uiState = uiState,
@@ -50,6 +36,8 @@ internal fun MainScreen(
         onBack = onBack,
         windowSize = windowSize,
         devicePosture = devicePosture,
+        codeEditorUiState = codeEditorUiState,
+        fileBrowserUiState = fileBrowserUiState,
     )
 }
 
@@ -63,6 +51,8 @@ private fun MainScreenPreview() {
             onBack = {},
             windowSize = WindowWidthSizeClass.Compact,
             devicePosture = DevicePosture.NormalPosture,
+            codeEditorUiState = de.markusressel.mkdocseditor.feature.editor.ui.UiState(),
+            fileBrowserUiState = de.markusressel.mkdocseditor.feature.browser.ui.UiState()
         )
     }
 }
@@ -77,6 +67,8 @@ private fun MainScreenPreviewTablet() {
             onBack = {},
             windowSize = WindowWidthSizeClass.Medium,
             devicePosture = DevicePosture.NormalPosture,
+            codeEditorUiState = de.markusressel.mkdocseditor.feature.editor.ui.UiState(),
+            fileBrowserUiState = de.markusressel.mkdocseditor.feature.browser.ui.UiState()
         )
     }
 }
@@ -91,6 +83,8 @@ private fun MainScreenPreviewDesktop() {
             onBack = {},
             windowSize = WindowWidthSizeClass.Expanded,
             devicePosture = DevicePosture.NormalPosture,
+            codeEditorUiState = de.markusressel.mkdocseditor.feature.editor.ui.UiState(),
+            fileBrowserUiState = de.markusressel.mkdocseditor.feature.browser.ui.UiState()
         )
     }
 }
@@ -99,6 +93,8 @@ private fun MainScreenPreviewDesktop() {
 @Composable
 private fun MainScreenLayout(
     uiState: UiState,
+    fileBrowserUiState: de.markusressel.mkdocseditor.feature.browser.ui.UiState,
+    codeEditorUiState: de.markusressel.mkdocseditor.feature.editor.ui.UiState,
     onUiEvent: (UiEvent) -> Unit,
     onBack: () -> Unit,
     windowSize: WindowWidthSizeClass,
@@ -112,6 +108,7 @@ private fun MainScreenLayout(
             navigationType = NavigationLayoutType.BOTTOM_NAVIGATION
             contentType = ContentLayoutType.LIST_ONLY
         }
+
         WindowWidthSizeClass.Medium -> {
             navigationType = NavigationLayoutType.NAVIGATION_RAIL
             contentType = if (devicePosture != DevicePosture.NormalPosture) {
@@ -120,6 +117,7 @@ private fun MainScreenLayout(
                 ContentLayoutType.LIST_ONLY
             }
         }
+
         WindowWidthSizeClass.Expanded -> {
             navigationType = if (devicePosture is DevicePosture.BookPosture) {
                 NavigationLayoutType.NAVIGATION_RAIL
@@ -129,6 +127,7 @@ private fun MainScreenLayout(
             }
             contentType = ContentLayoutType.LIST_AND_DOCUMENT
         }
+
         else -> {
             navigationType = NavigationLayoutType.BOTTOM_NAVIGATION
             contentType = ContentLayoutType.LIST_ONLY
@@ -180,9 +179,12 @@ private fun MainScreenLayout(
                     onUiEvent = onUiEvent,
                     onBack = onBack,
                     selectedDestination = uiState.selectedBottomBarItem,
+                    codeEditorUiState = codeEditorUiState,
+                    fileBrowserUiState = fileBrowserUiState,
                 )
             }
         }
+
         NavigationLayoutType.BOTTOM_NAVIGATION,
         NavigationLayoutType.NAVIGATION_RAIL -> {
 //            ModalNavigationDrawer(
@@ -206,197 +208,11 @@ private fun MainScreenLayout(
                 onUiEvent = onUiEvent,
                 onBack = onBack,
                 selectedDestination = uiState.selectedBottomBarItem,
+                codeEditorUiState = codeEditorUiState,
+                fileBrowserUiState = fileBrowserUiState,
             )
 //            }
         }
     }
 }
 
-@Composable
-private fun MainScreenContent(
-    navigationType: NavigationLayoutType,
-    contentType: ContentLayoutType,
-    uiState: UiState,
-    onUiEvent: (UiEvent) -> Unit,
-    onBack: () -> Unit,
-    selectedDestination: NavItem,
-) {
-    Box(modifier = Modifier.fillMaxSize()) {
-
-        Row(modifier = Modifier.fillMaxSize()) {
-            AnimatedVisibility(
-                modifier = Modifier.zIndex(1000f),
-                visible = navigationType == NavigationLayoutType.NAVIGATION_RAIL
-            ) {
-                MkDocsEditorNavigationRail(
-                    selectedNavItem = uiState.selectedBottomBarItem,
-                    navItems = uiState.bottomBarNavItems,
-                    onItemSelected = { onUiEvent(UiEvent.BottomNavItemSelected(it)) },
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.inverseOnSurface)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                ) {
-
-                    when (selectedDestination) {
-                        NavItem.FileBrowser -> if (contentType == ContentLayoutType.LIST_AND_DOCUMENT) {
-                            MkDocsEditorListAndDocumentContent(
-                                modifier = Modifier.fillMaxSize(),
-                                //onNavigationEvent = onNavigationEvent,
-                                mainUiState = uiState,
-                                onBack = onBack,
-                                onUiEvent = onUiEvent
-                            )
-                        } else {
-                            MkDocsEditorListOnlyContent(
-                                modifier = Modifier.fillMaxSize(),
-                                //onNavigationEvent = onNavigationEvent,
-                                mainUiState = uiState,
-                                onBack = onBack,
-                                onUiEvent = onUiEvent
-                            )
-                        }
-                        NavItem.Settings -> PreferencesScreen(
-                            modifier = Modifier.fillMaxSize(),
-                            onBack = {
-                                onUiEvent(UiEvent.BottomNavItemSelected(NavItem.FileBrowser))
-                            }
-                        )
-                        NavItem.About -> AboutScreen(
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                }
-
-                AnimatedVisibility(
-                    modifier = Modifier.zIndex(1000f),
-                    visible = navigationType == NavigationLayoutType.BOTTOM_NAVIGATION
-                ) {
-                    BottomBar(
-                        selectedNavItem = uiState.selectedBottomBarItem,
-                        navItems = uiState.bottomBarNavItems,
-                        onItemSelected = { onUiEvent(UiEvent.BottomNavItemSelected(it)) },
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MkDocsEditorListOnlyContent(
-    //onNavigationEvent: (NavigationEvent) -> Unit,
-    modifier: Modifier = Modifier,
-    codeEditorViewModel: CodeEditorViewModel = hiltViewModel(),
-    mainUiState: UiState,
-    onBack: () -> Unit,
-    onUiEvent: (UiEvent) -> Unit,
-) {
-
-    Box(modifier = modifier) {
-        AnimatedVisibility(
-            visible = mainUiState.documentId != null,
-            enter = slideInHorizontally(
-                initialOffsetX = { fullWidth -> fullWidth }
-            ),
-            exit = slideOutHorizontally(
-                targetOffsetX = { fullWidth -> fullWidth }
-            ),
-        ) {
-            CodeEditorScreen(
-                //modifier = Modifier.background(Color.Transparent),
-                mainUiState = mainUiState,
-                onBack = {
-                    codeEditorViewModel.onClose()
-                    onUiEvent(UiEvent.CloseDocumentEditor)
-                }
-            )
-        }
-
-        AnimatedVisibility(
-            modifier = Modifier,
-            visible = mainUiState.documentId == null,
-            enter = slideInHorizontally(
-                initialOffsetX = { fullWidth -> -fullWidth }
-            ),
-            exit = slideOutHorizontally(
-                targetOffsetX = { fullWidth -> -fullWidth }
-            ),
-        ) {
-            FileBrowserScreen(
-                modifier = Modifier.background(Color.Transparent),
-                onNavigationEvent = { event ->
-                    when (event) {
-                        is NavigationEvent.NavigateToCodeEditor -> {
-                            onUiEvent(UiEvent.UpdateCurrentDocumentId(event.documentId))
-                        }
-                    }
-                },
-                onBack = onBack
-            )
-        }
-    }
-}
-
-@Composable
-private fun MkDocsEditorListAndDocumentContent(
-    //onNavigationEvent: (NavigationEvent) -> Unit,
-    mainUiState: UiState,
-    modifier: Modifier = Modifier,
-    fileBrowserViewModel: FileBrowserViewModel = hiltViewModel(),
-    codeEditorViewModel: CodeEditorViewModel = hiltViewModel(),
-    onBack: () -> Unit,
-    onUiEvent: (UiEvent) -> Unit,
-) {
-    val uiState by fileBrowserViewModel.uiState.collectAsState()
-
-    Row(modifier = modifier) {
-        FileBrowserScreen(
-            modifier = modifier.weight(0.33f),
-            onNavigationEvent = { event ->
-                when (event) {
-                    is NavigationEvent.NavigateToCodeEditor -> {
-                        onUiEvent(UiEvent.UpdateCurrentDocumentId(event.documentId))
-                    }
-                }
-            },
-            onBack = onBack,
-        )
-
-        val documentId by codeEditorViewModel.documentId.collectAsState()
-
-        AnimatedVisibility(
-            visible = documentId != null,
-            enter = expandHorizontally(
-                expandFrom = Alignment.Start,
-            ),
-            exit = shrinkHorizontally(
-                shrinkTowards = Alignment.End,
-            ),
-        ) {
-            val navController = rememberNavController()
-            NavHost(navController = navController, startDestination = "codeEditor/${documentId}") {
-                composable(
-                    "codeEditor/{documentId}",
-                    arguments = listOf(navArgument("documentId") { type = NavType.StringType })
-                ) {
-                    CodeEditorScreen(
-                        modifier = Modifier,
-                        mainUiState = mainUiState,
-                        onBack = {
-                            codeEditorViewModel.onClose()
-                            onUiEvent(UiEvent.CloseDocumentEditor)
-                        },
-                    )
-                }
-            }
-        }
-    }
-}

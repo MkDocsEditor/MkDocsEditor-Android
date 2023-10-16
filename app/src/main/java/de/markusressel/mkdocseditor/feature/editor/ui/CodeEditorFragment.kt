@@ -232,8 +232,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
                 when (event) {
                     is CodeEditorEvent.ConnectionStatus -> {
                         noConnectionSnackbar?.dismiss()
-                        loading.value = false
-
                         if (event.connected) {
                             runOnUiThread {
 //                                codeEditorLayout.snack(R.string.connected, Snackbar.LENGTH_SHORT)
