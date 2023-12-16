@@ -19,8 +19,9 @@
             android:layout_height="24dp"
             android:background="@color/md_orange_900"
             android:gravity="center"
-            android:text="@string/offline"
-            android:visibility="@{viewModel.offlineModeBannerVisibility}" />
+            android:text="@string/offline" />
+        <!--            android:visibility="@{viewModel.offlineModeBannerVisibility}" -->
+
 
         <!--        <de.markusressel.kodeeditor.library.view.CodeEditorLayout-->
         <!--            android:id="@+id/codeEditorLayout"-->

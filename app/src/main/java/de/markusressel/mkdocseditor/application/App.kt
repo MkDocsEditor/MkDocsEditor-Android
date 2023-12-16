@@ -44,9 +44,10 @@ class App : Application(), Configuration.Provider {
     @Inject
     internal lateinit var documentPersistenceManager: DocumentPersistenceManager
 
-    override fun getWorkManagerConfiguration() = Configuration.Builder()
-        .setWorkerFactory(workerFactory)
-        .build()
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
 
     override fun onCreate() {
         super.onCreate()

@@ -1,10 +1,9 @@
 plugins {
     id("mkdocseditor.android.library")
-    id("mkdocseditor.android.library.compose")
     id("mkdocseditor.android.hilt")
     id("mkdocseditor.android.library.publishing")
     id("com.google.devtools.ksp")
-    id("io.objectbox")
+    id(libs.plugins.io.objectbox.get().pluginId)
 }
 
 android {
@@ -28,6 +27,7 @@ dependencies {
     api(libs.objectbox.android)
     api(libs.objectbox.kotlin)
     ksp(libs.objectbox.processor)
+    compileOnly(libs.objectbox.gradle.plugin)
 
     // Store
     api(libs.store4)

@@ -24,6 +24,7 @@ dependencies {
     compileOnly(libs.android.gradle.plugin)
     compileOnly(libs.kotlin.gradle.plugin)
     compileOnly(libs.ksp.gradle.plugin)
+    compileOnly(libs.objectbox.gradle.plugin)
 }
 
 gradlePlugin {
@@ -64,5 +65,9 @@ gradlePlugin {
             id = "mkdocseditor.android.application.flavors"
             implementationClass = "AndroidApplicationFlavorsConventionPlugin"
         }
+//        register("objectbox") {
+//            id = "io.objectbox"
+//            implementationClass = "AndroidApplicationFlavorsConventionPlugin"
+//        }
     }
 }

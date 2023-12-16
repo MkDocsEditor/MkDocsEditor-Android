@@ -16,6 +16,17 @@ dependencyResolutionManagement {
         jcenter() // Warning: this repository is going to shut down soon
         maven(url = "https://jitpack.io")
     }
+
+    pluginManagement {
+        resolutionStrategy {
+            eachPlugin {
+                // workaround for non-standard group on objectbox plugin
+                if (requested.id.id.startsWith("io.objectbox")) {
+                    useModule("io.objectbox:objectbox-gradle-plugin:${requested.version}")
+                }
+            }
+        }
+    }
 }
 
 

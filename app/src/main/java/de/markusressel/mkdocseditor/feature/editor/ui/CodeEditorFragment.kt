@@ -20,7 +20,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
-import de.markusressel.mkdocseditor.databinding.FragmentEditorBinding
 import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
 import de.markusressel.mkdocseditor.ui.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.ui.fragment.base.DaggerSupportFragmentBase
@@ -42,7 +41,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
 
     private val viewModel: CodeEditorViewModel by viewModels()
 
-    private lateinit var binding: FragmentEditorBinding
+//    private lateinit var binding: FragmentEditorBinding
 
 //    private lateinit var codeEditorLayout: CodeEditorLayout
 
@@ -112,13 +111,14 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentEditorBinding.inflate(layoutInflater, container, false).apply {
-            lifecycleOwner = this@CodeEditorFragment
-            viewModel = this@CodeEditorFragment.viewModel
-        }
+//        binding = FragmentEditorBinding.inflate(layoutInflater, container, false).apply {
+//            lifecycleOwner = this@CodeEditorFragment
+//            viewModel = this@CodeEditorFragment.viewModel
+//        }
 
-        val parent = binding.root as ViewGroup
-        return onCreateView(inflater, parent, savedInstanceState)
+//        val parent = binding.root as ViewGroup
+//        return onCreateView(inflater, parent, savedInstanceState)
+        return View(context)
     }
 
 //    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {

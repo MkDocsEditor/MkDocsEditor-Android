@@ -4,10 +4,6 @@ buildscript {
         mavenCentral()
         maven(url = "https://jitpack.io")
     }
-
-    dependencies {
-        classpath("io.objectbox:objectbox-gradle-plugin:${libs.versions.objectboxVersion}")
-    }
 }
 
 plugins {
@@ -17,5 +13,5 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.mikepenz.aboutlibraries) apply false
-//    alias(libs.plugins.objectbox) apply false
+    alias(libs.plugins.io.objectbox) apply false
 }
