@@ -1,7 +1,6 @@
 plugins {
     id("mkdocseditor.android.library")
     id("mkdocseditor.android.hilt")
-    id("mkdocseditor.android.library.publishing")
     id("com.google.devtools.ksp")
     id(libs.plugins.io.objectbox.get().pluginId)
 }
