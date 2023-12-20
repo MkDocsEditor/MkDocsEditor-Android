@@ -78,7 +78,10 @@ fun ExpandableFab(
             ) {
                 items.forEach {
                     Row(
-                        modifier = Modifier.clickable { onItemClicked(it) },
+                        modifier = Modifier.clickable {
+                            onItemClicked(it)
+                            expanded = false
+                        },
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.End,
                     ) {
@@ -109,6 +112,7 @@ fun ExpandableFab(
                             modifier = Modifier.size(38.dp),
                             onClick = {
                                 onItemClicked(it)
+                                expanded = false
                             },
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         ) {

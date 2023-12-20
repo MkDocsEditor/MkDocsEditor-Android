@@ -24,6 +24,7 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.github.fengdai.compose.pulltorefresh.PullToRefresh
 import com.github.fengdai.compose.pulltorefresh.rememberPullToRefreshState
+import de.markusressel.mkdocseditor.feature.browser.ui.DialogState
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserEvent
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel
 import de.markusressel.mkdocseditor.feature.browser.ui.UiEvent
@@ -62,17 +63,21 @@ internal fun FileBrowserScreen(
                 is FileBrowserEvent.ErrorEvent -> {
                     //Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
+
                 is FileBrowserEvent.OpenDocumentEditorEvent -> {
                     onNavigationEvent(NavigationEvent.NavigateToCodeEditor(documentId = event.entity.id))
                 }
+
                 is FileBrowserEvent.DownloadResourceEvent -> {
                     // TODO: download resource
                     Toast.makeText(context, "Not implemented :(", Toast.LENGTH_SHORT)
                         .show()
                 }
+
                 is FileBrowserEvent.ReloadEvent -> {
                     // showEmpty()
                 }
+
                 is FileBrowserEvent.CreateDocumentEvent -> {
                     Toast.makeText(context, "Not implemented :(", Toast.LENGTH_SHORT)
                         .show()
@@ -108,6 +113,7 @@ internal fun FileBrowserScreen(
 //                            negativeButton(android.R.string.cancel)
 //                        }
                 }
+
                 is FileBrowserEvent.CreateSectionEvent -> {
                     // TODO:
                     Toast.makeText(context, "Not implemented :(", Toast.LENGTH_SHORT)
@@ -143,6 +149,7 @@ internal fun FileBrowserScreen(
 //                            negativeButton(android.R.string.cancel)
 //                        }
                 }
+
                 is FileBrowserEvent.RenameDocumentEvent -> {
                     // TODO
                     Toast.makeText(context, "Not implemented :(", Toast.LENGTH_SHORT)
@@ -190,7 +197,21 @@ internal fun FileBrowserScreen(
         uiState = uiState,
         onUiEvent = viewModel::onUiEvent
     )
+
+    when (val dialogState = uiState.currentDialogState) {
+        is DialogState.CreateDocument -> {
+            CreateDocumentDialog(
+                uiState = dialogState,
+                onDismissRequest = {
+                    viewModel.onUiEvent(UiEvent.DismissDialog)
+                }
+            )
+        }
+
+        else -> {}
+    }
 }
+
 
 @Composable
 private fun FileBrowserScreenContent(

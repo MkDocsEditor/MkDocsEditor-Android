@@ -6,7 +6,16 @@ import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.feature.browser.ui.usecase.SectionItem
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 
+sealed interface DialogState {
+    data class CreateDocument(
+        val currentSectionId: String,
+        val currentDocumentName: String
+    ) : DialogState
+}
+
 internal data class UiState(
+    val currentDialogState: DialogState? = null,
+
     val fabConfig: FabConfig = FabConfig(
         right = listOf(
             FabConfig.Fab(

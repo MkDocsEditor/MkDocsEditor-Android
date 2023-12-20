@@ -40,11 +40,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.material3.window.size.clazz)
 
-//    debugimplementation("androidx.compose.ui:ui-tooling:1.6.0-alpha07")
-    implementation(libs.androidx.ui.tooling.preview)
-
 //    implementation("androidx.compose.ui:ui-desktop:1.6.0-alpha07")
-    implementation(libs.ui.tooling.preview)
     implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.ui.viewbinding)

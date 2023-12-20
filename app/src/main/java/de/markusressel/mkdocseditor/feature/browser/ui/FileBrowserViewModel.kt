@@ -31,22 +31,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.*
+import java.util.Stack
 import javax.inject.Inject
 
-internal sealed class UiEvent {
-    object Refresh : UiEvent()
-
-    data class DocumentClicked(val item: DocumentEntity) : UiEvent()
-    data class ResourceClicked(val item: ResourceEntity) : UiEvent()
-    data class SectionClicked(val item: SectionEntity) : UiEvent()
-
-    data class NavigateUpToSection(val section: SectionItem) : UiEvent()
-
-    data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
-}
 
 @HiltViewModel
 internal class FileBrowserViewModel @Inject constructor(
@@ -179,6 +169,14 @@ internal class FileBrowserViewModel @Inject constructor(
                 FAB_ID_CREATE_SECTION -> onCreateSectionFabClicked()
                 else -> TODO("Unhandled FAB: ${event.item}")
             }
+
+            is UiEvent.DismissDialog -> dismissCurrentDialog()
+        }
+    }
+
+    private fun dismissCurrentDialog() {
+        _uiState.update { old ->
+            old.copy(currentDialogState = null)
         }
     }
 
@@ -329,9 +327,19 @@ internal class FileBrowserViewModel @Inject constructor(
 
     private fun onCreateDocumentFabClicked() {
         val currentSectionId = currentSectionId.value
-        viewModelScope.launch {
-            _events.send(FileBrowserEvent.CreateDocumentEvent(currentSectionId))
+
+        _uiState.update { old ->
+            old.copy(
+                currentDialogState = DialogState.CreateDocument(
+                    currentSectionId = currentSectionId,
+                    currentDocumentName = ""
+                )
+            )
         }
+
+//        viewModelScope.launch {
+//            _events.send(FileBrowserEvent.CreateDocumentEvent(currentSectionId))
+//        }
     }
 
     fun onDocumentLongClicked(entity: DocumentEntity): Boolean {
@@ -366,4 +374,18 @@ internal class FileBrowserViewModel @Inject constructor(
         /** ID of the tree root section */
         const val ROOT_SECTION_ID: String = "root"
     }
+}
+
+internal sealed class UiEvent {
+    data object Refresh : UiEvent()
+
+    data class DocumentClicked(val item: DocumentEntity) : UiEvent()
+    data class ResourceClicked(val item: ResourceEntity) : UiEvent()
+    data class SectionClicked(val item: SectionEntity) : UiEvent()
+
+    data class NavigateUpToSection(val section: SectionItem) : UiEvent()
+
+    data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
+
+    data object DismissDialog : UiEvent()
 }

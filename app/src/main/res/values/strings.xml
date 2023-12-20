@@ -38,6 +38,7 @@
     <string name="add">Add</string>
     <string name="delete">Delete</string>
     <string name="create_document">Create a document</string>
+    <string name="create_document_hint">My Document</string>
     <string name="edit_document">Edit document</string>
     <string name="create_section">Create a section</string>
     <string name="edit_section">Edit section</string>

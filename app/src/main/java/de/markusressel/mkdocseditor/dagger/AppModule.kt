@@ -53,10 +53,9 @@ class AppModule {
     @Provides
     @Singleton
     fun provideMkDocsRestClient(kutePreferencesHolder: KutePreferencesHolder): IMkDocsRestClient {
-        return if (kutePreferencesHolder.demoMode.persistedValue.value) {
-            DummyMkDocsRestClient()
-        } else {
-            MkDocsRestClient()
+        return when (kutePreferencesHolder.demoMode.persistedValue.value) {
+            true -> DummyMkDocsRestClient()
+            else -> MkDocsRestClient()
         }
     }
 

@@ -15,7 +15,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
-import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.*
+import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.ConnectionStatus
+import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.Error
+import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.InitialText
+import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.OpenWebView
+import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.TextChange
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.NetworkManager
 import de.markusressel.mkdocseditor.network.OfflineModeManager
@@ -40,7 +44,7 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.*
+import java.util.LinkedList
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -435,5 +439,5 @@ internal class CodeEditorViewModel @Inject constructor(
 }
 
 sealed class UiEvent {
-    object BackPressed : UiEvent()
+    data object BackPressed : UiEvent()
 }
