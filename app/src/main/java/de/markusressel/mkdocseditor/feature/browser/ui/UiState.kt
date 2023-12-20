@@ -3,13 +3,18 @@ package de.markusressel.mkdocseditor.feature.browser.ui
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
-import de.markusressel.mkdocseditor.feature.browser.ui.usecase.SectionItem
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SectionItem
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 
 sealed interface DialogState {
     data class CreateDocument(
-        val currentSectionId: String,
-        val currentDocumentName: String
+        val sectionId: String,
+        val initialDocumentName: String
+    ) : DialogState
+
+    data class CreateSection(
+        val parentSectionId: String,
+        val initialSectionName: String
     ) : DialogState
 }
 

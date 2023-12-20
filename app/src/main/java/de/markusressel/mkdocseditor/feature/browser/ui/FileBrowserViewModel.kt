@@ -12,12 +12,13 @@ import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.browser.data.ROOT_SECTION
 import de.markusressel.mkdocseditor.feature.browser.data.SectionBackstackItem
-import de.markusressel.mkdocseditor.feature.browser.ui.usecase.CreateNewSectionUseCase
-import de.markusressel.mkdocseditor.feature.browser.ui.usecase.GetCurrentSectionPathUseCase
-import de.markusressel.mkdocseditor.feature.browser.ui.usecase.GetSectionContentUseCase
-import de.markusressel.mkdocseditor.feature.browser.ui.usecase.RefreshSectionUseCase
-import de.markusressel.mkdocseditor.feature.browser.ui.usecase.SearchUseCase
-import de.markusressel.mkdocseditor.feature.browser.ui.usecase.SectionItem
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.CreateNewDocumentUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.CreateNewSectionUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetCurrentSectionPathUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetSectionContentUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RefreshSectionUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SearchUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SectionItem
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import kotlinx.coroutines.CancellationException
@@ -47,6 +48,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private val createNewSectionUseCase: CreateNewSectionUseCase,
     private val searchUseCase: SearchUseCase,
     private val getCurrentSectionPathUseCase: GetCurrentSectionPathUseCase,
+    private val createNewDocumentUseCase: CreateNewDocumentUseCase,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -170,6 +172,16 @@ internal class FileBrowserViewModel @Inject constructor(
                 else -> TODO("Unhandled FAB: ${event.item}")
             }
 
+            is UiEvent.CreateDocument -> {
+                dismissCurrentDialog()
+                createNewDocument(event.name)
+            }
+
+            is UiEvent.CreateSection -> {
+                dismissCurrentDialog()
+                createNewSection(event.parentSectionId, event.name)
+            }
+
             is UiEvent.DismissDialog -> dismissCurrentDialog()
         }
     }
@@ -274,19 +286,32 @@ internal class FileBrowserViewModel @Inject constructor(
         )
     }
 
-    fun createNewSection(sectionName: String) = viewModelScope.launch {
-        createNewSectionUseCase(sectionName, currentSectionId.value)
-    }
+    private fun createNewSection(parentSectionId: String, sectionName: String) =
+        viewModelScope.launch {
+            try {
+                // TODO: show loading state somehow
+                createNewSectionUseCase(sectionName, parentSectionId)
+            } catch (ex: Exception) {
+                Timber.e(ex)
+                showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
+            }
+        }
 
-    fun createNewDocument(documentName: String) = viewModelScope.launch {
-        val name = documentName.ifEmpty { "New Document" }
-        val newDocumentId = dataRepository.createNewDocument(name, currentSectionId.value)
+    private fun createNewDocument(documentName: String) = viewModelScope.launch {
+        try {
+            // TODO: show loading state somehow
+            val newDocumentId = createNewDocumentUseCase(currentSectionId.value, documentName)
 
-        reload()
+            reload()
 
-        // and open the editor right away
-        withContext(Dispatchers.Main) {
-            openDocumentEditorEvent.value = newDocumentId
+            // and open the editor right away
+            withContext(Dispatchers.Main) {
+                openDocumentEditorEvent.value = newDocumentId
+            }
+        } catch (ex: Exception) {
+            Timber.e(ex)
+            showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
+            return@launch
         }
     }
 
@@ -319,10 +344,18 @@ internal class FileBrowserViewModel @Inject constructor(
 
     private fun onCreateSectionFabClicked() {
         val currentSectionId = currentSectionId.value
-        viewModelScope.launch {
-            _events.send(FileBrowserEvent.CreateSectionEvent(currentSectionId))
-        }
 
+        _uiState.update { old ->
+            old.copy(
+                currentDialogState = DialogState.CreateSection(
+                    parentSectionId = currentSectionId,
+                    initialSectionName = ""
+                )
+            )
+        }
+//        viewModelScope.launch {
+//            _events.send(FileBrowserEvent.CreateSectionEvent(currentSectionId))
+//        }
     }
 
     private fun onCreateDocumentFabClicked() {
@@ -331,12 +364,11 @@ internal class FileBrowserViewModel @Inject constructor(
         _uiState.update { old ->
             old.copy(
                 currentDialogState = DialogState.CreateDocument(
-                    currentSectionId = currentSectionId,
-                    currentDocumentName = ""
+                    sectionId = currentSectionId,
+                    initialDocumentName = ""
                 )
             )
         }
-
 //        viewModelScope.launch {
 //            _events.send(FileBrowserEvent.CreateDocumentEvent(currentSectionId))
 //        }
@@ -386,6 +418,9 @@ internal sealed class UiEvent {
     data class NavigateUpToSection(val section: SectionItem) : UiEvent()
 
     data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
+
+    data class CreateDocument(val sectionId: String, val name: String) : UiEvent()
+    data class CreateSection(val parentSectionId: String, val name: String) : UiEvent()
 
     data object DismissDialog : UiEvent()
 }

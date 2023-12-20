@@ -6,8 +6,6 @@ import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 internal sealed class FileBrowserEvent {
     data class ErrorEvent(val message: String) : FileBrowserEvent()
 
-    object ReloadEvent : FileBrowserEvent()
-
     data class OpenDocumentEditorEvent(val entity: DocumentEntity) : FileBrowserEvent()
     data class DownloadResourceEvent(val entity: ResourceEntity) : FileBrowserEvent()
     data class CreateSectionEvent(val parentId: String) : FileBrowserEvent()

@@ -37,11 +37,11 @@ class ResourceApiImpl(
         )
     }
 
-    override suspend fun getResourceContent(id: String) {
+    override suspend fun getResourceContent(id: String): Result<String, FuelError> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override suspend fun uploadResource(parentId: String) {
+    override suspend fun uploadResource(parentId: String): Result<String, FuelError> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 

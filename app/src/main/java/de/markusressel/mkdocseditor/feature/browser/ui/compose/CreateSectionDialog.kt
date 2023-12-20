@@ -28,8 +28,8 @@ import de.markusressel.mkdocseditor.feature.browser.ui.DialogState
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 
 @Composable
-fun CreateDocumentDialog(
-    uiState: DialogState.CreateDocument,
+fun CreateSectionDialog(
+    uiState: DialogState.CreateSection,
     onDismissRequest: () -> Unit,
     onSaveClicked: (String) -> Unit,
 ) {
@@ -45,17 +45,17 @@ fun CreateDocumentDialog(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                var text by remember { mutableStateOf(uiState.initialDocumentName) }
+                var text by remember { mutableStateOf(uiState.initialSectionName) }
 
                 Text(
-                    text = stringResource(id = R.string.create_document),
+                    text = stringResource(id = R.string.create_section),
                     style = MaterialTheme.typography.headlineSmall
                 )
 
                 TextField(
                     value = text,
                     onValueChange = { text = it },
-                    label = { Text(stringResource(id = R.string.create_document_hint)) }
+                    label = { Text(stringResource(id = R.string.create_section_hint)) }
                 )
 
                 Row(
@@ -84,12 +84,12 @@ fun CreateDocumentDialog(
 
 @Preview
 @Composable
-private fun CreateDocumentDialogPreview() {
+private fun CreateSectionDialogPreview() {
     MkDocsEditorTheme {
-        CreateDocumentDialog(
-            uiState = DialogState.CreateDocument(
-                sectionId = "",
-                initialDocumentName = ""
+        CreateSectionDialog(
+            uiState = DialogState.CreateSection(
+                parentSectionId = "",
+                initialSectionName = ""
             ),
             onDismissRequest = { },
             onSaveClicked = { }

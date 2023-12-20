@@ -57,7 +57,7 @@ internal fun FileBrowserScreen(
     )
 
     // Runs only on initial composition
-    LaunchedEffect(key1 = Unit) {
+    LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
             when (event) {
                 is FileBrowserEvent.ErrorEvent -> {
@@ -74,13 +74,7 @@ internal fun FileBrowserScreen(
                         .show()
                 }
 
-                is FileBrowserEvent.ReloadEvent -> {
-                    // showEmpty()
-                }
-
                 is FileBrowserEvent.CreateDocumentEvent -> {
-                    Toast.makeText(context, "Not implemented :(", Toast.LENGTH_SHORT)
-                        .show()
                     // TODO:
 //                        val existingSections = emptyList<String>()
 //
@@ -202,9 +196,24 @@ internal fun FileBrowserScreen(
         is DialogState.CreateDocument -> {
             CreateDocumentDialog(
                 uiState = dialogState,
+                onSaveClicked = { text ->
+                    viewModel.onUiEvent(UiEvent.CreateDocument(dialogState.sectionId, text))
+                },
                 onDismissRequest = {
                     viewModel.onUiEvent(UiEvent.DismissDialog)
-                }
+                },
+            )
+        }
+
+        is DialogState.CreateSection -> {
+            CreateSectionDialog(
+                uiState = dialogState,
+                onSaveClicked = { text ->
+                    viewModel.onUiEvent(UiEvent.CreateSection(dialogState.parentSectionId, text))
+                },
+                onDismissRequest = {
+                    viewModel.onUiEvent(UiEvent.DismissDialog)
+                },
             )
         }
 

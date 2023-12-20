@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.feature.browser.ui.usecase
+package de.markusressel.mkdocseditor.feature.browser.domain.usecase
 
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import javax.inject.Inject

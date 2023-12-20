@@ -1,7 +1,7 @@
-package de.markusressel.mkdocseditor.feature.browser.ui.usecase
+package de.markusressel.mkdocseditor.feature.browser.domain.usecase
 
 import de.markusressel.mkdocseditor.feature.browser.data.SectionBackstackItem
-import java.util.*
+import java.util.Stack
 import javax.inject.Inject
 
 internal data class SectionItem(

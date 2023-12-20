@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.feature.browser.ui.usecase
+package de.markusressel.mkdocseditor.feature.browser.domain.usecase
 
 import com.dropbox.android.external.store4.StoreRequest
 import com.dropbox.android.external.store4.StoreResponse

@@ -98,22 +98,38 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
     }
 
     override suspend fun getSection(id: String): Result<SectionModel, FuelError> {
-        TODO("Not yet implemented")
+        return Result.success(
+            DemoData.RootSection.findRecursive<SectionModel> {
+                it.id == id
+            } ?: return Result.error(FuelError.wrap(Exception("Section not found")))
+        )
     }
 
     override suspend fun createSection(
         parentId: String,
         name: String
     ): Result<SectionModel, FuelError> {
-        TODO("Not yet implemented")
+        return Result.success(
+            SectionModel(
+                id = "newSection",
+                name = name,
+                subsections = emptyList(),
+                documents = emptyList(),
+                resources = emptyList(),
+            )
+        )
     }
 
     override suspend fun deleteSection(id: String): Result<String, FuelError> {
-        TODO("Not yet implemented")
+        return Result.success("")
     }
 
     override suspend fun getDocument(id: String): Result<DocumentModel, FuelError> {
-        TODO("Not yet implemented")
+        return DemoData.RootSection.findRecursive<DocumentModel> {
+            it.id == id
+        }?.let {
+            Result.success(it)
+        } ?: Result.error(FuelError.wrap(Exception("Document not found")))
     }
 
     override suspend fun getDocumentContent(id: String): Result<String, FuelError> {
@@ -128,34 +144,60 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
         parentId: String,
         name: String
     ): Result<DocumentModel, FuelError> {
-        TODO("Not yet implemented")
+        return Result.success(
+            DocumentModel(
+                id = "newDocument",
+                name = name,
+                type = "Document",
+                filesize = 1024,
+                modtime = Date(),
+                url = "",
+            )
+        )
     }
 
     override suspend fun renameDocument(
         id: String,
         name: String
     ): Result<DocumentModel, FuelError> {
-        TODO("Not yet implemented")
+        return Result.success(
+            DocumentModel(
+                id = id,
+                name = name,
+                type = "Document",
+                filesize = 1024,
+                modtime = Date(),
+                url = "",
+            )
+        )
     }
 
     override suspend fun deleteDocument(id: String): Result<String, FuelError> {
-        TODO("Not yet implemented")
+        return Result.success("")
     }
 
     override suspend fun getResource(id: String): Result<ResourceModel, FuelError> {
-        TODO("Not yet implemented")
+        return Result.success(
+            DemoData.RootSection.findRecursive<ResourceModel> {
+                it.id == id
+            } ?: return Result.error(FuelError.wrap(Exception("Resource not found")))
+        )
     }
 
-    override suspend fun getResourceContent(id: String) {
-        TODO("Not yet implemented")
+    override suspend fun getResourceContent(id: String): Result<String, FuelError> {
+        return DemoData.RootSection.findRecursive<ResourceModel> {
+            it.id == id
+        }?.let {
+            Result.success("This is the content of resource ${it.name}")
+        } ?: Result.error(FuelError.wrap(Exception("Resource not found")))
     }
 
-    override suspend fun uploadResource(parentId: String) {
-        TODO("Not yet implemented")
+    override suspend fun uploadResource(parentId: String): Result<String, FuelError> {
+        return Result.success("")
     }
 
     override suspend fun deleteResource(id: String): Result<String, FuelError> {
-        TODO("Not yet implemented")
+        return Result.success("")
     }
 }
 

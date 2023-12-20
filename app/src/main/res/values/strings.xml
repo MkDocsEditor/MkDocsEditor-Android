@@ -37,10 +37,14 @@
 
     <string name="add">Add</string>
     <string name="delete">Delete</string>
+    <string name="create">Create</string>
+    <string name="cancel">Cancel</string>
+
     <string name="create_document">Create a document</string>
-    <string name="create_document_hint">My Document</string>
+    <string name="create_document_hint">New Document</string>
     <string name="edit_document">Edit document</string>
     <string name="create_section">Create a section</string>
+    <string name="create_section_hint">New Section</string>
     <string name="edit_section">Edit section</string>
 
     <string name="hint_new_section">New Section</string>

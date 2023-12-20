@@ -34,12 +34,12 @@ interface ResourceApi {
     /**
      * Get the actual content data of a resource
      */
-    suspend fun getResourceContent(id: String)
+    suspend fun getResourceContent(id: String): Result<String, FuelError>
 
     /**
      * Create a new resource
      */
-    suspend fun uploadResource(parentId: String)
+    suspend fun uploadResource(parentId: String): Result<String, FuelError>
 
     /**
      * Delete an existing resource
