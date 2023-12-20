@@ -108,6 +108,7 @@ private fun DrawerNavItem(
             modifier = Modifier
                 .size(32.dp),
             imageVector = when (item) {
+                is NavItem.BackendSelection -> Icons.Default.Home
                 is NavItem.FileBrowser -> Icons.Default.Home
                 is NavItem.Settings -> Icons.Default.Settings
                 is NavItem.About -> Icons.Default.Info
@@ -121,6 +122,7 @@ private fun DrawerNavItem(
                 .padding(start = 8.dp),
             text = stringResource(
                 id = when (item) {
+                    is NavItem.BackendSelection -> R.string.bottom_navigation_backend_selection
                     is NavItem.FileBrowser -> R.string.bottom_navigation_item_files
                     is NavItem.Settings -> R.string.bottom_navigation_item_settings
                     is NavItem.About -> R.string.bottom_navigation_item_about
@@ -138,6 +140,7 @@ private fun NavigationDrawerContentPreview() {
     MkDocsEditorTheme {
         NavigationDrawerContent(
             navItems = listOf(
+                NavItem.BackendSelection,
                 NavItem.FileBrowser,
                 NavItem.Settings,
             ),

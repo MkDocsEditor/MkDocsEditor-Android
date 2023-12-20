@@ -16,6 +16,7 @@ data class SnackbarData(
 
 internal data class UiState(
     val drawerNavItems: List<NavItem> = listOf(
+        NavItem.BackendSelection,
         NavItem.FileBrowser,
         NavItem.Settings,
         NavItem.About,
@@ -23,6 +24,7 @@ internal data class UiState(
 
     val selectedBottomBarItem: NavItem = NavItem.FileBrowser,
     val bottomBarNavItems: List<NavItem> = listOf(
+        NavItem.BackendSelection,
         NavItem.FileBrowser,
         NavItem.Settings,
         NavItem.About,

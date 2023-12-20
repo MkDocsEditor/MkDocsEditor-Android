@@ -36,7 +36,7 @@ internal fun SectionPath(
             .background(color = MaterialTheme.colorScheme.primaryContainer)
             .then(modifier),
     ) {
-        Crossfade(targetState = path) { pathState ->
+        Crossfade(targetState = path, label = "sectionPath") { pathState ->
             Row(modifier = Modifier.fillMaxWidth()) {
                 val firstSection = pathState.firstOrNull()
                 if (firstSection != null) {

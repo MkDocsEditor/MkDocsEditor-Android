@@ -70,11 +70,13 @@ private fun ColumnScope.PrimaryNavRailItems(
 ) {
     for (item in items) {
         val icon = when (item) {
+            is NavItem.BackendSelection -> Icons.Default.Home
             is NavItem.FileBrowser -> Icons.Default.Home
             is NavItem.Settings -> Icons.Default.Settings
         }
         val label = stringResource(
             id = when (item) {
+                is NavItem.BackendSelection -> R.string.bottom_navigation_backend_selection
                 is NavItem.FileBrowser -> R.string.bottom_navigation_item_files
                 is NavItem.Settings -> R.string.bottom_navigation_item_settings
             }
