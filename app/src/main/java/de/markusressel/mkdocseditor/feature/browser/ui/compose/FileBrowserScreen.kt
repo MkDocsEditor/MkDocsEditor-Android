@@ -60,21 +60,21 @@ internal fun FileBrowserScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
             when (event) {
-                is FileBrowserEvent.ErrorEvent -> {
+                is FileBrowserEvent.Error -> {
                     //Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
 
-                is FileBrowserEvent.OpenDocumentEditorEvent -> {
+                is FileBrowserEvent.OpenDocumentEditor -> {
                     onNavigationEvent(NavigationEvent.NavigateToCodeEditor(documentId = event.entity.id))
                 }
 
-                is FileBrowserEvent.DownloadResourceEvent -> {
+                is FileBrowserEvent.DownloadResource -> {
                     // TODO: download resource
                     Toast.makeText(context, "Not implemented :(", Toast.LENGTH_SHORT)
                         .show()
                 }
 
-                is FileBrowserEvent.CreateDocumentEvent -> {
+                is FileBrowserEvent.CreateDocument -> {
                     // TODO:
 //                        val existingSections = emptyList<String>()
 //
@@ -108,7 +108,7 @@ internal fun FileBrowserScreen(
 //                        }
                 }
 
-                is FileBrowserEvent.CreateSectionEvent -> {
+                is FileBrowserEvent.CreateSection -> {
                     // TODO:
                     Toast.makeText(context, "Not implemented :(", Toast.LENGTH_SHORT)
                         .show()
@@ -144,7 +144,7 @@ internal fun FileBrowserScreen(
 //                        }
                 }
 
-                is FileBrowserEvent.RenameDocumentEvent -> {
+                is FileBrowserEvent.RenameDocument -> {
                     // TODO
                     Toast.makeText(context, "Not implemented :(", Toast.LENGTH_SHORT)
                         .show()

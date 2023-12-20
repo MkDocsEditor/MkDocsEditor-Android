@@ -153,7 +153,7 @@ internal class FileBrowserViewModel @Inject constructor(
         _uiState.value = uiState.value.copy(
             error = errorMessage
         )
-        val errorEvent = FileBrowserEvent.ErrorEvent(
+        val errorEvent = FileBrowserEvent.Error(
             message = errorMessage
         )
         _events.send(errorEvent)
@@ -376,20 +376,20 @@ internal class FileBrowserViewModel @Inject constructor(
 
     fun onDocumentLongClicked(entity: DocumentEntity): Boolean {
         viewModelScope.launch {
-            _events.send(FileBrowserEvent.RenameDocumentEvent(entity))
+            _events.send(FileBrowserEvent.RenameDocument(entity))
         }
         return true
     }
 
     private fun onDocumentClicked(entity: DocumentEntity) {
         viewModelScope.launch {
-            _events.send(FileBrowserEvent.OpenDocumentEditorEvent(entity))
+            _events.send(FileBrowserEvent.OpenDocumentEditor(entity))
         }
     }
 
     private fun onResourceClicked(entity: ResourceEntity) {
         viewModelScope.launch {
-            _events.send(FileBrowserEvent.DownloadResourceEvent(entity))
+            _events.send(FileBrowserEvent.DownloadResource(entity))
         }
     }
 
@@ -423,4 +423,14 @@ internal sealed class UiEvent {
     data class CreateSection(val parentSectionId: String, val name: String) : UiEvent()
 
     data object DismissDialog : UiEvent()
+}
+
+internal sealed class FileBrowserEvent {
+    data class Error(val message: String) : FileBrowserEvent()
+
+    data class OpenDocumentEditor(val entity: DocumentEntity) : FileBrowserEvent()
+    data class DownloadResource(val entity: ResourceEntity) : FileBrowserEvent()
+    data class CreateSection(val parentId: String) : FileBrowserEvent()
+    data class CreateDocument(val parentId: String) : FileBrowserEvent()
+    data class RenameDocument(val entity: DocumentEntity) : FileBrowserEvent()
 }
