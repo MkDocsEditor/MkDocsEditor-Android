@@ -150,7 +150,6 @@ private fun BackendSelectionScreenContentPreview() {
             uiState = BackendSelectionViewModel.UiState(
                 listItems = listOf(
                     BackendConfig(
-                        id = "wiki",
                         name = "Wiki",
                         description = "The wiki",
                         serverConfig = BackendServerConfig(

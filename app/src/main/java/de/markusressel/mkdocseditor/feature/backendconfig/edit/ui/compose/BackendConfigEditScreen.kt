@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -10,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendAuthConfig
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ScreenTitle
@@ -44,22 +42,31 @@ internal fun BackendConfigEditScreen(
     )
 }
 
-
 @Composable
 private fun BackendConfigEditScreenContent(
     uiState: BackendConfigEditViewModel.UiState,
     onUiEvent: (BackendConfigEditViewModel.UiEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier) {
-        Column {
-            ScreenTitle(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                title = "Backend Selection"
-            )
+    Column(modifier = modifier) {
+        ScreenTitle(
+            modifier = Modifier
+                .fillMaxWidth(),
+            title = "Backend Selection"
+        )
 
-        }
+        AuthConfigSection(
+            modifier = Modifier
+                .fillMaxWidth(),
+            authConfig = uiState.authConfig,
+            onAuthConfigChanged = {
+                onUiEvent(
+                    BackendConfigEditViewModel.UiEvent.AuthConfigChanged(
+                        it
+                    )
+                )
+            }
+        )
     }
 }
 
@@ -71,19 +78,16 @@ private fun BackendConfigEditScreenContentPreview() {
             uiState = BackendConfigEditViewModel.UiState(
                 isLoading = false,
                 error = null,
-                currentConfig = BackendConfig(
-                    id = "wiki",
-                    name = "Example",
-                    description = "The wiki",
-                    serverConfig = BackendServerConfig(
-                        domain = "https://example.com",
-                        port = 443,
-                        useSsl = true,
-                    ),
-                    authConfig = BackendAuthConfig(
-                        username = "user",
-                        password = "password"
-                    )
+                name = "Example",
+                description = "The wiki",
+                serverConfig = BackendServerConfig(
+                    domain = "https://example.com",
+                    port = 443,
+                    useSsl = true,
+                ),
+                authConfig = BackendAuthConfig(
+                    username = "user",
+                    password = "password"
                 )
             ),
             onUiEvent = {}

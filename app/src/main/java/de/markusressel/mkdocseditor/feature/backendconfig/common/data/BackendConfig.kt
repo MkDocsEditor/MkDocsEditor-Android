@@ -12,7 +12,6 @@ data class BackendServerConfig(
 )
 
 data class BackendConfig(
-    val id: String,
     val name: String,
     val description: String,
     val serverConfig: BackendServerConfig,

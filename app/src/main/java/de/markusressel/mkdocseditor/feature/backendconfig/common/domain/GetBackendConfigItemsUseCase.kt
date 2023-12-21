@@ -11,11 +11,10 @@ internal class GetBackendConfigItemsUseCase @Inject constructor(
     private val backendConfigRepository: BackendConfigRepository
 ) {
     suspend operator fun invoke(): List<BackendConfig> {
-        return backendConfigRepository.getAll().map {
+        return backendConfigRepository.getBackendConfigs().map {
             it.toBackendConfig()
         } + listOf(
             BackendConfig(
-                id = "1",
                 name = "Test",
                 description = "Test",
                 serverConfig = BackendServerConfig(
@@ -29,7 +28,6 @@ internal class GetBackendConfigItemsUseCase @Inject constructor(
                 )
             ),
             BackendConfig(
-                id = "2",
                 name = "Test2",
                 description = "Test2",
                 serverConfig = BackendServerConfig(
@@ -47,7 +45,6 @@ internal class GetBackendConfigItemsUseCase @Inject constructor(
 
     private fun BackendConfigEntity.toBackendConfig(): BackendConfig {
         return BackendConfig(
-            id = id,
             name = name,
             description = description,
             serverConfig = BackendServerConfig(

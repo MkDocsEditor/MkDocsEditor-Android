@@ -43,6 +43,8 @@
 
     <string name="create_backend_config">Create Backend Config</string>
 
+    <string name="edit_auth_config_title">Authentication</string>
+
     <string name="create_document">Create Document</string>
     <string name="create_document_hint">New Document</string>
     <string name="edit_document">Edit document</string>
