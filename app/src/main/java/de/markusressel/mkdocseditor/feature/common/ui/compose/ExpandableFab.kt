@@ -135,7 +135,8 @@ fun ExpandableFab(
             targetValue = when {
                 expanded -> 360F + 45F
                 else -> 0F
-            }
+            },
+            label = "rotation"
         )
 
         // main button to toggle options
@@ -143,7 +144,11 @@ fun ExpandableFab(
             modifier = Modifier.zIndex(100F),
             containerColor = MaterialTheme.colorScheme.secondary,
             onClick = {
-                expanded = expanded.not()
+                if (items.size <= 1) {
+                    onItemClicked(items.first())
+                } else {
+                    expanded = expanded.not()
+                }
             },
             contentColor = MaterialTheme.colorScheme.onSecondary
         ) {

@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.feature.backendconfigselection.ui
+package de.markusressel.mkdocseditor.feature.backendconfig.list.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,8 +7,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
-import de.markusressel.mkdocseditor.feature.backendconfigselection.data.BackendConfig
-import de.markusressel.mkdocseditor.feature.backendconfigselection.domain.GetBackendConfigItemsUseCase
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendConfigItemsUseCase
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -100,39 +100,41 @@ internal class BackendSelectionViewModel @Inject constructor(
             _events.send(BackendSelectionEvent.Error(s))
         }
     }
+
+
+    internal sealed class UiEvent {
+        data class BackendConfigClicked(val config: BackendConfig) : UiEvent()
+        data class BackendConfigLongClicked(val config: BackendConfig) : UiEvent()
+        data object CreateBackendConfigClicked : UiEvent()
+
+        data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
+    }
+
+    internal data class UiState(
+        val fabConfig: FabConfig = FabConfig(
+            right = listOf(
+                FabConfig.Fab(
+                    id = FAB_ID_CREATE_BACKEND_CONFIG,
+                    description = R.string.create_backend_config,
+                    icon = MaterialDesignIconic.Icon.gmi_file_add,
+                ),
+            )
+        ),
+
+        val isLoading: Boolean = false,
+        val error: String? = null,
+        val listItems: List<BackendConfig> = emptyList(),
+        val selectedItem: BackendConfig? = null,
+    )
+
+    internal sealed class BackendSelectionEvent {
+        data class Error(val message: String) : BackendSelectionEvent()
+
+        data class SelectBackend(val entity: DocumentEntity) : BackendSelectionEvent()
+        data class CreateBackend(val entity: ResourceEntity) : BackendSelectionEvent()
+        data class EditBackend(val parentId: String) : BackendSelectionEvent()
+    }
 }
 
-internal sealed class UiEvent {
-    data class BackendConfigClicked(val config: BackendConfig) : UiEvent()
-    data class BackendConfigLongClicked(val config: BackendConfig) : UiEvent()
-    data object CreateBackendConfigClicked : UiEvent()
-
-    data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
-}
-
-internal data class UiState(
-    val fabConfig: FabConfig = FabConfig(
-        right = listOf(
-            FabConfig.Fab(
-                id = FAB_ID_CREATE_BACKEND_CONFIG,
-                description = R.string.create_backend_config,
-                icon = MaterialDesignIconic.Icon.gmi_file_add,
-            ),
-        )
-    ),
-
-    val isLoading: Boolean = false,
-    val error: String? = null,
-    val listItems: List<BackendConfig> = emptyList(),
-    val selectedItem: BackendConfig? = null,
-)
-
-internal sealed class BackendSelectionEvent {
-    data class Error(val message: String) : BackendSelectionEvent()
-
-    data class SelectBackend(val entity: DocumentEntity) : BackendSelectionEvent()
-    data class CreateBackend(val entity: ResourceEntity) : BackendSelectionEvent()
-    data class EditBackend(val parentId: String) : BackendSelectionEvent()
-}
 
 const val FAB_ID_CREATE_BACKEND_CONFIG = 0

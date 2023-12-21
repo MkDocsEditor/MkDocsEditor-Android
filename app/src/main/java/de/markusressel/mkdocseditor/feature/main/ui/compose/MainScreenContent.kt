@@ -13,7 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
 import de.markusressel.mkdocseditor.feature.about.ui.compose.AboutScreen
-import de.markusressel.mkdocseditor.feature.backendconfigselection.ui.compose.BackendConfigSelectionScreen
+import de.markusressel.mkdocseditor.feature.backendconfig.list.ui.compose.BackendConfigSelectionScreen
 import de.markusressel.mkdocseditor.feature.main.ui.ContentLayoutType
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
 import de.markusressel.mkdocseditor.feature.main.ui.NavigationLayoutType

@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.feature.backendconfigselection.ui.compose
+package de.markusressel.mkdocseditor.feature.backendconfig.list.ui.compose
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,11 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import de.markusressel.mkdocseditor.feature.backendconfigselection.data.BackendConfig
-import de.markusressel.mkdocseditor.feature.backendconfigselection.data.BackendServerConfig
-import de.markusressel.mkdocseditor.feature.backendconfigselection.ui.BackendSelectionViewModel
-import de.markusressel.mkdocseditor.feature.backendconfigselection.ui.UiEvent
-import de.markusressel.mkdocseditor.feature.backendconfigselection.ui.UiState
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendAuthConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.list.ui.BackendSelectionViewModel
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ScreenTitle
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
@@ -58,8 +57,8 @@ internal fun BackendConfigSelectionScreen(
 
 @Composable
 private fun BackendSelectionScreenContent(
-    uiState: UiState,
-    onUiEvent: (UiEvent) -> Unit,
+    uiState: BackendSelectionViewModel.UiState,
+    onUiEvent: (BackendSelectionViewModel.UiEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
@@ -83,7 +82,7 @@ private fun BackendSelectionScreenContent(
             modifier = Modifier.fillMaxSize(),
             items = uiState.fabConfig.right,
             onItemClicked = {
-                onUiEvent(UiEvent.ExpandableFabItemSelected(item = it))
+                onUiEvent(BackendSelectionViewModel.UiEvent.ExpandableFabItemSelected(item = it))
             }
         )
     }
@@ -92,8 +91,8 @@ private fun BackendSelectionScreenContent(
 @Composable
 internal fun BackendConfigList(
     modifier: Modifier = Modifier,
-    uiState: UiState,
-    onUiEvent: (UiEvent) -> Unit,
+    uiState: BackendSelectionViewModel.UiState,
+    onUiEvent: (BackendSelectionViewModel.UiEvent) -> Unit,
 ) {
     Column(
         modifier = modifier,
@@ -106,7 +105,7 @@ internal fun BackendConfigList(
                     .fillMaxWidth()
                     .wrapContentHeight()
                     .clickable {
-                        onUiEvent(UiEvent.BackendConfigClicked(item))
+                        onUiEvent(BackendSelectionViewModel.UiEvent.BackendConfigClicked(item))
                     }
             )
         }
@@ -135,7 +134,7 @@ internal fun BackendConfigListItem(
                 style = MaterialTheme.typography.bodySmall
             )
             Text(
-                text = item.serverConfiguration.domain,
+                text = item.serverConfig.domain,
                 style = MaterialTheme.typography.bodySmall
             )
         }
@@ -148,19 +147,21 @@ internal fun BackendConfigListItem(
 private fun BackendSelectionScreenContentPreview() {
     MkDocsEditorTheme {
         BackendSelectionScreenContent(
-            uiState = UiState(
+            uiState = BackendSelectionViewModel.UiState(
                 listItems = listOf(
                     BackendConfig(
                         id = "wiki",
                         name = "Wiki",
                         description = "The wiki",
-                        serverConfiguration = BackendServerConfig(
+                        serverConfig = BackendServerConfig(
                             domain = "mkdocksrest.backend.com",
                             port = 443,
                             useSsl = true,
+                        ),
+                        authConfig = BackendAuthConfig(
                             username = "test",
                             password = "test",
-                        ),
+                        )
                     )
                 )
             ),

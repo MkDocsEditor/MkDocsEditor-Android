@@ -200,20 +200,124 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "5:5280773954032560660",
+      "lastPropertyId": "7:245551817175832864",
+      "name": "BackendConfigEntity",
+      "properties": [
+        {
+          "id": "1:6687421185492995737",
+          "name": "entityId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:4521086272698141036",
+          "name": "id",
+          "indexId": "8:2336407603629742715",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:4428696711109975059",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "4:3174233894689239395",
+          "name": "description",
+          "type": 9
+        },
+        {
+          "id": "6:6387112741264564084",
+          "name": "serverConfigId",
+          "indexId": "10:7896467099022291851",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "BackendServerConfigEntity"
+        },
+        {
+          "id": "7:245551817175832864",
+          "name": "authConfigId",
+          "indexId": "11:8410212560139488673",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "BackendAuthConfigEntity"
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "6:265077520647693716",
+      "lastPropertyId": "6:4835462335252275695",
+      "name": "BackendServerConfigEntity",
+      "properties": [
+        {
+          "id": "1:156999794696170099",
+          "name": "entityId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:6013750560659278945",
+          "name": "domain",
+          "type": 9
+        },
+        {
+          "id": "3:3657966229099116058",
+          "name": "port",
+          "type": 5
+        },
+        {
+          "id": "4:6476544072334160281",
+          "name": "useSsl",
+          "type": 1
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "7:6963505399939795788",
+      "lastPropertyId": "3:1450809219100709916",
+      "name": "BackendAuthConfigEntity",
+      "properties": [
+        {
+          "id": "1:4742160120032621424",
+          "name": "entityId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:1145372074832984057",
+          "name": "username",
+          "type": 9
+        },
+        {
+          "id": "3:1450809219100709916",
+          "name": "password",
+          "type": 9
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "4:6020327021425912355",
-  "lastIndexId": "7:5786982190605967800",
+  "lastEntityId": "7:6963505399939795788",
+  "lastIndexId": "11:8410212560139488673",
   "lastRelationId": "5:6680787238725584468",
   "lastSequenceId": "0:0",
   "modelVersion": 5,
   "modelVersionParserMinimum": 5,
   "retiredEntityUids": [],
   "retiredIndexUids": [
-    7384408086141472050
+    7384408086141472050,
+    4446651935175240247
   ],
   "retiredPropertyUids": [
-    5172956741253300140
+    5172956741253300140,
+    3037818499188853511,
+    4835462335252275695,
+    600589880715002879
   ],
   "retiredRelationUids": [
     503771180738858818,
