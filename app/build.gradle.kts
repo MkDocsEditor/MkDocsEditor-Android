@@ -1,6 +1,7 @@
 plugins {
     id("mkdocseditor.android.application")
     id("mkdocseditor.android.application.compose")
+    id("mkdocseditor.android.compose.voyager")
     id("mkdocseditor.android.application.flavors")
     id("mkdocseditor.android.hilt")
     id("kotlin-parcelize")

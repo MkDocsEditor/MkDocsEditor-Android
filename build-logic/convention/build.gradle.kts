@@ -53,6 +53,10 @@ gradlePlugin {
             id = "mkdocseditor.android.library.publishing"
             implementationClass = "AndroidLibraryPublishingConventionPlugin"
         }
+        register("androidComposeVoyager") {
+            id = "mkdocseditor.android.compose.voyager"
+            implementationClass = "AndroidComposeVoyagerConventionPlugin"
+        }
         register("androidLogging") {
             id = "mkdocseditor.android.logging"
             implementationClass = "AndroidLoggingConventionPlugin"

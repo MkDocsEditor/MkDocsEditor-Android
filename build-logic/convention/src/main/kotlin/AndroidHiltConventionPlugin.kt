@@ -34,7 +34,6 @@ class AndroidHiltConventionPlugin : Plugin<Project> {
                 "ksp"(libs.findLibrary("hilt.compiler").get())
                 "kspAndroidTest"(libs.findLibrary("hilt.compiler").get())
             }
-
         }
     }
 
