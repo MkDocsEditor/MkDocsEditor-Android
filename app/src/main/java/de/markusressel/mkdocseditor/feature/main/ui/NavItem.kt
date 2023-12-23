@@ -4,9 +4,9 @@ sealed class NavItem {
     sealed class Primary : NavItem()
     sealed class Secondary : NavItem()
 
-    object BackendSelection : Primary()
-    object FileBrowser : Primary()
-    object Settings : Primary()
+    data object BackendSelection : Primary()
+    data object FileBrowser : Primary()
+    data object Settings : Primary()
 
-    object About : Secondary()
+    data object About : Secondary()
 }

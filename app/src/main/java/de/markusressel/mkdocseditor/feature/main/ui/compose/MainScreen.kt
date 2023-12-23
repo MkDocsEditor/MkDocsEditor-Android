@@ -1,7 +1,7 @@
 package de.markusressel.mkdocseditor.feature.main.ui.compose
 
-import androidx.compose.animation.*
-import androidx.compose.material3.*
+import androidx.compose.material3.PermanentDrawerSheet
+import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -9,7 +9,9 @@ import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
-import de.markusressel.mkdocseditor.feature.main.ui.*
+import de.markusressel.mkdocseditor.feature.main.ui.ContentLayoutType
+import de.markusressel.mkdocseditor.feature.main.ui.DevicePosture
+import de.markusressel.mkdocseditor.feature.main.ui.NavigationLayoutType
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.activity.MainViewModel
 import de.markusressel.mkdocseditor.ui.activity.UiEvent
@@ -89,7 +91,6 @@ private fun MainScreenPreviewDesktop() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainScreenLayout(
     uiState: UiState,

@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
+import cafe.adriel.voyager.navigator.Navigator
 import de.markusressel.mkdocseditor.feature.about.ui.compose.AboutScreen
 import de.markusressel.mkdocseditor.feature.backendconfig.list.ui.compose.BackendConfigSelectionScreen
 import de.markusressel.mkdocseditor.feature.main.ui.ContentLayoutType
@@ -57,12 +58,9 @@ internal fun MainScreenContent(
                 ) {
 
                     when (selectedDestination) {
-                        NavItem.BackendSelection -> BackendConfigSelectionScreen(
-                            modifier = Modifier.fillMaxSize(),
-                            onBack = {
-                                onUiEvent(UiEvent.BottomNavItemSelected(NavItem.FileBrowser))
-                            }
-                        )
+                        NavItem.BackendSelection -> {
+                            Navigator(BackendConfigSelectionScreen)
+                        }
 
                         NavItem.FileBrowser -> if (contentType == ContentLayoutType.LIST_AND_DOCUMENT) {
                             MkDocsEditorListAndDocumentContent(

@@ -15,9 +15,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendAuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
@@ -27,33 +29,21 @@ import de.markusressel.mkdocseditor.feature.common.ui.compose.ScreenTitle
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
-@Composable
-internal fun BackendConfigSelectionScreen(
-//    onNavigationEvent: (NavigationEvent) -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: BackendSelectionViewModel = hiltViewModel(),
-    onBack: () -> Unit,
-) {
-    val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsState()
+object BackendConfigSelectionScreen : Screen {
+    @Composable
+    override fun Content() {
+        val navigator = LocalNavigator.currentOrThrow
 
-//    BackHandler(
-//        enabled = uiState.canGoUp,
-//        onBack = {
-//            val consumed = viewModel.navigateUp()
-//            if (consumed.not()) {
-//                onBack()
-//            }
-//        },
-//    )
+        val viewModel: BackendSelectionViewModel = hiltViewModel()
+        val uiState by viewModel.uiState.collectAsState()
 
-    BackendSelectionScreenContent(
-        modifier = modifier,
-        uiState = uiState,
-        onUiEvent = viewModel::onUiEvent
-    )
+        BackendSelectionScreenContent(
+            modifier = Modifier.fillMaxSize(),
+            uiState = uiState,
+            onUiEvent = viewModel::onUiEvent
+        )
+    }
 }
-
 
 @Composable
 private fun BackendSelectionScreenContent(
