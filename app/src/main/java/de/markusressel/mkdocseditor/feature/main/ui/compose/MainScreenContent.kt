@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
 import cafe.adriel.voyager.navigator.Navigator
+import cafe.adriel.voyager.transitions.SlideTransition
 import de.markusressel.mkdocseditor.feature.about.ui.compose.AboutScreen
 import de.markusressel.mkdocseditor.feature.backendconfig.list.ui.compose.BackendConfigSelectionScreen
 import de.markusressel.mkdocseditor.feature.main.ui.ContentLayoutType
@@ -59,7 +60,9 @@ internal fun MainScreenContent(
 
                     when (selectedDestination) {
                         NavItem.BackendSelection -> {
-                            Navigator(BackendConfigSelectionScreen)
+                            Navigator(BackendConfigSelectionScreen) { navigator ->
+                                SlideTransition(navigator)
+                            }
                         }
 
                         NavItem.FileBrowser -> if (contentType == ContentLayoutType.LIST_AND_DOCUMENT) {
