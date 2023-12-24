@@ -95,17 +95,12 @@ internal class BackendConfigEditViewModel @Inject constructor(
     }
 
     private suspend fun addAuthConfig(authConfig: AuthConfig) {
-        val isFirst = _uiState.value.authConfigs.isEmpty()
-
-        addAuthConfigUseCase(authConfig)
+        val newConfigId = addAuthConfigUseCase(authConfig)
         val newAuthConfigs = getBackendAuthConfigsUseCase()
         _uiState.update { old ->
             old.copy(
                 authConfigs = newAuthConfigs,
-                authConfig = when {
-                    isFirst -> newAuthConfigs.first()
-                    else -> old.authConfig
-                }
+                authConfig = newAuthConfigs.find { it.id == newConfigId }
             )
         }
     }

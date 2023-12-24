@@ -7,8 +7,8 @@ import javax.inject.Inject
 internal class AddAuthConfigUseCase @Inject constructor(
     private val backendConfigRepository: BackendConfigRepository
 ) {
-    suspend operator fun invoke(config: AuthConfig) {
-        backendConfigRepository.add(config)
+    suspend operator fun invoke(config: AuthConfig): Long {
+        return backendConfigRepository.add(config)
     }
 }
 

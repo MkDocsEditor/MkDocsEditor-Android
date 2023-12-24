@@ -20,12 +20,13 @@ internal class BackendConfigRepository @Inject constructor(
 
     fun getAuthConfigs() = backendAuthConfigPersistenceManager.standardOperation().all.toList()
 
-    fun add(config: BackendConfig) {
-        backendConfigPersistenceManager.standardOperation().put(config.toBackendConfigEntity())
+    fun add(config: BackendConfig): Long {
+        return backendConfigPersistenceManager.standardOperation()
+            .put(config.toBackendConfigEntity())
     }
 
-    fun add(config: AuthConfig) {
-        backendAuthConfigPersistenceManager.standardOperation()
+    fun add(config: AuthConfig): Long {
+        return backendAuthConfigPersistenceManager.standardOperation()
             .put(config.toBackendAuthConfigEntity())
     }
 
