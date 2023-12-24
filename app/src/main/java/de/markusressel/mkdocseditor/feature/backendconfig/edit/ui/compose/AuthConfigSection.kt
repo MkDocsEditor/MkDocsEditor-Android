@@ -90,12 +90,12 @@ internal fun AuthConfigSection(
                     )
                 } else {
                     Row {
-                        Text(text = stringResource(R.string.edit_auth_config_username))
+                        Text(
+                            modifier = Modifier.padding(end = 16.dp),
+                            text = stringResource(R.string.edit_auth_config_username),
+                            style = MaterialTheme.typography.titleMedium
+                        )
                         Text(text = authConfig.username)
-                    }
-                    Row {
-                        Text(text = stringResource(R.string.edit_auth_config_password))
-                        Text(text = authConfig.password)
                     }
                 }
             }

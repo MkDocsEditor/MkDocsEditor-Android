@@ -35,14 +35,9 @@ internal class BackendConfigEditViewModel @Inject constructor(
     private val _events = Channel<BackendEditEvent>(Channel.BUFFERED)
     internal val events = _events.receiveAsFlow()
 
-    init {
-        launch {
-            updateAuthConfigs()
-        }
-    }
-
     fun initialize(id: Long?) {
         launch {
+            updateAuthConfigs()
             if (id == null) {
                 clearInputs()
             } else {
@@ -56,8 +51,8 @@ internal class BackendConfigEditViewModel @Inject constructor(
             old.copy(
                 name = "",
                 description = "",
-                serverConfig = null,
-                authConfig = null,
+                serverConfig = old.serverConfigs.firstOrNull(),
+                authConfig = old.authConfigs.firstOrNull(),
             )
         }
     }
@@ -169,6 +164,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
         val isLoading: Boolean = false,
         val error: String? = null,
 
+        val serverConfigs: List<BackendServerConfig> = emptyList(),
         val authConfigs: List<AuthConfig> = emptyList(),
 
         val name: String = "",
