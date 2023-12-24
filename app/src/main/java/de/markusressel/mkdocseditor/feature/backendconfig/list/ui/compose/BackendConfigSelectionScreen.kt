@@ -23,7 +23,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendAuthConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.BackendConfigEditScreen
@@ -170,7 +170,7 @@ private fun BackendSelectionScreenContentPreview() {
                             port = 443,
                             useSsl = true,
                         ),
-                        authConfig = BackendAuthConfig(
+                        authConfig = AuthConfig(
                             username = "test",
                             password = "test",
                         )

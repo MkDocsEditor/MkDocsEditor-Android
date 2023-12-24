@@ -1,50 +1,125 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendAuthConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
 internal fun AuthConfigSection(
     modifier: Modifier = Modifier,
-    authConfig: BackendAuthConfig?,
-    onValueChanged: (BackendAuthConfig?) -> Unit
+    authConfig: AuthConfig?,
+    onUiEvent: (BackendConfigEditViewModel.UiEvent) -> Unit
 ) {
+    var currentUsername by mutableStateOf("")
+    var currentPassword by mutableStateOf("")
+
     Card(modifier = modifier) {
         Column(
             modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = stringResource(R.string.edit_auth_config_title),
-                style = MaterialTheme.typography.headlineSmall
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.edit_auth_config_title),
+                    style = MaterialTheme.typography.headlineSmall
+                )
 
-            Text(text = authConfig?.username.orEmpty())
-            Text(text = authConfig?.password.orEmpty())
+                Spacer(modifier = Modifier.weight(1f))
+
+                IconButton(onClick = {
+                    onUiEvent(
+                        BackendConfigEditViewModel.UiEvent.AddAuthConfig(
+                            AuthConfig(
+                                username = currentUsername,
+                                password = currentPassword
+                            )
+                        )
+                    )
+                }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AddCircle,
+                        contentDescription = ""
+                    )
+                }
+            }
+
+
+            if (authConfig == null) {
+                OutlinedTextField(
+                    value = currentUsername,
+                    onValueChange = { currentUsername = it },
+                    label = { Text(text = stringResource(R.string.edit_auth_config_username)) }
+                )
+
+                OutlinedTextField(
+                    value = currentPassword,
+                    onValueChange = { currentPassword = it },
+                    label = { Text(text = stringResource(R.string.edit_auth_config_password)) }
+                )
+            } else {
+                Row {
+                    Text(text = stringResource(R.string.edit_auth_config_username))
+                    Text(text = authConfig.username)
+                }
+                Row {
+                    Text(text = stringResource(R.string.edit_auth_config_password))
+                    Text(text = authConfig.password)
+                }
+            }
         }
     }
 }
 
-@Preview
+@CombinedPreview
 @Composable
 private fun AuthConfigSectionPreview() {
     MkDocsEditorTheme {
         AuthConfigSection(
-            authConfig = BackendAuthConfig(
+            modifier = Modifier.fillMaxWidth(),
+            authConfig = AuthConfig(
                 username = "username",
                 password = "password"
             ),
-            onValueChanged = {}
+            onUiEvent = {}
+        )
+    }
+}
+
+@CombinedPreview
+@Composable
+private fun AuthConfigSectionPreviewNoData() {
+    MkDocsEditorTheme {
+        AuthConfigSection(
+            modifier = Modifier.fillMaxWidth(),
+            authConfig = null,
+            onUiEvent = {}
         )
     }
 }

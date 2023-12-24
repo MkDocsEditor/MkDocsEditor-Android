@@ -24,6 +24,11 @@ internal class BackendConfigRepository @Inject constructor(
         backendConfigPersistenceManager.standardOperation().put(config.toBackendConfigEntity())
     }
 
+    fun add(config: AuthConfig) {
+        backendAuthConfigPersistenceManager.standardOperation()
+            .put(config.toBackendAuthConfigEntity())
+    }
+
     private fun BackendConfig.toBackendConfigEntity() = BackendConfigEntity(
         name = name,
         description = description,
@@ -33,7 +38,7 @@ internal class BackendConfigRepository @Inject constructor(
 
     }
 
-    private fun BackendAuthConfig.toBackendAuthConfigEntity() = BackendAuthConfigEntity(
+    private fun AuthConfig.toBackendAuthConfigEntity() = BackendAuthConfigEntity(
         username = username,
         password = password,
     )

@@ -23,7 +23,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendAuthConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ScreenTitle
@@ -130,11 +130,7 @@ private fun BackendConfigEditScreenContent(
                 modifier = Modifier
                     .fillMaxWidth(),
                 authConfig = uiState.authConfig,
-                onValueChanged = { newValue ->
-                    onUiEvent(
-                        BackendConfigEditViewModel.UiEvent.AuthConfigChanged(newValue)
-                    )
-                }
+                onUiEvent = onUiEvent
             )
 
             SaveButton(
@@ -202,7 +198,7 @@ private fun BackendConfigEditScreenContentPreview() {
                     port = 443,
                     useSsl = true,
                 ),
-                authConfig = BackendAuthConfig(
+                authConfig = AuthConfig(
                     username = "user",
                     password = "password"
                 )

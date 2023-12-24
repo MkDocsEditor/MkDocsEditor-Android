@@ -8,7 +8,7 @@ data class BackendConfig(
     val name: String,
     val description: String,
     val serverConfig: BackendServerConfig,
-    val authConfig: BackendAuthConfig,
+    val authConfig: AuthConfig,
 )
 
 internal fun BackendConfigEntity.toBackendConfig(): BackendConfig {
@@ -20,7 +20,7 @@ internal fun BackendConfigEntity.toBackendConfig(): BackendConfig {
             port = serverConfig.target.port,
             useSsl = serverConfig.target.useSsl,
         ),
-        authConfig = BackendAuthConfig(
+        authConfig = AuthConfig(
             username = authConfig.target.username,
             password = authConfig.target.password,
         )

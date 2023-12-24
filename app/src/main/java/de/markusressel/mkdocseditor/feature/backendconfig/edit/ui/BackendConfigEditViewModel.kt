@@ -3,17 +3,19 @@ package de.markusressel.mkdocseditor.feature.backendconfig.edit.ui
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.extensions.common.android.launch
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendAuthConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendAuthConfigsUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.ValidateBackendConfigUseCase
+import de.markusressel.mkdocseditor.feature.backendconfig.edit.domain.AddAuthConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.domain.SaveBackendConfigItemsUseCase
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
 
@@ -21,6 +23,7 @@ import javax.inject.Inject
 internal class BackendConfigEditViewModel @Inject constructor(
     private val getBackendConfigUseCase: GetBackendConfigUseCase,
     private val getBackendAuthConfigsUseCase: GetBackendAuthConfigsUseCase,
+    private val addAuthConfigUseCase: AddAuthConfigUseCase,
     private val validateBackendConfigUseCase: ValidateBackendConfigUseCase,
     private val saveBackendConfigItemsUseCase: SaveBackendConfigItemsUseCase,
 ) : ViewModel() {
@@ -86,7 +89,24 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 is UiEvent.DescriptionChanged -> processDescriptionInput(event.text)
                 is UiEvent.AuthConfigChanged -> processAuthConfigSelectionChange(event.authConfig)
                 is UiEvent.SaveClicked -> save()
+                is UiEvent.AddAuthConfig -> addAuthConfig(event.authConfig)
             }
+        }
+    }
+
+    private suspend fun addAuthConfig(authConfig: AuthConfig) {
+        val isFirst = _uiState.value.authConfigs.isEmpty()
+
+        addAuthConfigUseCase(authConfig)
+        val newAuthConfigs = getBackendAuthConfigsUseCase()
+        _uiState.update { old ->
+            old.copy(
+                authConfigs = newAuthConfigs,
+                authConfig = when {
+                    isFirst -> newAuthConfigs.first()
+                    else -> old.authConfig
+                }
+            )
         }
     }
 
@@ -117,7 +137,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
         }
     }
 
-    private fun processAuthConfigSelectionChange(authConfig: BackendAuthConfig?) {
+    private fun processAuthConfigSelectionChange(authConfig: AuthConfig?) {
         _uiState.value = _uiState.value.copy(
             authConfig = authConfig
         )
@@ -136,22 +156,23 @@ internal class BackendConfigEditViewModel @Inject constructor(
 
     internal sealed class UiEvent {
         data object SaveClicked : UiEvent()
-        data class AuthConfigChanged(val authConfig: BackendAuthConfig?) : UiEvent()
+        data class AuthConfigChanged(val authConfig: AuthConfig?) : UiEvent()
 
         data class NameChanged(val text: String) : UiEvent()
         data class DescriptionChanged(val text: String) : UiEvent()
+        data class AddAuthConfig(val authConfig: AuthConfig) : UiEvent()
     }
 
     internal data class UiState(
         val isLoading: Boolean = false,
         val error: String? = null,
 
-        val authConfigs: List<BackendAuthConfig> = emptyList(),
+        val authConfigs: List<AuthConfig> = emptyList(),
 
         val name: String = "",
         val description: String = "",
         val serverConfig: BackendServerConfig? = null,
-        val authConfig: BackendAuthConfig? = null,
+        val authConfig: AuthConfig? = null,
     )
 
     internal sealed class BackendEditEvent {

@@ -1,6 +1,6 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.common.domain
 
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendAuthConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfigRepository
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
@@ -21,10 +21,10 @@ internal class GetBackendConfigItemsUseCase @Inject constructor(
                 port = 1234,
                 useSsl = false,
             ),
-                authConfig = BackendAuthConfig(
-                    username = "test",
-                    password = "test",
-                )
+            authConfig = AuthConfig(
+                username = "test",
+                password = "test",
+            )
             ),
             BackendConfig(
                 name = "Test2",
@@ -34,7 +34,7 @@ internal class GetBackendConfigItemsUseCase @Inject constructor(
                     port = 1234,
                     useSsl = false,
                 ),
-                authConfig = BackendAuthConfig(
+                authConfig = AuthConfig(
                     username = "test2",
                     password = "test2",
                 )

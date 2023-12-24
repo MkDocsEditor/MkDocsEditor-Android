@@ -47,7 +47,13 @@
     <string name="edit_backend_config_description_label">Description</string>
 
     <string name="edit_server_config_title">Server</string>
+    <string name="edit_server_config_domain">Domain</string>
+    <string name="edit_server_config_port">Port</string>
+    <string name="edit_server_config_use_ssl">SSL</string>
+
     <string name="edit_auth_config_title">Authentication</string>
+    <string name="edit_auth_config_username">User</string>
+    <string name="edit_auth_config_password">Password</string>
 
     <string name="create_document">Create Document</string>
     <string name="create_document_hint">New Document</string>
