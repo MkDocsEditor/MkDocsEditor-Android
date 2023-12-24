@@ -1,10 +1,15 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendAuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
@@ -31,10 +37,25 @@ data class BackendConfigEditScreen(
     @Composable
     override fun Content() {
         val context = LocalContext.current
+        val navigator = LocalNavigator.current
 
         val viewModel: BackendConfigEditViewModel = hiltViewModel()
         LaunchedEffect(viewModel, id) {
             viewModel.initialize(id)
+        }
+
+        LaunchedEffect(viewModel.events) {
+            viewModel.events.collect { event ->
+                when (event) {
+                    is BackendConfigEditViewModel.BackendEditEvent.CloseScreen -> {
+                        navigator?.pop()
+                    }
+
+                    is BackendConfigEditViewModel.BackendEditEvent.Error -> {
+                        Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
         }
 
         val uiState by viewModel.uiState.collectAsState()
@@ -50,7 +71,6 @@ data class BackendConfigEditScreen(
 //    )
 
         BackendConfigEditScreenContent(
-            modifier = Modifier.fillMaxSize(),
             uiState = uiState,
             onUiEvent = viewModel::onUiEvent
         )
@@ -61,9 +81,12 @@ data class BackendConfigEditScreen(
 private fun BackendConfigEditScreenContent(
     uiState: BackendConfigEditViewModel.UiState,
     onUiEvent: (BackendConfigEditViewModel.UiEvent) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+    ) {
         ScreenTitle(
             modifier = Modifier
                 .fillMaxWidth(),
@@ -91,15 +114,30 @@ private fun BackendConfigEditScreenContent(
                 modifier = Modifier
                     .fillMaxWidth(),
                 authConfig = uiState.authConfig,
-                onAuthConfigChanged = {
+                onValueChanged = { newValue ->
                     onUiEvent(
-                        BackendConfigEditViewModel.UiEvent.AuthConfigChanged(
-                            it
-                        )
+                        BackendConfigEditViewModel.UiEvent.AuthConfigChanged(newValue)
                     )
                 }
             )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            SaveButton(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { onUiEvent(BackendConfigEditViewModel.UiEvent.SaveClicked) }
+            )
         }
+    }
+}
+
+@Composable
+private fun SaveButton(modifier: Modifier, onClick: () -> Unit) {
+    Button(
+        modifier = modifier,
+        onClick = onClick
+    ) {
+        Text(stringResource(R.string.save))
     }
 }
 
@@ -109,7 +147,8 @@ internal fun BackendConfigNameEditField(
     name: String,
     onValueChanged: (String) -> Unit
 ) {
-    OutlinedTextField(value = name,
+    OutlinedTextField(
+        value = name,
         modifier = modifier,
         onValueChange = { value ->
             onValueChanged(value)

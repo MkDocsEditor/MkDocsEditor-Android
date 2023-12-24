@@ -82,32 +82,38 @@ internal class BackendConfigEditViewModel @Inject constructor(
     fun onUiEvent(event: UiEvent) {
         launch {
             when (event) {
-                is UiEvent.AuthConfigChanged -> {
-                    _uiState.value = _uiState.value.copy(
-                        authConfig = event.authConfig
-                    )
-                }
-
-                is UiEvent.SaveClicked -> {
-                    // TODO
-//                    val isValid = validateBackendConfigUseCase(config)
-                    val isValid = false
-                    if (!isValid) {
-                        return@launch
-                    } else {
-                        val config = BackendConfig(
-                            name = uiState.value.name,
-                            description = uiState.value.description,
-                            serverConfig = requireNotNull(uiState.value.serverConfig),
-                            authConfig = requireNotNull(uiState.value.authConfig),
-                        )
-                        saveBackendConfigItemsUseCase(config)
-                    }
-                }
-
+                is UiEvent.AuthConfigChanged -> processAuthConfigSelectionChange(event.authConfig)
+                is UiEvent.SaveClicked -> save()
                 is UiEvent.NameChanged -> processNameInput(event.text)
             }
         }
+    }
+
+    private suspend fun save() {
+//      val isValid = validateBackendConfigUseCase(config)
+        val isValid = false
+        if (!isValid) {
+            showError("Backend config is not valid")
+        } else {
+            try {
+                val config = BackendConfig(
+                    name = uiState.value.name,
+                    description = uiState.value.description,
+                    serverConfig = requireNotNull(uiState.value.serverConfig),
+                    authConfig = requireNotNull(uiState.value.authConfig),
+                )
+                saveBackendConfigItemsUseCase(config)
+                _events.send(BackendEditEvent.CloseScreen)
+            } catch (e: Exception) {
+                showError("Failed to save backend config")
+            }
+        }
+    }
+
+    private fun processAuthConfigSelectionChange(authConfig: BackendAuthConfig?) {
+        _uiState.value = _uiState.value.copy(
+            authConfig = authConfig
+        )
     }
 
     private fun processNameInput(text: String) {
@@ -116,10 +122,8 @@ internal class BackendConfigEditViewModel @Inject constructor(
         )
     }
 
-    private fun showError(s: String) {
-        launch {
-            _events.send(BackendEditEvent.Error(s))
-        }
+    private suspend fun showError(s: String) {
+        _events.send(BackendEditEvent.Error(s))
     }
 
 
@@ -143,6 +147,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
     )
 
     internal sealed class BackendEditEvent {
+        data object CloseScreen : BackendEditEvent()
         data class Error(val message: String) : BackendEditEvent()
     }
 }
