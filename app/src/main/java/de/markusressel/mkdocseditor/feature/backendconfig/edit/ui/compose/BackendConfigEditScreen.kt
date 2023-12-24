@@ -198,7 +198,7 @@ private fun BackendConfigEditScreenContentPreview() {
                 name = "Example",
                 description = "The wiki",
                 serverConfig = BackendServerConfig(
-                    domain = "https://example.com",
+                    domain = "domain.com",
                     port = 443,
                     useSsl = true,
                 ),
