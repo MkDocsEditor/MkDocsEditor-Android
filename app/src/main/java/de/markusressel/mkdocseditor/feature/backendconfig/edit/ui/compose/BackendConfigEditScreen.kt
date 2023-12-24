@@ -3,7 +3,6 @@ package de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -110,6 +109,23 @@ private fun BackendConfigEditScreenContent(
                 }
             )
 
+            BackendConfigDescriptionEditField(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                description = uiState.description,
+                onValueChanged = { text ->
+                    onUiEvent(
+                        BackendConfigEditViewModel.UiEvent.DescriptionChanged(text)
+                    )
+                }
+            )
+
+            ServerSection(
+                modifier = Modifier.fillMaxWidth(),
+                serverConfig = uiState.serverConfig,
+                onUiEvent = onUiEvent
+            )
+
             AuthConfigSection(
                 modifier = Modifier
                     .fillMaxWidth(),
@@ -121,14 +137,28 @@ private fun BackendConfigEditScreenContent(
                 }
             )
 
-            Spacer(modifier = Modifier.weight(1f))
-
             SaveButton(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = { onUiEvent(BackendConfigEditViewModel.UiEvent.SaveClicked) }
             )
         }
     }
+}
+
+@Composable
+internal fun BackendConfigDescriptionEditField(
+    modifier: Modifier,
+    description: String,
+    onValueChanged: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = description,
+        modifier = modifier,
+        onValueChange = { value ->
+            onValueChanged(value)
+        },
+        label = { Text(stringResource(R.string.edit_backend_config_description_label)) }
+    )
 }
 
 @Composable

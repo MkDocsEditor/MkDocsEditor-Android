@@ -82,11 +82,18 @@ internal class BackendConfigEditViewModel @Inject constructor(
     fun onUiEvent(event: UiEvent) {
         launch {
             when (event) {
+                is UiEvent.NameChanged -> processNameInput(event.text)
+                is UiEvent.DescriptionChanged -> processDescriptionInput(event.text)
                 is UiEvent.AuthConfigChanged -> processAuthConfigSelectionChange(event.authConfig)
                 is UiEvent.SaveClicked -> save()
-                is UiEvent.NameChanged -> processNameInput(event.text)
             }
         }
+    }
+
+    private fun processDescriptionInput(text: String) {
+        _uiState.value = _uiState.value.copy(
+            description = text
+        )
     }
 
     private suspend fun save() {
@@ -132,6 +139,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
         data class AuthConfigChanged(val authConfig: BackendAuthConfig?) : UiEvent()
 
         data class NameChanged(val text: String) : UiEvent()
+        data class DescriptionChanged(val text: String) : UiEvent()
     }
 
     internal data class UiState(
