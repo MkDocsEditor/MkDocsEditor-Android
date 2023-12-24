@@ -6,6 +6,7 @@ import de.markusressel.mkdocseditor.configureKotlinAndroidToolchain
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
+import java.io.File
 
 class AndroidApplicationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -39,7 +40,9 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                         applicationIdSuffix = ".debug"
                         isMinifyEnabled = false
                         isDebuggable = true
-                        signingConfig = signingConfigs.getByName("debug")
+                        signingConfig = signingConfigs.getByName("debug").apply {
+                            storeFile = File("${projectDir.parent}/.ci/debug.keystore")
+                        }
                     }
                 }
 
