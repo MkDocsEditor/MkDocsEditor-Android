@@ -25,12 +25,14 @@ import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
+import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel.UiEvent.AddAuthConfig
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
 internal fun AuthConfigSection(
     modifier: Modifier = Modifier,
+    authConfigs: List<AuthConfig>,
     authConfig: AuthConfig?,
     onUiEvent: (BackendConfigEditViewModel.UiEvent) -> Unit
 ) {
@@ -52,16 +54,14 @@ internal fun AuthConfigSection(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                IconButton(onClick = {
-                    onUiEvent(
-                        BackendConfigEditViewModel.UiEvent.AddAuthConfig(
-                            AuthConfig(
-                                username = currentUsername,
-                                password = currentPassword
+                IconButton(
+                    onClick = {
+                        onUiEvent(
+                            AddAuthConfig(
+                                AuthConfig(username = currentUsername, password = currentPassword)
                             )
                         )
-                    )
-                }
+                    }
                 ) {
                     Icon(
                         imageVector = Icons.Default.AddCircle,
@@ -84,31 +84,22 @@ internal fun AuthConfigSection(
                     label = { Text(text = stringResource(R.string.edit_auth_config_password)) }
                 )
             } else {
-                Row {
-                    Text(text = stringResource(R.string.edit_auth_config_username))
-                    Text(text = authConfig.username)
-                }
-                Row {
-                    Text(text = stringResource(R.string.edit_auth_config_password))
-                    Text(text = authConfig.password)
+                if (authConfigs.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.edit_auth_config_empty)
+                    )
+                } else {
+                    Row {
+                        Text(text = stringResource(R.string.edit_auth_config_username))
+                        Text(text = authConfig.username)
+                    }
+                    Row {
+                        Text(text = stringResource(R.string.edit_auth_config_password))
+                        Text(text = authConfig.password)
+                    }
                 }
             }
         }
-    }
-}
-
-@CombinedPreview
-@Composable
-private fun AuthConfigSectionPreview() {
-    MkDocsEditorTheme {
-        AuthConfigSection(
-            modifier = Modifier.fillMaxWidth(),
-            authConfig = AuthConfig(
-                username = "username",
-                password = "password"
-            ),
-            onUiEvent = {}
-        )
     }
 }
 
@@ -118,7 +109,43 @@ private fun AuthConfigSectionPreviewNoData() {
     MkDocsEditorTheme {
         AuthConfigSection(
             modifier = Modifier.fillMaxWidth(),
+            authConfigs = emptyList(),
+            authConfig = AuthConfig(
+                username = "username",
+                password = "password"
+            ),
+            onUiEvent = {}
+        )
+    }
+
+}
+
+@CombinedPreview
+@Composable
+private fun AuthConfigSectionPreviewEditing() {
+    MkDocsEditorTheme {
+        AuthConfigSection(
+            modifier = Modifier.fillMaxWidth(),
+            authConfigs = emptyList(),
             authConfig = null,
+            onUiEvent = {}
+        )
+    }
+}
+
+@CombinedPreview
+@Composable
+private fun AuthConfigSectionPreviewSelected() {
+    MkDocsEditorTheme {
+        val authConfig = AuthConfig(
+            username = "username",
+            password = "password"
+        )
+        val authConfigs = listOf(authConfig)
+        AuthConfigSection(
+            modifier = Modifier.fillMaxWidth(),
+            authConfigs = authConfigs,
+            authConfig = authConfig,
             onUiEvent = {}
         )
     }

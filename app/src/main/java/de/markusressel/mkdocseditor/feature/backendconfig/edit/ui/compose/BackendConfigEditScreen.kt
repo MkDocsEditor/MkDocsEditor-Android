@@ -129,6 +129,7 @@ private fun BackendConfigEditScreenContent(
             AuthConfigSection(
                 modifier = Modifier
                     .fillMaxWidth(),
+                authConfigs = uiState.authConfigs,
                 authConfig = uiState.authConfig,
                 onUiEvent = onUiEvent
             )

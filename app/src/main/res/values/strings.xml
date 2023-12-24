@@ -55,6 +55,8 @@
     <string name="edit_auth_config_username">User</string>
     <string name="edit_auth_config_password">Password</string>
 
+    <string name="edit_auth_config_empty">There are no authentication configurations yet. Please create one using the + Icon above.</string>
+
     <string name="create_document">Create Document</string>
     <string name="create_document_hint">New Document</string>
     <string name="edit_document">Edit document</string>

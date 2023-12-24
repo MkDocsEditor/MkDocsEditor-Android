@@ -52,12 +52,14 @@ internal class BackendConfigEditViewModel @Inject constructor(
     }
 
     private fun clearInputs() {
-        _uiState.value = _uiState.value.copy(
-            name = "",
-            description = "",
-            serverConfig = null,
-            authConfig = null,
-        )
+        _uiState.update { old ->
+            old.copy(
+                name = "",
+                description = "",
+                serverConfig = null,
+                authConfig = null,
+            )
+        }
     }
 
     private suspend fun loadBackendConfig(id: Long) {
@@ -67,19 +69,24 @@ internal class BackendConfigEditViewModel @Inject constructor(
             return
         }
 
-        _uiState.value = _uiState.value.copy(
-            name = data.name,
-            description = data.description,
-            serverConfig = data.serverConfig,
-            authConfig = data.authConfig,
-        )
+        _uiState.update { old ->
+            old.copy(
+                name = data.name,
+                description = data.description,
+                serverConfig = data.serverConfig,
+                authConfig = data.authConfig,
+            )
+        }
     }
 
     private suspend fun updateAuthConfigs() {
         val authConfigs = getBackendAuthConfigsUseCase()
-        _uiState.value = _uiState.value.copy(
-            authConfigs = authConfigs
-        )
+        _uiState.update { old ->
+            old.copy(
+                authConfigs = authConfigs,
+                authConfig = authConfigs.firstOrNull()
+            )
+        }
     }
 
     fun onUiEvent(event: UiEvent) {
@@ -106,9 +113,9 @@ internal class BackendConfigEditViewModel @Inject constructor(
     }
 
     private fun processDescriptionInput(text: String) {
-        _uiState.value = _uiState.value.copy(
-            description = text
-        )
+        _uiState.update { old ->
+            old.copy(description = text)
+        }
     }
 
     private suspend fun save() {
@@ -133,15 +140,15 @@ internal class BackendConfigEditViewModel @Inject constructor(
     }
 
     private fun processAuthConfigSelectionChange(authConfig: AuthConfig?) {
-        _uiState.value = _uiState.value.copy(
-            authConfig = authConfig
-        )
+        _uiState.update { old ->
+            old.copy(authConfig = authConfig)
+        }
     }
 
     private fun processNameInput(text: String) {
-        _uiState.value = _uiState.value.copy(
-            name = text
-        )
+        _uiState.update { old ->
+            old.copy(name = text)
+        }
     }
 
     private suspend fun showError(s: String) {

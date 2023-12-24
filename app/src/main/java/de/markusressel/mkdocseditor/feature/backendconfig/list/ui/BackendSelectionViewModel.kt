@@ -57,16 +57,18 @@ internal class BackendSelectionViewModel @Inject constructor(
     private fun reload() {
         launch {
             try {
-                _uiState.value = _uiState.value.copy(isLoading = true)
+                _uiState.update { old -> old.copy(isLoading = true) }
                 val items = getBackendConfigItemsUseCase()
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    listItems = items
-                )
+                _uiState.update { old ->
+                    old.copy(
+                        isLoading = false,
+                        listItems = items
+                    )
+                }
             } catch (e: Exception) {
                 showError(e.message ?: "Unknown error")
             } finally {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                _uiState.update { old -> old.copy(isLoading = false) }
             }
         }
     }
