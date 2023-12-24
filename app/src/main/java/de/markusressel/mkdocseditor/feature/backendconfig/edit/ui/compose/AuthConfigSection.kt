@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -62,18 +64,23 @@ internal fun AuthConfigSection(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                IconButton(
-                    onClick = {
-                        onUiEvent(
-                            AddAuthConfig(
-                                AuthConfig(username = currentUsername, password = currentPassword)
-                            )
+                if (authConfig == null) {
+                    if (authConfigs.isNotEmpty()) {
+                        AuthAbortButton(
+                            modifier = Modifier,
+                            onClick = { onUiEvent(AuthConfigChanged(authConfigs.firstOrNull())) }
                         )
                     }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AddCircle,
-                        contentDescription = ""
+                    AuthSaveButton(
+                        modifier = Modifier,
+                        currentUsername = currentUsername,
+                        currentPassword = currentPassword,
+                        onUiEvent = onUiEvent,
+                    )
+                } else {
+                    AuthAddButton(
+                        modifier = Modifier,
+                        onClick = { onUiEvent(AuthConfigChanged(null)) }
                     )
                 }
             }
@@ -146,6 +153,59 @@ internal fun AuthConfigSection(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun AuthAbortButton(modifier: Modifier.Companion, onClick: () -> Unit) {
+    IconButton(
+        modifier = modifier,
+        onClick = onClick
+    ) {
+        Icon(
+            imageVector = Icons.Default.Clear,
+            contentDescription = ""
+        )
+    }
+}
+
+@Composable
+private fun AuthAddButton(
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    IconButton(
+        modifier = modifier,
+        onClick = onClick
+    ) {
+        Icon(
+            imageVector = Icons.Default.AddCircle,
+            contentDescription = ""
+        )
+    }
+}
+
+@Composable
+private fun AuthSaveButton(
+    modifier: Modifier.Companion,
+    currentUsername: String,
+    currentPassword: String,
+    onUiEvent: (BackendConfigEditViewModel.UiEvent) -> Unit
+) {
+    IconButton(
+        modifier = modifier,
+        onClick = {
+            onUiEvent(
+                AddAuthConfig(
+                    AuthConfig(username = currentUsername, password = currentPassword)
+                )
+            )
+        }
+    ) {
+        Icon(
+            imageVector = Icons.Default.CheckCircle,
+            contentDescription = ""
+        )
     }
 }
 
