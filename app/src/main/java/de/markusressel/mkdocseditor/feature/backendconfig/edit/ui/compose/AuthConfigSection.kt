@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose
 
 import androidx.compose.foundation.layout.Arrangement
@@ -9,6 +11,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -17,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,6 +33,7 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel.UiEvent.AddAuthConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel.UiEvent.AuthConfigChanged
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
@@ -89,13 +97,51 @@ internal fun AuthConfigSection(
                         text = stringResource(R.string.edit_auth_config_empty)
                     )
                 } else {
-                    Row {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Text(
                             modifier = Modifier.padding(end = 16.dp),
                             text = stringResource(R.string.edit_auth_config_username),
                             style = MaterialTheme.typography.titleMedium
                         )
-                        Text(text = authConfig.username)
+
+                        var expanded by remember { mutableStateOf(false) }
+
+                        ExposedDropdownMenuBox(
+                            expanded = expanded,
+                            onExpandedChange = { expanded = it },
+                        ) {
+                            Row(
+                                modifier = Modifier.menuAnchor(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(8.dp),
+                                    text = authConfig.username
+                                )
+
+                                ExposedDropdownMenuDefaults.TrailingIcon(
+                                    expanded = expanded
+                                )
+                            }
+
+                            ExposedDropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                authConfigs.sortedBy { it.username.lowercase() }.forEach { item ->
+                                    DropdownMenuItem(text = {
+                                        Text(authConfig.username)
+                                    }, onClick = {
+                                        onUiEvent(AuthConfigChanged(item))
+                                        expanded = false
+                                    })
+                                }
+                            }
+                        }
                     }
                 }
             }
