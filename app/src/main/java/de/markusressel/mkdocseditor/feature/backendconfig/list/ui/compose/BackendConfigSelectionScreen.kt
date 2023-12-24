@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.list.ui.compose
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,9 +13,11 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
@@ -23,6 +26,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendAuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.BackendConfigEditScreen
 import de.markusressel.mkdocseditor.feature.backendconfig.list.ui.BackendSelectionViewModel
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ScreenTitle
@@ -32,10 +36,29 @@ import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 object BackendConfigSelectionScreen : Screen {
     @Composable
     override fun Content() {
+        val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
 
         val viewModel: BackendSelectionViewModel = hiltViewModel()
         val uiState by viewModel.uiState.collectAsState()
+
+        LaunchedEffect(viewModel) {
+            viewModel.events.collect { event ->
+                when (event) {
+                    is BackendSelectionViewModel.BackendSelectionEvent.CreateBackend -> {
+                        navigator.push(BackendConfigEditScreen())
+                    }
+
+                    is BackendSelectionViewModel.BackendSelectionEvent.EditBackend -> {
+                        navigator.push(BackendConfigEditScreen(event.id))
+                    }
+
+                    is BackendSelectionViewModel.BackendSelectionEvent.Error -> {
+                        Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
 
         BackendSelectionScreenContent(
             modifier = Modifier.fillMaxSize(),

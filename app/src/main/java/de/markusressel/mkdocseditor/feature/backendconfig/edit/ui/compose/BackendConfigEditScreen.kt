@@ -1,13 +1,23 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import cafe.adriel.voyager.core.screen.Screen
+import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendAuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
@@ -15,15 +25,19 @@ import de.markusressel.mkdocseditor.feature.common.ui.compose.ScreenTitle
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
-@Composable
-internal fun BackendConfigEditScreen(
-//    onNavigationEvent: (NavigationEvent) -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: BackendConfigEditViewModel = hiltViewModel(),
-    onBack: () -> Unit,
-) {
-    val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsState()
+data class BackendConfigEditScreen(
+    val id: Long? = null
+) : Screen {
+    @Composable
+    override fun Content() {
+        val context = LocalContext.current
+
+        val viewModel: BackendConfigEditViewModel = hiltViewModel()
+        LaunchedEffect(viewModel, id) {
+            viewModel.initialize(id)
+        }
+
+        val uiState by viewModel.uiState.collectAsState()
 
 //    BackHandler(
 //        enabled = uiState.canGoUp,
@@ -35,11 +49,12 @@ internal fun BackendConfigEditScreen(
 //        },
 //    )
 
-    BackendConfigEditScreenContent(
-        modifier = modifier,
-        uiState = uiState,
-        onUiEvent = viewModel::onUiEvent
-    )
+        BackendConfigEditScreenContent(
+            modifier = Modifier.fillMaxSize(),
+            uiState = uiState,
+            onUiEvent = viewModel::onUiEvent
+        )
+    }
 }
 
 @Composable
@@ -52,22 +67,55 @@ private fun BackendConfigEditScreenContent(
         ScreenTitle(
             modifier = Modifier
                 .fillMaxWidth(),
-            title = "Backend Selection"
+            title = "Backend Configuration"
         )
 
-        AuthConfigSection(
+        Column(
             modifier = Modifier
-                .fillMaxWidth(),
-            authConfig = uiState.authConfig,
-            onAuthConfigChanged = {
-                onUiEvent(
-                    BackendConfigEditViewModel.UiEvent.AuthConfigChanged(
-                        it
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            BackendConfigNameEditField(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                name = uiState.name,
+                onValueChanged = { text ->
+                    onUiEvent(
+                        BackendConfigEditViewModel.UiEvent.NameChanged(text)
                     )
-                )
-            }
-        )
+                }
+            )
+
+            AuthConfigSection(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                authConfig = uiState.authConfig,
+                onAuthConfigChanged = {
+                    onUiEvent(
+                        BackendConfigEditViewModel.UiEvent.AuthConfigChanged(
+                            it
+                        )
+                    )
+                }
+            )
+        }
     }
+}
+
+@Composable
+internal fun BackendConfigNameEditField(
+    modifier: Modifier,
+    name: String,
+    onValueChanged: (String) -> Unit
+) {
+    OutlinedTextField(value = name,
+        modifier = modifier,
+        onValueChange = { value ->
+            onValueChanged(value)
+        },
+        label = { Text(stringResource(R.string.edit_backend_config_name_label)) }
+    )
 }
 
 @CombinedPreview

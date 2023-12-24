@@ -1,7 +1,6 @@
 package de.markusressel.mkdocseditor.feature.browser.ui
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.dropbox.android.external.store4.StoreResponse
 import com.github.ajalt.timberkt.Timber
 import com.hadilq.liveevent.LiveEvent
@@ -9,6 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
+import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.browser.data.ROOT_SECTION
 import de.markusressel.mkdocseditor.feature.browser.data.SectionBackstackItem
@@ -82,7 +82,7 @@ internal class FileBrowserViewModel @Inject constructor(
     internal val openDocumentEditorEvent = LiveEvent<String>()
 
     init {
-        viewModelScope.launch {
+        launch {
             uiState.map { it.isSearching }.distinctUntilChanged().collect { isSearching ->
                 if (isSearching.not()) {
                     showTopLevel()
@@ -91,7 +91,7 @@ internal class FileBrowserViewModel @Inject constructor(
         }
 
         var sectionJob: Job? = null
-        viewModelScope.launch {
+        launch {
             currentSectionId.collectLatest { sectionId ->
                 sectionJob?.cancel()
                 sectionJob = launch {
@@ -202,7 +202,7 @@ internal class FileBrowserViewModel @Inject constructor(
         sectionId: String,
         sectionName: String?,
         addToBackstack: Boolean = true,
-    ) = viewModelScope.launch {
+    ) = launch {
         if (
             uiState.value.isSearching.not()
             && currentSectionId.value == sectionId
@@ -287,7 +287,7 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private fun createNewSection(parentSectionId: String, sectionName: String) =
-        viewModelScope.launch {
+        launch {
             try {
                 // TODO: show loading state somehow
                 createNewSectionUseCase(sectionName, parentSectionId)
@@ -297,7 +297,7 @@ internal class FileBrowserViewModel @Inject constructor(
             }
         }
 
-    private fun createNewDocument(documentName: String) = viewModelScope.launch {
+    private fun createNewDocument(documentName: String) = launch {
         try {
             // TODO: show loading state somehow
             val newDocumentId = createNewDocumentUseCase(currentSectionId.value, documentName)
@@ -318,12 +318,12 @@ internal class FileBrowserViewModel @Inject constructor(
     /**
      * Rename a document
      */
-    fun renameDocument(id: String, documentName: String) = viewModelScope.launch {
+    fun renameDocument(id: String, documentName: String) = launch {
         restClient.renameDocument(id, documentName)
         reload()
     }
 
-    fun deleteDocument(id: String) = viewModelScope.launch {
+    fun deleteDocument(id: String) = launch {
         restClient.deleteDocument(id)
         reload()
     }
@@ -332,7 +332,7 @@ internal class FileBrowserViewModel @Inject constructor(
         _uiState.value = uiState.value.copy(
             error = "",
         )
-        viewModelScope.launch {
+        launch {
             try {
                 refreshSectionUseCase(currentSectionId.value)
             } catch (ex: Exception) {
@@ -353,7 +353,7 @@ internal class FileBrowserViewModel @Inject constructor(
                 )
             )
         }
-//        viewModelScope.launch {
+//        launch {
 //            _events.send(FileBrowserEvent.CreateSectionEvent(currentSectionId))
 //        }
     }
@@ -369,26 +369,26 @@ internal class FileBrowserViewModel @Inject constructor(
                 )
             )
         }
-//        viewModelScope.launch {
+//        launch {
 //            _events.send(FileBrowserEvent.CreateDocumentEvent(currentSectionId))
 //        }
     }
 
     fun onDocumentLongClicked(entity: DocumentEntity): Boolean {
-        viewModelScope.launch {
+        launch {
             _events.send(FileBrowserEvent.RenameDocument(entity))
         }
         return true
     }
 
     private fun onDocumentClicked(entity: DocumentEntity) {
-        viewModelScope.launch {
+        launch {
             _events.send(FileBrowserEvent.OpenDocumentEditor(entity))
         }
     }
 
     private fun onResourceClicked(entity: ResourceEntity) {
-        viewModelScope.launch {
+        launch {
             _events.send(FileBrowserEvent.DownloadResource(entity))
         }
     }

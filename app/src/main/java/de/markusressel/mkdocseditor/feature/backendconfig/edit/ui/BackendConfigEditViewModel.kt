@@ -1,24 +1,25 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.edit.ui
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendAuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendAuthConfigsUseCase
+import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.ValidateBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.domain.SaveBackendConfigItemsUseCase
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
 @HiltViewModel
 internal class BackendConfigEditViewModel @Inject constructor(
+    private val getBackendConfigUseCase: GetBackendConfigUseCase,
     private val getBackendAuthConfigsUseCase: GetBackendAuthConfigsUseCase,
     private val validateBackendConfigUseCase: ValidateBackendConfigUseCase,
     private val saveBackendConfigItemsUseCase: SaveBackendConfigItemsUseCase,
@@ -32,9 +33,43 @@ internal class BackendConfigEditViewModel @Inject constructor(
     internal val events = _events.receiveAsFlow()
 
     init {
-        viewModelScope.launch {
+        launch {
             updateAuthConfigs()
         }
+    }
+
+    fun initialize(id: Long?) {
+        launch {
+            if (id == null) {
+                clearInputs()
+            } else {
+                loadBackendConfig(id)
+            }
+        }
+    }
+
+    private fun clearInputs() {
+        _uiState.value = _uiState.value.copy(
+            name = "",
+            description = "",
+            serverConfig = null,
+            authConfig = null,
+        )
+    }
+
+    private suspend fun loadBackendConfig(id: Long) {
+        val data = getBackendConfigUseCase(id)
+        if (data == null) {
+            showError("Backend config not found")
+            return
+        }
+
+        _uiState.value = _uiState.value.copy(
+            name = data.name,
+            description = data.description,
+            serverConfig = data.serverConfig,
+            authConfig = data.authConfig,
+        )
     }
 
     private suspend fun updateAuthConfigs() {
@@ -45,7 +80,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
     }
 
     fun onUiEvent(event: UiEvent) {
-        viewModelScope.launch {
+        launch {
             when (event) {
                 is UiEvent.AuthConfigChanged -> {
                     _uiState.value = _uiState.value.copy(
@@ -69,12 +104,20 @@ internal class BackendConfigEditViewModel @Inject constructor(
                         saveBackendConfigItemsUseCase(config)
                     }
                 }
+
+                is UiEvent.NameChanged -> processNameInput(event.text)
             }
         }
     }
 
+    private fun processNameInput(text: String) {
+        _uiState.value = _uiState.value.copy(
+            name = text
+        )
+    }
+
     private fun showError(s: String) {
-        viewModelScope.launch {
+        launch {
             _events.send(BackendEditEvent.Error(s))
         }
     }
@@ -83,6 +126,8 @@ internal class BackendConfigEditViewModel @Inject constructor(
     internal sealed class UiEvent {
         data object SaveClicked : UiEvent()
         data class AuthConfigChanged(val authConfig: BackendAuthConfig?) : UiEvent()
+
+        data class NameChanged(val text: String) : UiEvent()
     }
 
     internal data class UiState(

@@ -44,4 +44,8 @@ internal class BackendConfigRepository @Inject constructor(
         useSsl = useSsl,
     )
 
+    fun get(id: Long): BackendConfigEntity? {
+        return backendConfigPersistenceManager.standardOperation().get(id)
+    }
+
 }

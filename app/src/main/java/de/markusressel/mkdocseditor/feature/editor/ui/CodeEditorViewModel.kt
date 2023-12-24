@@ -14,6 +14,7 @@ import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
+import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.ConnectionStatus
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.Error
@@ -111,7 +112,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private var documentSyncManager: DocumentSyncManager? = null
 
     init {
-        viewModelScope.launch {
+        launch {
             documentId.collect { documentId ->
                 _uiState.update { old ->
                     old.copy(documentId = documentId)
@@ -177,7 +178,7 @@ internal class CodeEditorViewModel @Inject constructor(
         }
 
 
-        viewModelScope.launch {
+        launch {
             editable.collect { editable ->
                 if (editable.not()) {
                     // automatically disable edit mode, if (for whatever reason)
@@ -191,7 +192,7 @@ internal class CodeEditorViewModel @Inject constructor(
             }
         }
 
-        viewModelScope.launch {
+        launch {
             combine(
                 connectionStatus,
                 editable,
@@ -208,7 +209,7 @@ internal class CodeEditorViewModel @Inject constructor(
             }
         }
 
-        viewModelScope.launch {
+        launch {
             offlineModeManager.isEnabled.collect { enabled ->
                 when {
                     enabled -> disconnect("Offline mode activated")
@@ -225,12 +226,12 @@ internal class CodeEditorViewModel @Inject constructor(
             }
         }
 
-        viewModelScope.launch {
+        launch {
             var job: Job? = null
 
             documentEntityFlow.collectLatest { entityFlow ->
                 job?.cancel()
-                job = viewModelScope.launch {
+                job = launch {
                     entityFlow?.collectLatest { resource ->
                         currentResource.value = resource
                         when (resource) {
@@ -251,7 +252,7 @@ internal class CodeEditorViewModel @Inject constructor(
             }
         }
 
-        viewModelScope.launch {
+        launch {
             uiState.map { it.editModeActive }.distinctUntilChanged().collectLatest {
                 documentSyncManager?.readOnly = it.not()
             }
@@ -279,7 +280,7 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     fun onUiEvent(event: UiEvent) {
-        viewModelScope.launch {
+        launch {
             when (event) {
                 is UiEvent.BackPressed -> onClose()
             }
@@ -296,7 +297,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private fun watchTextChanges() {
         val syncInterval = preferencesHolder.codeEditorSyncIntervalPreference.persistedValue.value
 
-        viewModelScope.launch {
+        launch {
             try {
                 try {
                     while (documentSyncManager?.isConnected == true) {
@@ -366,12 +367,12 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     private fun updateDocumentContentInCache(documentId: String, text: String) =
-        viewModelScope.launch {
+        launch {
             dataRepository.updateDocumentContentInCache(documentId, text)
         }
 
 
-    fun saveEditorState(selection: Int, panX: Float, panY: Float) = viewModelScope.launch {
+    fun saveEditorState(selection: Int, panX: Float, panY: Float) = launch {
         dataRepository.saveEditorState(
             documentId.value!!,
             uiState.value.text?.toString(),

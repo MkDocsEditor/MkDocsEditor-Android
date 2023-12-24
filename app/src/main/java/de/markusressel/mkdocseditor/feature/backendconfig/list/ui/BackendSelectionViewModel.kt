@@ -1,12 +1,11 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.list.ui
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
+import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendConfigItemsUseCase
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
@@ -15,7 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -35,7 +33,7 @@ internal class BackendSelectionViewModel @Inject constructor(
     }
 
     fun onUiEvent(event: UiEvent) {
-        viewModelScope.launch {
+        launch {
             when (event) {
                 is UiEvent.BackendConfigClicked -> {
                     selectConfig(event.config)
@@ -43,10 +41,6 @@ internal class BackendSelectionViewModel @Inject constructor(
 
                 is UiEvent.BackendConfigLongClicked -> {
                     editConfig(event.config)
-                }
-
-                is UiEvent.CreateBackendConfigClicked -> {
-                    _events.send(BackendSelectionEvent.CreateBackend(ResourceEntity()))
                 }
 
                 is UiEvent.ExpandableFabItemSelected -> {
@@ -61,7 +55,7 @@ internal class BackendSelectionViewModel @Inject constructor(
     }
 
     private fun reload() {
-        viewModelScope.launch {
+        launch {
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true)
                 val items = getBackendConfigItemsUseCase()
@@ -85,28 +79,23 @@ internal class BackendSelectionViewModel @Inject constructor(
         }
     }
 
-    private fun editConfig(config: BackendConfig) {
-        // TODO: navigate to edit screen
+    private suspend fun editConfig(config: BackendConfig) {
+        _events.send(BackendSelectionEvent.EditBackend(config.id))
     }
 
 
-    private fun navigateToCreateBackendConfig() {
-        // TODO: navigate to edit screen
-
+    private suspend fun navigateToCreateBackendConfig() {
+        _events.send(BackendSelectionEvent.CreateBackend(ResourceEntity()))
     }
 
-    private fun showError(s: String) {
-        viewModelScope.launch {
-            _events.send(BackendSelectionEvent.Error(s))
-        }
+    private suspend fun showError(s: String) {
+        _events.send(BackendSelectionEvent.Error(s))
     }
 
 
     internal sealed class UiEvent {
         data class BackendConfigClicked(val config: BackendConfig) : UiEvent()
         data class BackendConfigLongClicked(val config: BackendConfig) : UiEvent()
-        data object CreateBackendConfigClicked : UiEvent()
-
         data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
     }
 
@@ -130,9 +119,8 @@ internal class BackendSelectionViewModel @Inject constructor(
     internal sealed class BackendSelectionEvent {
         data class Error(val message: String) : BackendSelectionEvent()
 
-        data class SelectBackend(val entity: DocumentEntity) : BackendSelectionEvent()
         data class CreateBackend(val entity: ResourceEntity) : BackendSelectionEvent()
-        data class EditBackend(val parentId: String) : BackendSelectionEvent()
+        data class EditBackend(val id: Long) : BackendSelectionEvent()
     }
 }
 
