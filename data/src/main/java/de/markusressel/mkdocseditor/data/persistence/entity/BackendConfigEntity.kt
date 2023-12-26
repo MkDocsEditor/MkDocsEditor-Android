@@ -19,6 +19,7 @@ data class BackendServerConfigEntity(
     val domain: String = "",
     val port: Int = 0,
     val useSsl: Boolean = false,
+    val webBaseUri: String = "",
 )
 
 @Entity

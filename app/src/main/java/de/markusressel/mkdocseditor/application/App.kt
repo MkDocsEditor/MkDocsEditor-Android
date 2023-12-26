@@ -15,10 +15,15 @@ import de.markusressel.mkdocseditor.event.BasicAuthPasswordChangedEvent
 import de.markusressel.mkdocseditor.event.BasicAuthUserChangedEvent
 import de.markusressel.mkdocseditor.event.HostChangedEvent
 import de.markusressel.mkdocseditor.event.PortChangedEvent
+import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -44,6 +49,10 @@ class App : Application(), Configuration.Provider {
     @Inject
     internal lateinit var documentPersistenceManager: DocumentPersistenceManager
 
+    @Inject
+    internal lateinit var getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase
+
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
@@ -68,15 +77,19 @@ class App : Application(), Configuration.Provider {
     }
 
     private fun initRestClient() {
-        restClient.setHostname(preferencesHolder.restConnectionHostnamePreference.persistedValue.value)
-        restClient.setPort(preferencesHolder.restConnectionPortPreference.persistedValue.value.toInt())
-        restClient.setUseSSL(preferencesHolder.restConnectionSslPreference.persistedValue.value)
-        restClient.setBasicAuthConfig(
-            BasicAuthConfig(
-                username = preferencesHolder.basicAuthUserPreference.persistedValue.value,
-                password = preferencesHolder.basicAuthPasswordPreference.persistedValue.value
-            )
-        )
+        GlobalScope.launch {
+            getCurrentBackendConfigUseCase().filterNotNull().collectLatest {
+                restClient.setHostname(it.serverConfig.domain)
+                restClient.setPort(it.serverConfig.port)
+                restClient.setUseSSL(it.serverConfig.useSsl)
+                restClient.setBasicAuthConfig(
+                    BasicAuthConfig(
+                        username = it.authConfig.username,
+                        password = it.authConfig.password
+                    )
+                )
+            }
+        }
     }
 
     private fun setupErrorHandlers() {

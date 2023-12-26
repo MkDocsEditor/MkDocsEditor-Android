@@ -20,6 +20,7 @@ internal class GetBackendConfigItemsUseCase @Inject constructor(
                 domain = "test",
                 port = 1234,
                 useSsl = false,
+                webBaseUri = "https://test.de",
             ),
             authConfig = AuthConfig(
                 username = "test",
@@ -33,6 +34,7 @@ internal class GetBackendConfigItemsUseCase @Inject constructor(
                     domain = "test2",
                     port = 1234,
                     useSsl = false,
+                    webBaseUri = "https://test2.de",
                 ),
                 authConfig = AuthConfig(
                     username = "test2",

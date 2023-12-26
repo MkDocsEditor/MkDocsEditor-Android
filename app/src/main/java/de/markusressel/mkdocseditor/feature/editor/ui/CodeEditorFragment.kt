@@ -82,7 +82,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
             },
             onOptionsMenuItemClicked = {
                 when (it.itemId) {
-                    R.id.open_in_browser -> viewModel.onOpenInBrowserClicked()
+//                    R.id.open_in_browser -> viewModel.onOpenInBrowserClicked()
                     R.id.edit -> viewModel.onEditClicked()
                     else -> false
                 }
@@ -93,10 +93,10 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
                     val openInBrowserIcon =
                         iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_open_in_browser)
                     icon = openInBrowserIcon
-                    if (viewModel.preferencesHolder.webUriPreference.persistedValue.value.isBlank()) {
-                        isVisible = false
-                        isEnabled = false
-                    }
+//                    if (viewModel.preferencesHolder.webUriPreference.persistedValue.value.isBlank()) {
+//                        isVisible = false
+//                        isEnabled = false
+//                    }
                 }
             })
     }

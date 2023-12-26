@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="category_connection_key" translatable="false">category_connection_key</string>
-    <string name="category_connection_title">Connection</string>
-    <string name="category_connection_description">Connection Description</string>
-
     <string name="category_offline_cache_key" translatable="false">category_offline_cache_key</string>
     <string name="category_offline_cache_title">Offline Cache</string>
     <string name="category_offline_cache_description">Offline Cache update conditions</string>
@@ -27,23 +23,6 @@
 
     <string name="connection_web_url_key" translatable="false">connection_web_url_key</string>
     <string name="connection_web_url_title">Web base URL</string>
-
-
-    <string name="section_rest_server_key" translatable="false">section_rest_server_key</string>
-    <string name="section_rest_server_title">REST Server</string>
-
-    <string name="divider_basic_auth_key" translatable="false">divider_basic_auth_key</string>
-    <string name="divider_basic_auth_title">Basic Auth</string>
-
-    <string name="section_web_key" translatable="false">section_web_key</string>
-    <string name="section_web_title">Web</string>
-
-    <string name="connection_basic_auth_user_key" translatable="false">connection_basic_auth_user_key</string>
-    <string name="connection_basic_auth_user_title">User</string>
-
-
-    <string name="connection_basic_auth_password_key" translatable="false">connection_basic_auth_password_key</string>
-    <string name="connection_basic_auth_password_title">Password</string>
 
     <string name="theme_title">Theme</string>
 

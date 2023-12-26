@@ -199,6 +199,8 @@ internal class BackendConfigEditViewModel @Inject constructor(
                     domain = uiState.value.currentDomain,
                     port = uiState.value.currentPort.toInt(),
                     useSsl = uiState.value.currentUseSsl,
+                    // TODO: allow user override
+                    webBaseUri = "https://${uiState.value.currentDomain}:${uiState.value.currentPort}",
                 )
 
                 val config = BackendConfig(

@@ -152,6 +152,7 @@ private fun BackendConfigEditScreenContentPreview() {
                     domain = "domain.com",
                     port = 443,
                     useSsl = true,
+                    webBaseUri = "https://domain.com"
                 ),
                 authConfig = AuthConfig(
                     username = "user",

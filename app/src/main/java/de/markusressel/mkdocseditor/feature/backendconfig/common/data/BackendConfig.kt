@@ -19,6 +19,7 @@ internal fun BackendConfigEntity.toBackendConfig(): BackendConfig {
             domain = serverConfig.target.domain,
             port = serverConfig.target.port,
             useSsl = serverConfig.target.useSsl,
+            webBaseUri = serverConfig.target.webBaseUri,
         ),
         authConfig = AuthConfig(
             username = authConfig.target.username,

@@ -11,19 +11,13 @@ import de.markusressel.kutepreferences.core.preference.category.KuteCategory
 import de.markusressel.kutepreferences.core.preference.number.KuteNumberPreference
 import de.markusressel.kutepreferences.core.preference.section.KuteSection
 import de.markusressel.kutepreferences.core.preference.select.KuteSingleSelectStringPreference
-import de.markusressel.kutepreferences.core.preference.text.KutePasswordPreference
-import de.markusressel.kutepreferences.core.preference.text.KuteTextPreference
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.application.triggerAppRebirth
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
-import de.markusressel.mkdocseditor.event.BasicAuthPasswordChangedEvent
-import de.markusressel.mkdocseditor.event.BasicAuthUserChangedEvent
-import de.markusressel.mkdocseditor.event.HostChangedEvent
 import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
-import de.markusressel.mkdocseditor.event.PortChangedEvent
 import de.markusressel.mkdocseditor.event.ThemeChangedEvent
 import de.markusressel.mkdocseditor.feature.preferences.domain.LastOfflineCacheUpdatePreferenceItem
 import de.markusressel.mkdocseditor.network.OfflineModeManager
@@ -50,39 +44,6 @@ class KutePreferencesHolder @Inject constructor(
     private val resourcePersistenceManager: ResourcePersistenceManager,
     private val offlineModeManager: OfflineModeManager
 ) {
-
-    val connectionCategory by lazy {
-        KuteCategory(
-            key = R.string.category_connection_key,
-            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_wifi),
-            title = context.getString(R.string.category_connection_title),
-            description = context.getString(R.string.category_connection_description),
-            children = listOf(
-                KuteSection(
-                    key = R.string.section_rest_server_key,
-                    title = context.getString(R.string.section_rest_server_title),
-                    children = listOf(
-                        restConnectionHostnamePreference,
-                        restConnectionPortPreference,
-                        restConnectionSslPreference
-                    )
-                ), KuteSection(
-                    key = R.string.divider_basic_auth_key,
-                    title = context.getString(R.string.divider_basic_auth_title),
-                    children = listOf(
-                        basicAuthUserPreference,
-                        basicAuthPasswordPreference
-                    )
-                ), KuteSection(
-                    key = R.string.section_web_key,
-                    title = context.getString(R.string.section_web_title),
-                    children = listOf(
-                        webUriPreference
-                    )
-                )
-            )
-        )
-    }
 
     val offlineCacheCategory by lazy {
         KuteCategory(
@@ -130,74 +91,6 @@ class KutePreferencesHolder @Inject constructor(
 
     val lastOfflineCacheUpdate by lazy {
         LastOfflineCacheUpdatePreferenceItem()
-    }
-
-    val restConnectionHostnamePreference by lazy {
-        KuteTextPreference(
-            key = R.string.connection_host_key,
-            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_battery),
-            title = context.getString(R.string.connection_host_title),
-            defaultValue = "",
-            dataProvider = dataProvider,
-            onPreferenceChangedListener = { old, new ->
-                Bus.send(HostChangedEvent(new))
-            })
-    }
-
-    val restConnectionPortPreference by lazy {
-        KuteNumberPreference(key = R.string.connection_port_key,
-            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_circle_o),
-            title = context.getString(R.string.connection_port_title),
-            defaultValue = 7413,
-            minimum = 0,
-            maximum = 65535,
-            dataProvider = dataProvider,
-            onPreferenceChangedListener = { old, new ->
-                Bus.send(PortChangedEvent(new.toInt()))
-            })
-    }
-
-    val restConnectionSslPreference by lazy {
-        KuteBooleanPreference(key = R.string.connection_ssl_key,
-            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_lock),
-            title = context.getString(R.string.connection_ssl_title),
-            defaultValue = true,
-            dataProvider = dataProvider,
-            onPreferenceChangedListener = { old, new ->
-            })
-    }
-
-    val basicAuthUserPreference by lazy {
-        KuteTextPreference(key = R.string.connection_basic_auth_user_key,
-            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_account),
-            title = context.getString(R.string.connection_basic_auth_user_title),
-            defaultValue = "",
-            dataProvider = dataProvider,
-            onPreferenceChangedListener = { old, new ->
-                Bus.send(BasicAuthUserChangedEvent(new))
-            })
-    }
-
-    val basicAuthPasswordPreference by lazy {
-        KutePasswordPreference(key = R.string.connection_basic_auth_password_key,
-            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_key),
-            title = context.getString(R.string.connection_basic_auth_password_title),
-            defaultValue = "",
-            dataProvider = dataProvider,
-            onPreferenceChangedListener = { old, new ->
-                Bus.send(BasicAuthPasswordChangedEvent(new))
-            })
-    }
-
-    val webUriPreference by lazy {
-        KuteTextPreference(key = R.string.connection_web_url_key,
-            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_battery),
-            title = context.getString(R.string.connection_web_url_title),
-            defaultValue = "",
-            dataProvider = dataProvider,
-            onPreferenceChangedListener = { old, new ->
-                Bus.send(HostChangedEvent(new))
-            })
     }
 
     val themePreference by lazy {

@@ -169,6 +169,7 @@ private fun BackendSelectionScreenContentPreview() {
                             domain = "mkdocksrest.backend.com",
                             port = 443,
                             useSsl = true,
+                            webBaseUri = "https://mkdocksrest.backend.com",
                         ),
                         authConfig = AuthConfig(
                             username = "test",

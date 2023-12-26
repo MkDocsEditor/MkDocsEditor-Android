@@ -32,7 +32,6 @@ internal class PreferencesViewModel @Inject constructor(
 
         initPreferencesTree(
             listOf(
-                preferencesHolder.connectionCategory,
                 preferencesHolder.offlineCacheCategory,
                 preferencesHolder.uxCategory,
                 preferencesHolder.uiCategory,

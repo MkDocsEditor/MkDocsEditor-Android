@@ -15,6 +15,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.extensions.common.android.launch
+import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.ConnectionStatus
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.Error
@@ -53,6 +54,7 @@ import javax.inject.Inject
 internal class CodeEditorViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val dataRepository: DataRepository,
+    private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
     val preferencesHolder: KutePreferencesHolder,
     val networkManager: NetworkManager,
     val offlineModeManager: OfflineModeManager,
@@ -128,14 +130,16 @@ internal class CodeEditorViewModel @Inject constructor(
                 if (documentId == null) {
                     documentSyncManager = null
                 } else {
+                    val currentBackend = requireNotNull(getCurrentBackendConfigUseCase().value)
+
                     documentSyncManager =
                         DocumentSyncManager(
-                            hostname = preferencesHolder.restConnectionHostnamePreference.persistedValue.value,
-                            port = preferencesHolder.restConnectionPortPreference.persistedValue.value.toInt(),
-                            ssl = preferencesHolder.restConnectionSslPreference.persistedValue.value,
+                            hostname = currentBackend.serverConfig.domain,
+                            port = currentBackend.serverConfig.port,
+                            ssl = currentBackend.serverConfig.useSsl,
                             basicAuthConfig = BasicAuthConfig(
-                                preferencesHolder.basicAuthUserPreference.persistedValue.value,
-                                preferencesHolder.basicAuthPasswordPreference.persistedValue.value
+                                username = currentBackend.authConfig.username,
+                                password = currentBackend.authConfig.password
                             ),
                             documentId = documentId,
                             currentText = {
@@ -383,8 +387,9 @@ internal class CodeEditorViewModel @Inject constructor(
         )
     }
 
-    fun onOpenInBrowserClicked(): Boolean {
-        val webBaseUri = preferencesHolder.webUriPreference.persistedValue.value
+    private suspend fun onOpenInBrowserClicked(): Boolean {
+        val backendConfig = requireNotNull(getCurrentBackendConfigUseCase().value)
+        val webBaseUri = backendConfig.serverConfig.webBaseUri
         if (webBaseUri.isBlank()) {
             return false
         }
