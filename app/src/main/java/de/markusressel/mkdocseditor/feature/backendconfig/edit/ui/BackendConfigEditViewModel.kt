@@ -95,6 +95,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
 
                 is UiEvent.DomainChanged -> processDomainInput(event.text)
                 is UiEvent.PortChanged -> processPortInput(event.port)
+                is UiEvent.UseSslChanged -> processUseSslInput(event.checked)
 
                 is UiEvent.AuthConfigSelectionChanged -> processAuthConfigSelectionChange(event.authConfig)
                 is UiEvent.AuthConfigAddButtonClicked -> enableAuthConfigEditMode()
@@ -104,8 +105,13 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 is UiEvent.AuthConfigPasswordInputChanged -> processAuthConfigPasswordInput(event.input)
                 is UiEvent.SaveClicked -> save()
                 is UiEvent.AuthConfigSaveButtonClicked -> addAuthConfigFromCurrentInputs()
-
             }
+        }
+    }
+
+    private fun processUseSslInput(checked: Boolean) {
+        _uiState.update { old ->
+            old.copy(currentUseSsl = checked)
         }
     }
 
@@ -267,6 +273,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
         data class DescriptionChanged(val text: String) : UiEvent()
         data class DomainChanged(val text: String) : UiEvent()
         data class PortChanged(val port: String) : UiEvent()
+        data class UseSslChanged(val checked: Boolean) : UiEvent()
 
         data object AuthConfigSaveButtonClicked : UiEvent()
     }

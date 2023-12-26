@@ -19,6 +19,7 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendSer
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel.UiEvent.DomainChanged
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.auth.AuthConfigSection
+import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.server.ServerSection
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ScreenTitle
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
@@ -69,7 +70,6 @@ internal fun BackendConfigEditScreenContent(
 
             ServerSection(
                 modifier = Modifier.fillMaxWidth(),
-                serverConfig = uiState.serverConfig,
                 currentDomain = uiState.currentDomain,
                 onDomainChanged = { text ->
                     onUiEvent(DomainChanged(text))
@@ -78,7 +78,10 @@ internal fun BackendConfigEditScreenContent(
                 onPortChanged = { text ->
                     onUiEvent(BackendConfigEditViewModel.UiEvent.PortChanged(text))
                 },
-                onUiEvent = onUiEvent
+                useSsl = uiState.currentUseSsl,
+                onUseSslCheckedChanged = { checked ->
+                    onUiEvent(BackendConfigEditViewModel.UiEvent.UseSslChanged(checked))
+                },
             )
 
             AuthConfigSection(
