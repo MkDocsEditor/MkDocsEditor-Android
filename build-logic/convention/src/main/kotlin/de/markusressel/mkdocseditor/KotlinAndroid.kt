@@ -55,6 +55,7 @@ internal fun Project.configureKotlinAndroid(
                 // Enable experimental coroutines APIs, including Flow
                 "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
                 "-opt-in=kotlinx.coroutines.FlowPreview",
+                "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
             )
         }
     }

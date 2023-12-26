@@ -26,6 +26,7 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
+import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.auth.AuthConfigSection
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ScreenTitle
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
@@ -51,6 +52,10 @@ data class BackendConfigEditScreen(
                     }
 
                     is BackendConfigEditViewModel.BackendEditEvent.Error -> {
+                        Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                    }
+
+                    is BackendConfigEditViewModel.BackendEditEvent.Info -> {
                         Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
                     }
                 }
@@ -129,8 +134,12 @@ private fun BackendConfigEditScreenContent(
             AuthConfigSection(
                 modifier = Modifier
                     .fillMaxWidth(),
+                editMode = uiState.authConfigEditMode,
                 authConfigs = uiState.authConfigs,
                 authConfig = uiState.authConfig,
+                saveButtonEnabled = uiState.authConfigSaveButtonEnabled,
+                currentAuthConfigUsername = uiState.currentAuthConfigUsername,
+                currentAuthConfigPassword = uiState.currentAuthConfigPassword,
                 onUiEvent = onUiEvent
             )
 

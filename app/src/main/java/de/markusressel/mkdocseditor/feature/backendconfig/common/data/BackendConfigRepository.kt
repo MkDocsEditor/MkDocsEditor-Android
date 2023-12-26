@@ -50,8 +50,12 @@ internal class BackendConfigRepository @Inject constructor(
         useSsl = useSsl,
     )
 
-    fun get(id: Long): BackendConfigEntity? {
+    fun getBackendConfig(id: Long): BackendConfigEntity? {
         return backendConfigPersistenceManager.standardOperation().get(id)
+    }
+
+    fun deleteAuthConfig(id: Long): Boolean {
+        return backendAuthConfigPersistenceManager.standardOperation().remove(id)
     }
 
 }
