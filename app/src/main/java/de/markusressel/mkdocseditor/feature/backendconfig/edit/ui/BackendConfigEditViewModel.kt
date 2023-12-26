@@ -27,7 +27,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
     private val addAuthConfigUseCase: AddAuthConfigUseCase,
     private val deleteAuthConfigUseCase: DeleteAuthConfigUseCase,
     private val validateBackendConfigUseCase: ValidateBackendConfigUseCase,
-    private val saveBackendConfigItemsUseCase: SaveBackendConfigItemsUseCase,
+    private val saveBackendConfigUseCase: SaveBackendConfigItemsUseCase,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -92,6 +92,10 @@ internal class BackendConfigEditViewModel @Inject constructor(
             when (event) {
                 is UiEvent.NameChanged -> processNameInput(event.text)
                 is UiEvent.DescriptionChanged -> processDescriptionInput(event.text)
+
+                is UiEvent.DomainChanged -> processDomainInput(event.text)
+                is UiEvent.PortChanged -> processPortInput(event.port)
+
                 is UiEvent.AuthConfigSelectionChanged -> processAuthConfigSelectionChange(event.authConfig)
                 is UiEvent.AuthConfigAddButtonClicked -> enableAuthConfigEditMode()
                 is UiEvent.AuthConfigAbortButtonClicked -> disableAuthConfigEditMode()
@@ -100,7 +104,20 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 is UiEvent.AuthConfigPasswordInputChanged -> processAuthConfigPasswordInput(event.input)
                 is UiEvent.SaveClicked -> save()
                 is UiEvent.AuthConfigSaveButtonClicked -> addAuthConfigFromCurrentInputs()
+
             }
+        }
+    }
+
+    private fun processPortInput(port: String) {
+        _uiState.update { old ->
+            old.copy(currentPort = port)
+        }
+    }
+
+    private fun processDomainInput(text: String) {
+        _uiState.update { old ->
+            old.copy(currentDomain = text)
         }
     }
 
@@ -172,13 +189,19 @@ internal class BackendConfigEditViewModel @Inject constructor(
             showError("Backend config is not valid")
         } else {
             try {
+                val serverConfig = BackendServerConfig(
+                    domain = uiState.value.currentDomain,
+                    port = uiState.value.currentPort.toInt(),
+                    useSsl = uiState.value.currentUseSsl,
+                )
+
                 val config = BackendConfig(
                     name = uiState.value.name,
                     description = uiState.value.description,
-                    serverConfig = requireNotNull(uiState.value.serverConfig),
+                    serverConfig = serverConfig,
                     authConfig = requireNotNull(uiState.value.authConfig),
                 )
-                saveBackendConfigItemsUseCase(config)
+                saveBackendConfigUseCase(config)
                 _events.send(BackendEditEvent.CloseScreen)
             } catch (e: Exception) {
                 showError("Failed to save backend config")
@@ -242,6 +265,9 @@ internal class BackendConfigEditViewModel @Inject constructor(
 
         data class NameChanged(val text: String) : UiEvent()
         data class DescriptionChanged(val text: String) : UiEvent()
+        data class DomainChanged(val text: String) : UiEvent()
+        data class PortChanged(val port: String) : UiEvent()
+
         data object AuthConfigSaveButtonClicked : UiEvent()
     }
 
@@ -254,6 +280,11 @@ internal class BackendConfigEditViewModel @Inject constructor(
 
         val name: String = "",
         val description: String = "",
+
+        val currentDomain: String = "",
+        val currentPort: String = "",
+        val currentUseSsl: Boolean = false,
+
         val serverConfig: BackendServerConfig? = null,
         val authConfig: AuthConfig? = null,
 
@@ -263,7 +294,8 @@ internal class BackendConfigEditViewModel @Inject constructor(
         val authConfigSaveButtonEnabled: Boolean = false,
 
         val saveButtonEnabled: Boolean = false,
-    )
+    ) {
+    }
 
     internal sealed class BackendEditEvent {
         data object CloseScreen : BackendEditEvent()

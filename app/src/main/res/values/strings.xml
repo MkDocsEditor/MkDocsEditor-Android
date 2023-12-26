@@ -48,7 +48,9 @@
 
     <string name="edit_server_config_title">Server</string>
     <string name="edit_server_config_domain">Domain</string>
+    <string name="edit_server_config_domain_label">Domain</string>
     <string name="edit_server_config_port">Port</string>
+    <string name="edit_server_config_port_label">Port</string>
     <string name="edit_server_config_use_ssl">SSL</string>
 
     <string name="edit_auth_config_title">Authentication</string>

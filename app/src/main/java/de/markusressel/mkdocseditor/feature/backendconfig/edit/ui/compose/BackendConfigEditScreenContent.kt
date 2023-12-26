@@ -17,6 +17,7 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
+import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel.UiEvent.DomainChanged
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.auth.AuthConfigSection
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ScreenTitle
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
@@ -69,6 +70,14 @@ internal fun BackendConfigEditScreenContent(
             ServerSection(
                 modifier = Modifier.fillMaxWidth(),
                 serverConfig = uiState.serverConfig,
+                currentDomain = uiState.currentDomain,
+                onDomainChanged = { text ->
+                    onUiEvent(DomainChanged(text))
+                },
+                currentPort = uiState.currentPort,
+                onPortChanged = { text ->
+                    onUiEvent(BackendConfigEditViewModel.UiEvent.PortChanged(text))
+                },
                 onUiEvent = onUiEvent
             )
 
