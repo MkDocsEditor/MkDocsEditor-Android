@@ -69,8 +69,6 @@ internal fun AuthConfigSection(
                             )
                             AuthSaveButton(
                                 modifier = Modifier,
-                                currentUsername = currentAuthConfigUsername,
-                                currentPassword = currentAuthConfigPassword,
                                 enabled = saveButtonEnabled,
                                 onUiEvent = onUiEvent,
                             )

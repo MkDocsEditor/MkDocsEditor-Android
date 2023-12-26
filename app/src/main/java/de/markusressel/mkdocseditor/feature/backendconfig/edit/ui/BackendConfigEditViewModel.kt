@@ -261,6 +261,8 @@ internal class BackendConfigEditViewModel @Inject constructor(
         val currentAuthConfigUsername: String = "",
         val currentAuthConfigPassword: String = "",
         val authConfigSaveButtonEnabled: Boolean = false,
+
+        val saveButtonEnabled: Boolean = false,
     )
 
     internal sealed class BackendEditEvent {

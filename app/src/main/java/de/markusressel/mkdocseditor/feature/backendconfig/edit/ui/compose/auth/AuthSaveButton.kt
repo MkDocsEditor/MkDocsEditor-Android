@@ -12,8 +12,6 @@ import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigE
 @Composable
 internal fun AuthSaveButton(
     modifier: Modifier,
-    currentUsername: String,
-    currentPassword: String,
     enabled: Boolean,
     onUiEvent: (BackendConfigEditViewModel.UiEvent) -> Unit
 ) {
