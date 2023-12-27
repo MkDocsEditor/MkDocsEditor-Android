@@ -2,38 +2,18 @@ package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.github.fengdai.compose.pulltorefresh.PullToRefresh
-import com.github.fengdai.compose.pulltorefresh.rememberPullToRefreshState
 import de.markusressel.mkdocseditor.feature.browser.ui.DialogState
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserEvent
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel
 import de.markusressel.mkdocseditor.feature.browser.ui.UiEvent
-import de.markusressel.mkdocseditor.feature.browser.ui.UiState
-import de.markusressel.mkdocseditor.feature.common.ui.compose.ErrorCard
-import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
 import de.markusressel.mkdocseditor.feature.main.ui.NavigationEvent
-import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
-import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -49,10 +29,11 @@ internal fun FileBrowserScreen(
     BackHandler(
         enabled = uiState.canGoUp,
         onBack = {
-            val consumed = viewModel.navigateUp()
-            if (consumed.not()) {
-                onBack()
-            }
+            // FIXME: cannot use a coroutine here
+//            val consumed = viewModel.navigateUp()
+//            if (consumed.not()) {
+            onBack()
+//            }
         },
     )
 
@@ -66,12 +47,6 @@ internal fun FileBrowserScreen(
 
                 is FileBrowserEvent.OpenDocumentEditor -> {
                     onNavigationEvent(NavigationEvent.NavigateToCodeEditor(documentId = event.entity.id))
-                }
-
-                is FileBrowserEvent.DownloadResource -> {
-                    // TODO: download resource
-                    Toast.makeText(context, "Not implemented :(", Toast.LENGTH_SHORT)
-                        .show()
                 }
 
                 is FileBrowserEvent.CreateDocument -> {
@@ -197,7 +172,12 @@ internal fun FileBrowserScreen(
             CreateDocumentDialog(
                 uiState = dialogState,
                 onSaveClicked = { text ->
-                    viewModel.onUiEvent(UiEvent.CreateDocument(dialogState.sectionId, text))
+                    viewModel.onUiEvent(
+                        UiEvent.CreateDocumentDialogSaveClicked(
+                            dialogState.sectionId,
+                            text
+                        )
+                    )
                 },
                 onDismissRequest = {
                     viewModel.onUiEvent(UiEvent.DismissDialog)
@@ -209,7 +189,12 @@ internal fun FileBrowserScreen(
             CreateSectionDialog(
                 uiState = dialogState,
                 onSaveClicked = { text ->
-                    viewModel.onUiEvent(UiEvent.CreateSection(dialogState.parentSectionId, text))
+                    viewModel.onUiEvent(
+                        UiEvent.CreateSectionDialogSaveClicked(
+                            dialogState.parentSectionId,
+                            text
+                        )
+                    )
                 },
                 onDismissRequest = {
                     viewModel.onUiEvent(UiEvent.DismissDialog)
@@ -221,102 +206,3 @@ internal fun FileBrowserScreen(
     }
 }
 
-
-@Composable
-private fun FileBrowserScreenContent(
-    uiState: UiState,
-    onUiEvent: (UiEvent) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(modifier = modifier) {
-
-        AnimatedVisibility(
-            modifier = Modifier
-                .zIndex(100F)
-                .fillMaxWidth()
-                .align(Alignment.TopCenter),
-            visible = uiState.error.isNullOrBlank().not(),
-            enter = fadeIn(),
-            exit = fadeOut(),
-        ) {
-            ErrorCard(
-                modifier = Modifier
-                    .wrapContentSize()
-                    .padding(16.dp),
-                text = uiState.error ?: "Error",
-                onRetry = {
-                    onUiEvent(UiEvent.Refresh)
-                }
-            )
-        }
-
-        Column {
-            SectionPath(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .defaultMinSize(minHeight = 48.dp)
-                    .padding(horizontal = 4.dp),
-                path = uiState.currentSectionPath,
-                onSectionClicked = { section ->
-                    onUiEvent(UiEvent.NavigateUpToSection(section))
-                }
-            )
-
-            PullToRefresh(
-                //modifier = modifier,
-                state = rememberPullToRefreshState(
-                    isRefreshing = uiState.isLoading
-                ),
-                onRefresh = { onUiEvent(UiEvent.Refresh) },
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentSize()
-                ) {
-
-                    Column {
-
-
-                        FileBrowserList(
-                            items = uiState.listItems,
-                            onDocumentClicked = {
-                                onUiEvent(UiEvent.DocumentClicked(it))
-                            },
-                            onResourceClicked = {
-                                onUiEvent(UiEvent.ResourceClicked(it))
-                            },
-                            onSectionClicked = {
-                                onUiEvent(UiEvent.SectionClicked(it))
-                            },
-                        )
-                    }
-                }
-            }
-        }
-
-        ExpandableFab(
-            modifier = Modifier.fillMaxSize(),
-            items = uiState.fabConfig.right,
-            onItemClicked = {
-                onUiEvent(UiEvent.ExpandableFabItemSelected(item = it))
-            }
-        )
-    }
-}
-
-
-@CombinedPreview
-@Composable
-private fun FileBrowserScreenContentPreview() {
-    MkDocsEditorTheme {
-        FileBrowserScreenContent(
-            uiState = UiState(
-                listItems = listOf(
-
-                )
-            ),
-            onUiEvent = {}
-        )
-    }
-}

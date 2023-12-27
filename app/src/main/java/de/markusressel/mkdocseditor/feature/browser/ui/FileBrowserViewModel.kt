@@ -5,10 +5,12 @@ import com.dropbox.android.external.store4.StoreResponse
 import com.github.ajalt.timberkt.Timber
 import com.hadilq.liveevent.LiveEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import de.markusressel.commons.core.filterByExpectedType
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.extensions.common.android.launch
+import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.browser.data.ROOT_SECTION
 import de.markusressel.mkdocseditor.feature.browser.data.SectionBackstackItem
@@ -20,6 +22,7 @@ import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RefreshSectio
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SearchUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SectionItem
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
+import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +33,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -42,6 +46,7 @@ import javax.inject.Inject
 @HiltViewModel
 internal class FileBrowserViewModel @Inject constructor(
     private val dataRepository: DataRepository,
+    private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
     private val restClient: IMkDocsRestClient,
     private val refreshSectionUseCase: RefreshSectionUseCase,
     private val getSectionContentUseCase: GetSectionContentUseCase,
@@ -82,6 +87,20 @@ internal class FileBrowserViewModel @Inject constructor(
     internal val openDocumentEditorEvent = LiveEvent<String>()
 
     init {
+        launch {
+            getCurrentBackendConfigUseCase().filterNotNull().collectLatest { config ->
+                restClient.setHostname(config.serverConfig.domain)
+                restClient.setPort(config.serverConfig.port)
+                restClient.setUseSSL(config.serverConfig.useSsl)
+                restClient.setBasicAuthConfig(
+                    BasicAuthConfig(
+                        username = config.authConfig.username,
+                        password = config.authConfig.password
+                    )
+                )
+            }
+        }
+
         launch {
             uiState.map { it.isSearching }.distinctUntilChanged().collect { isSearching ->
                 if (isSearching.not()) {
@@ -160,30 +179,55 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     internal fun onUiEvent(event: UiEvent) {
-        when (event) {
-            is UiEvent.Refresh -> reload()
-            is UiEvent.DocumentClicked -> onDocumentClicked(event.item)
-            is UiEvent.ResourceClicked -> onResourceClicked(event.item)
-            is UiEvent.SectionClicked -> onSectionClicked(event.item)
-            is UiEvent.NavigateUpToSection -> navigateUp(event.section.id)
-            is UiEvent.ExpandableFabItemSelected -> when (event.item.id) {
-                FAB_ID_CREATE_DOCUMENT -> onCreateDocumentFabClicked()
-                FAB_ID_CREATE_SECTION -> onCreateSectionFabClicked()
-                else -> TODO("Unhandled FAB: ${event.item}")
-            }
+        launch {
+            when (event) {
+                is UiEvent.Refresh -> reload()
+                is UiEvent.DocumentClicked -> onDocumentClicked(event.item)
+                is UiEvent.ResourceClicked -> onResourceClicked(event.item)
+                is UiEvent.SectionClicked -> onSectionClicked(event.item)
+                is UiEvent.NavigateUpToSection -> navigateUp(event.section.id)
+                is UiEvent.ExpandableFabItemSelected -> when (event.item.id) {
+                    FAB_ID_CREATE_DOCUMENT -> onCreateDocumentFabClicked()
+                    FAB_ID_CREATE_SECTION -> onCreateSectionFabClicked()
+                    else -> TODO("Unhandled FAB: ${event.item}")
+                }
 
-            is UiEvent.CreateDocument -> {
-                dismissCurrentDialog()
-                createNewDocument(event.name)
-            }
+                is UiEvent.CreateDocumentDialogSaveClicked -> {
+                    dismissCurrentDialog()
+                    if (isDocumentNameValid(event.name)) {
+                        createNewDocument(event.name)
+                    } else {
+                        showError("")
+                    }
+                }
 
-            is UiEvent.CreateSection -> {
-                dismissCurrentDialog()
-                createNewSection(event.parentSectionId, event.name)
-            }
+                is UiEvent.CreateSectionDialogSaveClicked -> {
+                    dismissCurrentDialog()
+                    createNewSection(event.parentSectionId, event.name)
+                }
 
-            is UiEvent.DismissDialog -> dismissCurrentDialog()
+                is UiEvent.DismissDialog -> dismissCurrentDialog()
+            }
         }
+    }
+
+    private fun isDocumentNameValid(name: String): Boolean {
+        val equallyNamedSectionsExist =
+            uiState.value.listItems.filterByExpectedType<SectionEntity>().none {
+                it.name == name
+            }
+        val equallyNamedDocumentsExist =
+            uiState.value.listItems.filterByExpectedType<DocumentEntity>().none {
+                it.name == name
+            }
+        val equallyNamedResourcesExist =
+            uiState.value.listItems.filterByExpectedType<ResourceEntity>().none {
+                it.name == name
+            }
+        return name.isNotBlank()
+            && equallyNamedSectionsExist.not()
+            && equallyNamedDocumentsExist.not()
+            && equallyNamedResourcesExist.not()
     }
 
     private fun dismissCurrentDialog() {
@@ -198,17 +242,17 @@ internal class FileBrowserViewModel @Inject constructor(
      * @param sectionId the section to open
      * @param addToBackstack true, when the section should be added to backstack, false otherwise
      */
-    internal fun openSection(
+    internal suspend fun openSection(
         sectionId: String,
         sectionName: String?,
         addToBackstack: Boolean = true,
-    ) = launch {
+    ) {
         if (
             uiState.value.isSearching.not()
             && currentSectionId.value == sectionId
         ) {
             // ignore if no search is currently active and this section is already set
-            return@launch
+            return
         }
 
         Timber.d { "Opening Section '${sectionId}'" }
@@ -230,7 +274,7 @@ internal class FileBrowserViewModel @Inject constructor(
      *
      * @return true, when there was an item on the backstack and a navigation was done, false otherwise
      */
-    fun navigateUp(targetSectionId: String? = null): Boolean {
+    suspend fun navigateUp(targetSectionId: String? = null): Boolean {
         if (
             targetSectionId != null
             && (backstack.none { it.sectionId == targetSectionId } || backstack.peek().sectionId == targetSectionId)
@@ -256,7 +300,7 @@ internal class FileBrowserViewModel @Inject constructor(
      *
      * @return true if the value has changed, false otherwise
      */
-    fun setSearch(text: String): Boolean {
+    private fun setSearch(text: String): Boolean {
         return if (uiState.value.currentSearchFilter != text) {
             _uiState.value = uiState.value.copy(
                 currentSearchFilter = text
@@ -286,21 +330,48 @@ internal class FileBrowserViewModel @Inject constructor(
         )
     }
 
-    private fun createNewSection(parentSectionId: String, sectionName: String) =
-        launch {
-            try {
-                // TODO: show loading state somehow
-                createNewSectionUseCase(sectionName, parentSectionId)
-            } catch (ex: Exception) {
-                Timber.e(ex)
-                showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
+    private suspend fun createNewSection(parentSectionId: String, sectionName: String) {
+        try {
+            val trimmedSectionName = sectionName.trim()
+            // TODO: show loading state somehow
+            if (isSectionNameValid(trimmedSectionName).not()) {
+                showError("")
+                return
             }
-        }
 
-    private fun createNewDocument(documentName: String) = launch {
+            createNewSectionUseCase(trimmedSectionName, parentSectionId)
+        } catch (ex: Exception) {
+            Timber.e(ex)
+            showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
+        }
+    }
+
+    private fun isSectionNameValid(sectionName: String): Boolean {
+        val equallyNamedSectionsExist =
+            uiState.value.listItems.filterByExpectedType<SectionEntity>().none {
+                it.name == sectionName
+            }
+        val equallyNamedDocumentsExist =
+            uiState.value.listItems.filterByExpectedType<DocumentEntity>().none {
+                it.name == sectionName
+            }
+        val equallyNamedResourcesExist =
+            uiState.value.listItems.filterByExpectedType<ResourceEntity>().none {
+                it.name == sectionName
+            }
+        return sectionName.isNotBlank()
+            && equallyNamedSectionsExist.not()
+            && equallyNamedDocumentsExist.not()
+            && equallyNamedResourcesExist.not()
+    }
+
+
+    private suspend fun createNewDocument(documentName: String) {
         try {
             // TODO: show loading state somehow
-            val newDocumentId = createNewDocumentUseCase(currentSectionId.value, documentName)
+            val trimmedDocumentName = documentName.trim()
+            val newDocumentId =
+                createNewDocumentUseCase(currentSectionId.value, trimmedDocumentName)
 
             reload()
 
@@ -311,34 +382,31 @@ internal class FileBrowserViewModel @Inject constructor(
         } catch (ex: Exception) {
             Timber.e(ex)
             showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
-            return@launch
         }
     }
 
     /**
      * Rename a document
      */
-    fun renameDocument(id: String, documentName: String) = launch {
+    private suspend fun renameDocument(id: String, documentName: String) {
         restClient.renameDocument(id, documentName)
         reload()
     }
 
-    fun deleteDocument(id: String) = launch {
+    private suspend fun deleteDocument(id: String) {
         restClient.deleteDocument(id)
         reload()
     }
 
-    private fun reload() {
+    private suspend fun reload() {
         _uiState.value = uiState.value.copy(
             error = "",
         )
-        launch {
-            try {
-                refreshSectionUseCase(currentSectionId.value)
-            } catch (ex: Exception) {
-                Timber.e(ex)
-                showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
-            }
+        try {
+            refreshSectionUseCase(currentSectionId.value)
+        } catch (ex: Exception) {
+            Timber.e(ex)
+            showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
         }
     }
 
@@ -353,9 +421,6 @@ internal class FileBrowserViewModel @Inject constructor(
                 )
             )
         }
-//        launch {
-//            _events.send(FileBrowserEvent.CreateSectionEvent(currentSectionId))
-//        }
     }
 
     private fun onCreateDocumentFabClicked() {
@@ -369,31 +434,22 @@ internal class FileBrowserViewModel @Inject constructor(
                 )
             )
         }
-//        launch {
-//            _events.send(FileBrowserEvent.CreateDocumentEvent(currentSectionId))
-//        }
     }
 
-    fun onDocumentLongClicked(entity: DocumentEntity): Boolean {
-        launch {
-            _events.send(FileBrowserEvent.RenameDocument(entity))
-        }
+    private suspend fun onDocumentLongClicked(entity: DocumentEntity): Boolean {
+        _events.send(FileBrowserEvent.RenameDocument(entity))
         return true
     }
 
-    private fun onDocumentClicked(entity: DocumentEntity) {
-        launch {
-            _events.send(FileBrowserEvent.OpenDocumentEditor(entity))
-        }
+    private suspend fun onDocumentClicked(entity: DocumentEntity) {
+        _events.send(FileBrowserEvent.OpenDocumentEditor(entity))
     }
 
-    private fun onResourceClicked(entity: ResourceEntity) {
-        launch {
-            _events.send(FileBrowserEvent.DownloadResource(entity))
-        }
+    private suspend fun onResourceClicked(entity: ResourceEntity) {
+
     }
 
-    private fun onSectionClicked(entity: SectionEntity) {
+    private suspend fun onSectionClicked(entity: SectionEntity) {
         openSection(
             sectionId = entity.id,
             sectionName = entity.name,
@@ -419,8 +475,9 @@ internal sealed class UiEvent {
 
     data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
 
-    data class CreateDocument(val sectionId: String, val name: String) : UiEvent()
-    data class CreateSection(val parentSectionId: String, val name: String) : UiEvent()
+    data class CreateDocumentDialogSaveClicked(val sectionId: String, val name: String) : UiEvent()
+    data class CreateSectionDialogSaveClicked(val parentSectionId: String, val name: String) :
+        UiEvent()
 
     data object DismissDialog : UiEvent()
 }
@@ -429,7 +486,6 @@ internal sealed class FileBrowserEvent {
     data class Error(val message: String) : FileBrowserEvent()
 
     data class OpenDocumentEditor(val entity: DocumentEntity) : FileBrowserEvent()
-    data class DownloadResource(val entity: ResourceEntity) : FileBrowserEvent()
     data class CreateSection(val parentId: String) : FileBrowserEvent()
     data class CreateDocument(val parentId: String) : FileBrowserEvent()
     data class RenameDocument(val entity: DocumentEntity) : FileBrowserEvent()
