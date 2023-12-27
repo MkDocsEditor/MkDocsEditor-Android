@@ -130,7 +130,8 @@ internal class CodeEditorViewModel @Inject constructor(
                 if (documentId == null) {
                     documentSyncManager = null
                 } else {
-                    val currentBackend = requireNotNull(getCurrentBackendConfigUseCase().value)
+                    val currentBackend =
+                        requireNotNull(getCurrentBackendConfigUseCase().value)
 
                     documentSyncManager =
                         DocumentSyncManager(

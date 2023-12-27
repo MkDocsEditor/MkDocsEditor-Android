@@ -1,15 +1,26 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.common.domain
 
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
-import kotlinx.coroutines.flow.MutableStateFlow
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfigRepository
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.toBackendConfig
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
-class BackendManager @Inject constructor() {
+internal class BackendManager @Inject constructor(
+    private val backendConfigRepository: BackendConfigRepository
+) {
 
-    val currentBackend = MutableStateFlow<BackendConfig?>(null)
+    val currentBackend: StateFlow<BackendConfig?> = backendConfigRepository
+        .selectedBackendConfigFlow()
+        .map { it?.toBackendConfig() }
+        .stateIn(GlobalScope, SharingStarted.Eagerly, null)
 
     fun setBackend(backendConfig: BackendConfig) {
-        currentBackend.value = backendConfig
+        backendConfigRepository.selectBackendConfig(backendConfig)
     }
 
 }

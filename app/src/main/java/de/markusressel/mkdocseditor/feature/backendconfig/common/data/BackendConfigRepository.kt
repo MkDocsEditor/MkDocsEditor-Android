@@ -77,4 +77,10 @@ internal class BackendConfigRepository @Inject constructor(
         backendConfigPersistenceManager.selectBackendConfig(config.id)
     }
 
+    fun selectedBackendConfigFlow(): Flow<BackendConfigEntity?> {
+        return backendConfigPersistenceManager.standardOperation().query {
+            equal(BackendConfigEntity_.isSelected, true)
+        }.subscribe().toFlow().map { it.firstOrNull() }
+    }
+
 }
