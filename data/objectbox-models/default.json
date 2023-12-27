@@ -203,7 +203,7 @@
     },
     {
       "id": "5:5280773954032560660",
-      "lastPropertyId": "7:245551817175832864",
+      "lastPropertyId": "8:5420218892066969331",
       "name": "BackendConfigEntity",
       "properties": [
         {
@@ -239,6 +239,11 @@
           "type": 11,
           "flags": 520,
           "relationTarget": "BackendAuthConfigEntity"
+        },
+        {
+          "id": "8:5420218892066969331",
+          "name": "isSelected",
+          "type": 1
         }
       ],
       "relations": []

@@ -32,8 +32,7 @@ internal class BackendConfigRepository @Inject constructor(
     fun getAuthConfigs() = backendAuthConfigPersistenceManager.standardOperation().all.toList()
 
     fun add(config: BackendConfig): Long {
-        return backendConfigPersistenceManager.standardOperation()
-            .put(config.toBackendConfigEntity())
+        return backendConfigPersistenceManager.add(config.toBackendConfigEntity())
     }
 
     fun add(config: AuthConfig): Long {
@@ -42,8 +41,10 @@ internal class BackendConfigRepository @Inject constructor(
     }
 
     private fun BackendConfig.toBackendConfigEntity() = BackendConfigEntity(
+        entityId = id,
         name = name,
         description = description,
+        isSelected = isSelected,
     ).apply {
         serverConfig.target = this@toBackendConfigEntity.serverConfig.toBackendServerConfigEntity()
         authConfig.target = this@toBackendConfigEntity.authConfig.toBackendAuthConfigEntity()
@@ -61,6 +62,7 @@ internal class BackendConfigRepository @Inject constructor(
         domain = domain,
         port = port,
         useSsl = useSsl,
+        webBaseUri = webBaseUri,
     )
 
     fun getBackendConfig(id: Long): BackendConfigEntity? {
@@ -69,6 +71,10 @@ internal class BackendConfigRepository @Inject constructor(
 
     fun deleteAuthConfig(id: Long): Boolean {
         return backendAuthConfigPersistenceManager.standardOperation().remove(id)
+    }
+
+    fun selectBackendConfig(config: BackendConfig) {
+        backendConfigPersistenceManager.selectBackendConfig(config.id)
     }
 
 }

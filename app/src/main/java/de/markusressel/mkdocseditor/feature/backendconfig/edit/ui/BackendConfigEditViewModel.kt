@@ -231,6 +231,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 val config = BackendConfig(
                     name = uiState.value.name,
                     description = uiState.value.description,
+                    isSelected = false,
                     serverConfig = serverConfig,
                     authConfig = requireNotNull(uiState.value.authConfig),
                 )

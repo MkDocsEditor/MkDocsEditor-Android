@@ -8,6 +8,7 @@ import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendConfigsFlowUseCase
+import de.markusressel.mkdocseditor.feature.backendconfig.list.domain.SelectBackendConfigUseCase
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 internal class BackendSelectionViewModel @Inject constructor(
     private val getBackendConfigsFlowUseCase: GetBackendConfigsFlowUseCase,
+    private val selectBackendConfigUseCase: SelectBackendConfigUseCase,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -83,7 +85,8 @@ internal class BackendSelectionViewModel @Inject constructor(
 //        }
 //    }
 
-    private fun selectConfig(config: BackendConfig) {
+    private suspend fun selectConfig(config: BackendConfig) {
+        selectBackendConfigUseCase(config)
         _uiState.update { old ->
             old.copy(
                 selectedItem = config

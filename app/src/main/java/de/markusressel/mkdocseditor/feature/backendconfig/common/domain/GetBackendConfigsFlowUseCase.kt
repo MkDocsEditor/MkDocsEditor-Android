@@ -12,7 +12,13 @@ internal class GetBackendConfigsFlowUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(): Flow<List<BackendConfig>> =
         backendConfigRepository.getBackendConfigsFlow().map {
-            it.map { it.toBackendConfig() }
+            it.mapNotNull {
+                try {
+                    it.toBackendConfig()
+                } catch (ex: Exception) {
+                    null
+                }
+            }
         }
 }
 

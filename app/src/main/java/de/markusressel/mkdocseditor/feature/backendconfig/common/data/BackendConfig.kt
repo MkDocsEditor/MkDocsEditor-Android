@@ -9,21 +9,14 @@ data class BackendConfig(
     val description: String,
     val serverConfig: BackendServerConfig,
     val authConfig: AuthConfig,
+    val isSelected: Boolean,
 )
 
-internal fun BackendConfigEntity.toBackendConfig(): BackendConfig {
-    return BackendConfig(
-        name = name,
-        description = description,
-        serverConfig = BackendServerConfig(
-            domain = serverConfig.target.domain,
-            port = serverConfig.target.port,
-            useSsl = serverConfig.target.useSsl,
-            webBaseUri = serverConfig.target.webBaseUri,
-        ),
-        authConfig = AuthConfig(
-            username = authConfig.target.username,
-            password = authConfig.target.password,
-        )
-    )
-}
+internal fun BackendConfigEntity.toBackendConfig() = BackendConfig(
+    id = entityId,
+    name = name,
+    description = description,
+    isSelected = isSelected,
+    serverConfig = serverConfig.target.toServerConfig(),
+    authConfig = authConfig.target.toBackendAuthConfig()
+)
