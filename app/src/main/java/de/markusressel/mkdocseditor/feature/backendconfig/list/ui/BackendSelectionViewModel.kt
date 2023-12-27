@@ -7,18 +7,19 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
-import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendConfigItemsUseCase
+import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendConfigsFlowUseCase
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
 @HiltViewModel
 internal class BackendSelectionViewModel @Inject constructor(
-    private val getBackendConfigItemsUseCase: GetBackendConfigItemsUseCase,
+    private val getBackendConfigsFlowUseCase: GetBackendConfigsFlowUseCase,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -29,7 +30,16 @@ internal class BackendSelectionViewModel @Inject constructor(
     internal val events = _events.receiveAsFlow()
 
     init {
-        reload()
+        launch {
+            getBackendConfigsFlowUseCase().collectLatest {
+                _uiState.update { old ->
+                    old.copy(
+                        isLoading = false,
+                        listItems = it
+                    )
+                }
+            }
+        }
     }
 
     fun onUiEvent(event: UiEvent) {
@@ -54,24 +64,24 @@ internal class BackendSelectionViewModel @Inject constructor(
         }
     }
 
-    private fun reload() {
-        launch {
-            try {
-                _uiState.update { old -> old.copy(isLoading = true) }
-                val items = getBackendConfigItemsUseCase()
-                _uiState.update { old ->
-                    old.copy(
-                        isLoading = false,
-                        listItems = items
-                    )
-                }
-            } catch (e: Exception) {
-                showError(e.message ?: "Unknown error")
-            } finally {
-                _uiState.update { old -> old.copy(isLoading = false) }
-            }
-        }
-    }
+//    private fun reload() {
+//        launch {
+//            try {
+//                _uiState.update { old -> old.copy(isLoading = true) }
+//                val items = getBackendConfigItemsUseCase()
+//                _uiState.update { old ->
+//                    old.copy(
+//                        isLoading = false,
+//                        listItems = items
+//                    )
+//                }
+//            } catch (e: Exception) {
+//                showError(e.message ?: "Unknown error")
+//            } finally {
+//                _uiState.update { old -> old.copy(isLoading = false) }
+//            }
+//        }
+//    }
 
     private fun selectConfig(config: BackendConfig) {
         _uiState.update { old ->

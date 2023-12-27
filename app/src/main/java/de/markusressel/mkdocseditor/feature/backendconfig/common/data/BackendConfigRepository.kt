@@ -4,8 +4,13 @@ import de.markusressel.mkdocseditor.data.persistence.BackendAuthConfigPersistenc
 import de.markusressel.mkdocseditor.data.persistence.BackendConfigPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendAuthConfigEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendConfigEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.BackendConfigEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendServerConfigEntity
 import de.markusressel.mkdocseditor.network.OfflineModeManager
+import io.objectbox.kotlin.query
+import io.objectbox.kotlin.toFlow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,6 +22,12 @@ internal class BackendConfigRepository @Inject constructor(
 ) {
 
     fun getBackendConfigs() = backendConfigPersistenceManager.standardOperation().all.toList()
+
+    fun getBackendConfigsFlow(): Flow<List<BackendConfigEntity>> {
+        return backendConfigPersistenceManager.standardOperation().query {
+            order(BackendConfigEntity_.name)
+        }.subscribe().toFlow().map { it.toList() }
+    }
 
     fun getAuthConfigs() = backendAuthConfigPersistenceManager.standardOperation().all.toList()
 
@@ -40,11 +51,13 @@ internal class BackendConfigRepository @Inject constructor(
     }
 
     private fun AuthConfig.toBackendAuthConfigEntity() = BackendAuthConfigEntity(
+        entityId = id,
         username = username,
         password = password,
     )
 
     private fun BackendServerConfig.toBackendServerConfigEntity() = BackendServerConfigEntity(
+        entityId = id,
         domain = domain,
         port = port,
         useSsl = useSsl,

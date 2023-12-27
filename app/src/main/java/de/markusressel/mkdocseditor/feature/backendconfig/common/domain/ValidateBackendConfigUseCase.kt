@@ -5,7 +5,7 @@ import javax.inject.Inject
 
 
 internal class ValidateBackendConfigUseCase @Inject constructor(
-    private val getBackendConfigItemsUseCase: GetBackendConfigItemsUseCase,
+    private val getBackendConfigsUseCase: GetBackendConfigsUseCase,
 ) {
     suspend operator fun invoke(
         name: String,
@@ -24,7 +24,7 @@ internal class ValidateBackendConfigUseCase @Inject constructor(
                     username.isNotBlank() &&
                         password.isNotBlank()
                 } ?: true
-        } && getBackendConfigItemsUseCase().none {
+        } && getBackendConfigsUseCase().none {
             it.name == name
         }
     }
