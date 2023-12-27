@@ -109,22 +109,25 @@ internal class BackendConfigEditViewModel @Inject constructor(
         }
     }
 
-    private fun processUseSslInput(checked: Boolean) {
+    private suspend fun processUseSslInput(checked: Boolean) {
         _uiState.update { old ->
             old.copy(currentUseSsl = checked)
         }
+        updateSaveButtonEnabled()
     }
 
-    private fun processPortInput(port: String) {
+    private suspend fun processPortInput(port: String) {
         _uiState.update { old ->
             old.copy(currentPort = port)
         }
+        updateSaveButtonEnabled()
     }
 
-    private fun processDomainInput(text: String) {
+    private suspend fun processDomainInput(text: String) {
         _uiState.update { old ->
             old.copy(currentDomain = text)
         }
+        updateSaveButtonEnabled()
     }
 
     private suspend fun deleteAuthConfig(authConfig: AuthConfig) {
@@ -182,15 +185,37 @@ internal class BackendConfigEditViewModel @Inject constructor(
         }
     }
 
-    private fun processDescriptionInput(text: String) {
+    private suspend fun processDescriptionInput(text: String) {
         _uiState.update { old ->
             old.copy(description = text)
+        }
+        updateSaveButtonEnabled()
+    }
+
+    private suspend fun updateSaveButtonEnabled() {
+        _uiState.update { old ->
+            old.copy(
+                saveButtonEnabled = validateBackendConfigUseCase(
+                    name = old.name,
+                    description = old.description,
+                    domain = old.currentDomain,
+                    port = old.currentPort,
+                    currentUseSsl = old.currentUseSsl,
+                    authConfig = old.authConfig,
+                )
+            )
         }
     }
 
     private suspend fun save() {
-//      val isValid = validateBackendConfigUseCase(config)
-        val isValid = false
+        val isValid = validateBackendConfigUseCase(
+            name = uiState.value.name,
+            description = uiState.value.description,
+            domain = uiState.value.currentDomain,
+            port = uiState.value.currentPort,
+            currentUseSsl = uiState.value.currentUseSsl,
+            authConfig = uiState.value.authConfig,
+        )
         if (!isValid) {
             showError("Backend config is not valid")
         } else {
@@ -217,10 +242,11 @@ internal class BackendConfigEditViewModel @Inject constructor(
         }
     }
 
-    private fun processAuthConfigSelectionChange(authConfig: AuthConfig?) {
+    private suspend fun processAuthConfigSelectionChange(authConfig: AuthConfig?) {
         _uiState.update { old ->
             old.copy(authConfig = authConfig)
         }
+        updateSaveButtonEnabled()
     }
 
     private fun processAuthConfigUsernameInput(input: String) {
@@ -251,10 +277,11 @@ internal class BackendConfigEditViewModel @Inject constructor(
         return username.isNotBlank() && password.isNotBlank()
     }
 
-    private fun processNameInput(text: String) {
+    private suspend fun processNameInput(text: String) {
         _uiState.update { old ->
             old.copy(name = text)
         }
+        updateSaveButtonEnabled()
     }
 
     private suspend fun showError(s: String) {
