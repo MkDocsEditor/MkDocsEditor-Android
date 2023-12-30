@@ -27,58 +27,66 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
+import de.markusressel.mkdocseditor.feature.editor.ui.UiState
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
-import de.markusressel.mkdocseditor.ui.activity.UiState
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
+internal data class CodeEditorScreen(
+    private val documentId: String,
+) : Screen {
 
-@Composable
-internal fun CodeEditorScreen(
-    mainUiState: UiState,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier,
-    codeEditorViewModel: CodeEditorViewModel = hiltViewModel(),
-) {
-    BackHandler(
-        enabled = true,
-        onBack = onBack,
-    )
+    @Composable
+    override fun Content() {
+        val navigator = LocalNavigator.currentOrThrow
 
-    LaunchedEffect(mainUiState.documentId) {
-        codeEditorViewModel.loadDocument(mainUiState.documentId)
+        val viewModel: CodeEditorViewModel = hiltViewModel()
+        val uiState by viewModel.uiState.collectAsState()
+
+        BackHandler(
+            enabled = true,
+            onBack = { navigator.pop() },
+        )
+
+        LaunchedEffect(documentId) {
+            viewModel.loadDocument(documentId)
+        }
+
+        CodeEditorScreenContent(
+            modifier = Modifier,
+            uiState = uiState,
+            onTextChanged = {
+                viewModel.onUserTextInput(
+                    it.annotatedString,
+                    it.selection
+                )
+            }
+        )
     }
-
-    val editorUiState by codeEditorViewModel.uiState.collectAsState()
-
-    CodeEditorScreenContent(
-        modifier = modifier,
-        mainUiState = mainUiState,
-        editorUiState = editorUiState,
-        onTextChanged = { codeEditorViewModel.onUserTextInput(it.annotatedString, it.selection) }
-    )
 }
 
 @Composable
 private fun CodeEditorScreenContent(
     modifier: Modifier = Modifier,
-    mainUiState: UiState,
-    editorUiState: de.markusressel.mkdocseditor.feature.editor.ui.UiState,
+    uiState: UiState,
     onTextChanged: (TextFieldValue) -> Unit,
 ) {
-    var tfv: TextFieldValue by remember(mainUiState.documentId) {
+    var tfv: TextFieldValue by remember(uiState.documentId) {
         mutableStateOf(
             TextFieldValue(
-                annotatedString = editorUiState.text ?: AnnotatedString(""),
-                selection = editorUiState.selection ?: TextRange.Zero,
+                annotatedString = uiState.text ?: AnnotatedString(""),
+                selection = uiState.selection ?: TextRange.Zero,
             )
         )
     }
 
-    remember(editorUiState.text, editorUiState.selection) {
+    remember(uiState.text, uiState.selection) {
         tfv = tfv.copy(
-            annotatedString = editorUiState.text ?: AnnotatedString(""),
-            selection = editorUiState.selection ?: TextRange.Zero,
+            annotatedString = uiState.text ?: AnnotatedString(""),
+            selection = uiState.selection ?: TextRange.Zero,
         )
         derivedStateOf { true }
     }
@@ -97,11 +105,11 @@ private fun CodeEditorScreenContent(
                 onTextChanged(it)
                 tfv = it
             },
-            readOnly = editorUiState.editModeActive.not()
+            readOnly = uiState.editModeActive.not()
         )
 
         AnimatedVisibility(
-            visible = mainUiState.snackbar != null,
+            visible = uiState.snackbar != null,
             enter = slideInVertically(),
             exit = slideOutVertically(),
         ) {
@@ -112,11 +120,11 @@ private fun CodeEditorScreenContent(
                     TextButton(onClick = {
                         // onUiEvent(UiEvent.SnackbarActionTriggered)
                     }) {
-                        Text(text = mainUiState.snackbar?.action ?: "")
+                        Text(text = uiState.snackbar?.action ?: "")
                     }
                 }
             ) {
-                Text(text = mainUiState.snackbar?.text ?: "")
+                Text(text = uiState.snackbar?.text ?: "")
             }
         }
     }
@@ -127,10 +135,7 @@ private fun CodeEditorScreenContent(
 private fun CodeEditorScreenContentPreview() {
     MkDocsEditorTheme {
         CodeEditorScreenContent(
-            mainUiState = UiState(
-
-            ),
-            editorUiState = de.markusressel.mkdocseditor.feature.editor.ui.UiState(
+            uiState = UiState(
                 text = buildAnnotatedString { append("# Hallo Welt!") }
             ),
             onTextChanged = {}

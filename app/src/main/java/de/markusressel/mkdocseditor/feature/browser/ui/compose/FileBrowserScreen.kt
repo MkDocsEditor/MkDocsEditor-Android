@@ -9,48 +9,50 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import de.markusressel.mkdocseditor.feature.browser.ui.DialogState
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserEvent
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel
 import de.markusressel.mkdocseditor.feature.browser.ui.UiEvent
-import de.markusressel.mkdocseditor.feature.main.ui.NavigationEvent
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreen
 import kotlinx.coroutines.flow.collectLatest
 
-@Composable
-internal fun FileBrowserScreen(
-    onNavigationEvent: (NavigationEvent) -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: FileBrowserViewModel = hiltViewModel(),
-    onBack: () -> Unit,
-) {
-    val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsState()
+object FileBrowserScreen : Screen {
+    @Composable
+    override fun Content() {
+        val context = LocalContext.current
+        val navigator = LocalNavigator.currentOrThrow
 
-    BackHandler(
-        enabled = uiState.canGoUp,
-        onBack = {
-            // FIXME: cannot use a coroutine here
+        val viewModel: FileBrowserViewModel = hiltViewModel()
+        val uiState by viewModel.uiState.collectAsState()
+
+        BackHandler(
+            enabled = uiState.canGoUp,
+            onBack = {
+                // FIXME: cannot use a coroutine here
 //            val consumed = viewModel.navigateUp()
 //            if (consumed.not()) {
-            onBack()
+                navigator.pop()
 //            }
-        },
-    )
+            },
+        )
 
-    // Runs only on initial composition
-    LaunchedEffect(Unit) {
-        viewModel.events.collectLatest { event ->
-            when (event) {
-                is FileBrowserEvent.Error -> {
-                    //Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
-                }
+        // Runs only on initial composition
+        LaunchedEffect(Unit) {
+            viewModel.events.collectLatest { event ->
+                when (event) {
+                    is FileBrowserEvent.Error -> {
+                        //Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                    }
 
-                is FileBrowserEvent.OpenDocumentEditor -> {
-                    onNavigationEvent(NavigationEvent.NavigateToCodeEditor(documentId = event.entity.id))
-                }
+                    is FileBrowserEvent.OpenDocumentEditor -> {
+                        navigator.push(CodeEditorScreen(documentId = event.entity.id))
+                    }
 
-                is FileBrowserEvent.CreateDocument -> {
-                    // TODO:
+                    is FileBrowserEvent.CreateDocument -> {
+                        // TODO:
 //                        val existingSections = emptyList<String>()
 //
 //                        MaterialDialog(context()).show {
@@ -81,12 +83,12 @@ internal fun FileBrowserScreen(
 //                            })
 //                            negativeButton(android.R.string.cancel)
 //                        }
-                }
+                    }
 
-                is FileBrowserEvent.CreateSection -> {
-                    // TODO:
-                    Toast.makeText(context, "Not implemented :(", Toast.LENGTH_SHORT)
-                        .show()
+                    is FileBrowserEvent.CreateSection -> {
+                        // TODO:
+                        Toast.makeText(context, "Not implemented :(", Toast.LENGTH_SHORT)
+                            .show()
 //                        val existingSections = emptyList<String>()
 //
 //                        MaterialDialog(context()).show {
@@ -117,12 +119,12 @@ internal fun FileBrowserScreen(
 //                            })
 //                            negativeButton(android.R.string.cancel)
 //                        }
-                }
+                    }
 
-                is FileBrowserEvent.RenameDocument -> {
-                    // TODO
-                    Toast.makeText(context, "Not implemented :(", Toast.LENGTH_SHORT)
-                        .show()
+                    is FileBrowserEvent.RenameDocument -> {
+                        // TODO
+                        Toast.makeText(context, "Not implemented :(", Toast.LENGTH_SHORT)
+                            .show()
 //                        val existingDocuments = emptyList<String>()
 //
 //                        MaterialDialog(context()).show {
@@ -156,53 +158,56 @@ internal fun FileBrowserScreen(
 //                            })
 //                            negativeButton(android.R.string.cancel)
 //                        }
+                    }
                 }
             }
         }
-    }
 
-    FileBrowserScreenContent(
-        modifier = modifier,
-        uiState = uiState,
-        onUiEvent = viewModel::onUiEvent
-    )
 
-    when (val dialogState = uiState.currentDialogState) {
-        is DialogState.CreateDocument -> {
-            CreateDocumentDialog(
-                uiState = dialogState,
-                onSaveClicked = { text ->
-                    viewModel.onUiEvent(
-                        UiEvent.CreateDocumentDialogSaveClicked(
-                            dialogState.sectionId,
-                            text
+        FileBrowserScreenContent(
+            modifier = Modifier,
+            uiState = uiState,
+            onUiEvent = viewModel::onUiEvent
+        )
+
+
+
+        when (val dialogState = uiState.currentDialogState) {
+            is DialogState.CreateDocument -> {
+                CreateDocumentDialog(
+                    uiState = dialogState,
+                    onSaveClicked = { text ->
+                        viewModel.onUiEvent(
+                            UiEvent.CreateDocumentDialogSaveClicked(
+                                dialogState.sectionId,
+                                text
+                            )
                         )
-                    )
-                },
-                onDismissRequest = {
-                    viewModel.onUiEvent(UiEvent.DismissDialog)
-                },
-            )
-        }
+                    },
+                    onDismissRequest = {
+                        viewModel.onUiEvent(UiEvent.DismissDialog)
+                    },
+                )
+            }
 
-        is DialogState.CreateSection -> {
-            CreateSectionDialog(
-                uiState = dialogState,
-                onSaveClicked = { text ->
-                    viewModel.onUiEvent(
-                        UiEvent.CreateSectionDialogSaveClicked(
-                            dialogState.parentSectionId,
-                            text
+            is DialogState.CreateSection -> {
+                CreateSectionDialog(
+                    uiState = dialogState,
+                    onSaveClicked = { text ->
+                        viewModel.onUiEvent(
+                            UiEvent.CreateSectionDialogSaveClicked(
+                                dialogState.parentSectionId,
+                                text
+                            )
                         )
-                    )
-                },
-                onDismissRequest = {
-                    viewModel.onUiEvent(UiEvent.DismissDialog)
-                },
-            )
-        }
+                    },
+                    onDismissRequest = {
+                        viewModel.onUiEvent(UiEvent.DismissDialog)
+                    },
+                )
+            }
 
-        else -> {}
+            else -> {}
+        }
     }
 }
-

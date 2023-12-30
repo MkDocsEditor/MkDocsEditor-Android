@@ -30,9 +30,7 @@ internal data class UiState(
         NavItem.About,
     ),
 
-    val snackbar: SnackbarData? = null,
-
-    val documentId: String? = null,
+    val snackbar: SnackbarData? = null
 )
 
 internal sealed class UiEvent {
@@ -59,14 +57,16 @@ internal class MainViewModel @Inject constructor(
             is UiEvent.BottomNavItemSelected -> selectBottomNavItem(event.item)
             is UiEvent.DrawerNavItemClicked -> selectBottomNavItem(event.item)
             is UiEvent.UpdateCurrentDocumentId -> {
-                _uiState.value = uiState.value.copy(
-                    documentId = event.documentId
-                )
+//                 TODO
+//                _uiState.value = uiState.value.copy(
+//                    documentId = event.documentId
+//                )
             }
             is UiEvent.CloseDocumentEditor -> {
-                _uiState.value = uiState.value.copy(
-                    documentId = null
-                )
+//                 TODO
+//                _uiState.value = uiState.value.copy(
+//                    documentId = null
+//                )
             }
             UiEvent.SnackbarActionTriggered -> onSnackbarAction()
             UiEvent.NavigateBack -> {

@@ -2,6 +2,7 @@ package de.markusressel.mkdocseditor.feature.editor.ui
 
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
+import de.markusressel.mkdocseditor.ui.activity.SnackbarData
 
 data class UiState(
     val loading: Boolean = false,
@@ -15,4 +16,6 @@ data class UiState(
 
     val text: AnnotatedString? = null,
     val selection: TextRange? = null,
+
+    val snackbar: SnackbarData? = null,
 )

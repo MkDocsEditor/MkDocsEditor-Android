@@ -68,20 +68,11 @@ internal fun MainScreenContent(
                         NavItem.FileBrowser -> if (contentType == ContentLayoutType.LIST_AND_DOCUMENT) {
                             MkDocsEditorListAndDocumentContent(
                                 modifier = Modifier.fillMaxSize(),
-                                //onNavigationEvent = onNavigationEvent,
-                                mainUiState = uiState,
-                                onBack = onBack,
-                                onUiEvent = onUiEvent,
-                                fileBrowserUiState = fileBrowserUiState,
                                 codeEditorUiState = codeEditorUiState,
                             )
                         } else {
                             MkDocsEditorListOnlyContent(
                                 modifier = Modifier.fillMaxSize(),
-                                //onNavigationEvent = onNavigationEvent,
-                                mainUiState = uiState,
-                                onBack = onBack,
-                                onUiEvent = onUiEvent
                             )
                         }
 
