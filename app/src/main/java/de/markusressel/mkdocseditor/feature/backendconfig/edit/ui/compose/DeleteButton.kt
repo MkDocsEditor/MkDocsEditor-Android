@@ -10,23 +10,21 @@ import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
-internal fun SaveButton(
+internal fun DeleteButton(
     modifier: Modifier,
-    enabled: Boolean,
     onClick: () -> Unit
 ) {
     Button(
         modifier = modifier,
-        enabled = enabled,
         onClick = onClick
     ) {
-        Text(stringResource(R.string.save))
+        Text(stringResource(R.string.delete))
     }
 }
 
 @CombinedPreview
 @Composable
-private fun SaveButtonPreview() {
+private fun DeleteButtonPreview() {
     MkDocsEditorTheme {
         SaveButton(
             modifier = Modifier,

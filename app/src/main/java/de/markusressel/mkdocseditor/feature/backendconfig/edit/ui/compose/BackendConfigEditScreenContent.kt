@@ -15,7 +15,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel.UiEvent.DomainChanged
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.auth.AuthConfigSection
@@ -101,6 +100,14 @@ internal fun BackendConfigEditScreenContent(
                 enabled = uiState.saveButtonEnabled,
                 onClick = { onUiEvent(BackendConfigEditViewModel.UiEvent.SaveClicked) }
             )
+
+            if (uiState.isDeleteButtonEnabled) {
+                DeleteButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { onUiEvent(BackendConfigEditViewModel.UiEvent.DeleteClicked) }
+                )
+            }
+
         }
     }
 }
@@ -148,12 +155,10 @@ private fun BackendConfigEditScreenContentPreview() {
                 error = null,
                 name = "Example",
                 description = "The wiki",
-                serverConfig = BackendServerConfig(
-                    domain = "domain.com",
-                    port = 443,
-                    useSsl = true,
-                    webBaseUri = "https://domain.com"
-                ),
+                currentDomain = "domain.com",
+                currentPort = "443",
+                currentUseSsl = true,
+                currentWebBaseUri = "https://domain.com",
                 authConfig = AuthConfig(
                     username = "user",
                     password = "password"

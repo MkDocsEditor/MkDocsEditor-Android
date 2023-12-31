@@ -11,6 +11,7 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBacke
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.ValidateBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.domain.AddAuthConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.domain.DeleteAuthConfigUseCase
+import de.markusressel.mkdocseditor.feature.backendconfig.edit.domain.DeleteBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.domain.SaveBackendConfigItemsUseCase
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +29,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
     private val deleteAuthConfigUseCase: DeleteAuthConfigUseCase,
     private val validateBackendConfigUseCase: ValidateBackendConfigUseCase,
     private val saveBackendConfigUseCase: SaveBackendConfigItemsUseCase,
+    private val deleteBackendConfigUseCase: DeleteBackendConfigUseCase,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -53,9 +55,9 @@ internal class BackendConfigEditViewModel @Inject constructor(
             old.copy(
                 name = "",
                 description = "",
-                serverConfig = old.serverConfigs.firstOrNull(),
                 authConfig = old.authConfigs.firstOrNull(),
                 authConfigEditMode = old.authConfigs.isEmpty(),
+                isDeleteButtonEnabled = false,
             )
         }
     }
@@ -69,13 +71,15 @@ internal class BackendConfigEditViewModel @Inject constructor(
 
         _uiState.update { old ->
             old.copy(
+                currentBackendConfig = data,
+
                 name = data.name,
                 description = data.description,
                 currentDomain = data.serverConfig.domain,
                 currentPort = data.serverConfig.port.toString(),
                 currentUseSsl = data.serverConfig.useSsl,
-                serverConfig = data.serverConfig,
                 authConfig = data.authConfig,
+                isDeleteButtonEnabled = true,
             )
         }
     }
@@ -107,8 +111,18 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 is UiEvent.AuthConfigUsernameInputChanged -> processAuthConfigUsernameInput(event.input)
                 is UiEvent.AuthConfigPasswordInputChanged -> processAuthConfigPasswordInput(event.input)
                 is UiEvent.SaveClicked -> save()
+                is UiEvent.DeleteClicked -> delete()
                 is UiEvent.AuthConfigSaveButtonClicked -> addAuthConfigFromCurrentInputs()
             }
+        }
+    }
+
+    private suspend fun delete() {
+        try {
+            deleteBackendConfigUseCase(requireNotNull(uiState.value.currentBackendConfig))
+            _events.send(BackendEditEvent.CloseScreen)
+        } catch (ex: Exception) {
+            showError("Failed to delete backend config")
         }
     }
 
@@ -295,6 +309,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
 
     internal sealed class UiEvent {
         data object SaveClicked : UiEvent()
+        data object DeleteClicked : UiEvent()
         data class AuthConfigSelectionChanged(val authConfig: AuthConfig?) : UiEvent()
         data object AuthConfigAddButtonClicked : UiEvent()
         data object AuthConfigAbortButtonClicked : UiEvent()
@@ -315,6 +330,8 @@ internal class BackendConfigEditViewModel @Inject constructor(
         val isLoading: Boolean = false,
         val error: String? = null,
 
+        val currentBackendConfig: BackendConfig? = null,
+
         val serverConfigs: List<BackendServerConfig> = emptyList(),
         val authConfigs: List<AuthConfig> = emptyList(),
 
@@ -324,8 +341,8 @@ internal class BackendConfigEditViewModel @Inject constructor(
         val currentDomain: String = "",
         val currentPort: String = "",
         val currentUseSsl: Boolean = false,
+        val currentWebBaseUri: String = "",
 
-        val serverConfig: BackendServerConfig? = null,
         val authConfig: AuthConfig? = null,
 
         val authConfigEditMode: Boolean = false,
@@ -334,8 +351,8 @@ internal class BackendConfigEditViewModel @Inject constructor(
         val authConfigSaveButtonEnabled: Boolean = false,
 
         val saveButtonEnabled: Boolean = false,
-    ) {
-    }
+        val isDeleteButtonEnabled: Boolean = false,
+    )
 
     internal sealed class BackendEditEvent {
         data object CloseScreen : BackendEditEvent()

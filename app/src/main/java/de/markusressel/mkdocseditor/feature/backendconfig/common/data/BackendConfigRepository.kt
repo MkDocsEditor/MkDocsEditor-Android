@@ -83,4 +83,8 @@ internal class BackendConfigRepository @Inject constructor(
         }.subscribe().toFlow().map { it.firstOrNull() }
     }
 
+    fun delete(config: BackendConfig): Boolean {
+        return backendConfigPersistenceManager.standardOperation().remove(config.id)
+    }
+
 }
