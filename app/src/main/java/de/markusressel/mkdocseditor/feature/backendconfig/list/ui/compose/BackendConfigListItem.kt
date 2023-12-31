@@ -20,7 +20,7 @@ internal fun BackendConfigListItem(
     onCheckedChanged: (Boolean) -> Unit = {},
 ) {
     Card(
-        modifier = modifier
+        modifier = modifier,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

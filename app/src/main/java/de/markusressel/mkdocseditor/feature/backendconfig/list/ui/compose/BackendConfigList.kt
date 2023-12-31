@@ -1,6 +1,6 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.list.ui.compose
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,9 +26,18 @@ internal fun BackendConfigList(
                 modifier = Modifier
                     .fillMaxWidth()
                     .wrapContentHeight()
-                    .clickable {
-                        onUiEvent(BackendSelectionViewModel.UiEvent.BackendConfigClicked(item))
-                    }
+                    .combinedClickable(
+                        onClick = {
+                            onUiEvent(BackendSelectionViewModel.UiEvent.BackendConfigClicked(item))
+                        },
+                        onLongClick = {
+                            onUiEvent(
+                                BackendSelectionViewModel.UiEvent.BackendConfigLongClicked(
+                                    item
+                                )
+                            )
+                        }
+                    )
             )
         }
     }
