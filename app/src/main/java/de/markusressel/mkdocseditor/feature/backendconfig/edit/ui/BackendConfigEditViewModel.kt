@@ -71,6 +71,9 @@ internal class BackendConfigEditViewModel @Inject constructor(
             old.copy(
                 name = data.name,
                 description = data.description,
+                currentDomain = data.serverConfig.domain,
+                currentPort = data.serverConfig.port.toString(),
+                currentUseSsl = data.serverConfig.useSsl,
                 serverConfig = data.serverConfig,
                 authConfig = data.authConfig,
             )
