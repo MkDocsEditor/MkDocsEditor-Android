@@ -17,8 +17,12 @@ dependencies {
     implementation(libs.androidx.core.ktx)
 
     // Preferences
-    api(libs.markusressel.kutepreferences.core)
-    api(libs.markusressel.kutepreferences.ui)
+    api(libs.markusressel.kutepreferences.core) {
+        isChanging = true
+    }
+    api(libs.markusressel.kutepreferences.ui) {
+        isChanging = true
+    }
     implementation(libs.markusressel.typedpreferences)
     implementation(libs.gson)
 

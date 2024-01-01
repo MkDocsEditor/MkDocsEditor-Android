@@ -111,11 +111,17 @@ dependencies {
     // marked as "api" within the KodeEditor library
     implementation(libs.zoomlayout)
 
-    implementation(libs.markusressel.kodeeditor)
+    implementation(libs.markusressel.kodeeditor) {
+        isChanging = true
+    }
 
     // Syntax Highlighting
-    implementation(libs.markusressel.kodehighlighter.core)
-    implementation(libs.markusressel.kodehighlighter.markdown)
+    implementation(libs.markusressel.kodehighlighter.core) {
+        isChanging = true
+    }
+    implementation(libs.markusressel.kodehighlighter.markdown) {
+        isChanging = true
+    }
 
     // Tutorial messages
     //implementation("com.github.markusressel:TutorialTooltip:v2.0.0")
