@@ -76,10 +76,10 @@ fun ExpandableFab(
                 modifier = Modifier.padding(end = 8.dp),
                 horizontalAlignment = Alignment.End,
             ) {
-                items.forEach {
+                items.drop(1).forEach { item ->
                     Row(
                         modifier = Modifier.clickable {
-                            onItemClicked(it)
+                            onItemClicked(item)
                             expanded = false
                         },
                         verticalAlignment = Alignment.CenterVertically,
@@ -102,7 +102,7 @@ fun ExpandableFab(
                                 Text(
                                     modifier = Modifier.padding(8.dp),
                                     textAlign = TextAlign.Center,
-                                    text = stringResource(id = it.description),
+                                    text = stringResource(id = item.description),
                                     color = MaterialTheme.colorScheme.onTertiary,
                                 )
                             }
@@ -111,14 +111,14 @@ fun ExpandableFab(
                         FloatingActionButton(
                             modifier = Modifier.size(38.dp),
                             onClick = {
-                                onItemClicked(it)
+                                onItemClicked(item)
                                 expanded = false
                             },
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         ) {
                             Image(
                                 modifier = Modifier.size(16.dp),
-                                asset = it.icon,
+                                asset = item.icon,
                                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onTertiaryContainer),
                             )
                         }
@@ -156,7 +156,7 @@ fun ExpandableFab(
                 modifier = Modifier
                     .size(24.dp)
                     .rotate(animatedRotation),
-                asset = MaterialDesignIconic.Icon.gmi_plus,
+                asset = items.first().icon,
                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSecondary),
             )
         }

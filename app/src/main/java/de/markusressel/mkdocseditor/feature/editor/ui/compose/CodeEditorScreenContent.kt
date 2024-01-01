@@ -32,6 +32,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
+import de.markusressel.mkdocseditor.feature.common.ui.compose.ScreenTitle
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
@@ -100,6 +101,7 @@ internal fun CodeEditorScreenContent(
                 .padding(paddingValues),
         ) {
             Column {
+                ScreenTitle(title = uiState.title)
                 if (uiState.isOfflineModeBannerVisible) {
                     OfflineModeBanner()
                 }

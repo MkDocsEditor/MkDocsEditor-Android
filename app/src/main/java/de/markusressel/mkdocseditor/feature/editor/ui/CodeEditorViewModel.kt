@@ -7,7 +7,6 @@ import androidx.compose.ui.text.TextRange
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,20 +33,15 @@ import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapLatest
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import java.util.LinkedList
 import javax.inject.Inject
 
@@ -56,6 +50,7 @@ import javax.inject.Inject
 internal class CodeEditorViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val dataRepository: DataRepository,
+    private val getDocumentUseCase: GetDocumentUseCase,
     private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
     val preferencesHolder: KutePreferencesHolder,
     val networkManager: NetworkManager,
@@ -69,24 +64,6 @@ internal class CodeEditorViewModel @Inject constructor(
 
     //val documentId = savedStateHandle.getStateFlow<String?>("documentId", null)
     val documentId = MutableStateFlow<String?>(null)
-
-    private val documentEntityFlow = documentId
-        .filterNotNull()
-        .mapLatest { documentId ->
-            _uiState.update { old ->
-                old.copy(
-                    loading = true
-                )
-            }
-            val result = dataRepository.getDocument(documentId)
-            _uiState.update { old ->
-                old.copy(
-                    loading = false
-                )
-            }
-            result
-        }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val currentResource: MutableStateFlow<Resource<DocumentEntity?>?> =
         MutableStateFlow(null)
@@ -109,6 +86,14 @@ internal class CodeEditorViewModel @Inject constructor(
     private var documentSyncManager: DocumentSyncManager? = null
 
     init {
+        launch {
+            getDocumentUseCase(documentId.value ?: "").collectLatest { resource ->
+                _uiState.update { old ->
+                    old.copy(title = resource.data?.name ?: "")
+                }
+                currentResource.value = resource
+            }
+        }
         launch {
             documentId.collect { documentId ->
                 _uiState.update { old ->
@@ -186,9 +171,7 @@ internal class CodeEditorViewModel @Inject constructor(
                     // automatically disable edit mode, if (for whatever reason)
                     // editing is currently not possible
                     if (uiState.value.editModeActive) {
-                        _uiState.value = uiState.value.copy(
-                            editModeActive = false
-                        )
+                        disableEditMode()
                     }
                 }
             }
@@ -205,9 +188,10 @@ internal class CodeEditorViewModel @Inject constructor(
                     && offlineModeEnabled.not()
                     && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
             }.collect {
-                _uiState.value = uiState.value.copy(
-                    editModeActive = it
-                )
+                when (it) {
+                    true -> enableEditMode()
+                    else -> disableEditMode()
+                }
             }
         }
 
@@ -229,29 +213,24 @@ internal class CodeEditorViewModel @Inject constructor(
         }
 
         launch {
-            var job: Job? = null
+            getDocumentUseCase(documentId.value ?: "")
+                .filterNotNull()
+                .collectLatest { resource: Resource<DocumentEntity?> ->
+                    currentResource.value = resource
+                    when (resource) {
+                        is Success -> {
+                            //if (offlineModeManager.isEnabled().not()) {
+                            reconnectToServer()
+                            //}
+                        }
 
-            documentEntityFlow.collectLatest { entityFlow ->
-                job?.cancel()
-                job = launch {
-                    entityFlow?.collectLatest { resource ->
-                        currentResource.value = resource
-                        when (resource) {
-                            is Success -> {
-                                //if (offlineModeManager.isEnabled().not()) {
-                                reconnectToServer()
-                                //}
-                            }
-
-                            is Resource.Loading -> {}
-                            is Resource.Error -> Timber.e(resource.error)
-                            else -> {
-                                Timber.d { "$resource" }
-                            }
+                        is Resource.Loading -> {}
+                        is Resource.Error -> Timber.e(resource.error)
+                        else -> {
+                            Timber.d { "$resource" }
                         }
                     }
                 }
-            }
         }
 
         launch {
@@ -344,10 +323,12 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     internal fun onUserTextInput(text: AnnotatedString, selection: TextRange) {
-        _uiState.value = uiState.value.copy(
-            text = text,
-            selection = selection,
-        )
+        _uiState.update { old ->
+            old.copy(
+                text = text,
+                selection = selection,
+            )
+        }
     }
 
     private fun onTextChanged(newText: String, patches: LinkedList<diff_match_patch.Patch>) {
@@ -373,11 +354,8 @@ internal class CodeEditorViewModel @Inject constructor(
      * @param reason a textual description of the reasoning behind the disconnect
      * @param throwable an (optional) exception that is causing the disconnect
      */
-    fun disconnect(reason: String = "None", throwable: Throwable? = null) {
-        _uiState.value = uiState.value.copy(
-            editModeActive = false
-        )
-
+    private fun disconnect(reason: String = "None", throwable: Throwable? = null) {
+        disableEditMode()
         documentSyncManager?.disconnect(1000, reason)
         events.value = ConnectionStatus(connected = false, throwable = throwable)
     }
@@ -497,6 +475,7 @@ internal class CodeEditorViewModel @Inject constructor(
         val loading: Boolean = false,
 
         val documentId: String? = null,
+        val title: String = "",
 
         /**
          * Indicates whether the CodeEditor is in "edit" mode or not

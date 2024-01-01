@@ -24,6 +24,11 @@ internal data class UiState(
     val fabConfig: FabConfig = FabConfig(
         right = listOf(
             FabConfig.Fab(
+                id = -1,
+                description = R.string.create,
+                icon = MaterialDesignIconic.Icon.gmi_plus,
+            ),
+            FabConfig.Fab(
                 id = FAB_ID_CREATE_DOCUMENT,
                 description = R.string.create_document,
                 icon = MaterialDesignIconic.Icon.gmi_file_add,

@@ -120,7 +120,7 @@ internal class BackendSelectionViewModel @Inject constructor(
                 FabConfig.Fab(
                     id = FAB_ID_CREATE_BACKEND_CONFIG,
                     description = R.string.create_backend_config,
-                    icon = MaterialDesignIconic.Icon.gmi_file_add,
+                    icon = MaterialDesignIconic.Icon.gmi_plus,
                 ),
             )
         ),

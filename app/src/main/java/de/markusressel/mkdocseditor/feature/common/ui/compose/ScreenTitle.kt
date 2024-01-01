@@ -15,7 +15,10 @@ import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 
 @Composable
-fun ScreenTitle(modifier: Modifier, title: String) {
+fun ScreenTitle(
+    modifier: Modifier = Modifier,
+    title: String
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
