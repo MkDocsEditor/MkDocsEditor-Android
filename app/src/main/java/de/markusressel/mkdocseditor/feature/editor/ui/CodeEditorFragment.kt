@@ -75,7 +75,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
                     // set "edit" icon
                     menu?.findItem(R.id.edit)?.apply {
                         // invisible initially, until a server connection is established
-                        isVisible = viewModel.offlineModeManager.isEnabled().not() && editable
+//                        isVisible = viewModel.offlineModeManager.isEnabled().not() && editable
                     }
                     activity?.invalidateOptionsMenu()
                 }
@@ -83,7 +83,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
             onOptionsMenuItemClicked = {
                 when (it.itemId) {
 //                    R.id.open_in_browser -> viewModel.onOpenInBrowserClicked()
-                    R.id.edit -> viewModel.onEditClicked()
+                    R.id.edit -> viewModel.enableEditMode()
                     else -> false
                 }
             },
@@ -237,8 +237,8 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
 //                                codeEditorLayout.snack(R.string.connected, Snackbar.LENGTH_SHORT)
                             }
                         } else {
-                            if (event.throwable != null) {
-                                Timber.e(event.throwable) { "Websocket error code: ${event.errorCode}" }
+//                            if (event.throwable != null) {
+//                                Timber.e(event.throwable) { "Websocket error code: ${event.errorCode}" }
 //                                noConnectionSnackbar = codeEditorLayout.snack(
 //                                    text = R.string.server_unavailable,
 //                                    duration = Snackbar.LENGTH_INDEFINITE,
@@ -246,7 +246,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
 //                                    action = {
 //                                        viewModel.onRetryClicked()
 //                                    })
-                            } else if (viewModel.offlineModeManager.isEnabled().not()) {
+//                            } else if (viewModel.offlineModeManager.isEnabled().not()) {
 //                                noConnectionSnackbar = codeEditorLayout.snack(
 //                                    text = R.string.not_connected,
 //                                    duration = Snackbar.LENGTH_INDEFINITE,
@@ -254,7 +254,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
 //                                    action = {
 //                                        viewModel.onConnectClicked()
 //                                    })
-                            }
+//                            }
                         }
                     }
                     is CodeEditorEvent.InitialText -> {

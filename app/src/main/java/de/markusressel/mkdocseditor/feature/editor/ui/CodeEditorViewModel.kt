@@ -1,18 +1,18 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
 import android.graphics.PointF
-import android.view.View
 import androidx.annotation.UiThread
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
+import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.runOnUiThread
+import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
@@ -24,7 +24,9 @@ import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.OpenWebVie
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.TextChange
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.NetworkManager
-import de.markusressel.mkdocseditor.network.OfflineModeManager
+import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
+import de.markusressel.mkdocseditor.ui.activity.SnackbarData
+import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.Resource.Success
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
@@ -57,7 +59,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
     val preferencesHolder: KutePreferencesHolder,
     val networkManager: NetworkManager,
-    val offlineModeManager: OfflineModeManager,
+    val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
@@ -95,18 +97,11 @@ internal class CodeEditorViewModel @Inject constructor(
      * Indicates whether the edit mode can be activated or not
      */
     val editable = combine(
-        offlineModeManager.isEnabled,
+        isOfflineModeEnabledFlowUseCase(),
         connectionStatus
     ) { offlineModeEnabled, connectionStatus ->
         offlineModeEnabled.not() && (connectionStatus?.connected ?: false)
     }
-
-    val offlineModeBannerVisibility = offlineModeManager.isEnabled.mapLatest {
-        when (it) {
-            true -> View.VISIBLE
-            else -> View.GONE
-        }
-    }.asLiveData()
 
     val currentPosition = PointF()
     val currentZoom = MutableLiveData(1F)
@@ -203,7 +198,7 @@ internal class CodeEditorViewModel @Inject constructor(
             combine(
                 connectionStatus,
                 editable,
-                offlineModeManager.isEnabled
+                isOfflineModeEnabledFlowUseCase()
             ) { status, editable, offlineModeEnabled ->
                 (status?.connected ?: false)
                     && editable
@@ -217,7 +212,7 @@ internal class CodeEditorViewModel @Inject constructor(
         }
 
         launch {
-            offlineModeManager.isEnabled.collect { enabled ->
+            isOfflineModeEnabledFlowUseCase().collect { enabled ->
                 when {
                     enabled -> disconnect("Offline mode activated")
                     else -> {
@@ -265,6 +260,14 @@ internal class CodeEditorViewModel @Inject constructor(
             }
         }
 
+        launch {
+            isOfflineModeEnabledFlowUseCase().collectLatest {
+                _uiState.update { old ->
+                    old.copy(isOfflineModeBannerVisible = it)
+                }
+            }
+        }
+
         events.observeForever { event ->
             when (event) {
                 is ConnectionStatus -> {
@@ -289,6 +292,12 @@ internal class CodeEditorViewModel @Inject constructor(
     fun onUiEvent(event: UiEvent) {
         launch {
             when (event) {
+                is UiEvent.ExpandableFabItemSelected -> when (event.item.id) {
+                    FAB_ID_ENABLE_EDIT_MODE -> enableEditMode()
+                    FAB_ID_DISABLE_EDIT_MODE -> disableEditMode()
+                    else -> {}
+                }
+
                 is UiEvent.BackPressed -> onClose()
             }
         }
@@ -414,12 +423,29 @@ internal class CodeEditorViewModel @Inject constructor(
     /**
      * Called when the user activates the edit mode
      */
-    fun onEditClicked(): Boolean {
+    fun enableEditMode(): Boolean {
         // invert state of edit mode
-        _uiState.value = uiState.value.copy(
-            editModeActive = uiState.value.editModeActive.not()
-        )
+        _uiState.update { old ->
+            old.copy(
+                editModeActive = uiState.value.editModeActive.not(),
+                fabConfig = old.fabConfig.copy(
+                    right = listOf(DisableEditModeFabConfig)
+                )
+            )
+        }
         return true
+    }
+
+
+    private fun disableEditMode() {
+        _uiState.update { old ->
+            old.copy(
+                editModeActive = false,
+                fabConfig = old.fabConfig.copy(
+                    right = listOf(EnableEditModeFabConfig)
+                )
+            )
+        }
     }
 
     /**
@@ -441,12 +467,53 @@ internal class CodeEditorViewModel @Inject constructor(
         return currentResource.value?.data?.content?.target?.text != null
     }
 
-    fun onClose() {
+    private fun onClose() {
         documentSyncManager?.disconnect(1000, "Closed")
     }
 
-}
+    companion object {
+        const val FAB_ID_ENABLE_EDIT_MODE = 0
+        const val FAB_ID_DISABLE_EDIT_MODE = 1
 
-sealed class UiEvent {
-    data object BackPressed : UiEvent()
+        internal val EnableEditModeFabConfig = FabConfig.Fab(
+            id = FAB_ID_ENABLE_EDIT_MODE,
+            description = R.string.code_editor_enable_edit_mode,
+            icon = MaterialDesignIconic.Icon.gmi_edit,
+        )
+
+        internal val DisableEditModeFabConfig = FabConfig.Fab(
+            id = FAB_ID_DISABLE_EDIT_MODE,
+            description = R.string.code_editor_disable_edit_mode,
+            icon = MaterialDesignIconic.Icon.gmi_check,
+        )
+    }
+
+
+    data class UiState(
+        val fabConfig: FabConfig = FabConfig(
+            right = listOf(EnableEditModeFabConfig)
+        ),
+
+        val loading: Boolean = false,
+
+        val documentId: String? = null,
+
+        /**
+         * Indicates whether the CodeEditor is in "edit" mode or not
+         */
+        val editModeActive: Boolean = true,
+
+        val text: AnnotatedString? = null,
+        val selection: TextRange? = null,
+
+        val isOfflineModeBannerVisible: Boolean = false,
+
+        val snackbar: SnackbarData? = null,
+    )
+
+    sealed class UiEvent {
+        data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
+
+        data object BackPressed : UiEvent()
+    }
 }

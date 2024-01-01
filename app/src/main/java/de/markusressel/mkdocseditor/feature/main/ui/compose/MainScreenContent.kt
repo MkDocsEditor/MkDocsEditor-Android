@@ -26,7 +26,7 @@ import de.markusressel.mkdocseditor.ui.activity.UiState
 @Composable
 internal fun MainScreenContent(
     fileBrowserUiState: de.markusressel.mkdocseditor.feature.browser.ui.UiState,
-    codeEditorUiState: de.markusressel.mkdocseditor.feature.editor.ui.UiState,
+    codeEditorUiState: de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel.UiState,
     navigationType: NavigationLayoutType,
     contentType: ContentLayoutType,
     uiState: UiState,

@@ -22,6 +22,8 @@
     <string name="refresh">Refresh</string>
     <string name="open_in_browser">Open in browser</string>
     <string name="code_editor_edit_mode">Edit Mode</string>
+    <string name="code_editor_enable_edit_mode">Edit</string>
+    <string name="code_editor_disable_edit_mode">Read-Only</string>
 
     <string name="offline">Offline</string>
 

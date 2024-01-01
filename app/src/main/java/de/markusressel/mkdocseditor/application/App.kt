@@ -52,8 +52,6 @@ class App : Application(), Configuration.Provider {
 
         setupErrorHandlers()
 
-        createListeners()
-
         initializeEmojiCompat()
 
         initOfflineMode()
@@ -71,28 +69,6 @@ class App : Application(), Configuration.Provider {
             Timber.plant(Timber.DebugTree())
             Timber.plant(FileTree(this))
         }
-    }
-
-    private fun createListeners() {
-//        Bus.observe<HostChangedEvent>().subscribe {
-//            restClient.setHostname(it.host)
-//        }.registerInBus(this)
-//
-//        Bus.observe<PortChangedEvent>().subscribe {
-//            restClient.setPort(it.port)
-//        }.registerInBus(this)
-//
-//        Bus.observe<BasicAuthUserChangedEvent>().subscribe {
-//            val oldConfig = restClient.getBasicAuthConfig()
-//            restClient.setBasicAuthConfig(BasicAuthConfig(it.user, oldConfig?.password ?: ""))
-//        }.registerInBus(this)
-//
-//        Bus.observe<BasicAuthPasswordChangedEvent>().subscribe {
-//            val oldConfig = restClient.getBasicAuthConfig()
-//            restClient.setBasicAuthConfig(
-//                BasicAuthConfig(oldConfig?.username ?: "", it.password)
-//            )
-//        }.registerInBus(this)
     }
 
     private fun initializeEmojiCompat() {

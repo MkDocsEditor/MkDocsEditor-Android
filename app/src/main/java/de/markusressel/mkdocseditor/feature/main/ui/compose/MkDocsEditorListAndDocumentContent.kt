@@ -15,7 +15,7 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreen
 @Composable
 internal fun MkDocsEditorListAndDocumentContent(
     modifier: Modifier = Modifier,
-    codeEditorUiState: de.markusressel.mkdocseditor.feature.editor.ui.UiState,
+    codeEditorUiState: de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel.UiState,
 ) {
     Row(modifier = modifier) {
         Navigator(FileBrowserScreen) { navigator ->

@@ -53,7 +53,7 @@ private fun MainScreenPreview() {
             onBack = {},
             windowSize = WindowWidthSizeClass.Compact,
             devicePosture = DevicePosture.NormalPosture,
-            codeEditorUiState = de.markusressel.mkdocseditor.feature.editor.ui.UiState(),
+            codeEditorUiState = CodeEditorViewModel.UiState(),
             fileBrowserUiState = de.markusressel.mkdocseditor.feature.browser.ui.UiState()
         )
     }
@@ -69,7 +69,7 @@ private fun MainScreenPreviewTablet() {
             onBack = {},
             windowSize = WindowWidthSizeClass.Medium,
             devicePosture = DevicePosture.NormalPosture,
-            codeEditorUiState = de.markusressel.mkdocseditor.feature.editor.ui.UiState(),
+            codeEditorUiState = CodeEditorViewModel.UiState(),
             fileBrowserUiState = de.markusressel.mkdocseditor.feature.browser.ui.UiState()
         )
     }
@@ -85,7 +85,7 @@ private fun MainScreenPreviewDesktop() {
             onBack = {},
             windowSize = WindowWidthSizeClass.Expanded,
             devicePosture = DevicePosture.NormalPosture,
-            codeEditorUiState = de.markusressel.mkdocseditor.feature.editor.ui.UiState(),
+            codeEditorUiState = CodeEditorViewModel.UiState(),
             fileBrowserUiState = de.markusressel.mkdocseditor.feature.browser.ui.UiState()
         )
     }
@@ -95,7 +95,7 @@ private fun MainScreenPreviewDesktop() {
 private fun MainScreenLayout(
     uiState: UiState,
     fileBrowserUiState: de.markusressel.mkdocseditor.feature.browser.ui.UiState,
-    codeEditorUiState: de.markusressel.mkdocseditor.feature.editor.ui.UiState,
+    codeEditorUiState: CodeEditorViewModel.UiState,
     onUiEvent: (UiEvent) -> Unit,
     onBack: () -> Unit,
     windowSize: WindowWidthSizeClass,
