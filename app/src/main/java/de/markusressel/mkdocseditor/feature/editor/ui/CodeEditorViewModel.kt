@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import java.util.LinkedList
@@ -87,14 +88,6 @@ internal class CodeEditorViewModel @Inject constructor(
 
     init {
         launch {
-            getDocumentUseCase(documentId.value ?: "").collectLatest { resource ->
-                _uiState.update { old ->
-                    old.copy(title = resource.data?.name ?: "")
-                }
-                currentResource.value = resource
-            }
-        }
-        launch {
             documentId.collect { documentId ->
                 _uiState.update { old ->
                     old.copy(documentId = documentId)
@@ -110,6 +103,13 @@ internal class CodeEditorViewModel @Inject constructor(
                 if (documentId == null) {
                     documentSyncManager = null
                 } else {
+                    getDocumentUseCase(documentId).first().let { resource ->
+                        _uiState.update { old ->
+                            old.copy(title = resource.data?.name ?: "")
+                        }
+                        currentResource.value = resource
+                    }
+
                     val currentBackend =
                         requireNotNull(getCurrentBackendConfigUseCase().value)
                     val serverConfig = requireNotNull(currentBackend.serverConfig)
