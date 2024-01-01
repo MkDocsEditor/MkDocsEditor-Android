@@ -1,10 +1,10 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.list.ui.compose
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -23,8 +23,21 @@ internal fun BackendSelectionScreenContent(
     onUiEvent: (BackendSelectionViewModel.UiEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier) {
-        Column {
+    Scaffold(
+        modifier = modifier,
+        floatingActionButton = {
+            ExpandableFab(
+                modifier = Modifier.fillMaxSize(),
+                items = uiState.fabConfig.right,
+                onItemClicked = {
+                    onUiEvent(BackendSelectionViewModel.UiEvent.ExpandableFabItemSelected(item = it))
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier.padding(paddingValues)
+        ) {
             ScreenTitle(
                 modifier = Modifier
                     .fillMaxWidth(),
@@ -39,14 +52,6 @@ internal fun BackendSelectionScreenContent(
                 onUiEvent = onUiEvent
             )
         }
-
-        ExpandableFab(
-            modifier = Modifier.fillMaxSize(),
-            items = uiState.fabConfig.right,
-            onItemClicked = {
-                onUiEvent(BackendSelectionViewModel.UiEvent.ExpandableFabItemSelected(item = it))
-            }
-        )
     }
 }
 

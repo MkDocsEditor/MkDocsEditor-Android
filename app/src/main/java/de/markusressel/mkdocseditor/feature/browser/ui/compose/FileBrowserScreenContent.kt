@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,8 +43,7 @@ internal fun FileBrowserScreenContent(
         ) {
             ErrorCard(
                 modifier = Modifier
-                    .wrapContentSize()
-                    .padding(16.dp),
+                    .wrapContentSize(),
                 text = uiState.error ?: "Error",
                 onRetry = {
                     onUiEvent(UiEvent.Refresh)
@@ -51,55 +51,61 @@ internal fun FileBrowserScreenContent(
             )
         }
 
-        Column {
-            SectionPath(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .defaultMinSize(minHeight = 48.dp)
-                    .padding(horizontal = 4.dp),
-                path = uiState.currentSectionPath,
-                onSectionClicked = { section ->
-                    onUiEvent(UiEvent.NavigateUpToSection(section))
-                }
-            )
-
-            PullToRefresh(
-                //modifier = modifier,
-                state = rememberPullToRefreshState(
-                    isRefreshing = uiState.isLoading
-                ),
-                onRefresh = { onUiEvent(UiEvent.Refresh) },
+        Scaffold(
+            floatingActionButton = {
+                ExpandableFab(
+                    modifier = Modifier.fillMaxSize(),
+                    items = uiState.fabConfig.right,
+                    onItemClicked = {
+                        onUiEvent(UiEvent.ExpandableFabItemSelected(item = it))
+                    }
+                )
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier.padding(paddingValues)
             ) {
-                Box(
+                SectionPath(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .wrapContentSize()
+                        .defaultMinSize(minHeight = 48.dp)
+                        .padding(horizontal = 4.dp),
+                    path = uiState.currentSectionPath,
+                    onSectionClicked = { section ->
+                        onUiEvent(UiEvent.NavigateUpToSection(section))
+                    }
+                )
+
+                PullToRefresh(
+                    //modifier = modifier,
+                    state = rememberPullToRefreshState(
+                        isRefreshing = uiState.isLoading
+                    ),
+                    onRefresh = { onUiEvent(UiEvent.Refresh) },
                 ) {
-                    Column {
-                        FileBrowserList(
-                            items = uiState.listItems,
-                            onDocumentClicked = {
-                                onUiEvent(UiEvent.DocumentClicked(it))
-                            },
-                            onResourceClicked = {
-                                onUiEvent(UiEvent.ResourceClicked(it))
-                            },
-                            onSectionClicked = {
-                                onUiEvent(UiEvent.SectionClicked(it))
-                            },
-                        )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentSize()
+                    ) {
+                        Column {
+                            FileBrowserList(
+                                items = uiState.listItems,
+                                onDocumentClicked = {
+                                    onUiEvent(UiEvent.DocumentClicked(it))
+                                },
+                                onResourceClicked = {
+                                    onUiEvent(UiEvent.ResourceClicked(it))
+                                },
+                                onSectionClicked = {
+                                    onUiEvent(UiEvent.SectionClicked(it))
+                                },
+                            )
+                        }
                     }
                 }
             }
         }
-
-        ExpandableFab(
-            modifier = Modifier.fillMaxSize(),
-            items = uiState.fabConfig.right,
-            onItemClicked = {
-                onUiEvent(UiEvent.ExpandableFabItemSelected(item = it))
-            }
-        )
     }
 }
 
