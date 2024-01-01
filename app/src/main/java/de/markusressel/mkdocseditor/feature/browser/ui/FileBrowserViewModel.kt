@@ -200,7 +200,7 @@ internal class FileBrowserViewModel @Inject constructor(
                     if (isDocumentNameValid(event.name)) {
                         createNewDocument(event.name)
                     } else {
-                        showError("")
+                        showError("Invalid document name")
                     }
                 }
 
@@ -216,15 +216,15 @@ internal class FileBrowserViewModel @Inject constructor(
 
     private fun isDocumentNameValid(name: String): Boolean {
         val equallyNamedSectionsExist =
-            uiState.value.listItems.filterByExpectedType<SectionEntity>().none {
+            uiState.value.listItems.filterByExpectedType<SectionEntity>().any {
                 it.name == name
             }
         val equallyNamedDocumentsExist =
-            uiState.value.listItems.filterByExpectedType<DocumentEntity>().none {
+            uiState.value.listItems.filterByExpectedType<DocumentEntity>().any {
                 it.name == name
             }
         val equallyNamedResourcesExist =
-            uiState.value.listItems.filterByExpectedType<ResourceEntity>().none {
+            uiState.value.listItems.filterByExpectedType<ResourceEntity>().any {
                 it.name == name
             }
         return name.isNotBlank()
@@ -336,30 +336,34 @@ internal class FileBrowserViewModel @Inject constructor(
     private suspend fun createNewSection(parentSectionId: String, sectionName: String) {
         try {
             val trimmedSectionName = sectionName.trim()
-            // TODO: show loading state somehow
             if (isSectionNameValid(trimmedSectionName).not()) {
-                showError("")
+                showError("Invalid section name")
                 return
             }
+
+            // TODO: show loading state somehow
+            showLoading(true)
 
             createNewSectionUseCase(trimmedSectionName, parentSectionId)
         } catch (ex: Exception) {
             Timber.e(ex)
             showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
+        } finally {
+            showLoading(false)
         }
     }
 
     private fun isSectionNameValid(sectionName: String): Boolean {
         val equallyNamedSectionsExist =
-            uiState.value.listItems.filterByExpectedType<SectionEntity>().none {
+            uiState.value.listItems.filterByExpectedType<SectionEntity>().any {
                 it.name == sectionName
             }
         val equallyNamedDocumentsExist =
-            uiState.value.listItems.filterByExpectedType<DocumentEntity>().none {
+            uiState.value.listItems.filterByExpectedType<DocumentEntity>().any {
                 it.name == sectionName
             }
         val equallyNamedResourcesExist =
-            uiState.value.listItems.filterByExpectedType<ResourceEntity>().none {
+            uiState.value.listItems.filterByExpectedType<ResourceEntity>().any {
                 it.name == sectionName
             }
         return sectionName.isNotBlank()
@@ -367,7 +371,6 @@ internal class FileBrowserViewModel @Inject constructor(
             && equallyNamedDocumentsExist.not()
             && equallyNamedResourcesExist.not()
     }
-
 
     private suspend fun createNewDocument(documentName: String) {
         try {
@@ -386,6 +389,7 @@ internal class FileBrowserViewModel @Inject constructor(
             showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
         }
     }
+
 
     /**
      * Rename a document
@@ -448,7 +452,7 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private suspend fun onResourceClicked(entity: ResourceEntity) {
-
+        showError("Not yet supported")
     }
 
     private suspend fun onSectionClicked(entity: SectionEntity) {
@@ -457,6 +461,12 @@ internal class FileBrowserViewModel @Inject constructor(
             sectionName = entity.name,
             addToBackstack = true
         )
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        _uiState.update { old ->
+            old.copy(isLoading = isLoading)
+        }
     }
 
 
