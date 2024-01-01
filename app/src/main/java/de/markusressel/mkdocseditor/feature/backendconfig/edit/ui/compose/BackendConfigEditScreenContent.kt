@@ -88,7 +88,7 @@ internal fun BackendConfigEditScreenContent(
                     .fillMaxWidth(),
                 editMode = uiState.authConfigEditMode,
                 authConfigs = uiState.authConfigs,
-                authConfig = uiState.authConfig,
+                authConfig = uiState.currentAuthConfig,
                 saveButtonEnabled = uiState.authConfigSaveButtonEnabled,
                 currentAuthConfigUsername = uiState.currentAuthConfigUsername,
                 currentAuthConfigPassword = uiState.currentAuthConfigPassword,
@@ -159,7 +159,7 @@ private fun BackendConfigEditScreenContentPreview() {
                 currentPort = "443",
                 currentUseSsl = true,
                 currentWebBaseUri = "https://domain.com",
-                authConfig = AuthConfig(
+                currentAuthConfig = AuthConfig(
                     username = "user",
                     password = "password"
                 )

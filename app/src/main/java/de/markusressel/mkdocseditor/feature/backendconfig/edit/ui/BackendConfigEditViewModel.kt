@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.edit.ui
 
 import androidx.lifecycle.ViewModel
+import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
@@ -8,7 +9,8 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendCon
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendAuthConfigsUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendConfigUseCase
-import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.ValidateBackendConfigUseCase
+import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.ValidateEditedBackendConfigUseCase
+import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.ValidateNewBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.domain.AddAuthConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.domain.DeleteAuthConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.domain.DeleteBackendConfigUseCase
@@ -27,7 +29,8 @@ internal class BackendConfigEditViewModel @Inject constructor(
     private val getBackendAuthConfigsUseCase: GetBackendAuthConfigsUseCase,
     private val addAuthConfigUseCase: AddAuthConfigUseCase,
     private val deleteAuthConfigUseCase: DeleteAuthConfigUseCase,
-    private val validateBackendConfigUseCase: ValidateBackendConfigUseCase,
+    private val validateNewBackendConfigUseCase: ValidateNewBackendConfigUseCase,
+    private val validateEditedBackendConfigUseCase: ValidateEditedBackendConfigUseCase,
     private val saveBackendConfigUseCase: SaveBackendConfigItemsUseCase,
     private val deleteBackendConfigUseCase: DeleteBackendConfigUseCase,
 ) : ViewModel() {
@@ -55,7 +58,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
             old.copy(
                 name = "",
                 description = "",
-                authConfig = old.authConfigs.firstOrNull(),
+                currentAuthConfig = old.authConfigs.firstOrNull(),
                 authConfigEditMode = old.authConfigs.isEmpty(),
                 isDeleteButtonEnabled = false,
             )
@@ -75,10 +78,10 @@ internal class BackendConfigEditViewModel @Inject constructor(
 
                 name = data.name,
                 description = data.description,
-                currentDomain = data.serverConfig.domain,
-                currentPort = data.serverConfig.port.toString(),
-                currentUseSsl = data.serverConfig.useSsl,
-                authConfig = data.authConfig,
+                currentDomain = data.serverConfig?.domain ?: "",
+                currentPort = data.serverConfig?.port?.toString() ?: "",
+                currentUseSsl = data.serverConfig?.useSsl ?: false,
+                currentAuthConfig = data.authConfig,
                 isDeleteButtonEnabled = true,
             )
         }
@@ -89,7 +92,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
         _uiState.update { old ->
             old.copy(
                 authConfigs = authConfigs,
-                authConfig = authConfigs.firstOrNull()
+                currentAuthConfig = authConfigs.firstOrNull()
             )
         }
     }
@@ -166,9 +169,12 @@ internal class BackendConfigEditViewModel @Inject constructor(
         _uiState.update { old ->
             old.copy(
                 authConfigEditMode = true,
-                currentAuthConfigUsername = "",
-                currentAuthConfigPassword = "",
-                authConfigSaveButtonEnabled = false,
+                currentAuthConfigUsername = old.currentAuthConfig?.username ?: "",
+                currentAuthConfigPassword = old.currentAuthConfig?.password ?: "",
+                authConfigSaveButtonEnabled = validateAuthConfig(
+                    old.currentAuthConfigUsername,
+                    old.currentAuthConfigPassword
+                )
             )
         }
     }
@@ -194,7 +200,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
         _uiState.update { old ->
             old.copy(
                 authConfigs = newAuthConfigs,
-                authConfig = newAuthConfigs.find { it.id == newConfigId },
+                currentAuthConfig = newAuthConfigs.find { it.id == newConfigId },
                 authConfigEditMode = false,
                 currentAuthConfigUsername = "",
                 currentAuthConfigPassword = "",
@@ -212,32 +218,19 @@ internal class BackendConfigEditViewModel @Inject constructor(
     private suspend fun updateSaveButtonEnabled() {
         _uiState.update { old ->
             old.copy(
-                saveButtonEnabled = validateBackendConfigUseCase(
-                    name = old.name,
-                    description = old.description,
-                    domain = old.currentDomain,
-                    port = old.currentPort,
-                    currentUseSsl = old.currentUseSsl,
-                    authConfig = old.authConfig,
-                )
+                saveButtonEnabled = validateCurrentInput()
             )
         }
     }
 
     private suspend fun save() {
-        val isValid = validateBackendConfigUseCase(
-            name = uiState.value.name,
-            description = uiState.value.description,
-            domain = uiState.value.currentDomain,
-            port = uiState.value.currentPort,
-            currentUseSsl = uiState.value.currentUseSsl,
-            authConfig = uiState.value.authConfig,
-        )
+        val isValid = validateCurrentInput()
         if (!isValid) {
             showError("Backend config is not valid")
         } else {
             try {
                 val serverConfig = BackendServerConfig(
+                    id = uiState.value.currentBackendConfig?.serverConfig?.id ?: 0,
                     domain = uiState.value.currentDomain,
                     port = uiState.value.currentPort.toInt(),
                     useSsl = uiState.value.currentUseSsl,
@@ -246,23 +239,48 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 )
 
                 val config = BackendConfig(
+                    id = uiState.value.currentBackendConfig?.id ?: 0,
                     name = uiState.value.name,
                     description = uiState.value.description,
                     isSelected = false,
                     serverConfig = serverConfig,
-                    authConfig = requireNotNull(uiState.value.authConfig),
+                    authConfig = uiState.value.currentAuthConfig,
                 )
                 saveBackendConfigUseCase(config)
                 _events.send(BackendEditEvent.CloseScreen)
             } catch (e: Exception) {
+                Timber.e(e) { "Failed to save backend config" }
                 showError("Failed to save backend config")
+            }
+        }
+    }
+
+    private suspend fun validateCurrentInput(): Boolean {
+        uiState.value.apply {
+            return when (uiState.value.currentBackendConfig) {
+                null -> validateNewBackendConfigUseCase(
+                    name = name,
+                    description = description,
+                    domain = currentDomain,
+                    port = currentPort,
+                    currentUseSsl = currentUseSsl,
+                    authConfig = currentAuthConfig,
+                )
+
+                else -> validateEditedBackendConfigUseCase(
+                    name = name,
+                    description = description,
+                    domain = currentDomain,
+                    port = currentPort,
+                    authConfig = currentAuthConfig
+                )
             }
         }
     }
 
     private suspend fun processAuthConfigSelectionChange(authConfig: AuthConfig?) {
         _uiState.update { old ->
-            old.copy(authConfig = authConfig)
+            old.copy(currentAuthConfig = authConfig)
         }
         updateSaveButtonEnabled()
     }
@@ -343,7 +361,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
         val currentUseSsl: Boolean = false,
         val currentWebBaseUri: String = "",
 
-        val authConfig: AuthConfig? = null,
+        val currentAuthConfig: AuthConfig? = null,
 
         val authConfigEditMode: Boolean = false,
         val currentAuthConfigUsername: String = "",

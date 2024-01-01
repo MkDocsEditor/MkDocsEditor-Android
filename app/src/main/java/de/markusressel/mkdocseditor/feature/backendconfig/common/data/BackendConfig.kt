@@ -7,8 +7,8 @@ data class BackendConfig(
     val id: Long = 0L,
     val name: String,
     val description: String,
-    val serverConfig: BackendServerConfig,
-    val authConfig: AuthConfig,
+    val serverConfig: BackendServerConfig?,
+    val authConfig: AuthConfig?,
     val isSelected: Boolean,
 )
 
@@ -18,5 +18,5 @@ internal fun BackendConfigEntity.toBackendConfig() = BackendConfig(
     description = description,
     isSelected = isSelected,
     serverConfig = serverConfig.target.toServerConfig(),
-    authConfig = authConfig.target.toBackendAuthConfig()
+    authConfig = authConfig.target?.toBackendAuthConfig(),
 )

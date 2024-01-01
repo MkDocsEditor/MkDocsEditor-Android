@@ -43,7 +43,7 @@ internal fun BackendConfigListItem(
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
-                    text = item.serverConfig.domain,
+                    text = item.serverConfig?.domain ?: "",
                     style = MaterialTheme.typography.bodySmall
                 )
             }

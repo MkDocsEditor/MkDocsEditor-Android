@@ -4,7 +4,7 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import javax.inject.Inject
 
 
-internal class ValidateBackendConfigUseCase @Inject constructor(
+internal class ValidateNewBackendConfigUseCase @Inject constructor(
     private val getBackendConfigsUseCase: GetBackendConfigsUseCase,
 ) {
     suspend operator fun invoke(
@@ -17,7 +17,6 @@ internal class ValidateBackendConfigUseCase @Inject constructor(
     ): Boolean {
         return name.run {
             name.isNotBlank() &&
-                description.isNotBlank() &&
                 domain.isNotBlank() &&
                 (0..65535).contains(port.toIntOrNull() ?: -1) &&
                 authConfig?.run {

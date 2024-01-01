@@ -8,7 +8,7 @@ internal class SaveBackendConfigItemsUseCase @Inject constructor(
     private val backendConfigRepository: BackendConfigRepository
 ) {
     suspend operator fun invoke(config: BackendConfig): Long {
-        return backendConfigRepository.add(config)
+        return backendConfigRepository.addOrUpdate(config)
     }
 }
 

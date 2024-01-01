@@ -107,7 +107,7 @@ internal fun AuthConfigSection(
                         } else {
                             AuthConfigSelectionLayout(
                                 authConfigs = authConfigs,
-                                authConfig = requireNotNull(authConfig),
+                                authConfig = authConfig,
                                 onUiEvent = onUiEvent
                             )
                         }
@@ -121,7 +121,7 @@ internal fun AuthConfigSection(
 @Composable
 internal fun AuthConfigSelectionLayout(
     authConfigs: List<AuthConfig>,
-    authConfig: AuthConfig,
+    authConfig: AuthConfig?,
     onUiEvent: (BackendConfigEditViewModel.UiEvent) -> Unit
 ) {
     Row(
@@ -147,7 +147,7 @@ internal fun AuthConfigSelectionLayout(
                     modifier = Modifier
                         .weight(1f)
                         .padding(8.dp),
-                    text = authConfig.username
+                    text = authConfig?.username ?: "",
                 )
 
                 ExposedDropdownMenuDefaults.TrailingIcon(

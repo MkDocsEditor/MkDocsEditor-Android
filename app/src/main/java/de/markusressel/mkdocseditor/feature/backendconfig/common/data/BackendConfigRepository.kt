@@ -31,11 +31,11 @@ internal class BackendConfigRepository @Inject constructor(
 
     fun getAuthConfigs() = backendAuthConfigPersistenceManager.standardOperation().all.toList()
 
-    fun add(config: BackendConfig): Long {
+    fun addOrUpdate(config: BackendConfig): Long {
         return backendConfigPersistenceManager.add(config.toBackendConfigEntity())
     }
 
-    fun add(config: AuthConfig): Long {
+    fun addOrUpdate(config: AuthConfig): Long {
         return backendAuthConfigPersistenceManager.standardOperation()
             .put(config.toBackendAuthConfigEntity())
     }
@@ -46,8 +46,8 @@ internal class BackendConfigRepository @Inject constructor(
         description = description,
         isSelected = isSelected,
     ).apply {
-        serverConfig.target = this@toBackendConfigEntity.serverConfig.toBackendServerConfigEntity()
-        authConfig.target = this@toBackendConfigEntity.authConfig.toBackendAuthConfigEntity()
+        serverConfig.target = this@toBackendConfigEntity.serverConfig?.toBackendServerConfigEntity()
+        authConfig.target = this@toBackendConfigEntity.authConfig?.toBackendAuthConfigEntity()
 
     }
 

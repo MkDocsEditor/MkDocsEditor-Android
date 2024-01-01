@@ -132,15 +132,17 @@ internal class CodeEditorViewModel @Inject constructor(
                 } else {
                     val currentBackend =
                         requireNotNull(getCurrentBackendConfigUseCase().value)
+                    val serverConfig = requireNotNull(currentBackend.serverConfig)
+                    val authConfig = requireNotNull(currentBackend.authConfig)
 
                     documentSyncManager =
                         DocumentSyncManager(
-                            hostname = currentBackend.serverConfig.domain,
-                            port = currentBackend.serverConfig.port,
-                            ssl = currentBackend.serverConfig.useSsl,
+                            hostname = serverConfig.domain,
+                            port = serverConfig.port,
+                            ssl = serverConfig.useSsl,
                             basicAuthConfig = BasicAuthConfig(
-                                username = currentBackend.authConfig.username,
-                                password = currentBackend.authConfig.password
+                                username = authConfig.username,
+                                password = authConfig.password
                             ),
                             documentId = documentId,
                             currentText = {
@@ -390,8 +392,8 @@ internal class CodeEditorViewModel @Inject constructor(
 
     private suspend fun onOpenInBrowserClicked(): Boolean {
         val backendConfig = requireNotNull(getCurrentBackendConfigUseCase().value)
-        val webBaseUri = backendConfig.serverConfig.webBaseUri
-        if (webBaseUri.isBlank()) {
+        val webBaseUri = backendConfig.serverConfig?.webBaseUri
+        if (webBaseUri.isNullOrBlank()) {
             return false
         }
 

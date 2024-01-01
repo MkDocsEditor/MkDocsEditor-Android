@@ -3,7 +3,6 @@ package de.markusressel.mkdocseditor.feature.browser.ui
 import androidx.lifecycle.ViewModel
 import com.dropbox.android.external.store4.StoreResponse
 import com.github.ajalt.timberkt.Timber
-import com.hadilq.liveevent.LiveEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.core.filterByExpectedType
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
@@ -25,7 +24,6 @@ import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,7 +36,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.Stack
 import javax.inject.Inject
 
@@ -84,20 +81,26 @@ internal class FileBrowserViewModel @Inject constructor(
 
     private val currentSectionId = MutableStateFlow(ROOT_SECTION_ID)
 
-    internal val openDocumentEditorEvent = LiveEvent<String>()
-
     init {
         launch {
             getCurrentBackendConfigUseCase().filterNotNull().collectLatest { config ->
-                restClient.setHostname(config.serverConfig.domain)
-                restClient.setPort(config.serverConfig.port)
-                restClient.setUseSSL(config.serverConfig.useSsl)
-                restClient.setBasicAuthConfig(
-                    BasicAuthConfig(
-                        username = config.authConfig.username,
-                        password = config.authConfig.password
+                try {
+                    val serverConfig = requireNotNull(config.serverConfig)
+                    restClient.setHostname(serverConfig.domain)
+                    restClient.setPort(serverConfig.port)
+                    restClient.setUseSSL(serverConfig.useSsl)
+
+                    val authConfig = requireNotNull(config.authConfig)
+                    restClient.setBasicAuthConfig(
+                        BasicAuthConfig(
+                            username = authConfig.username,
+                            password = authConfig.password
+                        )
                     )
-                )
+                } catch (ex: Exception) {
+                    Timber.e(ex)
+                    showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
+                }
             }
         }
 
@@ -373,12 +376,11 @@ internal class FileBrowserViewModel @Inject constructor(
             val newDocumentId =
                 createNewDocumentUseCase(currentSectionId.value, trimmedDocumentName)
 
+
             reload()
 
             // and open the editor right away
-            withContext(Dispatchers.Main) {
-                openDocumentEditorEvent.value = newDocumentId
-            }
+            _events.send(FileBrowserEvent.OpenDocumentEditor(newDocumentId))
         } catch (ex: Exception) {
             Timber.e(ex)
             showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
@@ -442,7 +444,7 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private suspend fun onDocumentClicked(entity: DocumentEntity) {
-        _events.send(FileBrowserEvent.OpenDocumentEditor(entity))
+        _events.send(FileBrowserEvent.OpenDocumentEditor(entity.id))
     }
 
     private suspend fun onResourceClicked(entity: ResourceEntity) {
@@ -485,8 +487,6 @@ internal sealed class UiEvent {
 internal sealed class FileBrowserEvent {
     data class Error(val message: String) : FileBrowserEvent()
 
-    data class OpenDocumentEditor(val entity: DocumentEntity) : FileBrowserEvent()
-    data class CreateSection(val parentId: String) : FileBrowserEvent()
-    data class CreateDocument(val parentId: String) : FileBrowserEvent()
+    data class OpenDocumentEditor(val documentId: String) : FileBrowserEvent()
     data class RenameDocument(val entity: DocumentEntity) : FileBrowserEvent()
 }
