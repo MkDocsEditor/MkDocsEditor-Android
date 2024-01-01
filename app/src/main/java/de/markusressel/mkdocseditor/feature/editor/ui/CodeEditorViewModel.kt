@@ -20,7 +20,6 @@ import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.Connection
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.Error
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.InitialText
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.OpenWebView
-import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.TextChange
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.NetworkManager
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
@@ -332,8 +331,59 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     private fun onTextChanged(newText: String, patches: LinkedList<diff_match_patch.Patch>) {
-        events.value = TextChange(newText, patches)
+        val oldSelectionStart = uiState.value.selection?.start ?: 0
+        val oldSelectionEnd = uiState.value.selection?.end ?: 0
+
+        // set new cursor position
+        val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, patches)
+            .coerceIn(0, newText.length)
+        val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
+            .coerceIn(0, newText.length)
+
+        _uiState.update { old ->
+            old.copy(
+                text = AnnotatedString(newText),
+                selection = TextRange(newSelectionStart, newSelectionEnd),
+            )
+        }
+        saveEditorState()
     }
+
+    private fun calculateNewSelectionIndex(
+        oldSelection: Int,
+        patches: LinkedList<diff_match_patch.Patch>
+    ): Int {
+        var newSelection = oldSelection
+
+        var currentIndex: Int
+        // calculate how many characters have been inserted before the cursor
+        patches.forEach { patch ->
+            currentIndex = patch.start1
+
+            patch.diffs.forEach { diff ->
+                when (diff.operation) {
+                    diff_match_patch.Operation.INSERT -> {
+                        if (currentIndex < newSelection) {
+                            newSelection += diff.text.length
+                        }
+                    }
+
+                    diff_match_patch.Operation.DELETE -> {
+                        if (currentIndex < newSelection) {
+                            newSelection -= diff.text.length
+                        }
+                    }
+
+                    else -> {
+                        currentIndex += diff.text.length
+                    }
+                }
+            }
+        }
+
+        return newSelection
+    }
+
 
     /**
      * Disconnects from the server (if necessary) and tries to reestablish a connection
@@ -366,14 +416,14 @@ internal class CodeEditorViewModel @Inject constructor(
         }
 
 
-    fun saveEditorState(selection: Int, panX: Float, panY: Float) = launch {
+    fun saveEditorState() = launch {
         dataRepository.saveEditorState(
             documentId.value!!,
             uiState.value.text?.toString(),
-            selection,
+            uiState.value.selection?.start ?: 0,
             currentZoom.value!!,
-            panX,
-            panY
+            uiState.value.panX,
+            uiState.value.panY
         )
     }
 
@@ -484,6 +534,8 @@ internal class CodeEditorViewModel @Inject constructor(
 
         val text: AnnotatedString? = null,
         val selection: TextRange? = null,
+        val panX: Float = 0F,
+        val panY: Float = 0F,
 
         val isOfflineModeBannerVisible: Boolean = false,
 
