@@ -83,7 +83,7 @@ object FileBrowserScreen : Screen {
                     onSaveClicked = { text ->
                         viewModel.onUiEvent(
                             UiEvent.EditDocumentDialogSaveClicked(
-                                dialogState.sectionId,
+                                dialogState.documentId,
                                 text
                             )
                         )

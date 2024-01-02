@@ -88,7 +88,7 @@ private fun EditDocumentDialogPreview() {
     MkDocsEditorTheme {
         EditDocumentDialog(
             uiState = DialogState.EditDocument(
-                sectionId = "",
+                documentId = "",
                 initialDocumentName = ""
             ),
             onDismissRequest = { },

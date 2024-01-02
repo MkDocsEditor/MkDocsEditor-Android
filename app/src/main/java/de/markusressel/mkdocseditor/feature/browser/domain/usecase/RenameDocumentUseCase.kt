@@ -7,7 +7,7 @@ import javax.inject.Inject
 internal class RenameDocumentUseCase @Inject constructor(
     private val restClient: IMkDocsRestClient,
 ) {
-    suspend operator fun invoke(sectionId: String, documentName: String): DocumentModel {
-        return restClient.renameDocument(sectionId, documentName).get()
+    suspend operator fun invoke(documentId: String, documentName: String): DocumentModel {
+        return restClient.renameDocument(documentId, documentName).get()
     }
 }

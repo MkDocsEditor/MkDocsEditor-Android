@@ -12,7 +12,7 @@ sealed interface DialogState {
     ) : DialogState
 
     data class EditDocument(
-        val sectionId: String,
+        val documentId: String,
         val initialDocumentName: String
     ) : DialogState
 

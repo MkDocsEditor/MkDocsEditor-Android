@@ -216,7 +216,7 @@ internal class FileBrowserViewModel @Inject constructor(
                 is UiEvent.EditDocumentDialogSaveClicked -> {
                     dismissCurrentDialog()
                     if (isDocumentNameValid(event.name)) {
-                        renameDocumentUseCase(event.sectionId, event.name)
+                        renameDocumentUseCase(event.documentId, event.name)
                         reload()
                     } else {
                         showError("Invalid document name")
@@ -480,7 +480,7 @@ internal class FileBrowserViewModel @Inject constructor(
         _uiState.update { old ->
             old.copy(
                 currentDialogState = DialogState.EditDocument(
-                    sectionId = entity.parentSection.target.id,
+                    documentId = entity.id,
                     initialDocumentName = entity.name
                 )
             )
@@ -531,7 +531,7 @@ internal sealed class UiEvent {
     data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
 
     data class CreateDocumentDialogSaveClicked(val sectionId: String, val name: String) : UiEvent()
-    data class EditDocumentDialogSaveClicked(val sectionId: String, val name: String) : UiEvent()
+    data class EditDocumentDialogSaveClicked(val documentId: String, val name: String) : UiEvent()
     data class CreateSectionDialogSaveClicked(val parentSectionId: String, val name: String) :
         UiEvent()
 
