@@ -18,6 +18,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.github.fengdai.compose.pulltorefresh.PullToRefresh
 import com.github.fengdai.compose.pulltorefresh.rememberPullToRefreshState
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.feature.browser.ui.UiEvent
 import de.markusressel.mkdocseditor.feature.browser.ui.UiState
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ErrorCard
@@ -117,7 +120,11 @@ private fun FileBrowserScreenContentPreview() {
         FileBrowserScreenContent(
             uiState = UiState(
                 listItems = listOf(
+                    SectionEntity(),
+                    DocumentEntity().apply {
 
+                    },
+                    ResourceEntity(),
                 )
             ),
             onUiEvent = {}

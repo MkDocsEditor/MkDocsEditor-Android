@@ -28,8 +28,6 @@ object FileBrowserScreen : Screen {
         val viewModel = getViewModel<FileBrowserViewModel>()
         val uiState by viewModel.uiState.collectAsState()
 
-
-
         BackHandler(
             enabled = uiState.canGoUp,
             onBack = {
@@ -95,14 +93,11 @@ object FileBrowserScreen : Screen {
             }
         }
 
-
         FileBrowserScreenContent(
             modifier = Modifier,
             uiState = uiState,
             onUiEvent = viewModel::onUiEvent
         )
-
-
 
         when (val dialogState = uiState.currentDialogState) {
             is DialogState.CreateDocument -> {

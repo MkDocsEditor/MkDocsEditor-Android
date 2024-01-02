@@ -5,8 +5,15 @@ import com.dropbox.android.external.store4.SourceOfTruth
 import com.dropbox.android.external.store4.Store
 import com.dropbox.android.external.store4.StoreBuilder
 import com.github.ajalt.timberkt.Timber
-import de.markusressel.mkdocseditor.data.persistence.*
-import de.markusressel.mkdocseditor.data.persistence.entity.*
+import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
+import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.networkBoundResource
@@ -34,7 +41,7 @@ class DataRepository @Inject constructor(
     /**
      * Find all data that matches the given search
      */
-    fun find(searchString: String): List<IdentifiableListItem> {
+    fun find(searchString: String): List<Any> {
         val searchRegex =
             searchString.toRegex(setOf(RegexOption.IGNORE_CASE, RegexOption.LITERAL))
 

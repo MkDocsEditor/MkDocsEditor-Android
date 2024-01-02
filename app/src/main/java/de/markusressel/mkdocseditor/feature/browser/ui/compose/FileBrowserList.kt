@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.data.persistence.IdentifiableListItem
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
@@ -31,7 +30,7 @@ import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
 internal fun FileBrowserList(
-    items: List<IdentifiableListItem>,
+    items: List<Any>,
     onDocumentClicked: (DocumentEntity) -> Unit,
     onResourceClicked: (ResourceEntity) -> Unit,
     onSectionClicked: (SectionEntity) -> Unit,
@@ -95,7 +94,7 @@ private fun EmptyPathView(
 
 @Composable
 internal fun FileBrowserListEntry(
-    item: IdentifiableListItem,
+    item: Any,
     onDocumentClicked: (DocumentEntity) -> Unit,
     onResourceClicked: (ResourceEntity) -> Unit,
     onSectionClicked: (SectionEntity) -> Unit,

@@ -4,6 +4,7 @@ import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceM
 import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.objectbox.annotation.Backlink
 import io.objectbox.annotation.Entity
+import io.objectbox.annotation.Id
 import io.objectbox.kotlin.query
 import io.objectbox.query.QueryBuilder
 import io.objectbox.relation.ToMany
@@ -12,11 +13,17 @@ import io.objectbox.relation.ToMany
  * Created by Markus on 05.06.2018.
  */
 @Entity
-class SectionEntity(entityId: Long = 0, id: String = "", name: String = "") : SectionEntityBase(entityId, id, name) {
+class SectionEntity(
+    @Id var entityId: Long = 0,
+    val id: String = "",
+    var name: String = ""
+) {
 
     lateinit var subsections: ToMany<SectionEntity>
+
     @Backlink
     lateinit var documents: ToMany<DocumentEntity>
+
     @Backlink
     lateinit var resources: ToMany<ResourceEntity>
 
@@ -31,7 +38,11 @@ fun SectionModel.asEntity(documentContentPersistenceManager: DocumentContentPers
 
     s.documents.addAll(this.documents.map {
         val contentEntity = documentContentPersistenceManager.standardOperation().query {
-            equal(DocumentContentEntity_.documentId, it.id, QueryBuilder.StringOrder.CASE_INSENSITIVE)
+            equal(
+                DocumentContentEntity_.documentId,
+                it.id,
+                QueryBuilder.StringOrder.CASE_INSENSITIVE
+            )
         }.findUnique()
         it.asEntity(s, contentEntity)
     })
