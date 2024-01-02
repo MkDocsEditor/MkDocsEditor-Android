@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.browser.ui
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.dropbox.android.external.store4.StoreResponse
 import com.github.ajalt.timberkt.Timber
@@ -42,6 +43,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 internal class FileBrowserViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val dataRepository: DataRepository,
     private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
     private val restClient: IMkDocsRestClient,

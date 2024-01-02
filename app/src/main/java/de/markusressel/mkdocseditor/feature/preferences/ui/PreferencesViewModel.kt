@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.preferences.ui
 
+import androidx.lifecycle.SavedStateHandle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.kutepreferences.core.KuteNavigator
 import de.markusressel.kutepreferences.ui.views.KuteStyleManager
@@ -12,6 +13,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 internal class PreferencesViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     preferencesHolder: KutePreferencesHolder,
     private val kuteNavigator: KuteNavigator,
 ) : KutePreferencesViewModel(

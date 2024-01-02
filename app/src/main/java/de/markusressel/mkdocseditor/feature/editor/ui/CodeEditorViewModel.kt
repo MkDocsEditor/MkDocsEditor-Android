@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
-import android.graphics.PointF
 import androidx.annotation.UiThread
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
@@ -31,7 +30,6 @@ import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,7 +43,6 @@ import kotlinx.coroutines.flow.update
 import java.util.LinkedList
 import javax.inject.Inject
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 internal class CodeEditorViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
@@ -79,9 +76,6 @@ internal class CodeEditorViewModel @Inject constructor(
     ) { offlineModeEnabled, connectionStatus ->
         offlineModeEnabled.not() && (connectionStatus?.connected ?: false)
     }
-
-    val currentPosition = PointF()
-    val currentZoom = MutableLiveData(1F)
 
     private var documentSyncManager: DocumentSyncManager? = null
 
@@ -421,7 +415,7 @@ internal class CodeEditorViewModel @Inject constructor(
             documentId.value!!,
             uiState.value.text?.toString(),
             uiState.value.selection?.start ?: 0,
-            currentZoom.value!!,
+            uiState.value.currentZoom,
             uiState.value.panX,
             uiState.value.panY
         )
@@ -534,6 +528,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
         val text: AnnotatedString? = null,
         val selection: TextRange? = null,
+        val currentZoom: Float = 1F,
         val panX: Float = 0F,
         val panY: Float = 0F,
 

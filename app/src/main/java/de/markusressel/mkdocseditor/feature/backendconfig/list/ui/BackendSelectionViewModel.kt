@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.list.ui
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,6 +21,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 internal class BackendSelectionViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val getBackendConfigsFlowUseCase: GetBackendConfigsFlowUseCase,
     private val selectBackendConfigUseCase: SelectBackendConfigUseCase,
 ) : ViewModel() {

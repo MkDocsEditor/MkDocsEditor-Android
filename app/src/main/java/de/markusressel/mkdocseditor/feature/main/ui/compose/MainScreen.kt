@@ -135,31 +135,6 @@ private fun MainScreenLayout(
         }
     }
 
-//    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-//    LaunchedEffect(key1 = drawerState) {
-//        if (drawerState.isAnimationRunning.not()
-//            && drawerState.targetValue == drawerState.currentValue
-//        ) {
-//            val newNavDrawerOpenValue = when (drawerState.targetValue) {
-//                DrawerValue.Closed -> false
-//                DrawerValue.Open -> true
-//            }
-//
-//            if (uiState.navDrawerOpen != newNavDrawerOpenValue) {
-//                onUiEvent(UiEvent.ToggleNavDrawer)
-//            }
-//        }
-//    }
-//    LaunchedEffect(key1 = uiState.navDrawerOpen) {
-//        launch {
-//            if (uiState.navDrawerOpen) {
-//                drawerState.open()
-//            } else {
-//                drawerState.close()
-//            }
-//        }
-//    }
-
     when (navigationType) {
         NavigationLayoutType.PERMANENT_NAVIGATION_DRAWER -> {
             PermanentNavigationDrawer(
@@ -188,20 +163,6 @@ private fun MainScreenLayout(
 
         NavigationLayoutType.BOTTOM_NAVIGATION,
         NavigationLayoutType.NAVIGATION_RAIL -> {
-//            ModalNavigationDrawer(
-//                drawerContent = {
-//                    ModalDrawerSheet {
-//                        NavigationDrawerContent(
-//                            navItems = uiState.drawerNavItems,
-//                            selectedDestination = uiState.selectedBottomBarItem,
-//                            onHamburgerIconClicked = {
-//                                onUiEvent(UiEvent.ToggleNavDrawer)
-//                            }
-//                        )
-//                    }
-//                },
-//                drawerState = drawerState
-//            ) {
             MainScreenContent(
                 navigationType = navigationType,
                 contentType = contentType,
@@ -212,7 +173,6 @@ private fun MainScreenLayout(
                 codeEditorUiState = codeEditorUiState,
                 fileBrowserUiState = fileBrowserUiState,
             )
-//            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.edit.ui
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,6 +26,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 internal class BackendConfigEditViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val getBackendConfigUseCase: GetBackendConfigUseCase,
     private val getBackendAuthConfigsUseCase: GetBackendAuthConfigsUseCase,
     private val addAuthConfigUseCase: AddAuthConfigUseCase,
