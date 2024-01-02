@@ -188,8 +188,11 @@ internal class FileBrowserViewModel @Inject constructor(
             when (event) {
                 is UiEvent.Refresh -> reload()
                 is UiEvent.DocumentClicked -> onDocumentClicked(event.item)
+                is UiEvent.DocumentLongClicked -> onDocumentLongClicked(event.item)
                 is UiEvent.ResourceClicked -> onResourceClicked(event.item)
+                is UiEvent.ResourceLongClicked -> onResourceLongClicked(event.item)
                 is UiEvent.SectionClicked -> onSectionClicked(event.item)
+                is UiEvent.SectionLongClicked -> onSectionLongClicked(event.item)
                 is UiEvent.NavigateUpToSection -> navigateUp(event.section.id)
                 is UiEvent.ExpandableFabItemSelected -> when (event.item.id) {
                     FAB_ID_CREATE_DOCUMENT -> onCreateDocumentFabClicked()
@@ -214,6 +217,21 @@ internal class FileBrowserViewModel @Inject constructor(
                 is UiEvent.DismissDialog -> dismissCurrentDialog()
             }
         }
+    }
+
+    private suspend fun onSectionLongClicked(item: SectionEntity) {
+        _uiState.update { old ->
+            old.copy(
+                currentDialogState = DialogState.EditSection(
+                    sectionId = item.id,
+                    initialSectionName = item.name
+                )
+            )
+        }
+    }
+
+    private suspend fun onResourceLongClicked(item: ResourceEntity) {
+
     }
 
     private fun isDocumentNameValid(name: String): Boolean {
@@ -444,9 +462,15 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private suspend fun onDocumentLongClicked(entity: DocumentEntity): Boolean {
-        _events.send(FileBrowserEvent.RenameDocument(entity))
-        return true
+    private suspend fun onDocumentLongClicked(entity: DocumentEntity) {
+        _uiState.update { old ->
+            old.copy(
+                currentDialogState = DialogState.EditDocument(
+                    sectionId = entity.parentSection.target.id,
+                    initialDocumentName = entity.name
+                )
+            )
+        }
     }
 
     private suspend fun onDocumentClicked(entity: DocumentEntity) {
@@ -482,8 +506,11 @@ internal sealed class UiEvent {
     data object Refresh : UiEvent()
 
     data class DocumentClicked(val item: DocumentEntity) : UiEvent()
+    data class DocumentLongClicked(val item: DocumentEntity) : UiEvent()
     data class ResourceClicked(val item: ResourceEntity) : UiEvent()
+    data class ResourceLongClicked(val item: ResourceEntity) : UiEvent()
     data class SectionClicked(val item: SectionEntity) : UiEvent()
+    data class SectionLongClicked(val item: SectionEntity) : UiEvent()
 
     data class NavigateUpToSection(val section: SectionItem) : UiEvent()
 
@@ -500,5 +527,4 @@ internal sealed class FileBrowserEvent {
     data class Error(val message: String) : FileBrowserEvent()
 
     data class OpenDocumentEditor(val documentId: String) : FileBrowserEvent()
-    data class RenameDocument(val entity: DocumentEntity) : FileBrowserEvent()
 }

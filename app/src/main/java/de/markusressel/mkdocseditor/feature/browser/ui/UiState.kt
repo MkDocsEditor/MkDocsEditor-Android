@@ -11,10 +11,21 @@ sealed interface DialogState {
         val initialDocumentName: String
     ) : DialogState
 
+    data class EditDocument(
+        val sectionId: String,
+        val initialDocumentName: String
+    ) : DialogState
+
     data class CreateSection(
         val parentSectionId: String,
         val initialSectionName: String
     ) : DialogState
+
+    data class EditSection(
+        val sectionId: String,
+        val initialSectionName: String
+    ) : DialogState
+
 }
 
 internal data class UiState(

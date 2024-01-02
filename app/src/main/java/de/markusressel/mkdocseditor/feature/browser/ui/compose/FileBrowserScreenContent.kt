@@ -97,11 +97,20 @@ internal fun FileBrowserScreenContent(
                                 onDocumentClicked = {
                                     onUiEvent(UiEvent.DocumentClicked(it))
                                 },
+                                onDocumentLongClicked = {
+                                    onUiEvent(UiEvent.DocumentLongClicked(it))
+                                },
                                 onResourceClicked = {
                                     onUiEvent(UiEvent.ResourceClicked(it))
                                 },
+                                onResourceLongClicked = {
+                                    onUiEvent(UiEvent.ResourceLongClicked(it))
+                                },
                                 onSectionClicked = {
                                     onUiEvent(UiEvent.SectionClicked(it))
+                                },
+                                onSectionLongClicked = {
+                                    onUiEvent(UiEvent.SectionLongClicked(it))
                                 },
                             )
                         }

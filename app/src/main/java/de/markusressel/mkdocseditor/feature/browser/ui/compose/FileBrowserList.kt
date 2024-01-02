@@ -32,8 +32,11 @@ import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 internal fun FileBrowserList(
     items: List<Any>,
     onDocumentClicked: (DocumentEntity) -> Unit,
+    onDocumentLongClicked: (DocumentEntity) -> Unit,
     onResourceClicked: (ResourceEntity) -> Unit,
+    onResourceLongClicked: (ResourceEntity) -> Unit,
     onSectionClicked: (SectionEntity) -> Unit,
+    onSectionLongClicked: (SectionEntity) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -56,8 +59,11 @@ internal fun FileBrowserList(
                 FileBrowserListEntry(
                     item = item,
                     onDocumentClicked = onDocumentClicked,
+                    onDocumentLongClicked = onDocumentLongClicked,
                     onResourceClicked = onResourceClicked,
+                    onResourceLongClicked = onResourceLongClicked,
                     onSectionClicked = onSectionClicked,
+                    onSectionLongClicked = onSectionLongClicked,
                 )
             }
 
@@ -96,21 +102,29 @@ private fun EmptyPathView(
 internal fun FileBrowserListEntry(
     item: Any,
     onDocumentClicked: (DocumentEntity) -> Unit,
+    onDocumentLongClicked: (DocumentEntity) -> Unit,
     onResourceClicked: (ResourceEntity) -> Unit,
+    onResourceLongClicked: (ResourceEntity) -> Unit,
     onSectionClicked: (SectionEntity) -> Unit,
+    onSectionLongClicked: (SectionEntity) -> Unit,
 ) {
     when (item) {
         is DocumentEntity -> DocumentListEntry(
             item = item,
-            onClick = onDocumentClicked
+            onClick = onDocumentClicked,
+            onLongClick = onDocumentLongClicked,
         )
+
         is ResourceEntity -> ResourceListEntry(
             item = item,
-            onClick = onResourceClicked
+            onClick = onResourceClicked,
+            onLongClick = onResourceLongClicked,
         )
+
         is SectionEntity -> SectionListEntry(
             item = item,
-            onClick = onSectionClicked
+            onClick = onSectionClicked,
+            onLongClick = onSectionLongClicked
         )
     }
 }
@@ -122,8 +136,11 @@ private fun FileBrowserListEmptyPreview() {
         FileBrowserList(
             items = listOf(),
             onDocumentClicked = {},
+            onDocumentLongClicked = {},
             onResourceClicked = {},
+            onResourceLongClicked = {},
             onSectionClicked = {},
+            onSectionLongClicked = {},
         )
     }
 }
@@ -149,8 +166,11 @@ private fun FileBrowserListPreview() {
                 )
             ),
             onDocumentClicked = {},
+            onDocumentLongClicked = {},
             onResourceClicked = {},
+            onResourceLongClicked = {},
             onSectionClicked = {},
+            onSectionLongClicked = {},
         )
     }
 }

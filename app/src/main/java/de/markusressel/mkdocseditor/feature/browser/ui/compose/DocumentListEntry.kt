@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
 import android.view.View
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,6 +27,7 @@ import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 internal fun DocumentListEntry(
     item: DocumentEntity,
     onClick: (DocumentEntity) -> Unit,
+    onLongClick: (DocumentEntity) -> Unit,
 ) {
     Card(
         modifier = Modifier
@@ -33,6 +35,10 @@ internal fun DocumentListEntry(
             .padding(
                 horizontal = 8.dp,
                 vertical = 4.dp
+            )
+            .combinedClickable(
+                onClick = { onClick(item) },
+                onLongClick = { onLongClick(item) }
             ),
         onClick = { onClick(item) },
         elevation = CardDefaults.cardElevation(4.dp)
@@ -78,7 +84,8 @@ private fun DocumentListEntryPreview() {
             item = DocumentEntity(
                 name = "Sample File.md"
             ),
-            onClick = {}
+            onClick = {},
+            onLongClick = {}
         )
     }
 }

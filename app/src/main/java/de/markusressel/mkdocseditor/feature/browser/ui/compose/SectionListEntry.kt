@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,7 +25,8 @@ import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 @Composable
 internal fun SectionListEntry(
     item: SectionEntity,
-    onClick: (SectionEntity) -> Unit
+    onClick: (SectionEntity) -> Unit,
+    onLongClick: (SectionEntity) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -32,6 +34,10 @@ internal fun SectionListEntry(
             .padding(
                 horizontal = 8.dp,
                 vertical = 4.dp
+            )
+            .combinedClickable(
+                onClick = { onClick(item) },
+                onLongClick = { onLongClick(item) }
             ),
         onClick = { onClick(item) },
         elevation = CardDefaults.cardElevation(4.dp)
@@ -64,7 +70,8 @@ private fun SectionListEntryPreview() {
             item = SectionEntity(
                 name = "Sample Section"
             ),
-            onClick = {}
+            onClick = {},
+            onLongClick = {}
         )
     }
 }
