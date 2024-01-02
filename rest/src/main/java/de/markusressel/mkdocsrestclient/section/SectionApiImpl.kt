@@ -48,6 +48,16 @@ class SectionApiImpl(
         return requestManager.doJsonRequest("/section/", Method.POST, data)
     }
 
+    override suspend fun renameSection(
+        id: String,
+        name: String
+    ): Result<SectionModel, FuelError> {
+        val data = mapOf(
+            "name" to name
+        )
+        return requestManager.doJsonRequest("/section/$id/", Method.PATCH, data)
+    }
+
     override suspend fun deleteSection(id: String): Result<String, FuelError> {
         return requestManager.doRequest("/section/$id/", Method.DELETE)
     }

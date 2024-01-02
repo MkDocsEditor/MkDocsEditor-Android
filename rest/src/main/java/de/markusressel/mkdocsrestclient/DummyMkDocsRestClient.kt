@@ -120,6 +120,18 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
         )
     }
 
+    override suspend fun renameSection(id: String, name: String): Result<SectionModel, FuelError> {
+        return Result.success(
+            SectionModel(
+                id = id,
+                name = name,
+                subsections = emptyList(),
+                documents = emptyList(),
+                resources = emptyList(),
+            )
+        )
+    }
+
     override suspend fun deleteSection(id: String): Result<String, FuelError> {
         return Result.success("")
     }

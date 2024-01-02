@@ -19,6 +19,8 @@ import de.markusressel.mkdocseditor.feature.browser.domain.usecase.CreateNewSect
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetCurrentSectionPathUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetSectionContentUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RefreshSectionUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameDocumentUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SearchUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SectionItem
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
@@ -53,6 +55,8 @@ internal class FileBrowserViewModel @Inject constructor(
     private val searchUseCase: SearchUseCase,
     private val getCurrentSectionPathUseCase: GetCurrentSectionPathUseCase,
     private val createNewDocumentUseCase: CreateNewDocumentUseCase,
+    private val renameDocumentUseCase: RenameDocumentUseCase,
+    private val renameSectionUseCase: RenameSectionUseCase,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -209,9 +213,28 @@ internal class FileBrowserViewModel @Inject constructor(
                     }
                 }
 
+                is UiEvent.EditDocumentDialogSaveClicked -> {
+                    dismissCurrentDialog()
+                    if (isDocumentNameValid(event.name)) {
+                        renameDocumentUseCase(event.sectionId, event.name)
+                        reload()
+                    } else {
+                        showError("Invalid document name")
+                    }
+                }
+
                 is UiEvent.CreateSectionDialogSaveClicked -> {
                     dismissCurrentDialog()
                     createNewSection(event.parentSectionId, event.name)
+                    reload()
+                }
+
+                is UiEvent.EditSectionDialogSaveClicked -> {
+                    dismissCurrentDialog()
+                    if (isSectionNameValid(event.name)) {
+                        renameSectionUseCase(event.sectionId, event.name)
+                        reload()
+                    }
                 }
 
                 is UiEvent.DismissDialog -> dismissCurrentDialog()
@@ -410,15 +433,6 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-
-    /**
-     * Rename a document
-     */
-    private suspend fun renameDocument(id: String, documentName: String) {
-        restClient.renameDocument(id, documentName)
-        reload()
-    }
-
     private suspend fun deleteDocument(id: String) {
         restClient.deleteDocument(id)
         reload()
@@ -517,8 +531,11 @@ internal sealed class UiEvent {
     data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
 
     data class CreateDocumentDialogSaveClicked(val sectionId: String, val name: String) : UiEvent()
+    data class EditDocumentDialogSaveClicked(val sectionId: String, val name: String) : UiEvent()
     data class CreateSectionDialogSaveClicked(val parentSectionId: String, val name: String) :
         UiEvent()
+
+    data class EditSectionDialogSaveClicked(val sectionId: String, val name: String) : UiEvent()
 
     data object DismissDialog : UiEvent()
 }

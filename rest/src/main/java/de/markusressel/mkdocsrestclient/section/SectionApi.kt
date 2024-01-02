@@ -37,6 +37,14 @@ interface SectionApi {
     suspend fun createSection(parentId: String, name: String): Result<SectionModel, FuelError>
 
     /**
+     * Rename a section
+     *
+     * @param id section id
+     * @param name new section name
+     */
+    suspend fun renameSection(id: String, name: String): Result<SectionModel, FuelError>
+
+    /**
      * Deletes an ENTIRE section
      */
     suspend fun deleteSection(id: String): Result<String, FuelError>
