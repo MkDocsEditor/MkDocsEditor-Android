@@ -48,14 +48,14 @@ fun EditDocumentDialog(
                 var text by remember { mutableStateOf(uiState.initialDocumentName) }
 
                 Text(
-                    text = stringResource(id = R.string.create_document),
+                    text = stringResource(id = R.string.edit_document),
                     style = MaterialTheme.typography.headlineSmall
                 )
 
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
-                    label = { Text(stringResource(id = R.string.create_document_hint)) }
+                    label = { Text(stringResource(id = R.string.edit_document_name_hint)) }
                 )
 
                 Row(
@@ -73,7 +73,7 @@ fun EditDocumentDialog(
                     TextButton(
                         onClick = { onSaveClicked(text) },
                         content = {
-                            Text(stringResource(id = R.string.create))
+                            Text(stringResource(id = R.string.save))
                         }
                     )
                 }

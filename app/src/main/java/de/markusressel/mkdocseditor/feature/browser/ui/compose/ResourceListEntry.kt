@@ -30,15 +30,14 @@ internal fun ResourceListEntry(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(
-                horizontal = 8.dp,
-                vertical = 4.dp
-            )
             .combinedClickable(
                 onClick = { onClick(item) },
                 onLongClick = { onLongClick(item) }
+            )
+            .padding(
+                horizontal = 8.dp,
+                vertical = 4.dp
             ),
-        onClick = { onClick(item) },
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(

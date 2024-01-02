@@ -48,14 +48,14 @@ fun EditSectionDialog(
                 var text by remember { mutableStateOf(uiState.initialSectionName) }
 
                 Text(
-                    text = stringResource(id = R.string.create_section),
+                    text = stringResource(id = R.string.edit_section),
                     style = MaterialTheme.typography.headlineSmall
                 )
 
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
-                    label = { Text(stringResource(id = R.string.create_section_hint)) }
+                    label = { Text(stringResource(id = R.string.edit_section_name_hint)) }
                 )
 
                 Row(
@@ -73,7 +73,7 @@ fun EditSectionDialog(
                     TextButton(
                         onClick = { onSaveClicked(text) },
                         content = {
-                            Text(stringResource(id = R.string.create))
+                            Text(stringResource(id = R.string.save))
                         }
                     )
                 }

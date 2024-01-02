@@ -82,7 +82,7 @@ object FileBrowserScreen : Screen {
                     uiState = dialogState,
                     onSaveClicked = { text ->
                         viewModel.onUiEvent(
-                            UiEvent.CreateDocumentDialogSaveClicked(
+                            UiEvent.EditDocumentDialogSaveClicked(
                                 dialogState.sectionId,
                                 text
                             )
@@ -116,7 +116,7 @@ object FileBrowserScreen : Screen {
                     uiState = dialogState,
                     onSaveClicked = { text ->
                         viewModel.onUiEvent(
-                            UiEvent.CreateSectionDialogSaveClicked(
+                            UiEvent.EditSectionDialogSaveClicked(
                                 dialogState.sectionId,
                                 text
                             )
