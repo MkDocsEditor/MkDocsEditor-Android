@@ -86,7 +86,7 @@ private fun MainScreenLayout(
     }
 }
 
-fun determineLayoutStyle(
+private fun determineLayoutStyle(
     windowSize: WindowWidthSizeClass,
     devicePosture: DevicePosture
 ): Pair<NavigationLayoutType, ContentLayoutType> {

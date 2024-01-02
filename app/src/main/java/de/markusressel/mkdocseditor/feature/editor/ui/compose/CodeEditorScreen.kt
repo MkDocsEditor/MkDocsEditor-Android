@@ -6,8 +6,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
@@ -20,7 +20,7 @@ internal data class CodeEditorScreen(
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
 
-        val viewModel: CodeEditorViewModel = hiltViewModel()
+        val viewModel = getViewModel<CodeEditorViewModel>()
         val uiState by viewModel.uiState.collectAsState()
 
         BackHandler(

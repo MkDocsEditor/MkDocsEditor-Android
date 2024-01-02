@@ -6,8 +6,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.hilt.navigation.compose.hiltViewModel
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
 
@@ -19,7 +19,7 @@ data class BackendConfigEditScreen(
         val context = LocalContext.current
         val navigator = LocalNavigator.current
 
-        val viewModel: BackendConfigEditViewModel = hiltViewModel()
+        val viewModel = getViewModel<BackendConfigEditViewModel>()
         LaunchedEffect(viewModel, id) {
             viewModel.initialize(id)
         }
