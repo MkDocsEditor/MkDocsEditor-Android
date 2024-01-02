@@ -95,7 +95,7 @@ fun determineLayoutStyle(
 
     when (windowSize) {
         WindowWidthSizeClass.Compact -> {
-            navigationType = NavigationLayoutType.NAVIGATION_RAIL
+            navigationType = NavigationLayoutType.BOTTOM_NAVIGATION
             contentType = ContentLayoutType.LIST_ONLY
         }
 
