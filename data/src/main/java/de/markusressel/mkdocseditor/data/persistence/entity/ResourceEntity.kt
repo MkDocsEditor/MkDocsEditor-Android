@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.data.persistence.entity
 
-import de.markusressel.mkdocsrestclient.resource.ResourceModel
 import io.objectbox.annotation.Entity
 import io.objectbox.annotation.Id
 import io.objectbox.annotation.Unique
@@ -13,17 +12,15 @@ import java.util.Date
 @Entity
 data class ResourceEntity(
     @Id var entityId: Long = 0,
-    val type: String = "Resource",
+    val type: String = TYPE,
     @Unique val id: String = "",
     val name: String = "",
     var filesize: Long = -1L,
     var modtime: Date = Date()
 ) {
     lateinit var parentSection: ToOne<SectionEntity>
-}
 
-fun ResourceModel.asEntity(parentSection: SectionEntity): ResourceEntity {
-    val r = ResourceEntity(0, this.type, this.id, this.name, this.filesize, this.modtime)
-    r.parentSection.target = parentSection
-    return r
+    companion object {
+        const val TYPE: String = "Resource"
+    }
 }

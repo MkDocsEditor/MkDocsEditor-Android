@@ -2,7 +2,6 @@ package de.markusressel.mkdocseditor.feature.browser.ui
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.dropbox.android.external.store4.StoreResponse
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.core.filterByExpectedType
@@ -12,8 +11,11 @@ import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
+import de.markusressel.mkdocseditor.feature.browser.data.DocumentData
 import de.markusressel.mkdocseditor.feature.browser.data.ROOT_SECTION
+import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.browser.data.SectionBackstackItem
+import de.markusressel.mkdocseditor.feature.browser.data.SectionData
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.CreateNewDocumentUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.CreateNewSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetCurrentSectionPathUseCase
@@ -39,6 +41,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.mobilenativefoundation.store.store5.StoreReadResponse
 import java.util.Stack
 import javax.inject.Inject
 
@@ -128,33 +131,40 @@ internal class FileBrowserViewModel @Inject constructor(
                             sectionId = sectionId,
                             refresh = true
                         ).collect { response ->
-                            if (response is StoreResponse.Error) {
-                                showError(
-                                    errorMessage = response.errorMessageOrNull()
-                                        ?: "Error fetching data"
-                                )
+                            if (response is StoreReadResponse.Error) {
+                                when (response) {
+                                    is StoreReadResponse.Error.Message -> {
+                                        showError(errorMessage = response.message)
+                                    }
+
+                                    is StoreReadResponse.Error.Exception -> {
+                                        Timber.e(response.error)
+                                        showError(
+                                            errorMessage = response.error.localizedMessage
+                                                ?: response.error.javaClass.name
+                                        )
+                                    }
+                                }
                             }
 
                             val section = response.dataOrNull()
 
-                            if (response is StoreResponse.Loading && section == null) {
+                            if (response is StoreReadResponse.Loading && section == null) {
                                 _uiState.value = uiState.value.copy(
                                     isLoading = true
                                 )
                             }
 
-                            val sections = (section?.subsections
-                                ?: emptyList<SectionEntity>()).sortedBy { it.name }
-                            val documents = (section?.documents
-                                ?: emptyList<DocumentEntity>()).sortedBy { it.name }
-                            val resources = (section?.resources
-                                ?: emptyList<ResourceEntity>()).sortedBy { it.name }
+                            val sections =
+                                (section?.subsections ?: emptyList()).sortedBy { it.name }
+                            val documents = (section?.documents ?: emptyList()).sortedBy { it.name }
+                            val resources = (section?.resources ?: emptyList()).sortedBy { it.name }
 
                             _uiState.value = uiState.value.copy(
                                 listItems = (sections + documents + resources)
                             )
 
-                            if (response is StoreResponse.Error || response is StoreResponse.NoNewData || response is StoreResponse.Data) {
+                            if (response is StoreReadResponse.Error || response is StoreReadResponse.NoNewData || response is StoreReadResponse.Data) {
                                 _uiState.value = uiState.value.copy(
                                     isLoading = false
                                 )
@@ -242,7 +252,7 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private suspend fun onSectionLongClicked(item: SectionEntity) {
+    private suspend fun onSectionLongClicked(item: SectionData) {
         _uiState.update { old ->
             old.copy(
                 currentDialogState = DialogState.EditSection(
@@ -253,21 +263,21 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private suspend fun onResourceLongClicked(item: ResourceEntity) {
+    private suspend fun onResourceLongClicked(item: ResourceData) {
 
     }
 
     private fun isDocumentNameValid(name: String): Boolean {
         val equallyNamedSectionsExist =
-            uiState.value.listItems.filterByExpectedType<SectionEntity>().any {
+            uiState.value.listItems.filterByExpectedType<SectionData>().any {
                 it.name == name
             }
         val equallyNamedDocumentsExist =
-            uiState.value.listItems.filterByExpectedType<DocumentEntity>().any {
+            uiState.value.listItems.filterByExpectedType<DocumentData>().any {
                 it.name == name
             }
         val equallyNamedResourcesExist =
-            uiState.value.listItems.filterByExpectedType<ResourceEntity>().any {
+            uiState.value.listItems.filterByExpectedType<ResourceData>().any {
                 it.name == name
             }
         return name.isNotBlank()
@@ -476,7 +486,7 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private suspend fun onDocumentLongClicked(entity: DocumentEntity) {
+    private suspend fun onDocumentLongClicked(entity: DocumentData) {
         _uiState.update { old ->
             old.copy(
                 currentDialogState = DialogState.EditDocument(
@@ -487,15 +497,15 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private suspend fun onDocumentClicked(entity: DocumentEntity) {
+    private suspend fun onDocumentClicked(entity: DocumentData) {
         _events.send(FileBrowserEvent.OpenDocumentEditor(entity.id))
     }
 
-    private suspend fun onResourceClicked(entity: ResourceEntity) {
+    private suspend fun onResourceClicked(entity: ResourceData) {
         showError("Not yet supported")
     }
 
-    private suspend fun onSectionClicked(entity: SectionEntity) {
+    private suspend fun onSectionClicked(entity: SectionData) {
         openSection(
             sectionId = entity.id,
             sectionName = entity.name,
@@ -519,12 +529,12 @@ internal class FileBrowserViewModel @Inject constructor(
 internal sealed class UiEvent {
     data object Refresh : UiEvent()
 
-    data class DocumentClicked(val item: DocumentEntity) : UiEvent()
-    data class DocumentLongClicked(val item: DocumentEntity) : UiEvent()
-    data class ResourceClicked(val item: ResourceEntity) : UiEvent()
-    data class ResourceLongClicked(val item: ResourceEntity) : UiEvent()
-    data class SectionClicked(val item: SectionEntity) : UiEvent()
-    data class SectionLongClicked(val item: SectionEntity) : UiEvent()
+    data class DocumentClicked(val item: DocumentData) : UiEvent()
+    data class DocumentLongClicked(val item: DocumentData) : UiEvent()
+    data class ResourceClicked(val item: ResourceData) : UiEvent()
+    data class ResourceLongClicked(val item: ResourceData) : UiEvent()
+    data class SectionClicked(val item: SectionData) : UiEvent()
+    data class SectionLongClicked(val item: SectionData) : UiEvent()
 
     data class NavigateUpToSection(val section: SectionItem) : UiEvent()
 

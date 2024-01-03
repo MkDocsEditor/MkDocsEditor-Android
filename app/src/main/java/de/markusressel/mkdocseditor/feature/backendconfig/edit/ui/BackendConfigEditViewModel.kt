@@ -127,6 +127,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
             deleteBackendConfigUseCase(requireNotNull(uiState.value.currentBackendConfig))
             _events.send(BackendEditEvent.CloseScreen)
         } catch (ex: Exception) {
+            Timber.e(ex)
             showError("Failed to delete backend config")
         }
     }
@@ -158,6 +159,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
             updateAuthConfigs()
             showInfo("Auth config deleted")
         } catch (e: Exception) {
+            Timber.e(e)
             showError("Failed to delete auth config")
         }
     }

@@ -33,7 +33,10 @@ dependencies {
     compileOnly(libs.objectbox.gradle.plugin)
 
     // Store
-    api(libs.store4)
+//    api(libs.store4)
+    api(libs.store5)
+    api(libs.atomicfu)
+
 
 //    testimplementation("junit:junit:4.13.2")
 //    androidTestImplementation("androidx.test:runner:1.5.2")

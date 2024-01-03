@@ -1,32 +1,34 @@
 package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
+import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.browser.data.SectionData
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 
 @Composable
 internal fun SectionListEntry(
-    item: SectionEntity,
-    onClick: (SectionEntity) -> Unit,
-    onLongClick: (SectionEntity) -> Unit
+    item: SectionData,
+    onClick: (SectionData) -> Unit,
+    onLongClick: (SectionData) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -52,11 +54,43 @@ internal fun SectionListEntry(
                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
             )
 
-            Text(
-                modifier = Modifier.padding(start = 8.dp),
-                text = item.name,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
+            Column {
+                Text(
+                    modifier = Modifier.padding(start = 8.dp),
+                    text = item.name,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+
+                Text(
+                    modifier = Modifier.padding(start = 8.dp),
+                    text = stringResource(
+                        R.string.section_entry_subsections_count,
+                        item.subsections.size
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+
+                Text(
+                    modifier = Modifier.padding(start = 8.dp),
+                    text = stringResource(
+                        R.string.section_entry_documents_count,
+                        item.documents.size
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+
+                Text(
+                    modifier = Modifier.padding(start = 8.dp),
+                    text = stringResource(
+                        R.string.section_entry_resources_count,
+                        item.resources.size
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
         }
     }
 }
@@ -66,8 +100,13 @@ internal fun SectionListEntry(
 private fun SectionListEntryPreview() {
     MkDocsEditorTheme {
         SectionListEntry(
-            item = SectionEntity(
-                name = "Sample Section"
+            item = SectionData(
+                entityId = 1,
+                id = "1",
+                name = "Sample Section",
+                subsections = listOf(),
+                documents = listOf(),
+                resources = listOf()
             ),
             onClick = {},
             onLongClick = {}

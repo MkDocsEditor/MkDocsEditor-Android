@@ -16,16 +16,17 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
-import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
+import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
+import java.util.Date
 
 
 @Composable
 internal fun ResourceListEntry(
-    item: ResourceEntity,
-    onClick: (ResourceEntity) -> Unit,
-    onLongClick: (ResourceEntity) -> Unit
+    item: ResourceData,
+    onClick: (ResourceData) -> Unit,
+    onLongClick: (ResourceData) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -66,8 +67,12 @@ internal fun ResourceListEntry(
 private fun ResourceListEntryPreview() {
     MkDocsEditorTheme {
         ResourceListEntry(
-            item = ResourceEntity(
-                name = "Sample File.jpg"
+            item = ResourceData(
+                entityId = 1,
+                id = "1",
+                name = "Sample File.jpg",
+                filesize = 1234,
+                modtime = Date(),
             ),
             onClick = {},
             onLongClick = {}

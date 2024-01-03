@@ -56,4 +56,8 @@ class DocumentContentPersistenceManager @Inject constructor(
 
         standardOperation().put(entity)
     }
+
+    fun deleteAll() {
+        standardOperation().removeAll()
+    }
 }

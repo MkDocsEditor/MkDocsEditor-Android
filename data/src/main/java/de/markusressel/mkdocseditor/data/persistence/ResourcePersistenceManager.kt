@@ -7,4 +7,8 @@ import javax.inject.Singleton
 
 @Singleton
 class ResourcePersistenceManager @Inject constructor() :
-    PersistenceManagerBase<ResourceEntity>(ResourceEntity::class)
+    PersistenceManagerBase<ResourceEntity>(ResourceEntity::class) {
+    fun deleteAll() {
+        standardOperation().removeAll()
+    }
+}

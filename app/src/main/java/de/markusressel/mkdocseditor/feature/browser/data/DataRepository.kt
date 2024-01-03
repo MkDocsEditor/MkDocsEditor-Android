@@ -1,23 +1,24 @@
+@file:OptIn(ExperimentalStoreApi::class)
+
 package de.markusressel.mkdocseditor.feature.browser.data
 
-import com.dropbox.android.external.store4.Fetcher
-import com.dropbox.android.external.store4.SourceOfTruth
-import com.dropbox.android.external.store4.Store
-import com.dropbox.android.external.store4.StoreBuilder
 import com.github.ajalt.timberkt.Timber
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
+import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.asEntity
 import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.networkBoundResource
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
+import de.markusressel.mkdocsrestclient.document.DocumentModel
+import de.markusressel.mkdocsrestclient.resource.ResourceModel
 import de.markusressel.mkdocsrestclient.section.SectionModel
 import io.objectbox.kotlin.query
 import io.objectbox.kotlin.toFlow
@@ -25,6 +26,15 @@ import io.objectbox.query.QueryBuilder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.mobilenativefoundation.store.store5.Bookkeeper
+import org.mobilenativefoundation.store.store5.Converter
+import org.mobilenativefoundation.store.store5.ExperimentalStoreApi
+import org.mobilenativefoundation.store.store5.Fetcher
+import org.mobilenativefoundation.store.store5.MutableStoreBuilder
+import org.mobilenativefoundation.store.store5.OnUpdaterCompletion
+import org.mobilenativefoundation.store.store5.SourceOfTruth
+import org.mobilenativefoundation.store.store5.Updater
+import org.mobilenativefoundation.store.store5.UpdaterResult
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -63,18 +73,62 @@ class DataRepository @Inject constructor(
         return sections + documents + resources
     }
 
-    val sectionStore: Store<String, SectionEntity> = StoreBuilder
-        .from(
+
+    class SectionsUpdaterResult
+
+    private val converter = Converter.Builder<SectionModel, SectionEntity, SectionData>()
+        .fromNetworkToLocal { it.asEntity(documentContentPersistenceManager) }
+        .fromOutputToLocal { it.toEntity() }
+        .build()
+
+    private val updater = Updater.by<String, SectionData, SectionsUpdaterResult>(
+        post = { key: String, input: SectionData ->
+            UpdaterResult.Success.Typed(SectionsUpdaterResult())
+//            require(key is String.Write)
+//            when (key) {
+//                is String.Write.Create -> api.create(input)
+//                is String.Write.ById -> api.update(key.noteId, input)
+//            }
+//            restClient.updateSection()
+        },
+        onCompletion = OnUpdaterCompletion(
+            onSuccess = { success: UpdaterResult.Success ->
+                Timber.d { "Successfully updated section" }
+            },
+            onFailure = { failure: UpdaterResult.Error ->
+                when (failure) {
+                    is UpdaterResult.Error.Exception -> {
+                        Timber.e(failure.error) { "Error updating section" }
+                    }
+
+                    is UpdaterResult.Error.Message -> {
+                        Timber.e { "Error updating section: ${failure.message}" }
+                    }
+                }
+            }
+        )
+    )
+
+    private val bookkeeper: Bookkeeper<String> = Bookkeeper.by(
+        getLastFailedSync = { key: String -> null },
+        setLastFailedSync = { key: String, timestamp: Long -> true },
+        clear = { key: String -> true },
+        clearAll = { true },
+    )
+
+    val sectionStore = MutableStoreBuilder
+        .from<String, SectionModel, SectionEntity, SectionData>(
             fetcher = Fetcher.of {
                 val rootSectionModel = restClient.getItemTree().get()
                 // NOTE: this always fetches the whole tree
                 rootSectionModel
             },
-            sourceOfTruth = SourceOfTruth.of<String, SectionModel, SectionEntity>(
-                reader = { sectionId -> sectionPersistenceManager.findByIdFlow(sectionId) },
-                writer = { _, input ->
+            sourceOfTruth = SourceOfTruth.of(
+                reader = { sectionId ->
+                    sectionPersistenceManager.findByIdFlow(sectionId).map { it?.toSectionData() }
+                },
+                writer = { key, entity ->
                     // NOTE: this always stores the whole tree
-                    val entity = input.asEntity(documentContentPersistenceManager)
                     sectionPersistenceManager.insertOrUpdateRoot(entity)
                 },
                 delete = { sectionId ->
@@ -83,14 +137,177 @@ class DataRepository @Inject constructor(
                 deleteAll = {
                     sectionPersistenceManager.deleteAll()
                 }
-            )
-        ).build()
+            ),
+            converter = converter,
+        )
+        .build(
+            updater = updater,
+            bookkeeper = bookkeeper
+        )
+
+
+    private fun SectionModel.asEntity(documentContentPersistenceManager: DocumentContentPersistenceManager): SectionEntity {
+        val s = SectionEntity(0, this.id, this.name)
+
+        s.subsections.addAll(this.subsections.map {
+            it.asEntity(documentContentPersistenceManager)
+        })
+
+        s.documents.addAll(this.documents.map {
+            val contentEntity = documentContentPersistenceManager.standardOperation().query {
+                equal(
+                    DocumentContentEntity_.documentId,
+                    it.id,
+                    QueryBuilder.StringOrder.CASE_INSENSITIVE
+                )
+            }.findUnique()
+            it.asEntity(s, contentEntity)
+        })
+        s.resources.addAll(this.resources.map {
+            it.asEntity(s)
+        })
+
+        return s
+    }
+
+    private fun DocumentModel.asEntity(
+        parentSection: SectionEntity,
+        contentEntity: DocumentContentEntity? = null
+    ): DocumentEntity {
+        val d =
+            DocumentEntity(0, this.type, this.id, this.name, this.filesize, this.modtime, this.url)
+        d.parentSection.target = parentSection
+        contentEntity?.let {
+            d.content.target = it
+        }
+        return d
+    }
+
+    private fun ResourceModel.asEntity(parentSection: SectionEntity): ResourceEntity {
+        val r = ResourceEntity(
+            entityId = 0,
+            type = type,
+            id = id,
+            name = name,
+            filesize = filesize,
+            modtime = modtime
+        )
+        r.parentSection.target = parentSection
+        return r
+    }
+
+    private fun DocumentData.toEntity(
+        parentSection: SectionEntity,
+        contentEntity: DocumentContentEntity? = null
+    ): DocumentEntity {
+        val d = DocumentEntity(
+            entityId = entityId,
+            type = DocumentEntity.TYPE,
+            id = id,
+            name = name,
+            filesize = filesize,
+            modtime = modtime,
+            url = url
+        )
+        d.parentSection.target = parentSection
+        contentEntity?.let {
+            d.content.target = it
+        }
+        return d
+    }
+
+    private fun ResourceData.toEntity(parentSection: SectionEntity): ResourceEntity {
+        val r = ResourceEntity(
+            entityId = entityId,
+            type = ResourceEntity.TYPE,
+            id = id,
+            name = name,
+            filesize = filesize,
+            modtime = modtime
+        )
+        r.parentSection.target = parentSection
+        return r
+    }
+
+    private fun SectionData.toEntity(): SectionEntity {
+        val s = SectionEntity(
+            entityId = entityId,
+            id = id,
+            name = name
+        )
+
+        s.subsections.addAll(this.subsections.map {
+            it.toEntity()
+        })
+
+        s.documents.addAll(this.documents.map {
+            val contentEntity = documentContentPersistenceManager.standardOperation().query {
+                equal(
+                    DocumentContentEntity_.documentId,
+                    it.id,
+                    QueryBuilder.StringOrder.CASE_INSENSITIVE
+                )
+            }.findUnique()
+            it.toEntity(s, contentEntity)
+        })
+        s.resources.addAll(this.resources.map {
+            it.toEntity(s)
+        })
+
+        return s
+    }
+
+    private fun SectionEntity.toSectionData(): SectionData = SectionData(
+        entityId = entityId,
+        id = id,
+        name = name,
+        subsections = subsections.map { it.toSectionData() },
+        documents = documents.map { it.toDocumentData() }.toList(),
+        resources = resources.map { it.toResourceData() }.toList()
+    )
+
+    private fun ResourceEntity.toResourceData() = ResourceData(
+        entityId = entityId,
+        id = id,
+        name = name,
+        filesize = filesize,
+        modtime = modtime,
+    )
+
+    private fun DocumentEntity.toDocumentData() = DocumentData(
+        entityId = entityId,
+        id = id,
+        name = name,
+        filesize = filesize,
+        modtime = modtime,
+        url = url,
+        content = content.target.toDocumentContentData(),
+        isOfflineAvailable = content.target != null
+    )
+
+    private fun DocumentContentEntity?.toDocumentContentData() = when {
+        this == null -> null
+        else -> DocumentContentData(
+            id = entityId,
+            date = date,
+            text = text,
+            selection = selection,
+            zoomLevel = zoomLevel,
+            panX = panX,
+            panY = panY,
+        )
+    }
+
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getDocumentContent(documentId: String) = networkBoundResource(
         query = {
             documentContentPersistenceManager.standardOperation().query {
-                equal(DocumentContentEntity_.documentId, documentId, QueryBuilder.StringOrder.CASE_INSENSITIVE)
+                equal(
+                    DocumentContentEntity_.documentId,
+                    documentId,
+                    QueryBuilder.StringOrder.CASE_INSENSITIVE
+                )
             }.subscribe().toFlow().map { it.firstOrNull() }
         },
         fetch = {
@@ -174,9 +391,9 @@ class DataRepository @Inject constructor(
                 )
                 return it.id
             }, failure = {
-            Timber.e(it) { "Error creating document" }
-            throw it
-        })
+                Timber.e(it) { "Error creating document" }
+                throw it
+            })
     }
 
     suspend fun updateDocumentContentInCache(documentId: String, text: String) {

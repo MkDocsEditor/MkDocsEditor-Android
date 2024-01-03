@@ -25,18 +25,21 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntit
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
+import de.markusressel.mkdocseditor.feature.browser.data.DocumentData
+import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
+import de.markusressel.mkdocseditor.feature.browser.data.SectionData
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
 internal fun FileBrowserList(
     items: List<Any>,
-    onDocumentClicked: (DocumentEntity) -> Unit,
-    onDocumentLongClicked: (DocumentEntity) -> Unit,
-    onResourceClicked: (ResourceEntity) -> Unit,
-    onResourceLongClicked: (ResourceEntity) -> Unit,
-    onSectionClicked: (SectionEntity) -> Unit,
-    onSectionLongClicked: (SectionEntity) -> Unit,
+    onDocumentClicked: (DocumentData) -> Unit,
+    onDocumentLongClicked: (DocumentData) -> Unit,
+    onResourceClicked: (ResourceData) -> Unit,
+    onResourceLongClicked: (ResourceData) -> Unit,
+    onSectionClicked: (SectionData) -> Unit,
+    onSectionLongClicked: (SectionData) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -101,27 +104,27 @@ private fun EmptyPathView(
 @Composable
 internal fun FileBrowserListEntry(
     item: Any,
-    onDocumentClicked: (DocumentEntity) -> Unit,
-    onDocumentLongClicked: (DocumentEntity) -> Unit,
-    onResourceClicked: (ResourceEntity) -> Unit,
-    onResourceLongClicked: (ResourceEntity) -> Unit,
-    onSectionClicked: (SectionEntity) -> Unit,
-    onSectionLongClicked: (SectionEntity) -> Unit,
+    onDocumentClicked: (DocumentData) -> Unit,
+    onDocumentLongClicked: (DocumentData) -> Unit,
+    onResourceClicked: (ResourceData) -> Unit,
+    onResourceLongClicked: (ResourceData) -> Unit,
+    onSectionClicked: (SectionData) -> Unit,
+    onSectionLongClicked: (SectionData) -> Unit,
 ) {
     when (item) {
-        is DocumentEntity -> DocumentListEntry(
+        is DocumentData -> DocumentListEntry(
             item = item,
             onClick = onDocumentClicked,
             onLongClick = onDocumentLongClicked,
         )
 
-        is ResourceEntity -> ResourceListEntry(
+        is ResourceData -> ResourceListEntry(
             item = item,
             onClick = onResourceClicked,
             onLongClick = onResourceLongClicked,
         )
 
-        is SectionEntity -> SectionListEntry(
+        is SectionData -> SectionListEntry(
             item = item,
             onClick = onSectionClicked,
             onLongClick = onSectionLongClicked

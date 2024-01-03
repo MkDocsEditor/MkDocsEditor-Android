@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
-import android.view.View
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -18,16 +17,17 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
+import de.markusressel.mkdocseditor.feature.browser.data.DocumentData
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
+import java.util.Date
 
 
 @Composable
 internal fun DocumentListEntry(
-    item: DocumentEntity,
-    onClick: (DocumentEntity) -> Unit,
-    onLongClick: (DocumentEntity) -> Unit,
+    item: DocumentData,
+    onClick: (DocumentData) -> Unit,
+    onLongClick: (DocumentData) -> Unit,
 ) {
     Card(
         modifier = Modifier
@@ -54,7 +54,7 @@ internal fun DocumentListEntry(
                     colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
                 )
 
-                if (item.offlineAvailableVisibility == View.VISIBLE) {
+                if (item.isOfflineAvailable) {
                     Image(
                         modifier = Modifier
                             .size(16.dp)
@@ -80,8 +80,15 @@ internal fun DocumentListEntry(
 private fun DocumentListEntryPreview() {
     MkDocsEditorTheme {
         DocumentListEntry(
-            item = DocumentEntity(
-                name = "Sample File.md"
+            item = DocumentData(
+                entityId = 1,
+                id = "1",
+                name = "Sample File.md",
+                filesize = 1234,
+                modtime = Date(),
+                url = "https://example.com/sample-file.md",
+                content = null,
+                isOfflineAvailable = true,
             ),
             onClick = {},
             onLongClick = {}

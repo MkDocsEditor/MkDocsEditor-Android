@@ -105,11 +105,6 @@ internal class BackendSelectionViewModel @Inject constructor(
         _events.send(BackendSelectionEvent.CreateBackend(ResourceEntity()))
     }
 
-    private suspend fun showError(s: String) {
-        _events.send(BackendSelectionEvent.Error(s))
-    }
-
-
     internal sealed class UiEvent {
         data class BackendConfigClicked(val config: BackendConfig) : UiEvent()
         data class BackendConfigLongClicked(val config: BackendConfig) : UiEvent()

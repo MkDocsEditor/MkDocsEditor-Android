@@ -1,7 +1,11 @@
 package de.markusressel.mkdocseditor.data.persistence
 
 import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
-import de.markusressel.mkdocseditor.data.persistence.entity.*
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
+import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity_
+import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity_
 import io.objectbox.kotlin.query
 import io.objectbox.kotlin.toFlow
 import io.objectbox.query.QueryBuilder
@@ -51,6 +55,11 @@ class SectionPersistenceManager @Inject constructor(
      */
     fun insertOrUpdateRoot(newData: SectionEntity) {
         boxStore.runInTx {
+            deleteAll()
+            resourcePersistenceManager.deleteAll()
+            documentPersistenceManager.deleteAll()
+            documentContentPersistenceManager.deleteAll()
+
             addOrUpdate(newData)
             // remove data that is not on the server anymore
             deleteMissing(newData)

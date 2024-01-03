@@ -7,4 +7,8 @@ import javax.inject.Singleton
 
 @Singleton
 class DocumentPersistenceManager @Inject constructor() :
-    PersistenceManagerBase<DocumentEntity>(DocumentEntity::class)
+    PersistenceManagerBase<DocumentEntity>(DocumentEntity::class) {
+    fun deleteAll() {
+        standardOperation().removeAll()
+    }
+}
