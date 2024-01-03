@@ -21,15 +21,12 @@ import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.feature.browser.data.DocumentData
 import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.browser.data.SectionData
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
+import java.util.Date
 
 @Composable
 internal fun FileBrowserList(
@@ -154,18 +151,30 @@ private fun FileBrowserListPreview() {
     MkDocsEditorTheme {
         FileBrowserList(
             items = listOf(
-                SectionEntity(
+                SectionData(
+                    entityId = 1,
+                    id = "1",
                     name = "Subsection",
+                    subsections = listOf(),
+                    documents = listOf(),
+                    resources = listOf()
                 ),
-                DocumentEntity(
-                    name = "Sample File.md"
-                ).apply {
-                    content.target = DocumentContentEntity(
-                        text = "Text"
-                    )
-                },
-                ResourceEntity(
-                    name = "Sample Ressource.png"
+                DocumentData(
+                    entityId = 1,
+                    id = "1",
+                    name = "Sample Document",
+                    filesize = 1234,
+                    modtime = Date(),
+                    url = "https://www.google.com",
+                    content = null,
+                    isOfflineAvailable = true
+                ),
+                ResourceData(
+                    entityId = 1,
+                    id = "1",
+                    name = "Sample Ressource.png",
+                    filesize = 1234,
+                    modtime = Date(),
                 )
             ),
             onDocumentClicked = {},

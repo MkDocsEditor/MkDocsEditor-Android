@@ -83,7 +83,7 @@ private fun DocumentListEntryPreview() {
             item = DocumentData(
                 entityId = 1,
                 id = "1",
-                name = "Sample File.md",
+                name = "Sample File",
                 filesize = 1234,
                 modtime = Date(),
                 url = "https://example.com/sample-file.md",
