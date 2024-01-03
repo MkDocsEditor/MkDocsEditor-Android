@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.feature.browser.ui.compose
+package de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,8 +28,8 @@ import de.markusressel.mkdocseditor.feature.browser.ui.DialogState
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 
 @Composable
-fun CreateSectionDialog(
-    uiState: DialogState.CreateSection,
+fun CreateDocumentDialog(
+    uiState: DialogState.CreateDocument,
     onDismissRequest: () -> Unit,
     onSaveClicked: (String) -> Unit,
 ) {
@@ -45,17 +45,17 @@ fun CreateSectionDialog(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                var text by remember { mutableStateOf(uiState.initialSectionName) }
+                var text by remember { mutableStateOf(uiState.initialDocumentName) }
 
                 Text(
-                    text = stringResource(id = R.string.create_section),
+                    text = stringResource(id = R.string.create_document),
                     style = MaterialTheme.typography.headlineSmall
                 )
 
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
-                    label = { Text(stringResource(id = R.string.create_section_hint)) }
+                    label = { Text(stringResource(id = R.string.create_document_hint)) }
                 )
 
                 Row(
@@ -84,12 +84,12 @@ fun CreateSectionDialog(
 
 @Preview
 @Composable
-private fun CreateSectionDialogPreview() {
+private fun CreateDocumentDialogPreview() {
     MkDocsEditorTheme {
-        CreateSectionDialog(
-            uiState = DialogState.CreateSection(
-                parentSectionId = "",
-                initialSectionName = ""
+        CreateDocumentDialog(
+            uiState = DialogState.CreateDocument(
+                sectionId = "",
+                initialDocumentName = ""
             ),
             onDismissRequest = { },
             onSaveClicked = { }

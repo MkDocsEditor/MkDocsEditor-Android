@@ -1,7 +1,7 @@
-package de.markusressel.mkdocseditor.feature.browser.ui.compose
+package de.markusressel.mkdocseditor.feature.browser.ui.compose.listentry
 
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,17 +17,17 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
-import de.markusressel.mkdocseditor.feature.browser.data.DocumentData
+import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 import java.util.Date
 
 
 @Composable
-internal fun DocumentListEntry(
-    item: DocumentData,
-    onClick: (DocumentData) -> Unit,
-    onLongClick: (DocumentData) -> Unit,
+internal fun ResourceListEntry(
+    item: ResourceData,
+    onClick: (ResourceData) -> Unit,
+    onLongClick: (ResourceData) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -46,30 +46,27 @@ internal fun DocumentListEntry(
             modifier = Modifier.padding(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box {
-                Image(
-                    modifier = Modifier
-                        .size(32.dp),
-                    asset = MaterialDesignIconic.Icon.gmi_file,
-                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
+            Image(
+                modifier = Modifier
+                    .size(32.dp),
+                asset = MaterialDesignIconic.Icon.gmi_attachment,
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
+            )
+
+            Column {
+
+                Text(
+                    modifier = Modifier.padding(start = 8.dp),
+                    text = item.name,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    style = MaterialTheme.typography.titleMedium,
                 )
 
-                if (item.isOfflineAvailable) {
-                    Image(
-                        modifier = Modifier
-                            .size(16.dp)
-                            .align(Alignment.BottomEnd),
-                        asset = MaterialDesignIconic.Icon.gmi_save,
-                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary),
-                    )
-                }
+                LastModifiedDate(
+                    modifier = Modifier.padding(start = 8.dp),
+                    modtime = item.modtime
+                )
             }
-
-            Text(
-                modifier = Modifier.padding(start = 8.dp),
-                text = item.name,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
         }
     }
 }
@@ -77,18 +74,15 @@ internal fun DocumentListEntry(
 
 @CombinedPreview
 @Composable
-private fun DocumentListEntryPreview() {
+private fun ResourceListEntryPreview() {
     MkDocsEditorTheme {
-        DocumentListEntry(
-            item = DocumentData(
+        ResourceListEntry(
+            item = ResourceData(
                 entityId = 1,
                 id = "1",
-                name = "Sample File",
+                name = "Sample File.jpg",
                 filesize = 1234,
                 modtime = Date(),
-                url = "https://example.com/sample-file.md",
-                content = null,
-                isOfflineAvailable = true,
             ),
             onClick = {},
             onLongClick = {}

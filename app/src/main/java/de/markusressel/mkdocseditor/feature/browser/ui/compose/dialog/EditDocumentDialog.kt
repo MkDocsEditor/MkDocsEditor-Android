@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.feature.browser.ui.compose
+package de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

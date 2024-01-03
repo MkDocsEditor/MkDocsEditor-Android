@@ -1,6 +1,7 @@
-package de.markusressel.mkdocseditor.feature.browser.ui.compose
+package de.markusressel.mkdocseditor.feature.browser.ui.compose.listentry
 
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,22 +15,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.feature.browser.data.SectionData
+import de.markusressel.mkdocseditor.feature.browser.data.DocumentData
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
+import java.util.Date
 
 
 @Composable
-internal fun SectionListEntry(
-    item: SectionData,
-    onClick: (SectionData) -> Unit,
-    onLongClick: (SectionData) -> Unit
+internal fun DocumentListEntry(
+    item: DocumentData,
+    onClick: (DocumentData) -> Unit,
+    onLongClick: (DocumentData) -> Unit,
 ) {
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -47,66 +52,67 @@ internal fun SectionListEntry(
             modifier = Modifier.padding(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Image(
-                modifier = Modifier
-                    .size(32.dp),
-                asset = MaterialDesignIconic.Icon.gmi_folder,
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
-            )
+            Box {
+                Image(
+                    modifier = Modifier
+                        .size(32.dp),
+                    asset = MaterialDesignIconic.Icon.gmi_file,
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
+                )
+
+                if (item.isOfflineAvailable) {
+                    Image(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .align(Alignment.BottomEnd),
+                        asset = MaterialDesignIconic.Icon.gmi_save,
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary),
+                    )
+                }
+            }
 
             Column {
                 Text(
                     modifier = Modifier.padding(start = 8.dp),
                     text = item.name,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    style = MaterialTheme.typography.titleMedium,
                 )
 
                 Text(
                     modifier = Modifier.padding(start = 8.dp),
                     text = stringResource(
-                        R.string.section_entry_subsections_count,
-                        item.subsections.size
+                        R.string.document_list_entry_filesize,
+                        item.formattedDocumentSize(context)
                     ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
 
-                Text(
+                LastModifiedDate(
                     modifier = Modifier.padding(start = 8.dp),
-                    text = stringResource(
-                        R.string.section_entry_documents_count,
-                        item.documents.size
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-
-                Text(
-                    modifier = Modifier.padding(start = 8.dp),
-                    text = stringResource(
-                        R.string.section_entry_resources_count,
-                        item.resources.size
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modtime = item.modtime
                 )
             }
         }
     }
 }
 
+
 @CombinedPreview
 @Composable
-private fun SectionListEntryPreview() {
+private fun DocumentListEntryPreview() {
     MkDocsEditorTheme {
-        SectionListEntry(
-            item = SectionData(
+        DocumentListEntry(
+            item = DocumentData(
                 entityId = 1,
                 id = "1",
-                name = "Sample Section",
-                subsections = listOf(),
-                documents = listOf(),
-                resources = listOf()
+                name = "Sample File",
+                filesize = 1234,
+                modtime = Date(),
+                url = "https://example.com/sample-file.md",
+                content = null,
+                isOfflineAvailable = true,
             ),
             onClick = {},
             onLongClick = {}

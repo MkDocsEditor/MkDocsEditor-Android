@@ -1,7 +1,5 @@
 package de.markusressel.mkdocseditor.data.persistence.entity
 
-import android.content.Context
-import android.text.format.Formatter
 import io.objectbox.annotation.Entity
 import io.objectbox.annotation.Id
 import io.objectbox.annotation.Unique
@@ -24,13 +22,6 @@ data class DocumentEntity(
 
     lateinit var parentSection: ToOne<SectionEntity>
     lateinit var content: ToOne<DocumentContentEntity?>
-
-    /**
-     * Human readable representation of file size
-     */
-    fun formattedDocumentSize(context: Context): String {
-        return Formatter.formatFileSize(context, filesize)
-    }
 
     companion object {
         const val TYPE: String = "Document"

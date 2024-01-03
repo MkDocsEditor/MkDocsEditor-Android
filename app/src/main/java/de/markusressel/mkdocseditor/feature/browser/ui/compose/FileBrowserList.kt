@@ -24,6 +24,9 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.browser.data.DocumentData
 import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.browser.data.SectionData
+import de.markusressel.mkdocseditor.feature.browser.ui.compose.listentry.DocumentListEntry
+import de.markusressel.mkdocseditor.feature.browser.ui.compose.listentry.ResourceListEntry
+import de.markusressel.mkdocseditor.feature.browser.ui.compose.listentry.SectionListEntry
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 import java.util.Date

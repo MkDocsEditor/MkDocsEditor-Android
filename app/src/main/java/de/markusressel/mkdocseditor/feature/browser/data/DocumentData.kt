@@ -1,5 +1,7 @@
 package de.markusressel.mkdocseditor.feature.browser.data
 
+import android.content.Context
+import android.text.format.Formatter
 import java.util.Date
 
 data class DocumentData(
@@ -11,4 +13,11 @@ data class DocumentData(
     val url: String,
     val content: DocumentContentData?,
     val isOfflineAvailable: Boolean
-)
+) {
+    /**
+     * Human readable representation of file size
+     */
+    fun formattedDocumentSize(context: Context): String {
+        return Formatter.formatFileSize(context, filesize)
+    }
+}

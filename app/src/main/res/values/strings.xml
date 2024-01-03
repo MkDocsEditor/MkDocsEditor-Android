@@ -65,6 +65,9 @@
     <string name="section_entry_documents_count">Documents: %1$s</string>
     <string name="section_entry_resources_count">Resources: %1$s</string>
 
+    <string name="document_list_entry_filesize">Size: %1$s</string>
+    <string name="document_list_entry_last_modified">Last modified: %1$s</string>
+
     <string name="create_document">Create Document</string>
     <string name="create_document_hint">New Document</string>
     <string name="edit_document">Edit document</string>

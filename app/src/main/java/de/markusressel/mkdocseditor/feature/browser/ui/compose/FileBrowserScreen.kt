@@ -15,6 +15,10 @@ import de.markusressel.mkdocseditor.feature.browser.ui.DialogState
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserEvent
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel
 import de.markusressel.mkdocseditor.feature.browser.ui.UiEvent
+import de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog.CreateDocumentDialog
+import de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog.CreateSectionDialog
+import de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog.EditDocumentDialog
+import de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog.EditSectionDialog
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreen
 import kotlinx.coroutines.flow.collectLatest
 
