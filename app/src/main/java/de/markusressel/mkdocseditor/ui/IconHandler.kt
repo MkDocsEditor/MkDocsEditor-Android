@@ -31,66 +31,6 @@ class IconHandler @Inject constructor() {
     lateinit var themeHelper: ThemeHelper
 
     /**
-     * Get an icon suitable for the swipe menu
-     *
-     * @param icon the icon resource
-     *
-     * @return the icon
-     */
-    fun getNavigationIcon(icon: IIcon): IconicsDrawable {
-        val color = themeHelper.getThemeAttrColor(context, android.R.attr.textColorPrimary)
-        return getIcon(icon, color, 24)
-    }
-
-    /**
-     * Get an icon suitable for the bottom navigation bar
-     *
-     * @param icon the icon resource
-     *
-     * @return the icon
-     */
-    fun getBottomNavigationIcon(icon: IIcon): IconicsDrawable {
-        val color = themeHelper.getThemeAttrColor(context, android.R.attr.textColorPrimary)
-        return getIcon(icon, color, 48)
-    }
-
-    /**
-     * Get an icon suitable for a simple page of the wizard
-     *
-     * @param icon the icon resource
-     *
-     * @return the icon
-     */
-    fun getWizardIcon(icon: IIcon): IconicsDrawable {
-        val color = themeHelper.getThemeAttrColor(context, android.R.attr.textColorPrimary)
-        return getIcon(icon, color, 64)
-    }
-
-    /**
-     * Get an icon suitable for the ConfigurationDialog control bar
-     *
-     * @param icon the icon resource
-     *
-     * @return the icon
-     */
-    fun getConfigurationDialogControlBarIcon(icon: IIcon): IconicsDrawable {
-        val color = themeHelper.getThemeAttrColor(context, android.R.attr.textColorPrimary)
-        return getIcon(icon, color, 36)
-    }
-
-    /**
-     * Get an icon suitable for a fab button of normal size
-     *
-     * @param icon the icon resource
-     *
-     * @return the icon
-     */
-    fun getFabIcon(icon: IIcon): IconicsDrawable {
-        val color = Color.WHITE
-        return getIcon(icon, color, 24, 5)
-    }
-
-    /**
      * Get an icon suitable for the options menu
      *
      * @param icon the icon resource

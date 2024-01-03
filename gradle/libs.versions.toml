@@ -55,7 +55,7 @@ uiToolingVersion = "1.6.0-beta03"
 windowVersion = "1.2.0"
 uiViewbinding = "1.6.0-beta03"
 workTesting = "2.9.0"
-voyager = "1.0.0"
+voyager = "1.1.0-alpha01"
 zoomlayout = "1.9.0"
 
 [libraries]
