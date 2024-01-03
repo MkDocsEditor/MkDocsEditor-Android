@@ -6,6 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 import java.text.DateFormat
 import java.util.Date
 
@@ -24,4 +26,12 @@ fun LastModifiedDate(
 
 private fun Date.formatAsDate(): String {
     return DateFormat.getDateTimeInstance().format(this)
+}
+
+@CombinedPreview
+@Composable
+private fun LastModifiedDatePreview() {
+    MkDocsEditorTheme {
+        LastModifiedDate(Date())
+    }
 }

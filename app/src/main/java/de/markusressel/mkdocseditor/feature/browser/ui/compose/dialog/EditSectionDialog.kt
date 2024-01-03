@@ -20,12 +20,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.browser.ui.DialogState
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
 fun EditSectionDialog(
@@ -82,7 +82,7 @@ fun EditSectionDialog(
     }
 }
 
-@Preview
+@CombinedPreview
 @Composable
 private fun EditSectionDialogPreview() {
     MkDocsEditorTheme {
