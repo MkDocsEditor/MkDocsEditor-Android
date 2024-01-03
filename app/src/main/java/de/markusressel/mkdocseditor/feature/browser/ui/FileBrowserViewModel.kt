@@ -26,7 +26,6 @@ import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameSection
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SearchUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SectionItem
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
-import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -36,7 +35,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -60,6 +58,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private val createNewDocumentUseCase: CreateNewDocumentUseCase,
     private val renameDocumentUseCase: RenameDocumentUseCase,
     private val renameSectionUseCase: RenameSectionUseCase,
+    private val applyCurrentBackendConfigUseCase: ApplyCurrentBackendConfigUseCase,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -92,24 +91,11 @@ internal class FileBrowserViewModel @Inject constructor(
 
     init {
         launch {
-            getCurrentBackendConfigUseCase().filterNotNull().collectLatest { config ->
-                try {
-                    val serverConfig = requireNotNull(config.serverConfig)
-                    restClient.setHostname(serverConfig.domain)
-                    restClient.setPort(serverConfig.port)
-                    restClient.setUseSSL(serverConfig.useSsl)
-
-                    val authConfig = requireNotNull(config.authConfig)
-                    restClient.setBasicAuthConfig(
-                        BasicAuthConfig(
-                            username = authConfig.username,
-                            password = authConfig.password
-                        )
-                    )
-                } catch (ex: Exception) {
-                    Timber.e(ex)
-                    showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
-                }
+            try {
+                applyCurrentBackendConfigUseCase()
+            } catch (ex: Exception) {
+                Timber.e(ex)
+                showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
             }
         }
 

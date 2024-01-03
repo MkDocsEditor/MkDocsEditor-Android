@@ -30,10 +30,10 @@ class BackendConfigPersistenceManager @Inject constructor(
         }
     }
 
-    fun add(toBackendConfigEntity: BackendConfigEntity): Long {
+    fun add(entity: BackendConfigEntity): Long {
         var id = 0L
         boxStore.runInTx {
-            id = standardOperation().put(toBackendConfigEntity)
+            id = standardOperation().put(entity)
         }
         return id
     }

@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "de.markusressel.rest"
+    namespace = "de.markusressel.mkdocsrestclient"
 }
 
 dependencies {
