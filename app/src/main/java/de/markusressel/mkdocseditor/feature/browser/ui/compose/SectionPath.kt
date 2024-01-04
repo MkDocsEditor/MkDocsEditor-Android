@@ -41,6 +41,7 @@ internal fun SectionPath(
                 val firstSection = pathState.firstOrNull()
                 if (firstSection != null) {
                     PathItemCard(
+                        modifier = Modifier.padding(2.dp),
                         text = firstSection.name,
                         onClick = {
                             onSectionClicked(firstSection)
@@ -57,6 +58,7 @@ internal fun SectionPath(
                 ) {
                     pathState.drop(1).forEach { pathItem ->
                         PathItemCard(
+                            modifier = Modifier.padding(2.dp),
                             text = pathItem.name,
                             onClick = {
                                 onSectionClicked(pathItem)
@@ -74,12 +76,13 @@ internal fun SectionPath(
 private fun PathItemCard(
     text: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Card(
         modifier = Modifier
             .wrapContentWidth()
             .defaultMinSize(minWidth = 48.dp) // for some reason its not possible to create a card thats less wide than 48.dp
-            .padding(2.dp),
+            .then(modifier),
         border = BorderStroke(
             width = 1.dp,
             color = MaterialTheme.colorScheme.primary
@@ -88,7 +91,7 @@ private fun PathItemCard(
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         ),
         elevation = CardDefaults.outlinedCardElevation(),
-        shape = RoundedCornerShape(4.dp),
+        shape = RoundedCornerShape(8.dp),
         onClick = onClick,
     ) {
         Text(
