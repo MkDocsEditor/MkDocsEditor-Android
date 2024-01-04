@@ -18,7 +18,6 @@ import de.markusressel.mkdocseditor.feature.browser.domain.usecase.CreateNewDocu
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.CreateNewSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetCurrentSectionPathUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetSectionItemsUseCase
-import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RefreshSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameDocumentUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SearchUseCase
@@ -37,7 +36,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 import java.util.Stack
 import javax.inject.Inject
@@ -47,7 +45,6 @@ import javax.inject.Inject
 internal class FileBrowserViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val restClient: IMkDocsRestClient,
-    private val refreshSectionUseCase: RefreshSectionUseCase,
     private val getSectionItemsUseCase: GetSectionItemsUseCase,
     private val createNewSectionUseCase: CreateNewSectionUseCase,
     private val searchUseCase: SearchUseCase,
@@ -87,6 +84,8 @@ internal class FileBrowserViewModel @Inject constructor(
 
     private val currentSectionId = MutableStateFlow(ROOT_SECTION_ID)
 
+    private var sectionJob: Job? = null
+
     init {
         launch {
             try {
@@ -105,65 +104,68 @@ internal class FileBrowserViewModel @Inject constructor(
             }
         }
 
-        var sectionJob: Job? = null
         launch {
             currentSectionId.collectLatest { sectionId ->
-                sectionJob?.cancel()
-                sectionJob = launch {
-                    try {
-                        getSectionItemsUseCase(sectionId).collect { response ->
-                            showLoading(response is StoreReadResponse.Loading)
+                startSectionDataJob(sectionId)
+            }
+        }
+    }
 
-                            if (response is StoreReadResponse.Error) {
-                                when (response) {
-                                    is StoreReadResponse.Error.Message -> {
-                                        setError(message = response.message)
-                                        setFabConfig(FabConfig())
-                                    }
+    private suspend fun startSectionDataJob(sectionId: String) {
+        sectionJob?.cancel()
+        sectionJob = launch {
+            try {
+                getSectionItemsUseCase(sectionId).collect { response ->
+                    showLoading(response is StoreReadResponse.Loading)
 
-                                    is StoreReadResponse.Error.Exception -> {
-                                        Timber.e(response.error)
-                                        setError(
-                                            message = response.error.localizedMessage
-                                                ?: response.error.javaClass.name
-                                        )
-                                        setFabConfig(FabConfig())
-                                    }
-                                }
-                            }
-
-                            val section = response.dataOrNull()
-
-                            val sections =
-                                (section?.subsections ?: emptyList()).sortedBy { it.name }
-                            val documents = (section?.documents ?: emptyList()).sortedBy { it.name }
-                            val resources = (section?.resources ?: emptyList()).sortedBy { it.name }
-
-                            _uiState.update { old ->
-                                old.copy(listItems = (sections + documents + resources))
-                            }
-
-                            if (response is StoreReadResponse.Data) {
-                                setFabConfig(CreateItemsFabConfig)
-                            } else if (section == null) {
+                    if (response is StoreReadResponse.Error) {
+                        when (response) {
+                            is StoreReadResponse.Error.Message -> {
+                                setError(message = response.message)
                                 setFabConfig(FabConfig())
                             }
 
-                            if (response is StoreReadResponse.NoNewData || response is StoreReadResponse.Data) {
-                                if (section == null) {
-                                    // in theory this will navigate back until a section is found
-                                    // or otherwise show the "empty" screen
-                                    if (!navigateUp()) {
-                                        // TODO
-//                                        showEmpty()
-                                    }
-                                }
+                            is StoreReadResponse.Error.Exception -> {
+                                Timber.e(response.error)
+                                setError(
+                                    message = response.error.localizedMessage
+                                        ?: response.error.javaClass.name
+                                )
+                                setFabConfig(FabConfig())
                             }
                         }
-                    } catch (ex: CancellationException) {
-                        Timber.d { "sectionJob $sectionJob cancelled" }
+                    }
+
+                    val section = response.dataOrNull()
+
+                    val sections =
+                        (section?.subsections ?: emptyList()).sortedBy { it.name }
+                    val documents = (section?.documents ?: emptyList()).sortedBy { it.name }
+                    val resources = (section?.resources ?: emptyList()).sortedBy { it.name }
+
+                    _uiState.update { old ->
+                        old.copy(listItems = (sections + documents + resources))
+                    }
+
+                    if (response is StoreReadResponse.Data) {
+                        setFabConfig(CreateItemsFabConfig)
+                    } else if (section == null) {
+                        setFabConfig(FabConfig())
+                    }
+
+                    if (response is StoreReadResponse.NoNewData || response is StoreReadResponse.Data) {
+                        if (section == null) {
+                            // in theory this will navigate back until a section is found
+                            // or otherwise show the "empty" screen
+                            if (!navigateUp()) {
+                                // TODO
+//                                        showEmpty()
+                            }
+                        }
                     }
                 }
+            } catch (ex: CancellationException) {
+                Timber.d { "sectionJob $sectionJob cancelled" }
             }
         }
     }
@@ -436,12 +438,7 @@ internal class FileBrowserViewModel @Inject constructor(
 
     private suspend fun reload() {
         setError(null)
-        try {
-            refreshSectionUseCase(currentSectionId.value)
-        } catch (ex: Exception) {
-            Timber.e(ex)
-            setError(message = ex.localizedMessage ?: ex.javaClass.name)
-        }
+        startSectionDataJob(currentSectionId.value)
     }
 
     private fun onCreateSectionFabClicked() {
