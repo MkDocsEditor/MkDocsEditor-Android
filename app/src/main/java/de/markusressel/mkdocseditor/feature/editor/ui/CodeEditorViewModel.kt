@@ -293,14 +293,26 @@ internal class CodeEditorViewModel @Inject constructor(
                 }
 
                 is UiEvent.BackPressed -> onClose()
-                is UiEvent.SnackbarActionClicked -> onSnackbarAction()
+                is UiEvent.SnackbarActionClicked -> onSnackbarAction(event.snackbar)
             }
         }
     }
 
-    private fun onSnackbarAction() {
+    private fun onSnackbarAction(snackbar: SnackbarData) {
+        when (snackbar) {
+            SnackbarData.ConnectionFailed -> {
+                dismissSnackbar()
+                reconnectToServer()
+            }
 
+            SnackbarData.Disconnected -> {
+                dismissSnackbar()
+                reconnectToServer()
+            }
+        }
     }
+
+    private fun dismissSnackbar() = showSnackbar(null)
 
     /**
      *
