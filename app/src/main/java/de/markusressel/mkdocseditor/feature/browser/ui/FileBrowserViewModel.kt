@@ -19,7 +19,7 @@ import de.markusressel.mkdocseditor.feature.browser.data.SectionData
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.CreateNewDocumentUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.CreateNewSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetCurrentSectionPathUseCase
-import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetSectionContentUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetSectionItemsUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RefreshSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameDocumentUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameSectionUseCase
@@ -51,7 +51,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
     private val restClient: IMkDocsRestClient,
     private val refreshSectionUseCase: RefreshSectionUseCase,
-    private val getSectionContentUseCase: GetSectionContentUseCase,
+    private val getSectionItemsUseCase: GetSectionItemsUseCase,
     private val createNewSectionUseCase: CreateNewSectionUseCase,
     private val searchUseCase: SearchUseCase,
     private val getCurrentSectionPathUseCase: GetCurrentSectionPathUseCase,
@@ -113,7 +113,7 @@ internal class FileBrowserViewModel @Inject constructor(
                 sectionJob?.cancel()
                 sectionJob = launch {
                     try {
-                        getSectionContentUseCase(
+                        getSectionItemsUseCase(
                             sectionId = sectionId,
                             refresh = true
                         ).collect { response ->
@@ -121,6 +121,7 @@ internal class FileBrowserViewModel @Inject constructor(
                                 when (response) {
                                     is StoreReadResponse.Error.Message -> {
                                         showError(errorMessage = response.message)
+                                        setFabConfig(FabConfig())
                                     }
 
                                     is StoreReadResponse.Error.Exception -> {
@@ -129,6 +130,7 @@ internal class FileBrowserViewModel @Inject constructor(
                                             errorMessage = response.error.localizedMessage
                                                 ?: response.error.javaClass.name
                                         )
+                                        setFabConfig(FabConfig())
                                     }
                                 }
                             }
@@ -139,6 +141,7 @@ internal class FileBrowserViewModel @Inject constructor(
                                 _uiState.value = uiState.value.copy(
                                     isLoading = true
                                 )
+                                setFabConfig(FabConfig())
                             }
 
                             val sections =
@@ -149,6 +152,10 @@ internal class FileBrowserViewModel @Inject constructor(
                             _uiState.value = uiState.value.copy(
                                 listItems = (sections + documents + resources)
                             )
+
+                            if (response is StoreReadResponse.Data) {
+                                setFabConfig(CreateItemsFabConfig)
+                            }
 
                             if (response is StoreReadResponse.Error || response is StoreReadResponse.NoNewData || response is StoreReadResponse.Data) {
                                 _uiState.value = uiState.value.copy(
@@ -170,6 +177,12 @@ internal class FileBrowserViewModel @Inject constructor(
                     }
                 }
             }
+        }
+    }
+
+    private fun setFabConfig(fabConfig: FabConfig) {
+        _uiState.update { old ->
+            old.copy(fabConfig = fabConfig)
         }
     }
 

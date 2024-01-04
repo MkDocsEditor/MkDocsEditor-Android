@@ -7,7 +7,7 @@ import org.mobilenativefoundation.store.store5.StoreReadRequest
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 import javax.inject.Inject
 
-internal class GetSectionContentUseCase @Inject constructor(
+internal class GetSectionItemsUseCase @Inject constructor(
     private val dataRepository: DataRepository,
 ) {
     operator fun invoke(

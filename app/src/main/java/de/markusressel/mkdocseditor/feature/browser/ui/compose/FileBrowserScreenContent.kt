@@ -46,6 +46,7 @@ internal fun FileBrowserScreenContent(
         ) {
             ErrorCard(
                 modifier = Modifier
+                    .padding(16.dp)
                     .wrapContentSize(),
                 text = uiState.error ?: "Error",
                 onRetry = {

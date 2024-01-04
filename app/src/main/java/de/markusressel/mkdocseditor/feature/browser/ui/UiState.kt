@@ -31,25 +31,7 @@ sealed interface DialogState {
 internal data class UiState(
     val currentDialogState: DialogState? = null,
 
-    val fabConfig: FabConfig = FabConfig(
-        right = listOf(
-            FabConfig.Fab(
-                id = -1,
-                description = R.string.create,
-                icon = MaterialDesignIconic.Icon.gmi_plus,
-            ),
-            FabConfig.Fab(
-                id = FAB_ID_CREATE_DOCUMENT,
-                description = R.string.create_document,
-                icon = MaterialDesignIconic.Icon.gmi_file_add,
-            ),
-            FabConfig.Fab(
-                id = FAB_ID_CREATE_SECTION,
-                description = R.string.create_section,
-                icon = MaterialDesignIconic.Icon.gmi_folder,
-            )
-        )
-    ),
+    val fabConfig: FabConfig = CreateItemsFabConfig,
 
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -67,3 +49,23 @@ internal data class UiState(
 
 const val FAB_ID_CREATE_DOCUMENT = 0
 const val FAB_ID_CREATE_SECTION = 1
+
+val CreateItemsFabConfig = FabConfig(
+    right = listOf(
+        FabConfig.Fab(
+            id = -1,
+            description = R.string.create,
+            icon = MaterialDesignIconic.Icon.gmi_plus,
+        ),
+        FabConfig.Fab(
+            id = FAB_ID_CREATE_DOCUMENT,
+            description = R.string.create_document,
+            icon = MaterialDesignIconic.Icon.gmi_file_add,
+        ),
+        FabConfig.Fab(
+            id = FAB_ID_CREATE_SECTION,
+            description = R.string.create_section,
+            icon = MaterialDesignIconic.Icon.gmi_folder,
+        )
+    )
+)

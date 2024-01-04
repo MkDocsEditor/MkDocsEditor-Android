@@ -50,6 +50,9 @@ fun ExpandableFab(
     modifier: Modifier = Modifier,
     horizontalAlignment: Alignment.Horizontal = Alignment.End,
 ) {
+    if (items.isEmpty()) {
+        return
+    }
     var expanded by remember { mutableStateOf(false) }
 
     Column(
