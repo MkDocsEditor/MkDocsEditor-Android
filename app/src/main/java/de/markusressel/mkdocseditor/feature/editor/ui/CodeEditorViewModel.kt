@@ -156,6 +156,7 @@ internal class CodeEditorViewModel @Inject constructor(
                             onTextChanged = ::onTextChanged,
                             readOnly = uiState.value.editModeActive.not()
                         )
+                    reconnectToServer()
                 }
             }
         }
@@ -188,6 +189,25 @@ internal class CodeEditorViewModel @Inject constructor(
                     true -> enableEditMode()
                     else -> disableEditMode()
                 }
+            }
+        }
+
+        launch {
+            connectionStatus.filterNotNull().collectLatest {
+                showSnackbar(
+                    when {
+                        it.connected -> null
+                        it.errorCode != null -> SnackbarData(
+                            text = "Connection failed (${it.errorCode})",
+                            action = "Retry",
+                        )
+
+                        else -> SnackbarData(
+                            text = "Connection failed",
+                            action = "Retry",
+                        )
+                    }
+                )
             }
         }
 
@@ -261,6 +281,12 @@ internal class CodeEditorViewModel @Inject constructor(
 
                 else -> {}
             }
+        }
+    }
+
+    private fun showSnackbar(snackbar: SnackbarData?) {
+        _uiState.update { old ->
+            old.copy(snackbar = snackbar)
         }
     }
 

@@ -39,6 +39,7 @@ import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ScreenTitle
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.ui.activity.SnackbarData
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 
@@ -160,6 +161,10 @@ private fun CodeEditorScreenContentPreview() {
             uiState = CodeEditorViewModel.UiState(
                 text = buildAnnotatedString { append("# Hallo Welt!") },
                 isOfflineModeBannerVisible = true,
+                snackbar = SnackbarData(
+                    text = "Connection failed",
+                    action = "Retry"
+                ),
             ),
             onTextChanged = {},
             onUiEvent = {},
