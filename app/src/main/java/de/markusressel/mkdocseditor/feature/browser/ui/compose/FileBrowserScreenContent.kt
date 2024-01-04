@@ -1,23 +1,36 @@
 package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.github.fengdai.compose.pulltorefresh.PullToRefresh
 import com.github.fengdai.compose.pulltorefresh.rememberPullToRefreshState
+import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
@@ -25,6 +38,7 @@ import de.markusressel.mkdocseditor.feature.browser.ui.UiEvent
 import de.markusressel.mkdocseditor.feature.browser.ui.UiState
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ErrorCard
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
+import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
@@ -55,6 +69,42 @@ internal fun FileBrowserScreenContent(
         }
 
         Scaffold(
+            topBar = {
+                MkDocsEditorTopAppBar(
+                    canGoBack = false,
+                    title = stringResource(id = R.string.screen_files_title),
+                )
+            },
+            bottomBar = {
+                var sectionPathVisible by remember { mutableStateOf(false) }
+                LaunchedEffect(Unit) {
+                    sectionPathVisible = true
+                }
+                AnimatedContent(
+                    label = "sectionPath",
+                    targetState = sectionPathVisible,
+                    transitionSpec = {
+                        slideInVertically().togetherWith(slideOutVertically())
+                    },
+                ) { visible ->
+                    if (visible) {
+                        SectionPath(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .defaultMinSize(minHeight = 48.dp)
+                                .padding(horizontal = 4.dp),
+                            path = uiState.currentSectionPath,
+                            onSectionClicked = { section ->
+                                onUiEvent(UiEvent.NavigateUpToSection(section))
+                            }
+                        )
+                    } else {
+                        Spacer(modifier = Modifier
+                            .fillMaxWidth()
+                            .height(0.dp))
+                    }
+                }
+            },
             floatingActionButton = {
                 ExpandableFab(
                     modifier = Modifier.fillMaxSize(),
@@ -68,18 +118,9 @@ internal fun FileBrowserScreenContent(
             Column(
                 modifier = Modifier.padding(paddingValues)
             ) {
-                SectionPath(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .defaultMinSize(minHeight = 48.dp)
-                        .padding(horizontal = 4.dp),
-                    path = uiState.currentSectionPath,
-                    onSectionClicked = { section ->
-                        onUiEvent(UiEvent.NavigateUpToSection(section))
-                    }
-                )
 
-                PullToRefresh(
+
+            PullToRefresh(
                     //modifier = modifier,
                     state = rememberPullToRefreshState(
                         isRefreshing = uiState.isLoading
