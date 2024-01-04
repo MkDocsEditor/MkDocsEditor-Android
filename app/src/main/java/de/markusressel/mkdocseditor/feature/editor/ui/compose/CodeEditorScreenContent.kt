@@ -87,18 +87,10 @@ internal fun CodeEditorScreenContent(
                 if (uiState.snackbar == null) {
                     return@AnimatedVisibility
                 }
-                Snackbar(
-                    modifier = Modifier.padding(4.dp),
-                    action = {
-                        TextButton(onClick = {
-                            onUiEvent(CodeEditorViewModel.UiEvent.SnackbarActionClicked(uiState.snackbar))
-                        }) {
-                            Text(text = uiState.snackbar.action)
-                        }
-                    }
-                ) {
-                    Text(text = uiState.snackbar.text)
-                }
+                CodeEditorSackbar(
+                    snackbar = uiState.snackbar,
+                    onUiEvent = onUiEvent,
+                )
             }
         }
     ) { paddingValues ->
@@ -126,6 +118,46 @@ internal fun CodeEditorScreenContent(
                 )
             }
         }
+    }
+}
+
+@Composable
+internal fun CodeEditorSackbar(
+    snackbar: SnackbarData,
+    onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
+) {
+    val text = when (snackbar) {
+        is SnackbarData.ConnectionFailed -> stringResource(R.string.code_editor_connection_failed)
+        is SnackbarData.Disconnected -> stringResource(R.string.code_editor_disconnected)
+    }
+
+    val action: @Composable () -> Unit = when (snackbar) {
+        is SnackbarData.ConnectionFailed -> {
+            {
+                TextButton(onClick = {
+                    onUiEvent(CodeEditorViewModel.UiEvent.SnackbarActionClicked(snackbar))
+                }) {
+                    Text(text = stringResource(R.string.retry))
+                }
+            }
+        }
+
+        is SnackbarData.Disconnected -> {
+            {
+                TextButton(onClick = {
+                    onUiEvent(CodeEditorViewModel.UiEvent.SnackbarActionClicked(snackbar))
+                }) {
+                    Text(text = stringResource(R.string.connect))
+                }
+            }
+        }
+    }
+
+    Snackbar(
+        modifier = Modifier.padding(4.dp),
+        action = action,
+    ) {
+        Text(text = text)
     }
 }
 
@@ -161,10 +193,7 @@ private fun CodeEditorScreenContentPreview() {
             uiState = CodeEditorViewModel.UiState(
                 text = buildAnnotatedString { append("# Hallo Welt!") },
                 isOfflineModeBannerVisible = true,
-                snackbar = SnackbarData(
-                    text = "Connection failed",
-                    action = "Retry"
-                ),
+                snackbar = SnackbarData.ConnectionFailed,
             ),
             onTextChanged = {},
             onUiEvent = {},

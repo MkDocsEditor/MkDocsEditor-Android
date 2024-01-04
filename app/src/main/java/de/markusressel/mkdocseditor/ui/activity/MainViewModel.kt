@@ -8,10 +8,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
-data class SnackbarData(
-    val text: String,
-    val action: String,
-)
+sealed class SnackbarData {
+    data object ConnectionFailed : SnackbarData()
+    data object Disconnected : SnackbarData()
+}
 
 internal data class UiState(
     val drawerNavItems: List<NavItem> = listOf(

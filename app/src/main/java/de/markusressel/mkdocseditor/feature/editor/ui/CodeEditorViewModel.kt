@@ -197,15 +197,8 @@ internal class CodeEditorViewModel @Inject constructor(
                 showSnackbar(
                     when {
                         it.connected -> null
-                        it.errorCode != null -> SnackbarData(
-                            text = "Connection failed (${it.errorCode})",
-                            action = "Retry",
-                        )
-
-                        else -> SnackbarData(
-                            text = "Connection failed",
-                            action = "Retry",
-                        )
+                        it.errorCode != null -> SnackbarData.ConnectionFailed
+                        else -> SnackbarData.Disconnected
                     }
                 )
             }
@@ -444,7 +437,7 @@ internal class CodeEditorViewModel @Inject constructor(
         }
 
 
-    fun saveEditorState() = launch {
+    private fun saveEditorState() = launch {
         dataRepository.saveEditorState(
             documentId.value!!,
             uiState.value.text?.toString(),
