@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.browser.ui.compose.listentry
 
+import android.util.TypedValue
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,9 +12,12 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
@@ -51,7 +55,7 @@ internal fun SectionListEntry(
                 modifier = Modifier
                     .size(32.dp),
                 asset = MaterialDesignIconic.Icon.gmi_folder,
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
+                colorFilter = ColorFilter.tint(colorAttribute(R.attr.sectionBackgroundColor)),
             )
 
             Column {
@@ -95,6 +99,17 @@ internal fun SectionListEntry(
         }
     }
 }
+
+
+@Composable
+@ReadOnlyComposable
+fun colorAttribute(attrColor: Int) = colorResource(TypedValue().apply {
+    LocalContext.current.theme.resolveAttribute(
+        attrColor,
+        this,
+        true
+    )
+}.resourceId)
 
 @CombinedPreview
 @Composable

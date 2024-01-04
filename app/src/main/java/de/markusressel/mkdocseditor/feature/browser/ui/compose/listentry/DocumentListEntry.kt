@@ -57,7 +57,7 @@ internal fun DocumentListEntry(
                     modifier = Modifier
                         .size(32.dp),
                     asset = MaterialDesignIconic.Icon.gmi_file,
-                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
+                    colorFilter = ColorFilter.tint(colorAttribute(R.attr.documentBackgroundColor)),
                 )
 
                 if (item.isOfflineAvailable) {

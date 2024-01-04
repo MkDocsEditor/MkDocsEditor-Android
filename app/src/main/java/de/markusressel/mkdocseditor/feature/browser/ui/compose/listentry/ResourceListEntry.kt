@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
+import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
@@ -50,7 +51,7 @@ internal fun ResourceListEntry(
                 modifier = Modifier
                     .size(32.dp),
                 asset = MaterialDesignIconic.Icon.gmi_attachment,
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
+                colorFilter = ColorFilter.tint(colorAttribute(R.attr.resourceBackgroundColor)),
             )
 
             Column {
