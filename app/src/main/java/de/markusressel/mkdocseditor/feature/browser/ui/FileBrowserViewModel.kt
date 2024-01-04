@@ -74,7 +74,7 @@ internal class FileBrowserViewModel @Inject constructor(
             return field
         }
 
-    internal val currentSearchResults = combine(
+    private val currentSearchResults = combine(
         uiState.map { it.currentSearchFilter }.distinctUntilChanged(),
         uiState.map { it.isSearchExpanded }.distinctUntilChanged(),
     ) { currentSearchFilter, isSearching ->
@@ -175,18 +175,6 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private fun setFabConfig(fabConfig: FabConfig) {
-        _uiState.update { old ->
-            old.copy(fabConfig = fabConfig)
-        }
-    }
-
-    private fun setError(message: String?) {
-        _uiState.update { old ->
-            old.copy(error = message)
-        }
-    }
-
     internal fun onUiEvent(event: UiEvent) {
         launch {
             when (event) {
@@ -246,6 +234,18 @@ internal class FileBrowserViewModel @Inject constructor(
                 is UiEvent.SearchRequested -> onSearchRequested(event.query)
                 is UiEvent.SearchResultClicked -> onSearchResultClicked(event.item)
             }
+        }
+    }
+
+    private fun setFabConfig(fabConfig: FabConfig) {
+        _uiState.update { old ->
+            old.copy(fabConfig = fabConfig)
+        }
+    }
+
+    private fun setError(message: String?) {
+        _uiState.update { old ->
+            old.copy(error = message)
         }
     }
 
