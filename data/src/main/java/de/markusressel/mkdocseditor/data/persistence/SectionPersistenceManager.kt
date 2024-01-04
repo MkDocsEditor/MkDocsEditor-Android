@@ -58,7 +58,6 @@ class SectionPersistenceManager @Inject constructor(
             deleteAll()
             resourcePersistenceManager.deleteAll()
             documentPersistenceManager.deleteAll()
-            documentContentPersistenceManager.deleteAll()
 
             addOrUpdate(newData)
             // remove data that is not on the server anymore
