@@ -11,8 +11,6 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
 
-        <item name="cardview_backgroundColor">@color/cardview_backgroundInverse</item>
-
         <item name="android:textColorPrimary">@color/textColorPrimaryInverse</item>
         <item name="android:textColorSecondary">@color/textColorSecondaryInverse</item>
 
@@ -55,8 +53,6 @@
 
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-
-        <item name="cardview_backgroundColor">@color/cardview_background</item>
 
         <item name="android:textColorPrimary">@color/textColorPrimary</item>
         <item name="android:textColorSecondary">@color/textColorSecondary</item>

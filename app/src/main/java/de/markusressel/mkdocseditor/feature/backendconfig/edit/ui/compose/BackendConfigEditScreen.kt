@@ -44,16 +44,6 @@ data class BackendConfigEditScreen(
 
         val uiState by viewModel.uiState.collectAsState()
 
-//    BackHandler(
-//        enabled = uiState.canGoUp,
-//        onBack = {
-//            val consumed = viewModel.navigateUp()
-//            if (consumed.not()) {
-//                onBack()
-//            }
-//        },
-//    )
-
         BackendConfigEditScreenContent(
             uiState = uiState,
             onUiEvent = viewModel::onUiEvent

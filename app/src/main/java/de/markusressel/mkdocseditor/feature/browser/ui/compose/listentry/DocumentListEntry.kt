@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,7 +36,7 @@ internal fun DocumentListEntry(
 ) {
     val context = LocalContext.current
 
-    Card(
+    ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
@@ -44,7 +44,9 @@ internal fun DocumentListEntry(
                 onLongClick = { onLongClick(item) }
             )
             .then(modifier),
-        elevation = CardDefaults.cardElevation(4.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        ),
     ) {
         Row(
             modifier = Modifier.padding(8.dp),

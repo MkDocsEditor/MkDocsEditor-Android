@@ -19,6 +19,9 @@
 
     <string name="screen_files_title">File Browser</string>
     <string name="file_browser_empty">No files</string>
+    <string name="file_browser_sections_headline">Sections</string>
+    <string name="file_browser_documents_headline">Documents</string>
+    <string name="file_browser_resources_headline">Resources</string>
 
     <string name="refresh">Refresh</string>
     <string name="open_in_browser">Open in browser</string>

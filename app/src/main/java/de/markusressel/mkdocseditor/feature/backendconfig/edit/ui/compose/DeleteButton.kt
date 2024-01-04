@@ -1,6 +1,8 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose
 
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -16,7 +18,10 @@ internal fun DeleteButton(
 ) {
     Button(
         modifier = modifier,
-        onClick = onClick
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.error
+        )
     ) {
         Text(stringResource(R.string.delete))
     }
@@ -26,9 +31,8 @@ internal fun DeleteButton(
 @Composable
 private fun DeleteButtonPreview() {
     MkDocsEditorTheme {
-        SaveButton(
+        DeleteButton(
             modifier = Modifier,
-            enabled = true,
             onClick = {}
         )
     }

@@ -1,9 +1,5 @@
 <resources>
 
-    <declare-styleable name="cardview">
-        <attr name="cardview_backgroundColor" format="color" />
-    </declare-styleable>
-
     <declare-styleable name="listitemdivider">
         <attr name="listItem_dividerColor" format="color" />
     </declare-styleable>

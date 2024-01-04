@@ -58,18 +58,67 @@ internal fun FileBrowserList(
                     .fillMaxWidth()
             )
         } else {
-            items.forEachIndexed { _, item ->
-                FileBrowserListEntry(
-                    item = item,
-                    onDocumentClicked = onDocumentClicked,
-                    onDocumentLongClicked = onDocumentLongClicked,
-                    onResourceClicked = onResourceClicked,
-                    onResourceLongClicked = onResourceLongClicked,
-                    onSectionClicked = onSectionClicked,
-                    onSectionLongClicked = onSectionLongClicked,
+            val sectionItems = items.filterIsInstance<SectionData>()
+            val documentItems = items.filterIsInstance<DocumentData>()
+            val resourceItems = items.filterIsInstance<ResourceData>()
+
+            if (sectionItems.isNotEmpty()) {
+                Text(
+                    modifier = Modifier.padding(start = 8.dp),
+                    text = stringResource(id = R.string.file_browser_sections_headline),
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
                 )
+
+                sectionItems.forEach { section ->
+                    SectionListEntry(
+                        item = section,
+                        onClick = onSectionClicked,
+                        onLongClick = onSectionLongClicked,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
+            if (documentItems.isNotEmpty()) {
+                Text(
+                    modifier = Modifier.padding(start = 8.dp),
+                    text = stringResource(id = R.string.file_browser_documents_headline),
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                )
+
+                documentItems.forEach { document ->
+                    DocumentListEntry(
+                        item = document,
+                        onClick = onDocumentClicked,
+                        onLongClick = onDocumentLongClicked,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
+            if (resourceItems.isNotEmpty()) {
+                Text(
+                    modifier = Modifier.padding(start = 8.dp),
+                    text = stringResource(id = R.string.file_browser_resources_headline),
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                )
+
+                resourceItems.forEach { resource ->
+                    ResourceListEntry(
+                        item = resource,
+                        onClick = onResourceClicked,
+                        onLongClick = onResourceLongClicked,
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(128.dp))
         }
     }
