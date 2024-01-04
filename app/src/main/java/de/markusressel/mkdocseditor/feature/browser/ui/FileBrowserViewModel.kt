@@ -9,8 +9,6 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.extensions.common.android.launch
-import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
-import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.browser.data.DocumentData
 import de.markusressel.mkdocseditor.feature.browser.data.ROOT_SECTION
 import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
@@ -48,8 +46,6 @@ import javax.inject.Inject
 @HiltViewModel
 internal class FileBrowserViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
-    private val dataRepository: DataRepository,
-    private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
     private val restClient: IMkDocsRestClient,
     private val refreshSectionUseCase: RefreshSectionUseCase,
     private val getSectionItemsUseCase: GetSectionItemsUseCase,
@@ -97,7 +93,7 @@ internal class FileBrowserViewModel @Inject constructor(
                 applyCurrentBackendConfigUseCase()
             } catch (ex: Exception) {
                 Timber.e(ex)
-                showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
+                setError(message = ex.localizedMessage ?: ex.javaClass.name)
             }
         }
 
@@ -121,14 +117,14 @@ internal class FileBrowserViewModel @Inject constructor(
                             if (response is StoreReadResponse.Error) {
                                 when (response) {
                                     is StoreReadResponse.Error.Message -> {
-                                        showError(errorMessage = response.message)
+                                        setError(message = response.message)
                                         setFabConfig(FabConfig())
                                     }
 
                                     is StoreReadResponse.Error.Exception -> {
                                         Timber.e(response.error)
-                                        showError(
-                                            errorMessage = response.error.localizedMessage
+                                        setError(
+                                            message = response.error.localizedMessage
                                                 ?: response.error.javaClass.name
                                         )
                                         setFabConfig(FabConfig())
@@ -178,14 +174,10 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private suspend fun showError(errorMessage: String) {
+    private fun setError(message: String?) {
         _uiState.update { old ->
-            old.copy(error = errorMessage)
+            old.copy(error = message)
         }
-        val errorEvent = FileBrowserEvent.Error(
-            message = errorMessage
-        )
-        _events.send(errorEvent)
     }
 
     internal fun onUiEvent(event: UiEvent) {
@@ -210,7 +202,7 @@ internal class FileBrowserViewModel @Inject constructor(
                     if (isDocumentNameValid(event.name)) {
                         createNewDocument(event.name)
                     } else {
-                        showError("Invalid document name")
+                        setError("Invalid document name")
                     }
                 }
 
@@ -220,7 +212,7 @@ internal class FileBrowserViewModel @Inject constructor(
                         renameDocumentUseCase(event.documentId, event.name)
                         reload()
                     } else {
-                        showError("Invalid document name")
+                        setError("Invalid document name")
                     }
                 }
 
@@ -385,7 +377,7 @@ internal class FileBrowserViewModel @Inject constructor(
         try {
             val trimmedSectionName = sectionName.trim()
             if (isSectionNameValid(trimmedSectionName).not()) {
-                showError("Invalid section name")
+                setError("Invalid section name")
                 return
             }
 
@@ -395,7 +387,7 @@ internal class FileBrowserViewModel @Inject constructor(
             createNewSectionUseCase(trimmedSectionName, parentSectionId)
         } catch (ex: Exception) {
             Timber.e(ex)
-            showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
+            setError(message = ex.localizedMessage ?: ex.javaClass.name)
         } finally {
             showLoading(false)
         }
@@ -433,7 +425,7 @@ internal class FileBrowserViewModel @Inject constructor(
             _events.send(FileBrowserEvent.OpenDocumentEditor(newDocumentId))
         } catch (ex: Exception) {
             Timber.e(ex)
-            showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
+            setError(message = ex.localizedMessage ?: ex.javaClass.name)
         }
     }
 
@@ -443,14 +435,12 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private suspend fun reload() {
-        _uiState.value = uiState.value.copy(
-            error = "",
-        )
+        setError(null)
         try {
             refreshSectionUseCase(currentSectionId.value)
         } catch (ex: Exception) {
             Timber.e(ex)
-            showError(errorMessage = ex.localizedMessage ?: ex.javaClass.name)
+            setError(message = ex.localizedMessage ?: ex.javaClass.name)
         }
     }
 
@@ -493,14 +483,14 @@ internal class FileBrowserViewModel @Inject constructor(
 
     private suspend fun onDocumentClicked(entity: DocumentData) {
         if (isOfflineModeEnabledFlowUseCase().value && entity.isOfflineAvailable.not()) {
-            showError("Document is not available offline")
+            setError("Document is not available offline")
             return
         }
         _events.send(FileBrowserEvent.OpenDocumentEditor(entity.id))
     }
 
     private suspend fun onResourceClicked(entity: ResourceData) {
-        showError("Not yet supported")
+        setError("Not yet supported")
     }
 
     private fun onSectionClicked(entity: SectionData) {
@@ -549,7 +539,5 @@ internal sealed class UiEvent {
 }
 
 internal sealed class FileBrowserEvent {
-    data class Error(val message: String) : FileBrowserEvent()
-
     data class OpenDocumentEditor(val documentId: String) : FileBrowserEvent()
 }

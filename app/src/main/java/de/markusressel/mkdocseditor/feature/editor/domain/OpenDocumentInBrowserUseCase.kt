@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.feature.editor.ui
+package de.markusressel.mkdocseditor.feature.editor.domain
 
 import androidx.core.text.htmlEncode
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
@@ -8,7 +8,9 @@ import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 internal class OpenDocumentInBrowserUseCase @Inject constructor(
     private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
     private val getDocumentUseCase: GetDocumentUseCase,

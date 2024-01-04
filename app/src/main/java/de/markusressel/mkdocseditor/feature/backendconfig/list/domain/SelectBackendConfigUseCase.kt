@@ -3,7 +3,9 @@ package de.markusressel.mkdocseditor.feature.backendconfig.list.domain
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.BackendManager
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 internal class SelectBackendConfigUseCase @Inject constructor(
     private val backendManager: BackendManager,
 ) {

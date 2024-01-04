@@ -3,7 +3,9 @@ package de.markusressel.mkdocseditor.feature.preferences.domain
 
 import de.markusressel.kutepreferences.core.preference.KutePreferenceListItem
 import de.markusressel.mkdocseditor.R
+import javax.inject.Singleton
 
+@Singleton
 class LastOfflineCacheUpdatePreferenceItem(
     override val onClick: (() -> Unit)? = null,
     override val onLongClick: (() -> Unit)? = null,

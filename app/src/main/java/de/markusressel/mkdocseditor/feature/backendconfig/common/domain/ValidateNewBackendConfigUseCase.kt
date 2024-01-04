@@ -2,8 +2,10 @@ package de.markusressel.mkdocseditor.feature.backendconfig.common.domain
 
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import javax.inject.Inject
+import javax.inject.Singleton
 
 
+@Singleton
 internal class ValidateNewBackendConfigUseCase @Inject constructor(
     private val getBackendConfigsUseCase: GetBackendConfigsUseCase,
 ) {

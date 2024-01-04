@@ -4,7 +4,9 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendCon
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfigRepository
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.toBackendConfig
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 internal class GetBackendConfigsUseCase @Inject constructor(
     private val backendConfigRepository: BackendConfigRepository
 ) {

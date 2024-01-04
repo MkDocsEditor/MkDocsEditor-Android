@@ -44,10 +44,6 @@ object FileBrowserScreen : Screen {
         LaunchedEffect(Unit) {
             viewModel.events.collectLatest { event ->
                 when (event) {
-                    is FileBrowserEvent.Error -> {
-                        //Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
-                    }
-
                     is FileBrowserEvent.OpenDocumentEditor -> {
                         navigator.push(CodeEditorScreen(documentId = event.documentId))
                     }

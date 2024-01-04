@@ -16,6 +16,8 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
+import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
+import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.ConnectionStatus
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.Error
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.InitialText
