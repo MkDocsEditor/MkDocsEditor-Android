@@ -33,6 +33,7 @@ import org.mobilenativefoundation.store.store5.Fetcher
 import org.mobilenativefoundation.store.store5.MutableStoreBuilder
 import org.mobilenativefoundation.store.store5.OnUpdaterCompletion
 import org.mobilenativefoundation.store.store5.SourceOfTruth
+import org.mobilenativefoundation.store.store5.StoreBuilder
 import org.mobilenativefoundation.store.store5.Updater
 import org.mobilenativefoundation.store.store5.UpdaterResult
 import javax.inject.Inject
@@ -116,28 +117,41 @@ class DataRepository @Inject constructor(
         clearAll = { true },
     )
 
-    val sectionStore = MutableStoreBuilder
-        .from<String, SectionModel, SectionEntity, SectionData>(
-            fetcher = Fetcher.of {
-                val rootSectionModel = restClient.getItemTree().get()
-                // NOTE: this always fetches the whole tree
-                rootSectionModel
-            },
-            sourceOfTruth = SourceOfTruth.of(
-                reader = { sectionId ->
-                    sectionPersistenceManager.findByIdFlow(sectionId).map { it?.toSectionData() }
-                },
-                writer = { key, entity ->
-                    // NOTE: this always stores the whole tree
-                    sectionPersistenceManager.insertOrUpdateRoot(entity)
-                },
-                delete = { sectionId ->
-                    sectionPersistenceManager.delete(sectionId)
-                },
-                deleteAll = {
-                    sectionPersistenceManager.deleteAll()
-                }
-            ),
+    private val fetcher = Fetcher.of<String, SectionModel> {
+        val rootSectionModel = restClient.getItemTree().get()
+        // NOTE: this always fetches the whole tree
+        rootSectionModel
+    }
+
+    private val sourceOfTruth = SourceOfTruth.of<String, SectionEntity, SectionData>(
+        reader = { sectionId ->
+            sectionPersistenceManager.findByIdFlow(sectionId).map { it?.toSectionData() }
+        },
+        writer = { key, entity ->
+            // NOTE: this always stores the whole tree
+            sectionPersistenceManager.insertOrUpdateRoot(entity)
+        },
+        delete = { sectionId ->
+            sectionPersistenceManager.delete(sectionId)
+        },
+        deleteAll = {
+            sectionPersistenceManager.deleteAll()
+        }
+    )
+
+    val sectionStore = StoreBuilder.from<String, SectionEntity, SectionData>(
+        fetcher = Fetcher.of {
+            val rootSectionModel = restClient.getItemTree().get()
+            // NOTE: this always fetches the whole tree
+            rootSectionModel.asEntity(documentContentPersistenceManager)
+        },
+        sourceOfTruth = sourceOfTruth,
+    ).build()
+
+    val sectionMutableStore = MutableStoreBuilder
+        .from(
+            fetcher = fetcher,
+            sourceOfTruth = sourceOfTruth,
             converter = converter,
         )
         .build(
