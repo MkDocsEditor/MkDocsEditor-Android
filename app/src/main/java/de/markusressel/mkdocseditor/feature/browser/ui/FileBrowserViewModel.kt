@@ -25,6 +25,7 @@ import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameDocumen
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SearchUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SectionItem
+import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import kotlinx.coroutines.CancellationException
@@ -59,6 +60,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private val renameDocumentUseCase: RenameDocumentUseCase,
     private val renameSectionUseCase: RenameSectionUseCase,
     private val applyCurrentBackendConfigUseCase: ApplyCurrentBackendConfigUseCase,
+    private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -494,6 +496,10 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private suspend fun onDocumentClicked(entity: DocumentData) {
+        if (isOfflineModeEnabledFlowUseCase().value && entity.isOfflineAvailable.not()) {
+            showError("Document is not available offline")
+            return
+        }
         _events.send(FileBrowserEvent.OpenDocumentEditor(entity.id))
     }
 
