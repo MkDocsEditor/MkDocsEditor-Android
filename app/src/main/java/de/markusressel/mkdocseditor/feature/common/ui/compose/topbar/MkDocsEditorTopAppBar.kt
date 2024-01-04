@@ -13,7 +13,6 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
-import de.markusressel.mkdocseditor.feature.editor.ui.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.ShowInBrowserAction
 
 @Composable
@@ -53,7 +52,7 @@ fun MkDocsEditorTopAppBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-//                    containerColor = MaterialTheme.colorScheme.primary,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
 //                    navigationIconContentColor = MaterialTheme.colorScheme.primary,
 //                    actionIconContentColor = MaterialTheme.colorScheme.primary,
         )

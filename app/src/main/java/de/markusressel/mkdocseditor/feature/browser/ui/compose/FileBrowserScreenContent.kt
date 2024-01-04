@@ -86,33 +86,31 @@ internal fun FileBrowserScreenContent(
                     ),
                     onRefresh = { onUiEvent(UiEvent.Refresh) },
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentSize()
-                    ) {
-                        FileBrowserList(
-                            items = uiState.listItems,
-                            onDocumentClicked = {
-                                onUiEvent(UiEvent.DocumentClicked(it))
-                            },
-                            onDocumentLongClicked = {
-                                onUiEvent(UiEvent.DocumentLongClicked(it))
-                            },
-                            onResourceClicked = {
-                                onUiEvent(UiEvent.ResourceClicked(it))
-                            },
-                            onResourceLongClicked = {
-                                onUiEvent(UiEvent.ResourceLongClicked(it))
-                            },
-                            onSectionClicked = {
-                                onUiEvent(UiEvent.SectionClicked(it))
-                            },
-                            onSectionLongClicked = {
-                                onUiEvent(UiEvent.SectionLongClicked(it))
-                            },
-                        )
-                    }
+                    FileBrowserList(
+                        modifier = Modifier.padding(
+                            vertical = 16.dp,
+                            horizontal = 16.dp,
+                        ),
+                        items = uiState.listItems,
+                        onDocumentClicked = {
+                            onUiEvent(UiEvent.DocumentClicked(it))
+                        },
+                        onDocumentLongClicked = {
+                            onUiEvent(UiEvent.DocumentLongClicked(it))
+                        },
+                        onResourceClicked = {
+                            onUiEvent(UiEvent.ResourceClicked(it))
+                        },
+                        onResourceLongClicked = {
+                            onUiEvent(UiEvent.ResourceLongClicked(it))
+                        },
+                        onSectionClicked = {
+                            onUiEvent(UiEvent.SectionClicked(it))
+                        },
+                        onSectionLongClicked = {
+                            onUiEvent(UiEvent.SectionLongClicked(it))
+                        },
+                    )
                 }
             }
         }

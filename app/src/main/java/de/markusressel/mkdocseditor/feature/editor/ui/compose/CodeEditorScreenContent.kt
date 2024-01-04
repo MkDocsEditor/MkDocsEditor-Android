@@ -41,8 +41,8 @@ import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesign
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
+import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
-import de.markusressel.mkdocseditor.feature.editor.ui.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.activity.SnackbarData
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview

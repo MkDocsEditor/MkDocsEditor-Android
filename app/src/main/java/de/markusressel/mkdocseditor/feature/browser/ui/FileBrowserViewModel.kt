@@ -117,50 +117,42 @@ internal class FileBrowserViewModel @Inject constructor(
             try {
                 getSectionItemsUseCase(sectionId).collect { response ->
                     showLoading(response is StoreReadResponse.Loading)
+                    when (response) {
+                        is StoreReadResponse.NoNewData,
+                        is StoreReadResponse.Data -> {
+                            val section = response.dataOrNull()
 
-                    if (response is StoreReadResponse.Error) {
-                        when (response) {
-                            is StoreReadResponse.Error.Message -> {
-                                setError(message = response.message)
-                                setFabConfig(FabConfig())
+                            val sections =
+                                (section?.subsections ?: emptyList()).sortedBy { it.name }
+                            val documents = (section?.documents ?: emptyList()).sortedBy { it.name }
+                            val resources = (section?.resources ?: emptyList()).sortedBy { it.name }
+
+                            _uiState.update { old ->
+                                old.copy(listItems = (sections + documents + resources))
                             }
-
-                            is StoreReadResponse.Error.Exception -> {
-                                Timber.e(response.error)
-                                setError(
-                                    message = response.error.localizedMessage
-                                        ?: response.error.javaClass.name
-                                )
+                            if (section == null) {
                                 setFabConfig(FabConfig())
+                            } else {
+                                setFabConfig(CreateItemsFabConfig)
                             }
                         }
-                    }
 
-                    val section = response.dataOrNull()
+                        is StoreReadResponse.Error.Exception -> {
+                            Timber.e(response.error)
+                            setError(
+                                message = response.error.localizedMessage
+                                    ?: response.error.javaClass.name
+                            )
+                            setFabConfig(FabConfig())
+                        }
 
-                    val sections =
-                        (section?.subsections ?: emptyList()).sortedBy { it.name }
-                    val documents = (section?.documents ?: emptyList()).sortedBy { it.name }
-                    val resources = (section?.resources ?: emptyList()).sortedBy { it.name }
+                        is StoreReadResponse.Error.Message -> {
+                            setError(message = response.message)
+                            setFabConfig(FabConfig())
+                        }
 
-                    _uiState.update { old ->
-                        old.copy(listItems = (sections + documents + resources))
-                    }
-
-                    if (response is StoreReadResponse.Data) {
-                        setFabConfig(CreateItemsFabConfig)
-                    } else if (section == null) {
-                        setFabConfig(FabConfig())
-                    }
-
-                    if (response is StoreReadResponse.NoNewData || response is StoreReadResponse.Data) {
-                        if (section == null) {
-                            // in theory this will navigate back until a section is found
-                            // or otherwise show the "empty" screen
-                            if (!navigateUp()) {
-                                // TODO
-//                                        showEmpty()
-                            }
+                        else -> {
+                            // handled above
                         }
                     }
                 }

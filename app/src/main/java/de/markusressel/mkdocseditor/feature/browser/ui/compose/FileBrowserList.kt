@@ -3,11 +3,12 @@ package de.markusressel.mkdocseditor.feature.browser.ui.compose
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -40,22 +41,20 @@ internal fun FileBrowserList(
     onResourceLongClicked: (ResourceData) -> Unit,
     onSectionClicked: (SectionData) -> Unit,
     onSectionLongClicked: (SectionData) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = Modifier
-            .fillMaxHeight()
+            .fillMaxWidth()
+            .wrapContentHeight()
             .verticalScroll(rememberScrollState())
-            .padding(
-                vertical = 8.dp,
-                horizontal = 16.dp,
-            ),
+            .then(modifier),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-
         if (items.isEmpty()) {
             EmptyPathView(
                 modifier = Modifier
-                    .weight(1f)
+                    .defaultMinSize(minHeight = 128.dp)
                     .fillMaxWidth()
             )
         } else {

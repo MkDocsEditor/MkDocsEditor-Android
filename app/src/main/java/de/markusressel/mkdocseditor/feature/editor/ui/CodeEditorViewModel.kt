@@ -16,6 +16,7 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
+import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.ConnectionStatus
@@ -579,8 +580,4 @@ internal class CodeEditorViewModel @Inject constructor(
 
         data object BackPressed : UiEvent()
     }
-}
-
-sealed interface TopAppBarAction {
-    data object ShowInBrowserAction : TopAppBarAction
 }
