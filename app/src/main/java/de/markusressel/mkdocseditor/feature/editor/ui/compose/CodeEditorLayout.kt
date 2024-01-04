@@ -3,6 +3,8 @@ package de.markusressel.mkdocseditor.feature.editor.ui.compose
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.TextFieldValue
 import de.markusressel.kodeeditor.library.compose.KodeEditor
 import de.markusressel.kodeeditor.library.compose.KodeEditorDefaults
@@ -32,6 +34,9 @@ internal fun CodeEditorLayout(
                 textColor = MaterialTheme.colorScheme.onBackground,
                 cursorColor = MaterialTheme.colorScheme.primary
             )
+        ),
+        textStyle = TextStyle(
+            fontFamily = FontFamily.Monospace,
         ),
         enabled = true,
         readOnly = readOnly

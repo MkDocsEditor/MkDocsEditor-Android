@@ -32,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.coerceIn
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
@@ -51,18 +52,23 @@ internal fun CodeEditorScreenContent(
     onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
 ) {
     var tfv: TextFieldValue by remember(uiState.documentId) {
+        val text = uiState.text ?: AnnotatedString("")
+        val selection = uiState.selection?.coerceIn(0, text.length) ?: TextRange.Zero
         mutableStateOf(
             TextFieldValue(
-                annotatedString = uiState.text ?: AnnotatedString(""),
-                selection = uiState.selection ?: TextRange.Zero,
+                annotatedString = text,
+                selection = selection,
             )
         )
     }
 
     remember(uiState.text, uiState.selection) {
+        val text = uiState.text ?: AnnotatedString("")
+        val selection = uiState.selection?.coerceIn(0, text.length) ?: TextRange.Zero
+
         tfv = tfv.copy(
-            annotatedString = uiState.text ?: AnnotatedString(""),
-            selection = uiState.selection ?: TextRange.Zero,
+            annotatedString = text,
+            selection = selection,
         )
         derivedStateOf { true }
     }
@@ -112,7 +118,6 @@ internal fun CodeEditorScreenContent(
                     text = tfv,
                     onTextChanged = {
                         onTextChanged(it)
-                        tfv = it
                     },
                     readOnly = uiState.editModeActive.not()
                 )
