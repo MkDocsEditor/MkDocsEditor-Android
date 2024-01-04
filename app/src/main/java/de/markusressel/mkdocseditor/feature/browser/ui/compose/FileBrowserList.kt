@@ -8,9 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,11 +41,7 @@ internal fun FileBrowserList(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentHeight()
-            .verticalScroll(rememberScrollState())
-            .then(modifier),
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (items.isEmpty()) {
@@ -119,7 +112,6 @@ internal fun FileBrowserList(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(128.dp))
         }
     }
 }

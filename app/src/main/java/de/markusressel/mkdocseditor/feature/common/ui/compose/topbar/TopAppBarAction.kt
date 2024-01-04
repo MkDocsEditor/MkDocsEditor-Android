@@ -1,5 +1,11 @@
 package de.markusressel.mkdocseditor.feature.common.ui.compose.topbar
 
 sealed interface TopAppBarAction {
-    data object ShowInBrowserAction : TopAppBarAction
+    sealed interface CodeEditor : TopAppBarAction {
+        data object ShowInBrowserAction : CodeEditor
+    }
+
+    sealed interface FileBrowser : TopAppBarAction {
+        data object Search : FileBrowser
+    }
 }

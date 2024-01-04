@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.browser.ui
 
+import androidx.core.text.trimmedLength
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.github.ajalt.timberkt.Timber
@@ -22,6 +23,7 @@ import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameDocumen
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SearchUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SectionItem
+import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
@@ -74,10 +76,13 @@ internal class FileBrowserViewModel @Inject constructor(
 
     internal val currentSearchResults = combine(
         uiState.map { it.currentSearchFilter }.distinctUntilChanged(),
-        uiState.map { it.isSearching }.distinctUntilChanged(),
+        uiState.map { it.isSearchExpanded }.distinctUntilChanged(),
     ) { currentSearchFilter, isSearching ->
         when {
-            isSearching -> searchUseCase(currentSearchFilter)
+            isSearching && currentSearchFilter.trimmedLength() > 0 -> searchUseCase(
+                currentSearchFilter
+            )
+
             else -> emptyList()
         }
     }
@@ -97,9 +102,17 @@ internal class FileBrowserViewModel @Inject constructor(
         }
 
         launch {
-            uiState.map { it.isSearching }.distinctUntilChanged().collect { isSearching ->
+            uiState.map { it.isSearchExpanded }.distinctUntilChanged().collect { isSearching ->
                 if (isSearching.not()) {
                     showTopLevel()
+                }
+            }
+        }
+
+        launch {
+            currentSearchResults.collectLatest { results ->
+                _uiState.update { old ->
+                    old.copy(currentSearchResults = results)
                 }
             }
         }
@@ -225,6 +238,52 @@ internal class FileBrowserViewModel @Inject constructor(
                 }
 
                 is UiEvent.DismissDialog -> dismissCurrentDialog()
+
+                is UiEvent.TopAppBarActionClicked -> onTopAppBarActionClicked(event.action)
+
+                is UiEvent.SearchExpandedChanged -> onSearchExpandedChanged(event.isExpanded)
+                is UiEvent.SearchInputChanged -> onSearchInputChanged(event.text)
+                is UiEvent.SearchRequested -> onSearchRequested(event.query)
+                is UiEvent.SearchResultClicked -> onSearchResultClicked(event.item)
+            }
+        }
+    }
+
+    private fun onSearchExpandedChanged(expanded: Boolean) {
+        _uiState.update { old ->
+            old.copy(isSearchExpanded = expanded)
+        }
+    }
+
+    private fun onSearchInputChanged(text: String) {
+        setSearch(text)
+    }
+
+    private fun onSearchRequested(query: String) {
+        setSearch(query)
+        _uiState.update { old ->
+            old.copy(isSearchExpanded = true)
+        }
+    }
+
+    private suspend fun onSearchResultClicked(item: Any) {
+        when (item) {
+            is DocumentData -> {
+                clearSearch()
+                onDocumentClicked(item)
+            }
+
+            is ResourceData -> onResourceClicked(item)
+            is SectionData -> onSectionClicked(item)
+        }
+    }
+
+    private fun onTopAppBarActionClicked(action: TopAppBarAction.FileBrowser) {
+        when (action) {
+            TopAppBarAction.FileBrowser.Search -> {
+                _uiState.update { old ->
+                    old.copy(isSearchExpanded = true)
+                }
             }
         }
     }
@@ -281,7 +340,7 @@ internal class FileBrowserViewModel @Inject constructor(
         addToBackstack: Boolean = true,
     ) {
         if (
-            uiState.value.isSearching.not()
+            uiState.value.isSearchExpanded.not()
             && currentSectionId.value == sectionId
         ) {
             // ignore if no search is currently active and this section is already set
@@ -338,7 +397,9 @@ internal class FileBrowserViewModel @Inject constructor(
     private fun setSearch(text: String): Boolean {
         return if (uiState.value.currentSearchFilter != text) {
             _uiState.update { old ->
-                old.copy(currentSearchFilter = text)
+                old.copy(
+                    currentSearchFilter = text,
+                )
             }
             true
         } else false
@@ -348,7 +409,9 @@ internal class FileBrowserViewModel @Inject constructor(
         setSearch("")
         if (uiState.value.isSearchExpanded) {
             _uiState.update { old ->
-                old.copy(isSearchExpanded = false)
+                old.copy(
+                    isSearchExpanded = false,
+                )
             }
         }
     }
@@ -506,6 +569,11 @@ internal class FileBrowserViewModel @Inject constructor(
 internal sealed class UiEvent {
     data object Refresh : UiEvent()
 
+    data class SearchRequested(val query: String) : UiEvent()
+    data class SearchInputChanged(val text: String) : UiEvent()
+    data class SearchExpandedChanged(val isExpanded: Boolean) : UiEvent()
+    data class SearchResultClicked(val item: Any) : UiEvent()
+
     data class DocumentClicked(val item: DocumentData) : UiEvent()
     data class DocumentLongClicked(val item: DocumentData) : UiEvent()
     data class ResourceClicked(val item: ResourceData) : UiEvent()
@@ -523,6 +591,7 @@ internal sealed class UiEvent {
         UiEvent()
 
     data class EditSectionDialogSaveClicked(val sectionId: String, val name: String) : UiEvent()
+    data class TopAppBarActionClicked(val action: TopAppBarAction.FileBrowser) : UiEvent()
 
     data object DismissDialog : UiEvent()
 }

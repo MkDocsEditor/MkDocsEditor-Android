@@ -20,8 +20,21 @@ fun MkDocsEditorTopAppBar(
     title: String,
     canGoBack: Boolean = true,
     onBackClicked: (() -> Unit)? = null,
-    actions: List<TopAppBarAction> = emptyList(),
-    onActionClicked: (TopAppBarAction) -> Unit = {},
+) {
+    MkDocsEditorTopAppBar<TopAppBarAction>(
+        title = title,
+        canGoBack = canGoBack,
+        onBackClicked = onBackClicked,
+    )
+}
+
+@Composable
+fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
+    title: String,
+    canGoBack: Boolean = true,
+    onBackClicked: (() -> Unit)? = null,
+    actions: List<T> = emptyList(),
+    onActionClicked: (T) -> Unit = {},
 ) {
     val navigator = LocalNavigator.currentOrThrow
 
@@ -42,7 +55,14 @@ fun MkDocsEditorTopAppBar(
         actions = {
             actions.forEach { action ->
                 when (action) {
-                    is TopAppBarAction.ShowInBrowserAction -> {
+                    is TopAppBarAction.FileBrowser.Search -> {
+                        SearchAction(
+                            modifier = Modifier.align(Alignment.CenterVertically),
+                            onClick = { onActionClicked(action) }
+                        )
+                    }
+
+                    is TopAppBarAction.CodeEditor.ShowInBrowserAction -> {
                         ShowInBrowserAction(
                             modifier = Modifier.align(Alignment.CenterVertically),
                             onClick = { onActionClicked(action) }

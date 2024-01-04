@@ -302,9 +302,9 @@ internal class CodeEditorViewModel @Inject constructor(
         }
     }
 
-    private suspend fun onTopAppBarActionClicked(action: TopAppBarAction) {
+    private suspend fun onTopAppBarActionClicked(action: TopAppBarAction.CodeEditor) {
         when (action) {
-            is TopAppBarAction.ShowInBrowserAction -> onOpenInBrowserClicked()
+            is TopAppBarAction.CodeEditor.ShowInBrowserAction -> onOpenInBrowserClicked()
         }
     }
 
@@ -573,7 +573,7 @@ internal class CodeEditorViewModel @Inject constructor(
     )
 
     sealed class UiEvent {
-        data class TopAppBarActionClicked(val action: TopAppBarAction) : UiEvent()
+        data class TopAppBarActionClicked(val action: TopAppBarAction.CodeEditor) : UiEvent()
 
         data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
         data class SnackbarActionClicked(val snackbar: SnackbarData) : UiEvent()

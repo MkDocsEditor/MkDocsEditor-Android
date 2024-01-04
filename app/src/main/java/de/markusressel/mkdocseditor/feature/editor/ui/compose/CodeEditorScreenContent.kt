@@ -79,10 +79,10 @@ internal fun CodeEditorScreenContent(
     Scaffold(
         modifier = modifier,
         topBar = {
-            MkDocsEditorTopAppBar(
+            MkDocsEditorTopAppBar<TopAppBarAction.CodeEditor>(
                 title = uiState.title,
                 actions = listOf(
-                    TopAppBarAction.ShowInBrowserAction
+                    TopAppBarAction.CodeEditor.ShowInBrowserAction
                 ),
                 onActionClicked = {
                     onUiEvent(CodeEditorViewModel.UiEvent.TopAppBarActionClicked(it))

@@ -71,7 +71,7 @@ class DataRepository @Inject constructor(
             filter { resource -> searchRegex.containsMatchIn(resource.name) }
         }.find()
 
-        return sections + documents + resources
+        return sections.map { it.toSectionData() } + documents.map { it.toDocumentData() } + resources.map { it.toResourceData() }
     }
 
 
@@ -85,12 +85,6 @@ class DataRepository @Inject constructor(
     private val updater = Updater.by<String, SectionData, SectionsUpdaterResult>(
         post = { key: String, input: SectionData ->
             UpdaterResult.Success.Typed(SectionsUpdaterResult())
-//            require(key is String.Write)
-//            when (key) {
-//                is String.Write.Create -> api.create(input)
-//                is String.Write.ById -> api.update(key.noteId, input)
-//            }
-//            restClient.updateSection()
         },
         onCompletion = OnUpdaterCompletion(
             onSuccess = { success: UpdaterResult.Success ->

@@ -38,13 +38,14 @@ internal data class UiState(
 
     val canGoUp: Boolean = false,
 
-    val isSearchExpanded: Boolean = false,
     val currentSearchFilter: String = "",
-    val isSearching: Boolean = false,
+    val isSearchExpanded: Boolean = false,
 
     val currentSectionPath: List<SectionItem> = listOf(),
 
-    val listItems: List<Any> = emptyList()
+    val listItems: List<Any> = emptyList(),
+
+    val currentSearchResults: List<Any> = emptyList(),
 )
 
 const val FAB_ID_CREATE_DOCUMENT = 0
