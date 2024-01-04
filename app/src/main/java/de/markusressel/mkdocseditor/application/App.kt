@@ -5,13 +5,16 @@ import androidx.emoji.bundled.BundledEmojiCompatConfig
 import androidx.emoji.text.EmojiCompat
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.eightbitlab.rxbus.Bus
 import dagger.hilt.android.HiltAndroidApp
 import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.application.log.FileTree
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
+import de.markusressel.mkdocseditor.event.LogNetworkRequestsChangedEvent
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.OfflineModeManager
+import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -37,6 +40,8 @@ class App : Application(), Configuration.Provider {
     @Inject
     internal lateinit var getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase
 
+    @Inject
+    internal lateinit var mkDocsRestClient: IMkDocsRestClient
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -54,7 +59,22 @@ class App : Application(), Configuration.Provider {
 
         initializeEmojiCompat()
 
+        listenToEvents()
+
         initOfflineMode()
+    }
+
+    private fun listenToEvents() {
+        Bus.observe<LogNetworkRequestsChangedEvent>().subscribe { event ->
+            if (event.enabled) {
+                mkDocsRestClient.enableLogging()
+            } else {
+                mkDocsRestClient.disableLogging()
+            }
+        }
+        preferencesHolder.logNetworkRequests.persistedValue.let {
+            Bus.send(LogNetworkRequestsChangedEvent(it.value))
+        }
     }
 
     private fun setupErrorHandlers() {

@@ -1,3 +1,5 @@
+@file:OptIn(DelicateCoroutinesApi::class)
+
 package de.markusressel.mkdocseditor.feature.preferences.data
 
 import android.content.Context
@@ -17,6 +19,7 @@ import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceM
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
+import de.markusressel.mkdocseditor.event.LogNetworkRequestsChangedEvent
 import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
 import de.markusressel.mkdocseditor.event.ThemeChangedEvent
 import de.markusressel.mkdocseditor.feature.preferences.domain.LastOfflineCacheUpdatePreferenceItem
@@ -42,7 +45,7 @@ class KutePreferencesHolder @Inject constructor(
     private val documentPersistenceManager: DocumentPersistenceManager,
     private val documentContentPersistenceManager: DocumentContentPersistenceManager,
     private val resourcePersistenceManager: ResourcePersistenceManager,
-    private val offlineModeManager: OfflineModeManager
+    private val offlineModeManager: OfflineModeManager,
 ) {
 
     val offlineCacheCategory by lazy {
@@ -193,6 +196,7 @@ class KutePreferencesHolder @Inject constructor(
             description = context.getString(R.string.category_debug_description),
             children = listOf(
                 debugCommonSection,
+                debugLoggingSection,
             )
         )
     }
@@ -207,7 +211,16 @@ class KutePreferencesHolder @Inject constructor(
         )
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
+    val debugLoggingSection by lazy {
+        KuteSection(
+            key = R.string.section_debug_logging_key,
+            title = context.getString(R.string.section_debug_logging_title),
+            children = listOf(
+                logNetworkRequests,
+            )
+        )
+    }
+
     val demoMode by lazy {
         KuteBooleanPreference(key = R.string.demo_mode_key,
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_present_to_all),
@@ -220,6 +233,17 @@ class KutePreferencesHolder @Inject constructor(
                     delay(1000)
                     context.triggerAppRebirth()
                 }
+            })
+    }
+
+    val logNetworkRequests by lazy {
+        KuteBooleanPreference(key = R.string.log_network_requests_key,
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_network),
+            title = context.getString(R.string.log_network_requests_title),
+            defaultValue = false,
+            dataProvider = dataProvider,
+            onPreferenceChangedListener = { old, new ->
+                Bus.send(LogNetworkRequestsChangedEvent(new))
             })
     }
 

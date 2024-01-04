@@ -8,16 +8,22 @@ import com.github.ajalt.timberkt.Timber
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
+import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
+import de.markusressel.mkdocseditor.feature.browser.ui.ApplyCurrentBackendConfigUseCase
+import de.markusressel.mkdocsrestclient.ErrorResult
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
+import de.markusressel.mkdocsrestclient.deserializer
 import kotlinx.coroutines.coroutineScope
 
 
 @HiltWorker
-class OfflineSyncWorker @AssistedInject constructor(
+internal class OfflineSyncWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
+    private val dataRepository: DataRepository,
     private val restClient: IMkDocsRestClient,
-    private val documentContentPersistenceManager: DocumentContentPersistenceManager
+    private val documentContentPersistenceManager: DocumentContentPersistenceManager,
+    private val applyCurrentBackendConfigUseCase: ApplyCurrentBackendConfigUseCase,
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result = coroutineScope {
@@ -27,17 +33,34 @@ class OfflineSyncWorker @AssistedInject constructor(
             return@coroutineScope Result.failure()
         }
 
+        try {
+            applyCurrentBackendConfigUseCase()
+        } catch (ex: Exception) {
+            Timber.e(ex)
+            return@coroutineScope Result.failure()
+        }
+
         Timber.d { "Scheduling background thread for updating offline cache of ${documentIds.size} documents..." }
         // use random order to evenly distribute probability of caching a document
         documentIds.toSet().shuffled().forEach { documentId ->
             restClient.getDocumentContent(documentId).fold(success = { text ->
-                documentContentPersistenceManager.insertOrUpdate(
-                    documentId = documentId,
-                    text = text
-                )
-                Timber.d { "Offline cache sync finished successfully for documentId: $documentId" }
+                try {
+                    documentContentPersistenceManager.insertOrUpdate(
+                        documentId = documentId,
+                        text = text
+                    )
+                    Timber.d { "Offline cache sync finished successfully for documentId: $documentId" }
+                } catch (e: Exception) {
+                    Timber.e(e) { "Offline cache sync error for documentId: $documentId (rescheduling)" }
+                }
             }, failure = {
-                Timber.e(it) { "Offline cache sync error for documentId: $documentId (rescheduling)" }
+                try {
+                    val errorResult = deserializer<ErrorResult>().deserialize(it.response)
+                    Timber.e { "Offline cache sync error for documentId: $documentId: ${errorResult.message} (rescheduling)" }
+                } catch (e: Exception) {
+                    Timber.e(e)
+                    Timber.e(it) { "Offline cache sync error for documentId: $documentId (rescheduling)" }
+                }
             })
         }
 

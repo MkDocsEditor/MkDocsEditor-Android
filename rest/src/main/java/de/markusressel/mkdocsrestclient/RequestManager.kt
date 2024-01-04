@@ -19,6 +19,7 @@
 package de.markusressel.mkdocsrestclient
 
 import com.github.kittinunf.fuel.core.Deserializable
+import com.github.kittinunf.fuel.core.FoldableResponseInterceptor
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.FuelManager
 import com.github.kittinunf.fuel.core.Method
@@ -71,24 +72,32 @@ class RequestManager(
 
     private val fuelManager = FuelManager()
 
+    private val loggingInterceptor: FoldableResponseInterceptor =
+        { next: (Request, Response) -> Response ->
+            { req: Request, res: Response ->
+                Timber.v(req.toString())
+                Timber.v(res.toString())
+                next(req, res)
+            }
+        }
+
 
     init {
-        addLogger()
         updateBaseUrl()
     }
 
     /**
      * Adds loggers to Fuel requests
      */
-    private fun addLogger() {
-        fuelManager
-            .addResponseInterceptor { next: (Request, Response) -> Response ->
-                { req: Request, res: Response ->
-                    Timber.v(req.toString())
-                    Timber.v(res.toString())
-                    next(req, res)
-                }
-            }
+    fun addLogger() {
+        fuelManager.addResponseInterceptor(loggingInterceptor)
+    }
+
+    /**
+     * Removes loggers from Fuel requests
+     */
+    fun removeLogger() {
+        fuelManager.removeResponseInterceptor(loggingInterceptor)
     }
 
     /**

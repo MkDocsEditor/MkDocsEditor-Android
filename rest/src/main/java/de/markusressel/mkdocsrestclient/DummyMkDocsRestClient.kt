@@ -211,6 +211,9 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
     override suspend fun deleteResource(id: String): Result<String, FuelError> {
         return Result.success("")
     }
+
+    override fun enableLogging() {}
+    override fun disableLogging() {}
 }
 
 inline fun <reified T : Any> SectionModel.findRecursive(noinline filter: (T) -> Boolean): T? {

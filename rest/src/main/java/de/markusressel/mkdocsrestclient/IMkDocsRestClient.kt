@@ -54,4 +54,14 @@ interface IMkDocsRestClient : SectionApi, DocumentApi, ResourceApi {
      * Get the complete item tree
      */
     suspend fun getItemTree(): Result<SectionModel, FuelError>
+
+    /**
+     * Enable logging
+     */
+    fun enableLogging()
+
+    /**
+     * Disable logging
+     */
+    fun disableLogging()
 }

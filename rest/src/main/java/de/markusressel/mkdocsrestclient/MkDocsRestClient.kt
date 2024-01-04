@@ -54,9 +54,16 @@ class MkDocsRestClient constructor(
         return requestManager.doStatusRequest("/alive/", Method.GET)
     }
 
-
     override suspend fun getItemTree(): Result<SectionModel, FuelError> {
         return requestManager.doRequest("/tree/", Method.GET)
+    }
+
+    override fun enableLogging() {
+        requestManager.addLogger()
+    }
+
+    override fun disableLogging() {
+        requestManager.removeLogger()
     }
 
 }

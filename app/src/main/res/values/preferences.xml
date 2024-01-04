@@ -75,8 +75,14 @@
     <string name="section_debug_global_key" translatable="false">section_debug_global_key</string>
     <string name="section_debug_global_title">Global</string>
 
+    <string name="section_debug_logging_key" translatable="false">section_debug_logging_key</string>
+    <string name="section_debug_logging_title">Logging</string>
+
     <string name="demo_mode_key" translatable="false">demo_mode_key</string>
     <string name="demo_mode_title">Demo Mode</string>
+
+    <string name="log_network_requests_key" translatable="false">log_network_requests_key</string>
+    <string name="log_network_requests_title">Log network requests</string>
 
 
 </resources>
