@@ -6,6 +6,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,6 +33,7 @@ import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -39,6 +41,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import java.util.LinkedList
 import javax.inject.Inject
@@ -75,7 +78,7 @@ internal class CodeEditorViewModel @Inject constructor(
         connectionStatus
     ) { offlineModeEnabled, connectionStatus ->
         offlineModeEnabled.not() && (connectionStatus?.connected ?: false)
-    }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = false)
 
     private var documentSyncManager: DocumentSyncManager? = null
 
@@ -271,8 +274,13 @@ internal class CodeEditorViewModel @Inject constructor(
                 }
 
                 is UiEvent.BackPressed -> onClose()
+                is UiEvent.SnackbarActionClicked -> onSnackbarAction()
             }
         }
+    }
+
+    private fun onSnackbarAction() {
+
     }
 
     /**
@@ -458,13 +466,15 @@ internal class CodeEditorViewModel @Inject constructor(
         return true
     }
 
-
     private fun disableEditMode() {
         _uiState.update { old ->
             old.copy(
                 editModeActive = false,
                 fabConfig = old.fabConfig.copy(
-                    right = listOf(EnableEditModeFabConfig)
+                    right = when (editable.value) {
+                        true -> listOf(EnableEditModeFabConfig)
+                        else -> listOf()
+                    }
                 )
             )
         }
@@ -512,9 +522,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
 
     data class UiState(
-        val fabConfig: FabConfig = FabConfig(
-            right = listOf(EnableEditModeFabConfig)
-        ),
+        val fabConfig: FabConfig = FabConfig(),
 
         val loading: Boolean = false,
 
@@ -539,6 +547,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
     sealed class UiEvent {
         data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
+        data class SnackbarActionClicked(val snackbar: SnackbarData) : UiEvent()
 
         data object BackPressed : UiEvent()
     }
