@@ -116,6 +116,8 @@ internal class FileBrowserViewModel @Inject constructor(
                 sectionJob = launch {
                     try {
                         getSectionItemsUseCase(sectionId).collect { response ->
+                            showLoading(response is StoreReadResponse.Loading)
+
                             if (response is StoreReadResponse.Error) {
                                 when (response) {
                                     is StoreReadResponse.Error.Message -> {
@@ -136,37 +138,28 @@ internal class FileBrowserViewModel @Inject constructor(
 
                             val section = response.dataOrNull()
 
-                            if (response is StoreReadResponse.Loading && section == null) {
-                                _uiState.value = uiState.value.copy(
-                                    isLoading = true
-                                )
-                                setFabConfig(FabConfig())
-                            }
-
                             val sections =
                                 (section?.subsections ?: emptyList()).sortedBy { it.name }
                             val documents = (section?.documents ?: emptyList()).sortedBy { it.name }
                             val resources = (section?.resources ?: emptyList()).sortedBy { it.name }
 
-                            _uiState.value = uiState.value.copy(
-                                listItems = (sections + documents + resources)
-                            )
+                            _uiState.update { old ->
+                                old.copy(listItems = (sections + documents + resources))
+                            }
 
                             if (response is StoreReadResponse.Data) {
                                 setFabConfig(CreateItemsFabConfig)
+                            } else if (section == null) {
+                                setFabConfig(FabConfig())
                             }
 
-                            if (response is StoreReadResponse.Error || response is StoreReadResponse.NoNewData || response is StoreReadResponse.Data) {
-                                _uiState.value = uiState.value.copy(
-                                    isLoading = false
-                                )
-
+                            if (response is StoreReadResponse.NoNewData || response is StoreReadResponse.Data) {
                                 if (section == null) {
                                     // in theory this will navigate back until a section is found
                                     // or otherwise show the "empty" screen
                                     if (!navigateUp()) {
                                         // TODO
-//                        showEmpty()
+//                                        showEmpty()
                                     }
                                 }
                             }
@@ -186,9 +179,9 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private suspend fun showError(errorMessage: String) {
-        _uiState.value = uiState.value.copy(
-            error = errorMessage
-        )
+        _uiState.update { old ->
+            old.copy(error = errorMessage)
+        }
         val errorEvent = FileBrowserEvent.Error(
             message = errorMessage
         )
@@ -296,7 +289,7 @@ internal class FileBrowserViewModel @Inject constructor(
      * @param sectionId the section to open
      * @param addToBackstack true, when the section should be added to backstack, false otherwise
      */
-    internal suspend fun openSection(
+    internal fun openSection(
         sectionId: String,
         sectionName: String?,
         addToBackstack: Boolean = true,
@@ -317,10 +310,12 @@ internal class FileBrowserViewModel @Inject constructor(
         // set the section id on the ViewModel
         currentSectionId.value = sectionId
 
-        _uiState.value = uiState.value.copy(
-            currentSectionPath = getCurrentSectionPathUseCase(backstack),
-            canGoUp = (currentSectionId.value == ROOT_SECTION_ID || backstack.size <= 1).not()
-        )
+        _uiState.update { old ->
+            old.copy(
+                currentSectionPath = getCurrentSectionPathUseCase(backstack),
+                canGoUp = (currentSectionId.value == ROOT_SECTION_ID || backstack.size <= 1).not()
+            )
+        }
     }
 
     /**
@@ -328,7 +323,7 @@ internal class FileBrowserViewModel @Inject constructor(
      *
      * @return true, when there was an item on the backstack and a navigation was done, false otherwise
      */
-    suspend fun navigateUp(targetSectionId: String? = null): Boolean {
+    fun navigateUp(targetSectionId: String? = null): Boolean {
         if (
             targetSectionId != null
             && (backstack.none { it.sectionId == targetSectionId } || backstack.peek().sectionId == targetSectionId)
@@ -356,9 +351,9 @@ internal class FileBrowserViewModel @Inject constructor(
      */
     private fun setSearch(text: String): Boolean {
         return if (uiState.value.currentSearchFilter != text) {
-            _uiState.value = uiState.value.copy(
-                currentSearchFilter = text
-            )
+            _uiState.update { old ->
+                old.copy(currentSearchFilter = text)
+            }
             true
         } else false
     }
@@ -366,9 +361,9 @@ internal class FileBrowserViewModel @Inject constructor(
     private fun clearSearch() {
         setSearch("")
         if (uiState.value.isSearchExpanded) {
-            _uiState.value = uiState.value.copy(
-                isSearchExpanded = false
-            )
+            _uiState.update { old ->
+                old.copy(isSearchExpanded = false)
+            }
         }
     }
 
@@ -378,10 +373,12 @@ internal class FileBrowserViewModel @Inject constructor(
     private fun showTopLevel() {
         backstack.clear()
         currentSectionId.value = ROOT_SECTION_ID
-        _uiState.value = uiState.value.copy(
-            currentSectionPath = getCurrentSectionPathUseCase(backstack),
-            canGoUp = false
-        )
+        _uiState.update { old ->
+            old.copy(
+                currentSectionPath = getCurrentSectionPathUseCase(backstack),
+                canGoUp = false
+            )
+        }
     }
 
     private suspend fun createNewSection(parentSectionId: String, sectionName: String) {
@@ -429,7 +426,6 @@ internal class FileBrowserViewModel @Inject constructor(
             val trimmedDocumentName = documentName.trim()
             val newDocumentId =
                 createNewDocumentUseCase(currentSectionId.value, trimmedDocumentName)
-
 
             reload()
 
@@ -484,7 +480,7 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private suspend fun onDocumentLongClicked(entity: DocumentData) {
+    private fun onDocumentLongClicked(entity: DocumentData) {
         _uiState.update { old ->
             old.copy(
                 currentDialogState = DialogState.EditDocument(
@@ -507,7 +503,7 @@ internal class FileBrowserViewModel @Inject constructor(
         showError("Not yet supported")
     }
 
-    private suspend fun onSectionClicked(entity: SectionData) {
+    private fun onSectionClicked(entity: SectionData) {
         openSection(
             sectionId = entity.id,
             sectionName = entity.name,

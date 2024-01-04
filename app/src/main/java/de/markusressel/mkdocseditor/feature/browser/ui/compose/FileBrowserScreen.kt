@@ -34,12 +34,11 @@ object FileBrowserScreen : Screen {
         BackHandler(
             enabled = uiState.canGoUp,
             onBack = {
-                // FIXME: cannot use a coroutine here
-//            val consumed = viewModel.navigateUp()
-//            if (consumed.not()) {
-                navigator.pop()
-//            }
-            },
+                val consumed = viewModel.navigateUp()
+                if (consumed.not()) {
+                    navigator.pop()
+                }
+            }
         )
 
         // Runs only on initial composition
