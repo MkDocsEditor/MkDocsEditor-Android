@@ -102,9 +102,11 @@ internal fun CodeEditorScreenContent(
         ) {
             Column {
                 ScreenTitle(title = uiState.title)
+
                 if (uiState.isOfflineModeBannerVisible) {
                     OfflineModeBanner()
                 }
+
                 CodeEditorLayout(
                     modifier = Modifier.fillMaxSize(),
                     text = tfv,
