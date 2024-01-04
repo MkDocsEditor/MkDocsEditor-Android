@@ -14,11 +14,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -27,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -35,9 +39,10 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.coerceIn
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import com.mikepenz.iconics.compose.Image
+import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
-import de.markusressel.mkdocseditor.feature.common.ui.compose.ScreenTitle
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.activity.SnackbarData
@@ -75,6 +80,36 @@ internal fun CodeEditorScreenContent(
 
     Scaffold(
         modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text(text = uiState.title) },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        // TODO
+                    }) {
+                        Image(
+                            asset = MaterialDesignIconic.Icon.gmi_arrow_back,
+                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
+                        )
+                    }
+                },
+                actions = {
+                    if (uiState.showInBrowserActionVisible) {
+                        ShowInBrowserAction(
+                            modifier = Modifier.align(Alignment.CenterVertically),
+                            onClick = {
+                                onUiEvent(CodeEditorViewModel.UiEvent.ShowInBrowserClicked)
+                            }
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+//                    containerColor = MaterialTheme.colorScheme.primary,
+//                    navigationIconContentColor = MaterialTheme.colorScheme.primary,
+//                    actionIconContentColor = MaterialTheme.colorScheme.primary,
+                )
+            )
+        },
         floatingActionButton = {
             ExpandableFab(
                 modifier = Modifier.fillMaxSize(),
@@ -107,8 +142,6 @@ internal fun CodeEditorScreenContent(
                 .padding(paddingValues),
         ) {
             Column {
-                ScreenTitle(title = uiState.title)
-
                 if (uiState.isOfflineModeBannerVisible) {
                     OfflineModeBanner()
                 }
@@ -123,6 +156,22 @@ internal fun CodeEditorScreenContent(
                 )
             }
         }
+    }
+}
+
+@Composable
+internal fun ShowInBrowserAction(
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    IconButton(
+        modifier = modifier,
+        onClick = onClick
+    ) {
+        Image(
+            asset = MaterialDesignIconic.Icon.gmi_open_in_browser,
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
+        )
     }
 }
 

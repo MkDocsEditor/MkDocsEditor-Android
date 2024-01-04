@@ -56,6 +56,7 @@
     <string name="edit_server_config_port">Port</string>
     <string name="edit_server_config_port_label">Port</string>
     <string name="edit_server_config_use_ssl">SSL</string>
+    <string name="edit_server_config_web_base_url_label">Web Base URL</string>
 
     <string name="edit_auth_config_title">Authentication</string>
     <string name="edit_auth_config_username">User</string>

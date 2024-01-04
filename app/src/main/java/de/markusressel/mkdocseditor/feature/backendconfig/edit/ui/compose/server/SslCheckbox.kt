@@ -10,6 +10,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
 internal fun SslCheckbox(
@@ -28,6 +30,17 @@ internal fun SslCheckbox(
             checked = checked,
             enabled = true,
             onCheckedChange = onCheckedChanged
+        )
+    }
+}
+
+@CombinedPreview
+@Composable
+private fun SslCheckboxPreview() {
+    MkDocsEditorTheme {
+        SslCheckbox(
+            checked = true,
+            onCheckedChanged = {}
         )
     }
 }

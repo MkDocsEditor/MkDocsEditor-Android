@@ -19,7 +19,6 @@ import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.ConnectionStatus
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.Error
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.InitialText
-import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.OpenWebView
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.NetworkManager
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
@@ -52,9 +51,10 @@ internal class CodeEditorViewModel @Inject constructor(
     private val dataRepository: DataRepository,
     private val getDocumentUseCase: GetDocumentUseCase,
     private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
-    val preferencesHolder: KutePreferencesHolder,
-    val networkManager: NetworkManager,
-    val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase
+    private val preferencesHolder: KutePreferencesHolder,
+    private val networkManager: NetworkManager,
+    private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
+    private val openDocumentInBrowserUseCase: OpenDocumentInBrowserUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
@@ -286,6 +286,7 @@ internal class CodeEditorViewModel @Inject constructor(
     fun onUiEvent(event: UiEvent) {
         launch {
             when (event) {
+                is UiEvent.ShowInBrowserClicked -> onOpenInBrowserClicked()
                 is UiEvent.ExpandableFabItemSelected -> when (event.item.id) {
                     FAB_ID_ENABLE_EDIT_MODE -> enableEditMode()
                     FAB_ID_DISABLE_EDIT_MODE -> disableEditMode()
@@ -461,24 +462,8 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     private suspend fun onOpenInBrowserClicked(): Boolean {
-        val backendConfig = requireNotNull(getCurrentBackendConfigUseCase().value)
-        val webBaseUri = backendConfig.serverConfig?.webBaseUri
-        if (webBaseUri.isNullOrBlank()) {
-            return false
-        }
-
-        currentResource.value?.data?.let { document ->
-            val pagePath = when (document.url) {
-                "index/" -> ""
-                else -> document.url
-                // this value is already url encoded
-            }
-
-            val url = "$webBaseUri/$pagePath"
-            events.value = OpenWebView(url)
-        }
-
-        return true
+        val documentId = documentId.value ?: return false
+        return openDocumentInBrowserUseCase(documentId)
     }
 
     /**
@@ -553,6 +538,8 @@ internal class CodeEditorViewModel @Inject constructor(
 
 
     data class UiState(
+        val showInBrowserActionVisible: Boolean = true,
+
         val fabConfig: FabConfig = FabConfig(),
 
         val loading: Boolean = false,
@@ -577,6 +564,9 @@ internal class CodeEditorViewModel @Inject constructor(
     )
 
     sealed class UiEvent {
+        //data object BackClicked : UiEvent()
+        data object ShowInBrowserClicked : UiEvent()
+
         data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
         data class SnackbarActionClicked(val snackbar: SnackbarData) : UiEvent()
 

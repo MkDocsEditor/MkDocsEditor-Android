@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
 internal fun DomainInputField(
@@ -19,4 +21,16 @@ internal fun DomainInputField(
         label = { Text(stringResource(R.string.edit_server_config_domain_label)) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
     )
+}
+
+
+@CombinedPreview
+@Composable
+private fun DomainInputFieldPreview() {
+    MkDocsEditorTheme {
+        DomainInputField(
+            currentDomain = "domain.com",
+            onDomainChanged = {}
+        )
+    }
 }

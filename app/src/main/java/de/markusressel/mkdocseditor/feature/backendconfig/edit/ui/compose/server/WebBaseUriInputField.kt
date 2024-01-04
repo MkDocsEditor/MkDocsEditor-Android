@@ -11,26 +11,26 @@ import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
-internal fun PortInputField(
-    currentPort: String,
-    onPortChanged: (String) -> Unit,
+internal fun WebBaseUriInputField(
+    currentWebBaseUri: String,
+    onWebBaseUriChanged: (String) -> Unit
 ) {
     OutlinedTextField(
-        value = currentPort,
-        onValueChange = onPortChanged,
-        label = { Text(stringResource(R.string.edit_server_config_port_label)) },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        value = currentWebBaseUri,
+        onValueChange = onWebBaseUriChanged,
+        label = { Text(stringResource(R.string.edit_server_config_web_base_url_label)) },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
     )
 }
 
 
 @CombinedPreview
 @Composable
-private fun PortInputFieldPreview() {
+private fun WebBaseUriInputFieldPreview() {
     MkDocsEditorTheme {
-        PortInputField(
-            currentPort = "443",
-            onPortChanged = {}
+        WebBaseUriInputField(
+            currentWebBaseUri = "https://domain.com",
+            onWebBaseUriChanged = {},
         )
     }
 }

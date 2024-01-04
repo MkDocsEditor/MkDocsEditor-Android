@@ -1,7 +1,7 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
-import java.util.*
+import java.util.LinkedList
 
 internal sealed class CodeEditorEvent {
     data class ConnectionStatus(
@@ -15,10 +15,6 @@ internal sealed class CodeEditorEvent {
     data class TextChange(
         val newText: String,
         val patches: LinkedList<diff_match_patch.Patch>
-    ) : CodeEditorEvent()
-
-    data class OpenWebView(
-        val url: String
     ) : CodeEditorEvent()
 
     data class Error(

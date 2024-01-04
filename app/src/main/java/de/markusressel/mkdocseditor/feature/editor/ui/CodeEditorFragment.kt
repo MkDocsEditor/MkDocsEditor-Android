@@ -20,13 +20,11 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
-import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
 import de.markusressel.mkdocseditor.ui.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.ui.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch.Patch
 import java.util.*
-import javax.inject.Inject
 
 /**
  * Created by Markus on 07.01.2018.
@@ -35,9 +33,6 @@ import javax.inject.Inject
 class CodeEditorFragment : DaggerSupportFragmentBase()
 //    SelectionChangedListener
 {
-
-    @Inject
-    lateinit var chromeCustomTabManager: ChromeCustomTabManager
 
     private val viewModel: CodeEditorViewModel by viewModels()
 
@@ -257,18 +252,18 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
 //                            }
                         }
                     }
+
                     is CodeEditorEvent.InitialText -> {
 //                        restoreEditorState(viewModel.documentEntityFlow.value?.data, event.text)
                     }
+
                     is CodeEditorEvent.TextChange -> {
 //                        handleExternalTextChange(
 //                            event.newText,
 //                            event.patches
 //                        )
                     }
-                    is CodeEditorEvent.OpenWebView -> chromeCustomTabManager.openChromeCustomTab(
-                        event.url
-                    )
+
                     is CodeEditorEvent.Error -> {
                         Timber.e(event.throwable) { "Error" }
                         noConnectionSnackbar?.dismiss()
@@ -360,7 +355,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
 //        val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
 //        viewModel.currentText.value = newText
 
-        // set new cursor position
+    // set new cursor position
 //        val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, patches)
 //            .coerceIn(0, newText.length)
 //        val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
@@ -414,11 +409,13 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
                             newSelection += diff.text.length
                         }
                     }
+
                     diff_match_patch.Operation.DELETE -> {
                         if (currentIndex < newSelection) {
                             newSelection -= diff.text.length
                         }
                     }
+
                     else -> {
                         currentIndex += diff.text.length
                     }

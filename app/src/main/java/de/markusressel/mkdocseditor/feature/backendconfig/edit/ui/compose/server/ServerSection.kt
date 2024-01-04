@@ -23,6 +23,8 @@ internal fun ServerSection(
     onPortChanged: (String) -> Unit,
     useSsl: Boolean,
     onUseSslCheckedChanged: (Boolean) -> Unit,
+    currentWebBaseUri: String,
+    onWebBaseUriChanged: (String) -> Unit,
 ) {
     Card(modifier = modifier) {
         Column(
@@ -48,9 +50,15 @@ internal fun ServerSection(
                 checked = useSsl,
                 onCheckedChanged = onUseSslCheckedChanged,
             )
+
+            WebBaseUriInputField(
+                currentWebBaseUri = currentWebBaseUri,
+                onWebBaseUriChanged = onWebBaseUriChanged,
+            )
         }
     }
 }
+
 
 @CombinedPreview
 @Composable
@@ -63,6 +71,8 @@ private fun ServerSectionSectionPreview() {
             onPortChanged = {},
             useSsl = true,
             onUseSslCheckedChanged = {},
+            currentWebBaseUri = "https://domain.com",
+            onWebBaseUriChanged = {},
         )
     }
 }

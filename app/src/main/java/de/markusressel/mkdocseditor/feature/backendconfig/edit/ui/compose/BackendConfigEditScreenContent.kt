@@ -81,6 +81,10 @@ internal fun BackendConfigEditScreenContent(
                 onUseSslCheckedChanged = { checked ->
                     onUiEvent(BackendConfigEditViewModel.UiEvent.UseSslChanged(checked))
                 },
+                currentWebBaseUri = uiState.currentWebBaseUri,
+                onWebBaseUriChanged = { text ->
+                    onUiEvent(BackendConfigEditViewModel.UiEvent.WebBaseUriChanged(text))
+                }
             )
 
             AuthConfigSection(

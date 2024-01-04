@@ -83,6 +83,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 currentDomain = data.serverConfig?.domain ?: "",
                 currentPort = data.serverConfig?.port?.toString() ?: "",
                 currentUseSsl = data.serverConfig?.useSsl ?: false,
+                currentWebBaseUri = data.serverConfig?.webBaseUri ?: "",
                 currentAuthConfig = data.authConfig,
                 isDeleteButtonEnabled = true,
             )
@@ -108,6 +109,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 is UiEvent.DomainChanged -> processDomainInput(event.text)
                 is UiEvent.PortChanged -> processPortInput(event.port)
                 is UiEvent.UseSslChanged -> processUseSslInput(event.checked)
+                is UiEvent.WebBaseUriChanged -> processWebBaseUriInput(event.text)
 
                 is UiEvent.AuthConfigSelectionChanged -> processAuthConfigSelectionChange(event.authConfig)
                 is UiEvent.AuthConfigAddButtonClicked -> enableAuthConfigEditMode()
@@ -115,6 +117,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 is UiEvent.AuthConfigDeleteButtonClicked -> deleteAuthConfig(event.authConfig)
                 is UiEvent.AuthConfigUsernameInputChanged -> processAuthConfigUsernameInput(event.input)
                 is UiEvent.AuthConfigPasswordInputChanged -> processAuthConfigPasswordInput(event.input)
+
                 is UiEvent.SaveClicked -> save()
                 is UiEvent.DeleteClicked -> delete()
                 is UiEvent.AuthConfigSaveButtonClicked -> addAuthConfigFromCurrentInputs()
@@ -132,9 +135,9 @@ internal class BackendConfigEditViewModel @Inject constructor(
         }
     }
 
-    private suspend fun processUseSslInput(checked: Boolean) {
+    private suspend fun processDomainInput(text: String) {
         _uiState.update { old ->
-            old.copy(currentUseSsl = checked)
+            old.copy(currentDomain = text)
         }
         updateSaveButtonEnabled()
     }
@@ -146,9 +149,16 @@ internal class BackendConfigEditViewModel @Inject constructor(
         updateSaveButtonEnabled()
     }
 
-    private suspend fun processDomainInput(text: String) {
+    private suspend fun processUseSslInput(checked: Boolean) {
         _uiState.update { old ->
-            old.copy(currentDomain = text)
+            old.copy(currentUseSsl = checked)
+        }
+        updateSaveButtonEnabled()
+    }
+
+    private suspend fun processWebBaseUriInput(text: String) {
+        _uiState.update { old ->
+            old.copy(currentWebBaseUri = text)
         }
         updateSaveButtonEnabled()
     }
@@ -239,7 +249,9 @@ internal class BackendConfigEditViewModel @Inject constructor(
                     port = uiState.value.currentPort.toInt(),
                     useSsl = uiState.value.currentUseSsl,
                     // TODO: allow user override
-                    webBaseUri = "https://${uiState.value.currentDomain}:${uiState.value.currentPort}",
+                    webBaseUri = uiState.value.currentWebBaseUri.takeIf {
+                        it.isNotBlank()
+                    } ?: "https://${uiState.value.currentDomain}:${uiState.value.currentPort}",
                 )
 
                 val config = BackendConfig(
@@ -344,6 +356,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
         data class DomainChanged(val text: String) : UiEvent()
         data class PortChanged(val port: String) : UiEvent()
         data class UseSslChanged(val checked: Boolean) : UiEvent()
+        data class WebBaseUriChanged(val text: String) : UiEvent()
 
         data object AuthConfigSaveButtonClicked : UiEvent()
     }
