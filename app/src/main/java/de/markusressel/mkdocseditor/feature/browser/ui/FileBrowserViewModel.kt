@@ -113,10 +113,7 @@ internal class FileBrowserViewModel @Inject constructor(
                 sectionJob?.cancel()
                 sectionJob = launch {
                     try {
-                        getSectionItemsUseCase(
-                            sectionId = sectionId,
-                            refresh = true
-                        ).collect { response ->
+                        getSectionItemsUseCase(sectionId).collect { response ->
                             if (response is StoreReadResponse.Error) {
                                 when (response) {
                                     is StoreReadResponse.Error.Message -> {

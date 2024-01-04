@@ -14,7 +14,6 @@ internal class GetSectionItemsUseCase @Inject constructor(
     @OptIn(ExperimentalStoreApi::class)
     operator fun invoke(
         sectionId: String,
-        refresh: Boolean = false
     ): Flow<StoreReadResponse<SectionData>> =
 //        dataRepository.sectionMutableStore.stream<SectionData>(
 //            StoreReadRequest.cached(
@@ -23,9 +22,8 @@ internal class GetSectionItemsUseCase @Inject constructor(
 //            )
 //        )
         dataRepository.sectionStore.stream(
-            StoreReadRequest.cached(
-                key = sectionId,
-                refresh = refresh
+            StoreReadRequest.freshWithFallBackToSourceOfTruth(
+                key = sectionId
             )
         )
 }
