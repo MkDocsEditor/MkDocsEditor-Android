@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.feature.browser.ui.compose.listentry
 
-import android.util.TypedValue
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,18 +11,16 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.browser.data.SectionData
+import de.markusressel.mkdocseditor.feature.common.ui.compose.colorAttribute
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
@@ -99,17 +96,6 @@ internal fun SectionListEntry(
         }
     }
 }
-
-
-@Composable
-@ReadOnlyComposable
-fun colorAttribute(attrColor: Int) = colorResource(TypedValue().apply {
-    LocalContext.current.theme.resolveAttribute(
-        attrColor,
-        this,
-        true
-    )
-}.resourceId)
 
 @CombinedPreview
 @Composable
