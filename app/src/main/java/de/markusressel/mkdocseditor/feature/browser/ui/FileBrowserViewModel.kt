@@ -136,9 +136,12 @@ internal class FileBrowserViewModel @Inject constructor(
                             val section = response.dataOrNull()
 
                             val sections =
-                                (section?.subsections ?: emptyList()).sortedBy { it.name }
-                            val documents = (section?.documents ?: emptyList()).sortedBy { it.name }
-                            val resources = (section?.resources ?: emptyList()).sortedBy { it.name }
+                                (section?.subsections
+                                    ?: emptyList()).sortedBy { it.name.lowercase() }
+                            val documents =
+                                (section?.documents ?: emptyList()).sortedBy { it.name.lowercase() }
+                            val resources =
+                                (section?.resources ?: emptyList()).sortedBy { it.name.lowercase() }
 
                             _uiState.update { old ->
                                 old.copy(listItems = (sections + documents + resources))
