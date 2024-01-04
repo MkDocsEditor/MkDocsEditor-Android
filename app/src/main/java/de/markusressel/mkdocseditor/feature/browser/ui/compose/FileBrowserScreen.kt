@@ -5,7 +5,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.hilt.getViewModel
@@ -57,7 +56,6 @@ object FileBrowserScreen : Screen {
         }
 
         FileBrowserScreenContent(
-            modifier = Modifier,
             uiState = uiState,
             onUiEvent = viewModel::onUiEvent
         )

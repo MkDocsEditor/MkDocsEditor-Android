@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -16,10 +17,9 @@ import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
-import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel.UiEvent.DomainChanged
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.auth.AuthConfigSection
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.server.ServerSection
-import de.markusressel.mkdocseditor.feature.common.ui.compose.ScreenTitle
+import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
@@ -28,90 +28,113 @@ internal fun BackendConfigEditScreenContent(
     uiState: BackendConfigEditViewModel.UiState,
     onUiEvent: (BackendConfigEditViewModel.UiEvent) -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-    ) {
-        ScreenTitle(
-            modifier = Modifier
-                .fillMaxWidth(),
-            title = "Backend Configuration"
-        )
-
+    Scaffold(
+        topBar = {
+            MkDocsEditorTopAppBar(
+                title = "Backend Configuration",
+            )
+        },
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(paddingValues),
         ) {
-            BackendConfigNameEditField(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth(),
-                name = uiState.name,
-                onValueChanged = { text ->
-                    onUiEvent(
-                        BackendConfigEditViewModel.UiEvent.NameChanged(text)
-                    )
-                }
-            )
-
-            BackendConfigDescriptionEditField(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                description = uiState.description,
-                onValueChanged = { text ->
-                    onUiEvent(
-                        BackendConfigEditViewModel.UiEvent.DescriptionChanged(text)
-                    )
-                }
-            )
-
-            ServerSection(
-                modifier = Modifier.fillMaxWidth(),
-                currentDomain = uiState.currentDomain,
-                onDomainChanged = { text ->
-                    onUiEvent(DomainChanged(text))
-                },
-                currentPort = uiState.currentPort,
-                onPortChanged = { text ->
-                    onUiEvent(BackendConfigEditViewModel.UiEvent.PortChanged(text))
-                },
-                useSsl = uiState.currentUseSsl,
-                onUseSslCheckedChanged = { checked ->
-                    onUiEvent(BackendConfigEditViewModel.UiEvent.UseSslChanged(checked))
-                },
-                currentWebBaseUri = uiState.currentWebBaseUri,
-                onWebBaseUriChanged = { text ->
-                    onUiEvent(BackendConfigEditViewModel.UiEvent.WebBaseUriChanged(text))
-                }
-            )
-
-            AuthConfigSection(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                editMode = uiState.authConfigEditMode,
-                authConfigs = uiState.authConfigs,
-                authConfig = uiState.currentAuthConfig,
-                saveButtonEnabled = uiState.authConfigSaveButtonEnabled,
-                currentAuthConfigUsername = uiState.currentAuthConfigUsername,
-                currentAuthConfigPassword = uiState.currentAuthConfigPassword,
-                onUiEvent = onUiEvent
-            )
-
-            SaveButton(
-                modifier = Modifier.fillMaxWidth(),
-                enabled = uiState.saveButtonEnabled,
-                onClick = { onUiEvent(BackendConfigEditViewModel.UiEvent.SaveClicked) }
-            )
-
-            if (uiState.isDeleteButtonEnabled) {
-                DeleteButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { onUiEvent(BackendConfigEditViewModel.UiEvent.DeleteClicked) }
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                BackendConfigNameEditField(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    name = uiState.name,
+                    onValueChanged = { text ->
+                        onUiEvent(
+                            BackendConfigEditViewModel.UiEvent.NameChanged(
+                                text
+                            )
+                        )
+                    }
                 )
-            }
 
+                BackendConfigDescriptionEditField(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    description = uiState.description,
+                    onValueChanged = { text ->
+                        onUiEvent(
+                            BackendConfigEditViewModel.UiEvent.DescriptionChanged(
+                                text
+                            )
+                        )
+                    }
+                )
+
+                ServerSection(
+                    modifier = Modifier.fillMaxWidth(),
+                    currentDomain = uiState.currentDomain,
+                    onDomainChanged = { text ->
+                        onUiEvent(
+                            BackendConfigEditViewModel.UiEvent.DomainChanged(
+                                text
+                            )
+                        )
+                    },
+                    currentPort = uiState.currentPort,
+                    onPortChanged = { text ->
+                        onUiEvent(
+                            BackendConfigEditViewModel.UiEvent.PortChanged(
+                                text
+                            )
+                        )
+                    },
+                    useSsl = uiState.currentUseSsl,
+                    onUseSslCheckedChanged = { checked ->
+                        onUiEvent(
+                            BackendConfigEditViewModel.UiEvent.UseSslChanged(
+                                checked
+                            )
+                        )
+                    },
+                    currentWebBaseUri = uiState.currentWebBaseUri,
+                    onWebBaseUriChanged = { text ->
+                        onUiEvent(
+                            BackendConfigEditViewModel.UiEvent.WebBaseUriChanged(
+                                text
+                            )
+                        )
+                    }
+                )
+
+                AuthConfigSection(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    editMode = uiState.authConfigEditMode,
+                    authConfigs = uiState.authConfigs,
+                    authConfig = uiState.currentAuthConfig,
+                    saveButtonEnabled = uiState.authConfigSaveButtonEnabled,
+                    currentAuthConfigUsername = uiState.currentAuthConfigUsername,
+                    currentAuthConfigPassword = uiState.currentAuthConfigPassword,
+                    onUiEvent = onUiEvent
+                )
+
+                SaveButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = uiState.saveButtonEnabled,
+                    onClick = { onUiEvent(BackendConfigEditViewModel.UiEvent.SaveClicked) }
+                )
+
+                if (uiState.isDeleteButtonEnabled) {
+                    DeleteButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { onUiEvent(BackendConfigEditViewModel.UiEvent.DeleteClicked) }
+                    )
+                }
+
+            }
         }
     }
 }

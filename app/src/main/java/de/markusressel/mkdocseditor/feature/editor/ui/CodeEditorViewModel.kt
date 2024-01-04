@@ -286,7 +286,7 @@ internal class CodeEditorViewModel @Inject constructor(
     fun onUiEvent(event: UiEvent) {
         launch {
             when (event) {
-                is UiEvent.ShowInBrowserClicked -> onOpenInBrowserClicked()
+                is UiEvent.TopAppBarActionClicked -> onTopAppBarActionClicked(event.action)
                 is UiEvent.ExpandableFabItemSelected -> when (event.item.id) {
                     FAB_ID_ENABLE_EDIT_MODE -> enableEditMode()
                     FAB_ID_DISABLE_EDIT_MODE -> disableEditMode()
@@ -296,6 +296,12 @@ internal class CodeEditorViewModel @Inject constructor(
                 is UiEvent.BackPressed -> onClose()
                 is UiEvent.SnackbarActionClicked -> onSnackbarAction(event.snackbar)
             }
+        }
+    }
+
+    private suspend fun onTopAppBarActionClicked(action: TopAppBarAction) {
+        when (action) {
+            is TopAppBarAction.ShowInBrowserAction -> onOpenInBrowserClicked()
         }
     }
 
@@ -564,12 +570,15 @@ internal class CodeEditorViewModel @Inject constructor(
     )
 
     sealed class UiEvent {
-        //data object BackClicked : UiEvent()
-        data object ShowInBrowserClicked : UiEvent()
+        data class TopAppBarActionClicked(val action: TopAppBarAction) : UiEvent()
 
         data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
         data class SnackbarActionClicked(val snackbar: SnackbarData) : UiEvent()
 
         data object BackPressed : UiEvent()
     }
+}
+
+sealed interface TopAppBarAction {
+    data object ShowInBrowserAction : TopAppBarAction
 }

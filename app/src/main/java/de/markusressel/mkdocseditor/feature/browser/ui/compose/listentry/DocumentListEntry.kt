@@ -32,6 +32,7 @@ internal fun DocumentListEntry(
     item: DocumentData,
     onClick: (DocumentData) -> Unit,
     onLongClick: (DocumentData) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
 
@@ -42,10 +43,7 @@ internal fun DocumentListEntry(
                 onClick = { onClick(item) },
                 onLongClick = { onLongClick(item) }
             )
-            .padding(
-                horizontal = 8.dp,
-                vertical = 4.dp
-            ),
+            .then(modifier),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(

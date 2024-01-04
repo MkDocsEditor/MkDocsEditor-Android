@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -20,8 +19,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -43,11 +40,12 @@ import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
+import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
+import de.markusressel.mkdocseditor.feature.editor.ui.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.activity.SnackbarData
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
-
 
 @Composable
 internal fun CodeEditorScreenContent(
@@ -81,33 +79,14 @@ internal fun CodeEditorScreenContent(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { Text(text = uiState.title) },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        // TODO
-                    }) {
-                        Image(
-                            asset = MaterialDesignIconic.Icon.gmi_arrow_back,
-                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
-                        )
-                    }
-                },
-                actions = {
-                    if (uiState.showInBrowserActionVisible) {
-                        ShowInBrowserAction(
-                            modifier = Modifier.align(Alignment.CenterVertically),
-                            onClick = {
-                                onUiEvent(CodeEditorViewModel.UiEvent.ShowInBrowserClicked)
-                            }
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-//                    containerColor = MaterialTheme.colorScheme.primary,
-//                    navigationIconContentColor = MaterialTheme.colorScheme.primary,
-//                    actionIconContentColor = MaterialTheme.colorScheme.primary,
-                )
+            MkDocsEditorTopAppBar(
+                title = uiState.title,
+                actions = listOf(
+                    TopAppBarAction.ShowInBrowserAction
+                ),
+                onActionClicked = {
+                    onUiEvent(CodeEditorViewModel.UiEvent.TopAppBarActionClicked(it))
+                }
             )
         },
         floatingActionButton = {

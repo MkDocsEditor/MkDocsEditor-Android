@@ -27,7 +27,8 @@ import java.util.Date
 internal fun ResourceListEntry(
     item: ResourceData,
     onClick: (ResourceData) -> Unit,
-    onLongClick: (ResourceData) -> Unit
+    onLongClick: (ResourceData) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
         modifier = Modifier
@@ -36,10 +37,7 @@ internal fun ResourceListEntry(
                 onClick = { onClick(item) },
                 onLongClick = { onLongClick(item) }
             )
-            .padding(
-                horizontal = 8.dp,
-                vertical = 4.dp
-            ),
+            .then(modifier),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(

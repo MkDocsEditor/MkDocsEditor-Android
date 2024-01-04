@@ -28,7 +28,8 @@ import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 internal fun SectionListEntry(
     item: SectionData,
     onClick: (SectionData) -> Unit,
-    onLongClick: (SectionData) -> Unit
+    onLongClick: (SectionData) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
         modifier = Modifier
@@ -37,10 +38,7 @@ internal fun SectionListEntry(
                 onClick = { onClick(item) },
                 onLongClick = { onLongClick(item) }
             )
-            .padding(
-                horizontal = 8.dp,
-                vertical = 4.dp
-            ),
+            .then(modifier),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(

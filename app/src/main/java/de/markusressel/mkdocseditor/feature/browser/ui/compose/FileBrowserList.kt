@@ -47,8 +47,9 @@ internal fun FileBrowserList(
             .verticalScroll(rememberScrollState())
             .padding(
                 vertical = 8.dp,
-                horizontal = 8.dp,
-            )
+                horizontal = 16.dp,
+            ),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
 
         if (items.isEmpty()) {

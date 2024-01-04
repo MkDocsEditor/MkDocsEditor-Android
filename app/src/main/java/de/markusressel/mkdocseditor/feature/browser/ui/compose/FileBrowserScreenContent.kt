@@ -32,9 +32,8 @@ import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 internal fun FileBrowserScreenContent(
     uiState: UiState,
     onUiEvent: (UiEvent) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier) {
+    Box {
         AnimatedVisibility(
             modifier = Modifier
                 .zIndex(100F)
@@ -92,29 +91,27 @@ internal fun FileBrowserScreenContent(
                             .fillMaxWidth()
                             .wrapContentSize()
                     ) {
-                        Column {
-                            FileBrowserList(
-                                items = uiState.listItems,
-                                onDocumentClicked = {
-                                    onUiEvent(UiEvent.DocumentClicked(it))
-                                },
-                                onDocumentLongClicked = {
-                                    onUiEvent(UiEvent.DocumentLongClicked(it))
-                                },
-                                onResourceClicked = {
-                                    onUiEvent(UiEvent.ResourceClicked(it))
-                                },
-                                onResourceLongClicked = {
-                                    onUiEvent(UiEvent.ResourceLongClicked(it))
-                                },
-                                onSectionClicked = {
-                                    onUiEvent(UiEvent.SectionClicked(it))
-                                },
-                                onSectionLongClicked = {
-                                    onUiEvent(UiEvent.SectionLongClicked(it))
-                                },
-                            )
-                        }
+                        FileBrowserList(
+                            items = uiState.listItems,
+                            onDocumentClicked = {
+                                onUiEvent(UiEvent.DocumentClicked(it))
+                            },
+                            onDocumentLongClicked = {
+                                onUiEvent(UiEvent.DocumentLongClicked(it))
+                            },
+                            onResourceClicked = {
+                                onUiEvent(UiEvent.ResourceClicked(it))
+                            },
+                            onResourceLongClicked = {
+                                onUiEvent(UiEvent.ResourceLongClicked(it))
+                            },
+                            onSectionClicked = {
+                                onUiEvent(UiEvent.SectionClicked(it))
+                            },
+                            onSectionLongClicked = {
+                                onUiEvent(UiEvent.SectionLongClicked(it))
+                            },
+                        )
                     }
                 }
             }
