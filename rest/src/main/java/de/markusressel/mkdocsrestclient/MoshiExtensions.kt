@@ -7,7 +7,7 @@ import com.squareup.moshi.adapters.Rfc3339DateJsonAdapter
 import okio.buffer
 import okio.source
 import java.io.InputStream
-import java.util.*
+import java.util.Date
 
 val moshi: Moshi = Moshi.Builder()
     .add(Date::class.java, Rfc3339DateJsonAdapter())
@@ -15,13 +15,15 @@ val moshi: Moshi = Moshi.Builder()
 
 inline fun <reified T : Any> deserializer(): Deserializable<T> =
     object : ResponseDeserializable<T> {
+
+        private val adapter = moshi.adapter(T::class.java)
+
         override fun deserialize(inputStream: InputStream): T? =
-            moshi.adapter(T::class.java).lenient().fromJson(
+            adapter.lenient().fromJson(
                 inputStream.source().buffer()
             )
 
-        override fun deserialize(content: String): T? =
-            moshi.adapter(T::class.java).fromJson(content)
+        override fun deserialize(content: String): T? = adapter.fromJson(content)
     }
 
 inline fun <reified T> T.toJson(): String {

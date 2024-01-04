@@ -18,7 +18,13 @@
 
 package de.markusressel.mkdocsrestclient
 
-import com.github.kittinunf.fuel.core.*
+import com.github.kittinunf.fuel.core.Deserializable
+import com.github.kittinunf.fuel.core.FuelError
+import com.github.kittinunf.fuel.core.FuelManager
+import com.github.kittinunf.fuel.core.Method
+import com.github.kittinunf.fuel.core.Request
+import com.github.kittinunf.fuel.core.Response
+import com.github.kittinunf.fuel.core.awaitResponseResult
 import com.github.kittinunf.fuel.core.extensions.authentication
 import com.github.kittinunf.fuel.coroutines.awaitStringResult
 import com.github.kittinunf.result.Result
@@ -152,8 +158,11 @@ class RequestManager(
     ): Result<T, FuelError> {
         return withContext(Dispatchers.IO) {
             val deserializer: Deserializable<T> = deserializer()
-            createRequest(url = url, method = method)
-                .awaitResponseResult(deserializer).third
+            val request = createRequest(url = url, method = method)
+            when (T::class) {
+                String::class -> request.awaitStringResult() as Result<T, FuelError>
+                else -> request.awaitResponseResult(deserializer).third
+            }
         }
     }
 
@@ -171,8 +180,11 @@ class RequestManager(
     ): Result<T, FuelError> {
         return withContext(Dispatchers.IO) {
             val deserializer: Deserializable<T> = deserializer()
-            createRequest(url = url, urlParameters = urlParameters, method = method)
-                .awaitResponseResult(deserializer).third
+            val request = createRequest(url = url, urlParameters = urlParameters, method = method)
+            when (T::class) {
+                String::class -> request.awaitStringResult() as Result<T, FuelError>
+                else -> request.awaitResponseResult(deserializer).third
+            }
         }
     }
 
@@ -191,10 +203,14 @@ class RequestManager(
         return withContext(Dispatchers.IO) {
             val json = jsonData.toJson()
             val deserializer: Deserializable<T> = deserializer()
-            createRequest(url = url, method = method)
-                .body(json)
-                .header(HEADER_CONTENT_TYPE_JSON)
-                .awaitResponseResult(deserializer).third
+            val request =
+                createRequest(url = url, method = method)
+                    .body(json)
+                    .header(HEADER_CONTENT_TYPE_JSON)
+            when (T::class) {
+                String::class -> request.awaitStringResult() as Result<T, FuelError>
+                else -> request.awaitResponseResult(deserializer).third
+            }
         }
     }
 
