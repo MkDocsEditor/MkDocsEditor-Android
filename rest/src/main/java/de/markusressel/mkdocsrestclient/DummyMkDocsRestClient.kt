@@ -208,6 +208,18 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
         return Result.success("")
     }
 
+    override suspend fun renameResource(id: String, name: String): Result<ResourceModel, FuelError> {
+        return Result.success(
+            ResourceModel(
+                id = id,
+                name = name,
+                type = "Resource",
+                filesize = 1024,
+                modtime = Date()
+            )
+        )
+    }
+
     override suspend fun deleteResource(id: String): Result<String, FuelError> {
         return Result.success("")
     }

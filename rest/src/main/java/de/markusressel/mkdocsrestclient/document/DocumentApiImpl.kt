@@ -32,13 +32,13 @@ class DocumentApiImpl(
 
     override suspend fun getDocument(id: String): Result<DocumentModel, FuelError> {
         return requestManager.doRequest(
-            "/document/$id/",
-            Method.GET
+            url = "/document/$id/",
+            method = Method.GET
         )
     }
 
     override suspend fun getDocumentContent(id: String): Result<String, FuelError> {
-        return requestManager.doRequest("/document/$id/content", Method.GET)
+        return requestManager.doRequest(url = "/document/$id/content", method = Method.GET)
     }
 
     override suspend fun createDocument(
@@ -51,9 +51,9 @@ class DocumentApiImpl(
         )
 
         return requestManager.doJsonRequest(
-            "/document/",
-            Method.POST,
-            data
+            url = "/document/",
+            method = Method.POST,
+            jsonData = data
         )
     }
 
@@ -65,14 +65,14 @@ class DocumentApiImpl(
             "name" to name
         )
         return requestManager.doJsonRequest(
-            "/document/$id/",
-            Method.PUT,
-            data
+            url = "/document/$id/",
+            method = Method.PUT,
+            jsonData = data
         )
     }
 
     override suspend fun deleteDocument(id: String): Result<String, FuelError> {
-        return requestManager.doRequest("/document/$id/", Method.DELETE)
+        return requestManager.doRequest(url = "/document/$id/", method = Method.DELETE)
     }
 
 }

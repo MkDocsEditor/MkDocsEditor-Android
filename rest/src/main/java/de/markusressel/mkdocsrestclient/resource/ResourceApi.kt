@@ -42,6 +42,11 @@ interface ResourceApi {
     suspend fun uploadResource(parentId: String, name: String, content: ByteArray): Result<String, FuelError>
 
     /**
+     * Rename a resource
+     */
+    suspend fun renameResource(id: String, name: String): Result<ResourceModel, FuelError>
+
+    /**
      * Delete an existing resource
      */
     suspend fun deleteResource(id: String): Result<String, FuelError>

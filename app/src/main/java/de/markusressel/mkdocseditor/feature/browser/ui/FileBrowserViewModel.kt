@@ -25,6 +25,7 @@ import de.markusressel.mkdocseditor.feature.browser.domain.usecase.DeleteSection
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetCurrentSectionPathUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetSectionItemsUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameDocumentUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameResourceUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SearchUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SectionItem
@@ -60,6 +61,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private val createNewDocumentUseCase: CreateNewDocumentUseCase,
     private val renameDocumentUseCase: RenameDocumentUseCase,
     private val renameSectionUseCase: RenameSectionUseCase,
+    private val renameResourceUseCase: RenameResourceUseCase,
     private val deleteDocumentUseCase: DeleteDocumentUseCase,
     private val deleteResourceUseCase: DeleteResourceUseCase,
     private val deleteSectionUseCase: DeleteSectionUseCase,
@@ -252,9 +254,24 @@ internal class FileBrowserViewModel @Inject constructor(
                     showDeleteSectionConfirmationDialog(event.sectionId)
                 }
 
+                is UiEvent.EditResourceDialogSaveClicked -> {
+                    dismissCurrentDialog()
+                    renameResource(event.resourceId, event.name)
+                }
+
+                is UiEvent.EditResourceDialogDeleteClicked -> {
+                    dismissCurrentDialog()
+                    deleteResource(event.resourceId)
+                }
+
                 is UiEvent.DeleteSectionDialogConfirmClicked -> {
                     dismissCurrentDialog()
                     deleteSection(event.sectionId)
+                }
+
+                is UiEvent.DeleteResourceDialogConfirmClicked -> {
+                    dismissCurrentDialog()
+                    deleteResource(event.resourceId)
                 }
 
                 is UiEvent.DismissDialog -> dismissCurrentDialog()
@@ -265,6 +282,19 @@ internal class FileBrowserViewModel @Inject constructor(
                 is UiEvent.SearchInputChanged -> onSearchInputChanged(event.text)
                 is UiEvent.SearchRequested -> onSearchRequested(event.query)
                 is UiEvent.SearchResultClicked -> onSearchResultClicked(event.item)
+            }
+        }
+    }
+
+    private suspend fun renameResource(resourceId: String, name: String) {
+        if (isDocumentNameValid(name)) {
+            try {
+                showLoading(true)
+                renameResourceUseCase(resourceId, name)
+                reload()
+            } catch (ex: Exception) {
+                Timber.e(ex)
+                setError(message = ex.localizedMessage ?: ex.javaClass.name)
             }
         }
     }
@@ -356,7 +386,14 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private suspend fun onResourceLongClicked(item: ResourceData) {
-
+        _uiState.update { old ->
+            old.copy(
+                currentDialogState = DialogState.EditResource(
+                    resourceId = item.id,
+                    initialResourceName = item.name
+                )
+            )
+        }
     }
 
     private fun isDocumentNameValid(name: String): Boolean {
@@ -711,6 +748,13 @@ internal sealed class UiEvent {
     data class DeleteSectionDialogConfirmClicked(val sectionId: String) : UiEvent()
 
     data class EditSectionDialogSaveClicked(val sectionId: String, val name: String) : UiEvent()
+
+
+    data class EditResourceDialogDeleteClicked(val resourceId: String) : UiEvent()
+    data class EditResourceDialogSaveClicked(val resourceId: String, val name: String) : UiEvent()
+    data class DeleteResourceDialogConfirmClicked(val resourceId: String) : UiEvent()
+
+
     data class TopAppBarActionClicked(val action: TopAppBarAction.FileBrowser) : UiEvent()
 
     data object DismissDialog : UiEvent()

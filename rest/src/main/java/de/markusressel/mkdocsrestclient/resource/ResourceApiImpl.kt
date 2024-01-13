@@ -32,8 +32,8 @@ class ResourceApiImpl(
 
     override suspend fun getResource(id: String): Result<ResourceModel, FuelError> {
         return requestManager.doRequest(
-            "/resource/$id/",
-            Method.GET
+            url = "/resource/$id/",
+            method = Method.GET
         )
     }
 
@@ -43,11 +43,19 @@ class ResourceApiImpl(
     }
 
     override suspend fun uploadResource(parentId: String, name: String, content: ByteArray): Result<String, FuelError> {
-        return requestManager.upload("/resource/$parentId/$name", content)
+        return requestManager.upload("/resource/$parentId/$name/", content)
+    }
+
+    override suspend fun renameResource(id: String, name: String): Result<ResourceModel, FuelError> {
+        return requestManager.doJsonRequest(
+            url = "/resource/$id/",
+            method = Method.PUT,
+            jsonData = mapOf("name" to name)
+        )
     }
 
     override suspend fun deleteResource(id: String): Result<String, FuelError> {
-        return requestManager.doRequest("/resource/$id/", Method.DELETE)
+        return requestManager.doRequest(url = "/resource/$id/", method = Method.DELETE)
     }
 
 }

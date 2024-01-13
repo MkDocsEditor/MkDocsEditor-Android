@@ -21,6 +21,7 @@ import de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog.CreateDocu
 import de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog.CreateSectionDialog
 import de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog.DeleteConfirmationDialog
 import de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog.EditDocumentDialog
+import de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog.EditResourceDialog
 import de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog.EditSectionDialog
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreen
 import de.markusressel.mkdocseditor.feature.filepicker.ui.compose.FilePickerScreen
@@ -72,8 +73,8 @@ object FileBrowserScreen : Screen {
                     onSaveClicked = { text ->
                         viewModel.onUiEvent(
                             UiEvent.CreateDocumentDialogSaveClicked(
-                                dialogState.sectionId,
-                                text
+                                sectionId = dialogState.sectionId,
+                                name = text
                             )
                         )
                     },
@@ -89,15 +90,15 @@ object FileBrowserScreen : Screen {
                     onDeleteClicked = {
                         viewModel.onUiEvent(
                             UiEvent.EditDocumentDialogDeleteClicked(
-                                dialogState.documentId
+                                documentId = dialogState.documentId
                             )
                         )
                     },
                     onSaveClicked = { text ->
                         viewModel.onUiEvent(
                             UiEvent.EditDocumentDialogSaveClicked(
-                                dialogState.documentId,
-                                text
+                                documentId = dialogState.documentId,
+                                name = text
                             )
                         )
                     },
@@ -113,8 +114,8 @@ object FileBrowserScreen : Screen {
                     onSaveClicked = { text ->
                         viewModel.onUiEvent(
                             UiEvent.CreateSectionDialogSaveClicked(
-                                dialogState.parentSectionId,
-                                text
+                                parentSectionId = dialogState.parentSectionId,
+                                name = text
                             )
                         )
                     },
@@ -130,15 +131,39 @@ object FileBrowserScreen : Screen {
                     onDeleteClicked = {
                         viewModel.onUiEvent(
                             UiEvent.EditSectionDialogDeleteClicked(
-                                dialogState.sectionId
+                                sectionId = dialogState.sectionId
                             )
                         )
                     },
                     onSaveClicked = { text ->
                         viewModel.onUiEvent(
                             UiEvent.EditSectionDialogSaveClicked(
-                                dialogState.sectionId,
-                                text
+                                sectionId = dialogState.sectionId,
+                                name = text
+                            )
+                        )
+                    },
+                    onDismissRequest = {
+                        viewModel.onUiEvent(UiEvent.DismissDialog)
+                    },
+                )
+            }
+
+            is DialogState.EditResource -> {
+                EditResourceDialog(
+                    uiState = dialogState,
+                    onDeleteClicked = {
+                        viewModel.onUiEvent(
+                            UiEvent.EditResourceDialogDeleteClicked(
+                                resourceId = dialogState.resourceId
+                            )
+                        )
+                    },
+                    onSaveClicked = { text ->
+                        viewModel.onUiEvent(
+                            UiEvent.EditResourceDialogSaveClicked(
+                                resourceId = dialogState.resourceId,
+                                name = text
                             )
                         )
                     },
@@ -155,7 +180,7 @@ object FileBrowserScreen : Screen {
                     onConfirmClicked = {
                         viewModel.onUiEvent(
                             UiEvent.DeleteDocumentDialogConfirmClicked(
-                                dialogState.documentId
+                                documentId = dialogState.documentId
                             )
                         )
                     },
@@ -172,7 +197,24 @@ object FileBrowserScreen : Screen {
                     onConfirmClicked = {
                         viewModel.onUiEvent(
                             UiEvent.DeleteSectionDialogConfirmClicked(
-                                dialogState.sectionId
+                                sectionId = dialogState.sectionId
+                            )
+                        )
+                    },
+                    onDismissRequest = {
+                        viewModel.onUiEvent(UiEvent.DismissDialog)
+                    },
+                )
+            }
+
+            is DialogState.DeleteResourceConfirmation -> {
+                DeleteConfirmationDialog(
+                    title = stringResource(R.string.delete_resource_confirmation_title),
+                    message = textResource(R.string.delete_resource_confirmation_message),
+                    onConfirmClicked = {
+                        viewModel.onUiEvent(
+                            UiEvent.DeleteResourceDialogConfirmClicked(
+                                resourceId = dialogState.resourceId
                             )
                         )
                     },

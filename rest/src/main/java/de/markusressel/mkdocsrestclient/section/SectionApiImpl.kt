@@ -32,8 +32,8 @@ class SectionApiImpl(
 
     override suspend fun getSection(id: String): Result<SectionModel, FuelError> {
         return requestManager.doRequest(
-            "/section/$id/",
-            Method.GET
+            url = "/section/$id/",
+            method = Method.GET
         )
     }
 
@@ -45,7 +45,7 @@ class SectionApiImpl(
             "parent" to parentId,
             "name" to name
         )
-        return requestManager.doJsonRequest("/section/", Method.POST, data)
+        return requestManager.doJsonRequest(url = "/section/", method = Method.POST, jsonData = data)
     }
 
     override suspend fun renameSection(
@@ -55,11 +55,11 @@ class SectionApiImpl(
         val data = mapOf(
             "name" to name
         )
-        return requestManager.doJsonRequest("/section/$id/", Method.PATCH, data)
+        return requestManager.doJsonRequest(url = "/section/$id/", method = Method.PATCH, jsonData = data)
     }
 
     override suspend fun deleteSection(id: String): Result<String, FuelError> {
-        return requestManager.doRequest("/section/$id/", Method.DELETE)
+        return requestManager.doRequest(url = "/section/$id/", method = Method.DELETE)
     }
 
 }

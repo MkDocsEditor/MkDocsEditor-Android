@@ -88,6 +88,9 @@
     <string name="delete_section_confirmation_title">Delete section?</string>
     <string name="delete_section_confirmation_message">Deleting a section removes it and all of its contents <b>permanently</b> for everyone on this backend.</string>
 
+    <string name="delete_resource_confirmation_title">Delete resource?</string>
+    <string name="delete_resource_confirmation_message">Deleting a resource removes it <b>permanently</b> for everyone on this backend.</string>
+
     <string name="upload_resource">Upload Resource</string>
 
     <string name="hint_new_section">New Section</string>

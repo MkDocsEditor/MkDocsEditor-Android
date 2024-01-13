@@ -34,7 +34,14 @@ sealed interface DialogState {
         val sectionId: String
     ) : DialogState
 
+    data class EditResource(
+        val resourceId: String,
+        val initialResourceName: String
+    ) : DialogState
 
+    data class DeleteResourceConfirmation(
+        val resourceId: String
+    ) : DialogState
 }
 
 internal data class UiState(
