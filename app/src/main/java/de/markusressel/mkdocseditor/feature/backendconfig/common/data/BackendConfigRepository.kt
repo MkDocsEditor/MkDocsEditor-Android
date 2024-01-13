@@ -7,7 +7,6 @@ import de.markusressel.mkdocseditor.data.persistence.entity.BackendAuthConfigEnt
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendConfigEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendConfigEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendServerConfigEntity
-import de.markusressel.mkdocseditor.network.OfflineModeManager
 import io.objectbox.kotlin.flow
 import io.objectbox.kotlin.query
 import io.objectbox.kotlin.toFlow
@@ -18,7 +17,6 @@ import javax.inject.Singleton
 
 @Singleton
 internal class BackendConfigRepository @Inject constructor(
-    private val offlineModeManager: OfflineModeManager,
     private val backendConfigPersistenceManager: BackendConfigPersistenceManager,
     private val backendServerConfigPersistenceManager: BackendServerConfigPersistenceManager,
     private val backendAuthConfigPersistenceManager: BackendAuthConfigPersistenceManager,

@@ -13,7 +13,8 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
-import de.markusressel.mkdocseditor.network.OfflineModeManager
+import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel.Companion.ROOT_SECTION_ID
+import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.networkBoundResource
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
@@ -36,12 +37,13 @@ import org.mobilenativefoundation.store.store5.SourceOfTruth
 import org.mobilenativefoundation.store.store5.StoreBuilder
 import org.mobilenativefoundation.store.store5.Updater
 import org.mobilenativefoundation.store.store5.UpdaterResult
+import org.mobilenativefoundation.store.store5.impl.extensions.get
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class DataRepository @Inject constructor(
-    private val offlineModeManager: OfflineModeManager,
+    private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val restClient: IMkDocsRestClient,
     private val sectionPersistenceManager: SectionPersistenceManager,
     private val documentPersistenceManager: DocumentPersistenceManager,
@@ -335,7 +337,7 @@ class DataRepository @Inject constructor(
             )
         },
         shouldFetch = {
-            !offlineModeManager.isEnabled()
+            isOfflineModeEnabledFlowUseCase().value.not()
         }
     )
 
@@ -362,7 +364,7 @@ class DataRepository @Inject constructor(
             )
         },
         shouldFetch = {
-            !offlineModeManager.isEnabled()
+            isOfflineModeEnabledFlowUseCase().value.not()
         }
     )
 
@@ -388,7 +390,7 @@ class DataRepository @Inject constructor(
         val parentSection = sectionPersistenceManager.findById(parentSectionId)
             ?: throw IllegalStateException(
                 "Parent section could not be found in persistence" +
-                    " while trying to create a new document in it"
+                        " while trying to create a new document in it"
             )
 
         return restClient.createDocument(parentSectionId, documentName).fold<String>(
@@ -429,4 +431,11 @@ class DataRepository @Inject constructor(
         )
     }
 
+    suspend fun getAllDocuments(): List<DocumentData> {
+        return sectionStore.get(ROOT_SECTION_ID).getDocumentsRecursive()
+    }
+
 }
+
+private fun SectionData.getDocumentsRecursive(): List<DocumentData> =
+    documents + subsections.flatMap { it.getDocumentsRecursive() }

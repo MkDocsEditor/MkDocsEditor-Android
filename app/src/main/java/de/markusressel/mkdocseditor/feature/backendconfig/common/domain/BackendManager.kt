@@ -3,7 +3,7 @@ package de.markusressel.mkdocseditor.feature.backendconfig.common.domain
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfigRepository
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.toBackendConfig
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -19,7 +19,7 @@ internal class BackendManager @Inject constructor(
     val currentBackend: StateFlow<BackendConfig?> = backendConfigRepository
         .selectedBackendConfigFlow()
         .map { it?.toBackendConfig() }
-        .stateIn(GlobalScope, SharingStarted.Eagerly, null)
+        .stateIn(MainScope(), SharingStarted.Eagerly, null)
 
     fun setBackend(backendConfig: BackendConfig) {
         backendConfigRepository.selectBackendConfig(backendConfig)

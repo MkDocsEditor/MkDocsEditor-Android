@@ -19,14 +19,11 @@ import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceM
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
-import de.markusressel.mkdocseditor.event.LogNetworkRequestsChangedEvent
-import de.markusressel.mkdocseditor.event.OfflineModeChangedEvent
-import de.markusressel.mkdocseditor.event.ThemeChangedEvent
+import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.feature.preferences.domain.LastOfflineCacheUpdatePreferenceItem
-import de.markusressel.mkdocseditor.network.OfflineModeManager
 import de.markusressel.mkdocseditor.ui.IconHandler
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -45,7 +42,6 @@ class KutePreferencesHolder @Inject constructor(
     private val documentPersistenceManager: DocumentPersistenceManager,
     private val documentContentPersistenceManager: DocumentContentPersistenceManager,
     private val resourcePersistenceManager: ResourcePersistenceManager,
-    private val offlineModeManager: OfflineModeManager,
 ) {
 
     val offlineCacheCategory by lazy {
@@ -74,7 +70,7 @@ class KutePreferencesHolder @Inject constructor(
         title = context.getString(R.string.action_force_offline_cache_update_title),
         description = context.getString(R.string.action_force_offline_cache_update_description),
         onClick = {
-            offlineModeManager.scheduleOfflineCacheUpdate(evenInOfflineMode = true)
+            Bus.send(BusEvent.ScheduleOfflineCacheUpdateRequestEvent)
         }
     )
 
@@ -108,7 +104,7 @@ class KutePreferencesHolder @Inject constructor(
             defaultValue = R.string.theme_dark_value,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { old, new ->
-                Bus.send(ThemeChangedEvent(new))
+                Bus.send(BusEvent.ThemeChangedEvent(new))
             })
     }
 
@@ -119,7 +115,7 @@ class KutePreferencesHolder @Inject constructor(
             defaultValue = false,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { old, new ->
-                Bus.send(OfflineModeChangedEvent(new))
+                Bus.send(BusEvent.OfflineModeChangedEvent(new))
             })
     }
 
@@ -229,7 +225,7 @@ class KutePreferencesHolder @Inject constructor(
             dataProvider = dataProvider,
             onPreferenceChangedListener = { old, new ->
                 context.toast("Restarting App...")
-                GlobalScope.launch {
+                MainScope().launch {
                     delay(1000)
                     context.triggerAppRebirth()
                 }
@@ -243,7 +239,7 @@ class KutePreferencesHolder @Inject constructor(
             defaultValue = false,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { old, new ->
-                Bus.send(LogNetworkRequestsChangedEvent(new))
+                Bus.send(BusEvent.LogNetworkRequestsChangedEvent(new))
             })
     }
 
