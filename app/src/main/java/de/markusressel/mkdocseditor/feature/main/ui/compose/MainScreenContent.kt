@@ -29,20 +29,18 @@ internal fun MainScreenContent(
     uiState: UiState,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        TabNavigator(FileBrowserTab(contentType)) { tabNavigator ->
-            Scaffold(
-                bottomBar = {
-                    if (navigationType == NavigationLayoutType.BOTTOM_NAVIGATION) {
-                        BottomBar(
-                            selectedNavItem = tabNavigator.current.toNavItem(),
-                            navItems = uiState.bottomBarNavItems,
-                            onItemSelected = { navItem ->
-                                tabNavigator.current = navItem.toTab(contentType)
-                            },
-                        )
-                    }
+        TabNavigator(uiState.initialTab.toTab(contentType)) { tabNavigator ->
+            Scaffold(bottomBar = {
+                if (navigationType == NavigationLayoutType.BOTTOM_NAVIGATION) {
+                    BottomBar(
+                        selectedNavItem = tabNavigator.current.toNavItem(),
+                        navItems = uiState.bottomBarNavItems,
+                        onItemSelected = { navItem ->
+                            tabNavigator.current = navItem.toTab(contentType)
+                        },
+                    )
                 }
-            ) { paddingValues ->
+            }) { paddingValues ->
                 Box(modifier = Modifier.padding(paddingValues)) {
                     Row {
                         // Navigation Rail

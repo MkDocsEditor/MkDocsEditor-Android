@@ -50,8 +50,7 @@ class NetworkManager @Inject constructor(
      */
     fun isWifiConnected(): Boolean {
         val network = connectivityManager.activeNetwork ?: return false
-        val networkCapabilities =
-            connectivityManager.getNetworkCapabilities(network) ?: return false
+        val networkCapabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
         val isWifiConnected = networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
 
         Timber.d("isWifiConnected: $isWifiConnected")
@@ -64,26 +63,26 @@ class NetworkManager @Inject constructor(
      * @return false if Ethernet is not connected
      */
     fun isEthernetConnected(): Boolean {
-        val networkInfo = connectivityManager.activeNetworkInfo
+        val network = connectivityManager.activeNetwork ?: return false
+        val networkCapabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        val isEthernetConnected = networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
 
-        val isEthernetConnected =
-            networkInfo != null && ConnectivityManager.TYPE_ETHERNET == networkInfo.type && networkInfo.isConnectedOrConnecting
         Timber.d("isEthernetConnected: $isEthernetConnected")
         return isEthernetConnected
     }
 
     /**
-     * checks if GPRS is connected
+     * checks if Cellular is connected
      *
-     * @return false if GPRS is not connected
+     * @return false if Cellular is not connected
      */
-    fun isGprsConnected(): Boolean {
-        val networkInfo = connectivityManager.activeNetworkInfo
+    fun isCellularConnected(): Boolean {
+        val network = connectivityManager.activeNetwork ?: return false
+        val networkCapabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        val isCellularConnected = networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
 
-        val isGprsConnected =
-            networkInfo != null && ConnectivityManager.TYPE_MOBILE == networkInfo.type && networkInfo.isConnectedOrConnecting
-        Timber.d("isGprsConnected: $isGprsConnected")
-        return isGprsConnected
+        Timber.d("isCellularConnected: $isCellularConnected")
+        return isCellularConnected
     }
 
     /**

@@ -14,7 +14,9 @@ import javax.inject.Singleton
  * Created by Markus on 20.12.2017.
  */
 @Singleton
-class ThemeHelper @Inject constructor(private var context: Context) {
+class ThemeHelper @Inject constructor(
+    private var context: Context
+) {
 
     /**
      * Get Color from Theme attribute
@@ -25,7 +27,7 @@ class ThemeHelper @Inject constructor(private var context: Context) {
      * @return Color as Int
      */
     @ColorInt
-    fun getThemeAttrColor(context: Context, @AttrRes attr: Int): Int {
+    fun getThemeAttrColor(@AttrRes attr: Int): Int {
         val typedValue = TypedValue()
         if (context.theme.resolveAttribute(attr, typedValue, true)) {
             if (typedValue.type >= TypedValue.TYPE_FIRST_INT && typedValue.type <= TypedValue.TYPE_LAST_INT) {

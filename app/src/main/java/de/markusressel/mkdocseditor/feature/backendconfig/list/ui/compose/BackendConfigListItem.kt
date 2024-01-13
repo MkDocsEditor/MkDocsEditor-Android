@@ -1,12 +1,13 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.list.ui.compose
 
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,10 +19,13 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendCon
 internal fun BackendConfigListItem(
     item: BackendConfig,
     modifier: Modifier = Modifier,
-    onCheckedChanged: (Boolean) -> Unit = {},
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
 ) {
     ElevatedCard(
-        modifier = modifier,
+        modifier = Modifier
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .then(modifier),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 6.dp
         ),
@@ -29,9 +33,8 @@ internal fun BackendConfigListItem(
         Row(
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Checkbox(
-                checked = item.isSelected,
-                onCheckedChange = onCheckedChanged
+            RadioButton(
+                selected = item.isSelected, onClick = onClick
             )
             Column(
                 modifier = Modifier
@@ -39,16 +42,13 @@ internal fun BackendConfigListItem(
                     .padding(8.dp)
             ) {
                 Text(
-                    text = item.name,
-                    style = MaterialTheme.typography.headlineSmall
+                    text = item.name, style = MaterialTheme.typography.headlineSmall
                 )
                 Text(
-                    text = item.description,
-                    style = MaterialTheme.typography.bodySmall
+                    text = item.description, style = MaterialTheme.typography.bodySmall
                 )
                 Text(
-                    text = item.serverConfig?.domain ?: "",
-                    style = MaterialTheme.typography.bodySmall
+                    text = item.serverConfig?.domain ?: "", style = MaterialTheme.typography.bodySmall
                 )
             }
         }

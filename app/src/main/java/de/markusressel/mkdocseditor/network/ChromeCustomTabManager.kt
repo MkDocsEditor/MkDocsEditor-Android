@@ -28,7 +28,7 @@ class ChromeCustomTabManager @Inject constructor(
      * @param url the url to open
      */
     fun openChromeCustomTab(url: String) {
-        val accentColor = themeHelper.getThemeAttrColor(context, R.attr.colorPrimary)
+        val accentColor = themeHelper.getThemeAttrColor(R.attr.colorPrimary)
 
         val colorSchemeParams = CustomTabColorSchemeParams.Builder()
             .setToolbarColor(accentColor)

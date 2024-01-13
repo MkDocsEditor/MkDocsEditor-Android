@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import de.markusressel.mkdocseditor.feature.main.ui.ContentLayoutType
 import de.markusressel.mkdocseditor.feature.main.ui.DevicePosture
+import de.markusressel.mkdocseditor.feature.main.ui.NavItem
 import de.markusressel.mkdocseditor.feature.main.ui.NavigationLayoutType
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.activity.MainViewModel
@@ -33,7 +34,7 @@ internal fun MainScreen(
 private fun MainScreenPreview() {
     MkDocsEditorTheme {
         MainScreenLayout(
-            uiState = UiState(),
+            uiState = UiState(initialTab = NavItem.FileBrowser),
             windowSize = WindowWidthSizeClass.Compact,
             devicePosture = DevicePosture.NormalPosture,
         )
@@ -45,7 +46,7 @@ private fun MainScreenPreview() {
 private fun MainScreenPreviewTablet() {
     MkDocsEditorTheme {
         MainScreenLayout(
-            uiState = UiState(),
+            uiState = UiState(initialTab = NavItem.FileBrowser),
             windowSize = WindowWidthSizeClass.Medium,
             devicePosture = DevicePosture.NormalPosture,
         )
@@ -57,7 +58,7 @@ private fun MainScreenPreviewTablet() {
 private fun MainScreenPreviewDesktop() {
     MkDocsEditorTheme {
         MainScreenLayout(
-            uiState = UiState(),
+            uiState = UiState(initialTab = NavItem.FileBrowser),
             windowSize = WindowWidthSizeClass.Expanded,
             devicePosture = DevicePosture.NormalPosture,
         )
