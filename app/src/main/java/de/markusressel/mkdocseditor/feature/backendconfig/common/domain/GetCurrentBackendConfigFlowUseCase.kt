@@ -4,9 +4,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-internal class GetCurrentBackendConfigUseCase @Inject constructor(
+internal class GetCurrentBackendConfigFlowUseCase @Inject constructor(
     private val backendManager: BackendManager
 ) {
-    suspend operator fun invoke() = backendManager.getSelectedBackend()
+    suspend operator fun invoke() = backendManager.selectedBackendFlow
 }
 

@@ -125,14 +125,25 @@ internal fun CodeEditorScreenContent(
                     OfflineModeBanner()
                 }
 
-                CodeEditorLayout(
-                    modifier = Modifier.fillMaxSize(),
-                    text = tfv,
-                    onTextChanged = {
-                        onTextChanged(it)
-                    },
-                    readOnly = uiState.editModeActive.not()
-                )
+                if (uiState.editModeActive) {
+                    CodeEditorLayout(
+                        modifier = Modifier.fillMaxSize(),
+                        text = tfv,
+                        onTextChanged = {
+                            onTextChanged(it)
+                        },
+                        readOnly = true
+                    )
+                } else {
+                    CodeEditorLayout(
+                        modifier = Modifier.fillMaxSize(),
+                        text = tfv,
+                        onTextChanged = {
+                            onTextChanged(it)
+                        },
+                        readOnly = false
+                    )
+                }
             }
         }
     }

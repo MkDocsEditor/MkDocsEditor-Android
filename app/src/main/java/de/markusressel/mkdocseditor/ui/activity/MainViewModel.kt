@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigFlowUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,6 +39,7 @@ internal sealed class UiEvent {}
 internal class MainViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
+    private val getCurrentBackendConfigFlowUseCase: GetCurrentBackendConfigFlowUseCase,
 ) : ViewModel() {
 
     private val _uiState = runBlocking {
@@ -50,7 +52,7 @@ internal class MainViewModel @Inject constructor(
                     NavItem.About,
                 ),
                 initialTab = when {
-                    getCurrentBackendConfigUseCase().value != null -> NavItem.FileBrowser
+                    getCurrentBackendConfigUseCase() != null -> NavItem.FileBrowser
                     else -> NavItem.BackendSelection
                 },
             )
@@ -60,7 +62,7 @@ internal class MainViewModel @Inject constructor(
 
     init {
         launch {
-            getCurrentBackendConfigUseCase().collect {
+            getCurrentBackendConfigFlowUseCase().collect {
                 updateNavItems(it)
             }
         }

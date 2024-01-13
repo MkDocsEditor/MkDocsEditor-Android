@@ -16,13 +16,17 @@ internal class BackendManager @Inject constructor(
     private val backendConfigRepository: BackendConfigRepository
 ) {
 
-    val currentBackend: StateFlow<BackendConfig?> = backendConfigRepository
+    val selectedBackendFlow: StateFlow<BackendConfig?> = backendConfigRepository
         .selectedBackendConfigFlow()
         .map { it?.toBackendConfig() }
         .stateIn(MainScope(), SharingStarted.Eagerly, null)
 
     fun setBackend(backendConfig: BackendConfig) {
         backendConfigRepository.selectBackendConfig(backendConfig)
+    }
+
+    fun getSelectedBackend(): BackendConfig? {
+        return backendConfigRepository.selectedBackendConfig()?.toBackendConfig()
     }
 
 }

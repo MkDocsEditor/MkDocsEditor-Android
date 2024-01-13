@@ -15,7 +15,7 @@ internal class OpenDocumentInBrowserUseCase @Inject constructor(
     private val chromeCustomTabManager: ChromeCustomTabManager,
 ) {
     suspend operator fun invoke(documentId: String): Boolean {
-        val backendConfig = requireNotNull(getCurrentBackendConfigUseCase().value)
+        val backendConfig = requireNotNull(getCurrentBackendConfigUseCase())
         val webBaseUri = backendConfig.serverConfig?.webBaseUri
         if (webBaseUri.isNullOrBlank()) {
             return false

@@ -83,6 +83,12 @@ internal class BackendConfigRepository @Inject constructor(
         backendConfigPersistenceManager.selectBackendConfig(config.id)
     }
 
+    fun selectedBackendConfig(): BackendConfigEntity? {
+        return backendConfigPersistenceManager.standardOperation().query {
+            equal(BackendConfigEntity_.isSelected, true)
+        }.findUnique()
+    }
+
     fun selectedBackendConfigFlow(): Flow<BackendConfigEntity?> {
         return backendConfigPersistenceManager.standardOperation().query {
             equal(BackendConfigEntity_.isSelected, true)
