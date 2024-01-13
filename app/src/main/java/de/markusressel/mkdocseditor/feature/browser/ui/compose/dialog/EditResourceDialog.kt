@@ -49,7 +49,7 @@ fun EditResourceDialog(
                 var text by remember { mutableStateOf(uiState.initialResourceName) }
 
                 Text(
-                    text = stringResource(id = R.string.edit_section),
+                    text = stringResource(id = R.string.edit_resource),
                     style = MaterialTheme.typography.headlineSmall
                 )
 
