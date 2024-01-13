@@ -261,7 +261,7 @@ internal class FileBrowserViewModel @Inject constructor(
 
                 is UiEvent.EditResourceDialogDeleteClicked -> {
                     dismissCurrentDialog()
-                    deleteResource(event.resourceId)
+                    showDeleteResourceConfirmationDialog(event.resourceId)
                 }
 
                 is UiEvent.DeleteSectionDialogConfirmClicked -> {
@@ -315,6 +315,16 @@ internal class FileBrowserViewModel @Inject constructor(
             old.copy(
                 currentDialogState = DialogState.DeleteSectionConfirmation(
                     sectionId = sectionId,
+                )
+            )
+        }
+    }
+
+    private fun showDeleteResourceConfirmationDialog(resourceId: String) {
+        _uiState.update { old ->
+            old.copy(
+                currentDialogState = DialogState.DeleteResourceConfirmation(
+                    resourceId = resourceId,
                 )
             )
         }
