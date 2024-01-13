@@ -266,9 +266,8 @@ internal class CodeEditorViewModel @Inject constructor(
         currentResource.value = resource
         when (resource) {
             is Success -> {
-                _uiState.update { old ->
-                    old.copy(title = resource.data?.name ?: "")
-                }
+                updateTitle(resource.data?.name ?: "")
+
                 if (isOfflineModeEnabledFlowUseCase().value) {
                     showOfflineVersionIfPossible()
                 } else {
@@ -278,12 +277,19 @@ internal class CodeEditorViewModel @Inject constructor(
 
             is Resource.Error -> {
                 Timber.e(resource.error) { "Error loading document resource" }
+                updateTitle(resource.data?.name ?: "")
                 showOfflineVersionIfPossible()
             }
 
             else -> {
                 Timber.d { "$resource" }
             }
+        }
+    }
+
+    private fun updateTitle(title: String) {
+        _uiState.update { old ->
+            old.copy(title = title)
         }
     }
 
@@ -304,7 +310,9 @@ internal class CodeEditorViewModel @Inject constructor(
         disableEditMode()
         _uiState.update { old ->
             old.copy(
+                title = currentResource.value?.data?.name ?: "",
                 text = AnnotatedString(cachedContent),
+                isOfflineModeBannerVisible = true,
             )
         }
     }
