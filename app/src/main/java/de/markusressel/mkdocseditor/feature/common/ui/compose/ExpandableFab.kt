@@ -44,9 +44,9 @@ import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
-fun ExpandableFab(
-    items: List<FabConfig.Fab>,
-    onItemClicked: (FabConfig.Fab) -> Unit,
+fun <T> ExpandableFab(
+    items: List<FabConfig.Fab<T>>,
+    onItemClicked: (FabConfig.Fab<T>) -> Unit,
     modifier: Modifier = Modifier,
     horizontalAlignment: Alignment.Horizontal = Alignment.End,
 ) {

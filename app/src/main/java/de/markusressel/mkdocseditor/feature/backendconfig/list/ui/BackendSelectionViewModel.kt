@@ -59,7 +59,7 @@ internal class BackendSelectionViewModel @Inject constructor(
 
                 is UiEvent.ExpandableFabItemSelected -> {
                     when (event.item.id) {
-                        FAB_ID_CREATE_BACKEND_CONFIG -> {
+                        BackendSelectionFabId.CreateBackendConfig -> {
                             navigateToCreateBackendConfig()
                         }
                     }
@@ -108,14 +108,14 @@ internal class BackendSelectionViewModel @Inject constructor(
     internal sealed class UiEvent {
         data class BackendConfigClicked(val config: BackendConfig) : UiEvent()
         data class BackendConfigLongClicked(val config: BackendConfig) : UiEvent()
-        data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
+        data class ExpandableFabItemSelected(val item: FabConfig.Fab<BackendSelectionFabId>) : UiEvent()
     }
 
     internal data class UiState(
-        val fabConfig: FabConfig = FabConfig(
+        val fabConfig: FabConfig<BackendSelectionFabId> = FabConfig(
             right = listOf(
                 FabConfig.Fab(
-                    id = FAB_ID_CREATE_BACKEND_CONFIG,
+                    id = BackendSelectionFabId.CreateBackendConfig,
                     description = R.string.create_backend_config,
                     icon = MaterialDesignIconic.Icon.gmi_plus,
                 ),
@@ -136,5 +136,6 @@ internal class BackendSelectionViewModel @Inject constructor(
     }
 }
 
-
-const val FAB_ID_CREATE_BACKEND_CONFIG = 0
+sealed class BackendSelectionFabId {
+    data object CreateBackendConfig : BackendSelectionFabId()
+}

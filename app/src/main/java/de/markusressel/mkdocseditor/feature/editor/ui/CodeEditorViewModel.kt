@@ -387,9 +387,8 @@ internal class CodeEditorViewModel @Inject constructor(
             when (event) {
                 is UiEvent.TopAppBarActionClicked -> onTopAppBarActionClicked(event.action)
                 is UiEvent.ExpandableFabItemSelected -> when (event.item.id) {
-                    FAB_ID_ENABLE_EDIT_MODE -> enableEditMode()
-                    FAB_ID_DISABLE_EDIT_MODE -> disableEditMode()
-                    else -> {}
+                    CodeEditorFabId.EnableEditMode -> enableEditMode()
+                    CodeEditorFabId.DisableEditMode -> disableEditMode()
                 }
 
                 is UiEvent.BackPressed -> onClose()
@@ -628,17 +627,14 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     companion object {
-        const val FAB_ID_ENABLE_EDIT_MODE = 0
-        const val FAB_ID_DISABLE_EDIT_MODE = 1
-
-        internal val EnableEditModeFabConfig = FabConfig.Fab(
-            id = FAB_ID_ENABLE_EDIT_MODE,
+        internal val EnableEditModeFabConfig = FabConfig.Fab<CodeEditorFabId>(
+            id = CodeEditorFabId.EnableEditMode,
             description = R.string.code_editor_enable_edit_mode,
             icon = MaterialDesignIconic.Icon.gmi_edit,
         )
 
-        internal val DisableEditModeFabConfig = FabConfig.Fab(
-            id = FAB_ID_DISABLE_EDIT_MODE,
+        internal val DisableEditModeFabConfig = FabConfig.Fab<CodeEditorFabId>(
+            id = CodeEditorFabId.DisableEditMode,
             description = R.string.code_editor_disable_edit_mode,
             icon = MaterialDesignIconic.Icon.gmi_check,
         )
@@ -648,7 +644,7 @@ internal class CodeEditorViewModel @Inject constructor(
     data class UiState(
         val showInBrowserActionVisible: Boolean = true,
 
-        val fabConfig: FabConfig = FabConfig(),
+        val fabConfig: FabConfig<CodeEditorFabId> = FabConfig(),
 
         val loading: Boolean = false,
 
@@ -674,7 +670,7 @@ internal class CodeEditorViewModel @Inject constructor(
     sealed class UiEvent {
         data class TopAppBarActionClicked(val action: TopAppBarAction.CodeEditor) : UiEvent()
 
-        data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
+        data class ExpandableFabItemSelected(val item: FabConfig.Fab<CodeEditorFabId>) : UiEvent()
         data class SnackbarActionClicked(val snackbar: SnackbarData) : UiEvent()
 
         data object BackPressed : UiEvent()
@@ -685,4 +681,9 @@ internal class CodeEditorViewModel @Inject constructor(
         val errorCode: Int? = null,
         val throwable: Throwable? = null
     )
+
+    sealed class CodeEditorFabId {
+        data object EnableEditMode : CodeEditorFabId()
+        data object DisableEditMode : CodeEditorFabId()
+    }
 }

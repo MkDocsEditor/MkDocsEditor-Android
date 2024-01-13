@@ -7,10 +7,10 @@ import com.mikepenz.iconics.typeface.IIcon
 /**
  * Created by Markus on 13.02.2018.
  */
-data class FabConfig(val left: List<Fab> = emptyList(), val right: List<Fab> = emptyList()) {
+data class FabConfig<FabId>(val left: List<Fab<FabId>> = emptyList(), val right: List<Fab<FabId>> = emptyList()) {
 
-    data class Fab(
-        val id: Int,
+    data class Fab<FabId>(
+        val id: FabId,
         @StringRes val description: Int,
         val icon: IIcon,
         @ColorRes val color: Int? = null,

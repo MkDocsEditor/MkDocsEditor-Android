@@ -40,7 +40,7 @@ sealed interface DialogState {
 internal data class UiState(
     val currentDialogState: DialogState? = null,
 
-    val fabConfig: FabConfig = CreateItemsFabConfig,
+    val fabConfig: FabConfig<FileBrowserFabId> = CreateItemsFabConfig,
 
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -57,23 +57,32 @@ internal data class UiState(
     val currentSearchResults: List<Any> = emptyList(),
 )
 
-const val FAB_ID_CREATE_DOCUMENT = 0
-const val FAB_ID_CREATE_SECTION = 1
+sealed class FileBrowserFabId {
+    data object FAB : FileBrowserFabId()
+    data object CreateDocument : FileBrowserFabId()
+    data object CreateSection : FileBrowserFabId()
+    data object UploadResource : FileBrowserFabId()
+}
 
 val CreateItemsFabConfig = FabConfig(
     right = listOf(
         FabConfig.Fab(
-            id = -1,
+            id = FileBrowserFabId.FAB,
             description = R.string.create,
             icon = MaterialDesignIconic.Icon.gmi_plus,
         ),
         FabConfig.Fab(
-            id = FAB_ID_CREATE_DOCUMENT,
+            id = FileBrowserFabId.UploadResource,
+            description = R.string.upload_resource,
+            icon = MaterialDesignIconic.Icon.gmi_attachment_alt,
+        ),
+        FabConfig.Fab(
+            id = FileBrowserFabId.CreateDocument,
             description = R.string.create_document,
             icon = MaterialDesignIconic.Icon.gmi_file_add,
         ),
         FabConfig.Fab(
-            id = FAB_ID_CREATE_SECTION,
+            id = FileBrowserFabId.CreateSection,
             description = R.string.create_section,
             icon = MaterialDesignIconic.Icon.gmi_folder,
         )

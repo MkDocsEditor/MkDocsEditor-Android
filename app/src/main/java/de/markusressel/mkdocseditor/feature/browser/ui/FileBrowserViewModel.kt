@@ -196,9 +196,12 @@ internal class FileBrowserViewModel @Inject constructor(
                 is UiEvent.SectionLongClicked -> onSectionLongClicked(event.item)
                 is UiEvent.NavigateUpToSection -> navigateUp(event.section.id)
                 is UiEvent.ExpandableFabItemSelected -> when (event.item.id) {
-                    FAB_ID_CREATE_DOCUMENT -> onCreateDocumentFabClicked()
-                    FAB_ID_CREATE_SECTION -> onCreateSectionFabClicked()
-                    else -> TODO("Unhandled FAB: ${event.item}")
+                    FileBrowserFabId.CreateDocument -> onCreateDocumentFabClicked()
+                    FileBrowserFabId.CreateSection -> onCreateSectionFabClicked()
+                    FileBrowserFabId.UploadResource -> onUploadResourceFabClicked()
+                    FileBrowserFabId.FAB -> {
+                        // handled internally
+                    }
                 }
 
                 is UiEvent.CreateDocumentDialogSaveClicked -> {
@@ -286,7 +289,7 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private fun setFabConfig(fabConfig: FabConfig) {
+    private fun setFabConfig(fabConfig: FabConfig<FileBrowserFabId>) {
         _uiState.update { old ->
             old.copy(fabConfig = fabConfig)
         }
@@ -599,6 +602,10 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
+    private fun onUploadResourceFabClicked() {
+        // TODO: show file picker
+    }
+
     private fun onDocumentLongClicked(entity: DocumentData) {
         _uiState.update { old ->
             old.copy(
@@ -660,7 +667,7 @@ internal sealed class UiEvent {
 
     data class NavigateUpToSection(val section: SectionItem) : UiEvent()
 
-    data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
+    data class ExpandableFabItemSelected(val item: FabConfig.Fab<FileBrowserFabId>) : UiEvent()
 
     data class CreateDocumentDialogSaveClicked(val sectionId: String, val name: String) : UiEvent()
 
