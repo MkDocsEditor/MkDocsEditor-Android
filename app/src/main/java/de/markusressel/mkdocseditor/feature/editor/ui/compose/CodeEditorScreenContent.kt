@@ -132,7 +132,7 @@ internal fun CodeEditorScreenContent(
                         onTextChanged = {
                             onTextChanged(it)
                         },
-                        readOnly = true
+                        readOnly = false
                     )
                 } else {
                     CodeEditorLayout(
@@ -141,7 +141,7 @@ internal fun CodeEditorScreenContent(
                         onTextChanged = {
                             onTextChanged(it)
                         },
-                        readOnly = false
+                        readOnly = true
                     )
                 }
             }
