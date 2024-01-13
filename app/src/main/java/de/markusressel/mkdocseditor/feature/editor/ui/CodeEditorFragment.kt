@@ -171,10 +171,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
             events.observe(viewLifecycleOwner) { event ->
                 when (event) {
 
-                    is CodeEditorEvent.InitialText -> {
-//                        restoreEditorState(viewModel.documentEntityFlow.value?.data, event.text)
-                    }
-
                     is CodeEditorEvent.Error -> {
                         Timber.e(event.throwable) { "Error" }
                         noConnectionSnackbar?.dismiss()

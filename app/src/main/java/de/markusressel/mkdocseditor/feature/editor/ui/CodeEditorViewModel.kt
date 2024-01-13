@@ -21,7 +21,6 @@ import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAc
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.Error
-import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.InitialText
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.NetworkManager
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
@@ -44,6 +43,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.runBlocking
 import java.util.LinkedList
 import javax.inject.Inject
 
@@ -167,10 +167,6 @@ internal class CodeEditorViewModel @Inject constructor(
                     old.copy(loading = false)
                 }
 
-                is InitialText -> _uiState.update { old ->
-                    old.copy(loading = false)
-                }
-
                 else -> {}
             }
         }
@@ -227,23 +223,18 @@ internal class CodeEditorViewModel @Inject constructor(
                 }
             },
             onInitialText = { initialText ->
-                _uiState.update { old ->
-                    old.copy(
-                        loading = false,
-                        text = AnnotatedString(initialText),
-                        selection = TextRange.Zero,
-                    )
-                }
+                setEditorText(initialText)
 
                 // when an entity exists and a new text is given update the entity
-                this@CodeEditorViewModel.documentId.value?.let { documentId ->
-                    updateDocumentContentInCache(
-                        documentId = documentId,
-                        text = initialText
-                    )
-                }
+                updateDocumentContentInCache(
+                    documentId = documentId,
+                    text = initialText
+                )
 
-                events.value = InitialText(initialText)
+                restoreEditorState(
+                    entity = runBlocking { getDocumentUseCase(documentId) }.data,
+                    text = initialText
+                )
 
                 // launch coroutine to continuously watch for changes
                 watchTextChanges()
