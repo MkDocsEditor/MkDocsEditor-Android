@@ -87,7 +87,7 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
 
     override fun getBasicAuthConfig(): BasicAuthConfig? = null
 
-    override fun setBasicAuthConfig(basicAuthConfig: BasicAuthConfig) {}
+    override fun setBasicAuthConfig(basicAuthConfig: BasicAuthConfig?) {}
 
     override suspend fun isHostAlive(): Result<String, FuelError> {
         return Result.success("")

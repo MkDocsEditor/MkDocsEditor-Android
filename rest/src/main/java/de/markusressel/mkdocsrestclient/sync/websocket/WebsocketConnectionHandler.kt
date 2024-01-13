@@ -3,7 +3,11 @@ package de.markusressel.mkdocsrestclient.sync.websocket
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.EchoWebSocketListenerBase
-import okhttp3.*
+import okhttp3.Credentials
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.WebSocket
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
@@ -18,7 +22,7 @@ class WebsocketConnectionHandler(
     /**
      * Configuration for HTTP Basic Auth
      */
-    val basicAuthConfig: BasicAuthConfig
+    val basicAuthConfig: BasicAuthConfig?,
 ) {
 
     /**
@@ -28,19 +32,26 @@ class WebsocketConnectionHandler(
 
     private var listener: WebsocketConnectionListener? = null
 
-    private val client: OkHttpClient = OkHttpClient.Builder()
-        .readTimeout(0, TimeUnit.MILLISECONDS)
-        .connectTimeout(3, TimeUnit.SECONDS)
-        //            .pingInterval(30, TimeUnit.SECONDS)
-        .authenticator { route, response ->
-            val credential = Credentials
-                .basic(basicAuthConfig.username, basicAuthConfig.password)
+    private val client: OkHttpClient = run {
+        OkHttpClient.Builder()
+            .readTimeout(0, TimeUnit.MILLISECONDS)
+            .connectTimeout(3, TimeUnit.SECONDS).let {
+                if (basicAuthConfig != null) {
+                    it.authenticator { route, response ->
+                        val credential = Credentials
+                            .basic(basicAuthConfig.username, basicAuthConfig.password)
 
-            response.request.newBuilder()
-                .header("Authorization", credential)
-                .build()
-        }
-        .build()
+                        response.request.newBuilder()
+                            .header("Authorization", credential)
+                            .build()
+                    }
+                } else {
+                    it
+                }
+            }
+            //            .pingInterval(30, TimeUnit.SECONDS)
+            .build()
+    }
 
     private var webSocket: WebSocket? = null
 

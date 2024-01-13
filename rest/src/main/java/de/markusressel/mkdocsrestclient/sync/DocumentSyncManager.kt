@@ -13,7 +13,8 @@ import de.markusressel.mkdocsrestclient.toJson
 import timber.log.Timber
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
-import java.util.*
+import java.util.LinkedList
+import java.util.UUID
 
 /**
  * Class used to manage document changes from client- and server.
@@ -22,7 +23,7 @@ class DocumentSyncManager(
     hostname: String,
     port: Int,
     ssl: Boolean,
-    basicAuthConfig: BasicAuthConfig,
+    basicAuthConfig: BasicAuthConfig?,
     private val documentId: String,
     private val onConnectionStatusChanged: (connected: Boolean, errorCode: Int?, throwable: Throwable?) -> Unit,
     private val onInitialText: (initialText: String) -> Unit,

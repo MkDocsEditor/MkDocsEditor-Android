@@ -190,7 +190,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 val currentBackend =
                     requireNotNull(getCurrentBackendConfigUseCase().value)
                 val serverConfig = requireNotNull(currentBackend.serverConfig)
-                val authConfig = requireNotNull(currentBackend.authConfig)
+                val authConfig = currentBackend.authConfig
 
                 documentSyncManager =
                     createDocumentSyncManager(documentId, serverConfig, authConfig)
@@ -202,16 +202,18 @@ internal class CodeEditorViewModel @Inject constructor(
     private fun createDocumentSyncManager(
         documentId: String,
         serverConfig: BackendServerConfig,
-        authConfig: AuthConfig
+        authConfig: AuthConfig?
     ): DocumentSyncManager {
         return DocumentSyncManager(
             hostname = serverConfig.domain,
             port = serverConfig.port,
             ssl = serverConfig.useSsl,
-            basicAuthConfig = BasicAuthConfig(
-                username = authConfig.username,
-                password = authConfig.password
-            ),
+            basicAuthConfig = authConfig?.let {
+                BasicAuthConfig(
+                    username = authConfig.username,
+                    password = authConfig.password
+                )
+            },
             documentId = documentId,
             currentText = {
                 uiState.value.text?.toString() ?: ""

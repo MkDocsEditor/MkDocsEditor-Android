@@ -3,7 +3,6 @@ package de.markusressel.mkdocseditor.feature.backendconfig.list.ui.compose
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -20,9 +19,7 @@ internal fun BackendConfigList(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         uiState.listItems.forEach { item ->
-            BackendConfigListItem(item = item, modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight(), onClick = {
+            BackendConfigListItem(modifier = Modifier.fillMaxWidth(), item = item, onClick = {
                 onUiEvent(BackendSelectionViewModel.UiEvent.BackendConfigClicked(item))
             }, onLongClick = {
                 onUiEvent(BackendSelectionViewModel.UiEvent.BackendConfigLongClicked(item))

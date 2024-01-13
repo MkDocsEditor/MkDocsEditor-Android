@@ -46,7 +46,7 @@ class MkDocsRestClient constructor(
         return requestManager.basicAuthConfig
     }
 
-    override fun setBasicAuthConfig(basicAuthConfig: BasicAuthConfig) {
+    override fun setBasicAuthConfig(basicAuthConfig: BasicAuthConfig?) {
         requestManager.basicAuthConfig = basicAuthConfig
     }
 

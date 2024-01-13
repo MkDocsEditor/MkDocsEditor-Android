@@ -18,12 +18,13 @@ internal class ApplyCurrentBackendConfigUseCase @Inject constructor(
             restClient.setPort(serverConfig.port)
             restClient.setUseSSL(serverConfig.useSsl)
 
-            val authConfig = requireNotNull(config.authConfig)
             restClient.setBasicAuthConfig(
-                BasicAuthConfig(
-                    username = authConfig.username,
-                    password = authConfig.password
-                )
+                config.authConfig?.let {
+                    BasicAuthConfig(
+                        username = it.username,
+                        password = it.password
+                    )
+                }
             )
         }
     }

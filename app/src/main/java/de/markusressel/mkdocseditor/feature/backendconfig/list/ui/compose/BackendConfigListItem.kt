@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 
@@ -24,6 +25,7 @@ internal fun BackendConfigListItem(
 ) {
     ElevatedCard(
         modifier = Modifier
+            .clip(CardDefaults.elevatedShape)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .then(modifier),
         elevation = CardDefaults.cardElevation(

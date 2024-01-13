@@ -43,7 +43,7 @@ interface IMkDocsRestClient : SectionApi, DocumentApi, ResourceApi {
     /**
      * Set the BasicAuthConfig for this client
      */
-    fun setBasicAuthConfig(basicAuthConfig: BasicAuthConfig)
+    fun setBasicAuthConfig(basicAuthConfig: BasicAuthConfig?)
 
     /**
      * Check if the server is alive and reachable
