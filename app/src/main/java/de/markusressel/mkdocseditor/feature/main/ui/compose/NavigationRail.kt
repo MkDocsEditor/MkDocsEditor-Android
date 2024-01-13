@@ -33,8 +33,8 @@ fun MkDocsEditorNavigationRail(
     NavigationRail(
         modifier = Modifier.fillMaxHeight(),
     ) {
-        val primaryItems by remember { derivedStateOf { navItems.filterIsInstance<NavItem.Primary>() } }
-        val secondaryItems by remember { derivedStateOf { navItems.filterIsInstance<NavItem.Secondary>() } }
+        val primaryItems by remember(navItems) { derivedStateOf { navItems.filterIsInstance<NavItem.Primary>() } }
+        val secondaryItems by remember(navItems) { derivedStateOf { navItems.filterIsInstance<NavItem.Secondary>() } }
 
         AppIconImage()
 
