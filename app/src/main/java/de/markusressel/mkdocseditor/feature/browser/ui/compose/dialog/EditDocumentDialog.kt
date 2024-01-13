@@ -30,6 +30,7 @@ import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 @Composable
 fun EditDocumentDialog(
     uiState: DialogState.EditDocument,
+    onDeleteClicked: () -> Unit,
     onDismissRequest: () -> Unit,
     onSaveClicked: (String) -> Unit,
 ) {
@@ -61,6 +62,10 @@ fun EditDocumentDialog(
                 Row(
                     horizontalArrangement = Arrangement.End,
                 ) {
+                    TextButton(onClick = { onDeleteClicked() }) {
+                        Text(stringResource(id = R.string.delete))
+                    }
+
                     Spacer(modifier = Modifier.weight(1f, fill = true))
 
                     TextButton(
@@ -91,6 +96,7 @@ private fun EditDocumentDialogPreview() {
                 documentId = "",
                 initialDocumentName = ""
             ),
+            onDeleteClicked = { },
             onDismissRequest = { },
             onSaveClicked = { }
         )

@@ -16,6 +16,10 @@ sealed interface DialogState {
         val initialDocumentName: String
     ) : DialogState
 
+    data class DeleteDocumentConfirmation(
+        val documentId: String
+    ) : DialogState
+
     data class CreateSection(
         val parentSectionId: String,
         val initialSectionName: String
@@ -25,6 +29,11 @@ sealed interface DialogState {
         val sectionId: String,
         val initialSectionName: String
     ) : DialogState
+
+    data class DeleteSectionConfirmation(
+        val sectionId: String
+    ) : DialogState
+
 
 }
 

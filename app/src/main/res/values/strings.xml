@@ -79,10 +79,14 @@
     <string name="create_document_hint">New Document</string>
     <string name="edit_document">Edit document</string>
     <string name="edit_document_name_hint">Name</string>
+    <string name="delete_document">Delete document</string>
+    <string name="delete_document_confirmation_message">Are you sure you want to delete this document?</string>
     <string name="create_section">Create Section</string>
     <string name="create_section_hint">New Section</string>
     <string name="edit_section">Edit section</string>
     <string name="edit_section_name_hint">Name</string>
+    <string name="delete_section">Delete section</string>
+    <string name="delete_section_confirmation_message">Are you sure you want to delete this section?</string>
 
     <string name="hint_new_section">New Section</string>
     <string name="error_section_already_exists">Section already exists!</string>

@@ -17,6 +17,9 @@ import de.markusressel.mkdocseditor.feature.browser.data.SectionBackstackItem
 import de.markusressel.mkdocseditor.feature.browser.data.SectionData
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.CreateNewDocumentUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.CreateNewSectionUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.DeleteDocumentUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.DeleteResourceUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.DeleteSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetCurrentSectionPathUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetSectionItemsUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameDocumentUseCase
@@ -54,6 +57,9 @@ internal class FileBrowserViewModel @Inject constructor(
     private val createNewDocumentUseCase: CreateNewDocumentUseCase,
     private val renameDocumentUseCase: RenameDocumentUseCase,
     private val renameSectionUseCase: RenameSectionUseCase,
+    private val deleteDocumentUseCase: DeleteDocumentUseCase,
+    private val deleteResourceUseCase: DeleteResourceUseCase,
+    private val deleteSectionUseCase: DeleteSectionUseCase,
     private val applyCurrentBackendConfigUseCase: ApplyCurrentBackendConfigUseCase,
     private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
 ) : ViewModel() {
@@ -204,6 +210,16 @@ internal class FileBrowserViewModel @Inject constructor(
                     }
                 }
 
+                is UiEvent.EditDocumentDialogDeleteClicked -> {
+                    dismissCurrentDialog()
+                    showDeleteDocumentConfirmationDialog(event.documentId)
+                }
+
+                is UiEvent.DeleteDocumentDialogConfirmClicked -> {
+                    dismissCurrentDialog()
+                    deleteDocument(event.documentId)
+                }
+
                 is UiEvent.EditDocumentDialogSaveClicked -> {
                     dismissCurrentDialog()
                     if (isDocumentNameValid(event.name)) {
@@ -228,6 +244,16 @@ internal class FileBrowserViewModel @Inject constructor(
                     }
                 }
 
+                is UiEvent.EditSectionDialogDeleteClicked -> {
+                    dismissCurrentDialog()
+                    showDeleteSectionConfirmationDialog(event.sectionId)
+                }
+
+                is UiEvent.DeleteSectionDialogConfirmClicked -> {
+                    dismissCurrentDialog()
+                    deleteSection(event.sectionId)
+                }
+
                 is UiEvent.DismissDialog -> dismissCurrentDialog()
 
                 is UiEvent.TopAppBarActionClicked -> onTopAppBarActionClicked(event.action)
@@ -237,6 +263,26 @@ internal class FileBrowserViewModel @Inject constructor(
                 is UiEvent.SearchRequested -> onSearchRequested(event.query)
                 is UiEvent.SearchResultClicked -> onSearchResultClicked(event.item)
             }
+        }
+    }
+
+    private fun showDeleteDocumentConfirmationDialog(documentId: String) {
+        _uiState.update { old ->
+            old.copy(
+                currentDialogState = DialogState.DeleteDocumentConfirmation(
+                    documentId = documentId,
+                )
+            )
+        }
+    }
+
+    private fun showDeleteSectionConfirmationDialog(sectionId: String) {
+        _uiState.update { old ->
+            old.copy(
+                currentDialogState = DialogState.DeleteSectionConfirmation(
+                    sectionId = sectionId,
+                )
+            )
         }
     }
 
@@ -490,8 +536,36 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private suspend fun deleteDocument(id: String) {
-        restClient.deleteDocument(id)
-        reload()
+        try {
+            deleteDocumentUseCase(id)
+        } catch (ex: Exception) {
+            Timber.e(ex)
+            setError(message = ex.localizedMessage ?: ex.javaClass.name)
+        } finally {
+            reload()
+        }
+    }
+
+    private suspend fun deleteResource(resourceId: String) {
+        try {
+            deleteResourceUseCase(resourceId)
+        } catch (ex: Exception) {
+            Timber.e(ex)
+            setError(message = ex.localizedMessage ?: ex.javaClass.name)
+        } finally {
+            reload()
+        }
+    }
+
+    private suspend fun deleteSection(sectionId: String) {
+        try {
+            deleteSectionUseCase(sectionId)
+        } catch (ex: Exception) {
+            Timber.e(ex)
+            setError(message = ex.localizedMessage ?: ex.javaClass.name)
+        } finally {
+            reload()
+        }
     }
 
     private suspend fun reload() {
@@ -589,9 +663,16 @@ internal sealed class UiEvent {
     data class ExpandableFabItemSelected(val item: FabConfig.Fab) : UiEvent()
 
     data class CreateDocumentDialogSaveClicked(val sectionId: String, val name: String) : UiEvent()
+
+    data class EditDocumentDialogDeleteClicked(val documentId: String) : UiEvent()
+    data class DeleteDocumentDialogConfirmClicked(val documentId: String) : UiEvent()
+
     data class EditDocumentDialogSaveClicked(val documentId: String, val name: String) : UiEvent()
     data class CreateSectionDialogSaveClicked(val parentSectionId: String, val name: String) :
         UiEvent()
+
+    data class EditSectionDialogDeleteClicked(val sectionId: String) : UiEvent()
+    data class DeleteSectionDialogConfirmClicked(val sectionId: String) : UiEvent()
 
     data class EditSectionDialogSaveClicked(val sectionId: String, val name: String) : UiEvent()
     data class TopAppBarActionClicked(val action: TopAppBarAction.FileBrowser) : UiEvent()
