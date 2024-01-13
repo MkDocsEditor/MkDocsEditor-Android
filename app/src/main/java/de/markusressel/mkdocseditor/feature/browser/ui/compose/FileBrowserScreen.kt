@@ -6,11 +6,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.extensions.common.android.textResource
 import de.markusressel.mkdocseditor.feature.browser.ui.DialogState
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserEvent
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel
@@ -143,8 +145,8 @@ object FileBrowserScreen : Screen {
 
             is DialogState.DeleteDocumentConfirmation -> {
                 DeleteConfirmationDialog(
-                    title = context.getString(R.string.delete_document),
-                    message = context.getString(R.string.delete_document_confirmation_message),
+                    title = stringResource(R.string.delete_document_confirmation_title),
+                    message = textResource(R.string.delete_document_confirmation_message),
                     onConfirmClicked = {
                         viewModel.onUiEvent(
                             UiEvent.DeleteDocumentDialogConfirmClicked(
@@ -160,8 +162,8 @@ object FileBrowserScreen : Screen {
 
             is DialogState.DeleteSectionConfirmation -> {
                 DeleteConfirmationDialog(
-                    title = context.getString(R.string.delete_section),
-                    message = context.getString(R.string.delete_section_confirmation_message),
+                    title = stringResource(R.string.delete_section_confirmation_title),
+                    message = textResource(R.string.delete_section_confirmation_message),
                     onConfirmClicked = {
                         viewModel.onUiEvent(
                             UiEvent.DeleteSectionDialogConfirmClicked(

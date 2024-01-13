@@ -135,6 +135,9 @@ dependencies {
     // Pull to Refresh (Compose)
     implementation(libs.fengdai.compose.pulltorefresh)
 
+    // Spanned Text to AnnotatedString
+    implementation(libs.aghajari.annotatedtext)
+
 //    testimplementation("junit:junit:4.13.2")
 //    androidTestImplementation("androidx.test:runner:1.5.2")
 //    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")

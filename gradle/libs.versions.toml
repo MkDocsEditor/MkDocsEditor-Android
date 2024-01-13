@@ -12,6 +12,7 @@ androidxLifecycle = "2.6.2"
 androidxTestExtJunit = "1.1.5"
 androidxTestEspressoCore = "3.5.1"
 androidxWork = "2.9.0"
+annotatedText = "1.0.0"
 annotation = "1.7.1"
 browserVersion = "1.7.0"
 codeHighlighterVersion = "4.0.0"
@@ -104,6 +105,7 @@ androidx-window = { module = "androidx.window:window", version.ref = "windowVers
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "androidxWork" }
 androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "workTesting" }
 
+aghajari-annotatedtext = { module = "io.github.aghajari:AnnotatedText", version.ref = "annotatedText" }
 commons-validator = { group = "commons-validator", name = "commons-validator", version = "1.7" }
 
 dokka-gradle-plugin = { group = "org.jetbrains.dokka", name = "dokka-gradle-plugin", version.ref = "dokkaGradlePlugin" }
