@@ -1,7 +1,7 @@
 package de.markusressel.mkdocseditor.network
 
-import android.content.Context
 import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import timber.log.Timber
 import java.io.IOException
@@ -11,7 +11,8 @@ import javax.inject.Singleton
 
 @Singleton
 class NetworkManager @Inject constructor(
-    private val context: Context
+    private val connectivityManager: ConnectivityManager,
+    private val wifiManager: WifiManager,
 ) {
 
     /**
@@ -48,11 +49,11 @@ class NetworkManager @Inject constructor(
      * @return false if WLAN is not connected
      */
     fun isWifiConnected(): Boolean {
-        val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val networkInfo = connMgr.activeNetworkInfo
+        val network = connectivityManager.activeNetwork ?: return false
+        val networkCapabilities =
+            connectivityManager.getNetworkCapabilities(network) ?: return false
+        val isWifiConnected = networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
 
-        val isWifiConnected =
-            networkInfo != null && ConnectivityManager.TYPE_WIFI == networkInfo.type && networkInfo.isConnectedOrConnecting
         Timber.d("isWifiConnected: $isWifiConnected")
         return isWifiConnected
     }
@@ -63,8 +64,7 @@ class NetworkManager @Inject constructor(
      * @return false if Ethernet is not connected
      */
     fun isEthernetConnected(): Boolean {
-        val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val networkInfo = connMgr.activeNetworkInfo
+        val networkInfo = connectivityManager.activeNetworkInfo
 
         val isEthernetConnected =
             networkInfo != null && ConnectivityManager.TYPE_ETHERNET == networkInfo.type && networkInfo.isConnectedOrConnecting
@@ -78,8 +78,7 @@ class NetworkManager @Inject constructor(
      * @return false if GPRS is not connected
      */
     fun isGprsConnected(): Boolean {
-        val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val networkInfo = connMgr.activeNetworkInfo
+        val networkInfo = connectivityManager.activeNetworkInfo
 
         val isGprsConnected =
             networkInfo != null && ConnectivityManager.TYPE_MOBILE == networkInfo.type && networkInfo.isConnectedOrConnecting
@@ -93,8 +92,7 @@ class NetworkManager @Inject constructor(
      * @return true if a network connection is connected, false otherwise
      */
     fun isNetworkConnected(): Boolean {
-        val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val networkInfo = connMgr.activeNetworkInfo
+        val networkInfo = connectivityManager.activeNetworkInfo
 
         val isNetworkConnected = networkInfo != null && networkInfo.isConnectedOrConnecting
         Timber.d("isNetworkConnected: $isNetworkConnected")
@@ -108,8 +106,6 @@ class NetworkManager @Inject constructor(
      */
     fun getConnectedWifiSSID(): String? {
         return if (isWifiConnected()) {
-            val wifiManager =
-                context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
             val info = wifiManager.connectionInfo
             var ssid = info.ssid
 

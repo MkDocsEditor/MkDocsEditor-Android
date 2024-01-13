@@ -1,6 +1,8 @@
 package de.markusressel.mkdocseditor.dagger
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.wifi.WifiManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -30,6 +32,18 @@ class AppModule {
     @Singleton
     fun provideContext(@ApplicationContext context: Context): Context {
         return context
+    }
+
+    @Provides
+    @Singleton
+    fun provideConnectivityManager(context: Context): ConnectivityManager {
+        return context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    }
+
+    @Provides
+    @Singleton
+    fun provideWifiManager(context: Context): WifiManager {
+        return context.getSystemService(Context.WIFI_SERVICE) as WifiManager
     }
 
     @Provides
