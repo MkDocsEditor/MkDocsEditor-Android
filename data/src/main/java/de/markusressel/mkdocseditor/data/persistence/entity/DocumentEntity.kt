@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.data.persistence.entity
 
+import io.objectbox.annotation.ConflictStrategy
 import io.objectbox.annotation.Entity
 import io.objectbox.annotation.Id
 import io.objectbox.annotation.Unique
@@ -13,7 +14,7 @@ import java.util.Date
 data class DocumentEntity(
     @Id var entityId: Long = 0,
     val type: String = TYPE,
-    @Unique val id: String = "",
+    @Unique(onConflict = ConflictStrategy.REPLACE) val id: String = "",
     val name: String = "",
     var filesize: Long = -1L,
     var modtime: Date = Date(),

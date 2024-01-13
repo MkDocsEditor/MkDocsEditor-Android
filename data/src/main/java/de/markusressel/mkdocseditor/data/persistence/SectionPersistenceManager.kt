@@ -55,9 +55,9 @@ class SectionPersistenceManager @Inject constructor(
      */
     fun insertOrUpdateRoot(newData: SectionEntity) {
         boxStore.runInTx {
-            deleteAll()
-            resourcePersistenceManager.deleteAll()
             documentPersistenceManager.deleteAll()
+            resourcePersistenceManager.deleteAll()
+            deleteAll()
 
             addOrUpdate(newData)
             // remove data that is not on the server anymore

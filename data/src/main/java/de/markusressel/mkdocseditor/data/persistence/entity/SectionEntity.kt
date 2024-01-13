@@ -1,8 +1,10 @@
 package de.markusressel.mkdocseditor.data.persistence.entity
 
 import io.objectbox.annotation.Backlink
+import io.objectbox.annotation.ConflictStrategy
 import io.objectbox.annotation.Entity
 import io.objectbox.annotation.Id
+import io.objectbox.annotation.Unique
 import io.objectbox.relation.ToMany
 
 /**
@@ -11,7 +13,7 @@ import io.objectbox.relation.ToMany
 @Entity
 class SectionEntity(
     @Id var entityId: Long = 0,
-    val id: String = "",
+    @Unique(onConflict = ConflictStrategy.REPLACE) val id: String = "",
     var name: String = ""
 ) {
 
