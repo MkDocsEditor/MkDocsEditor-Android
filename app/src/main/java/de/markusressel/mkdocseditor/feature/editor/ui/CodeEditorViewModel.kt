@@ -211,7 +211,6 @@ internal class CodeEditorViewModel @Inject constructor(
                 documentSyncManager =
                     createDocumentSyncManager(documentId, serverConfig, authConfig)
                 loadDocumentResource(documentId)
-
             }
         }
     }
