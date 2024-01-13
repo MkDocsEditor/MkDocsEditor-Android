@@ -14,6 +14,8 @@ import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.extensions.common.android.launch
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
@@ -41,7 +43,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -88,79 +89,7 @@ internal class CodeEditorViewModel @Inject constructor(
     init {
         launch {
             documentId.collect { documentId ->
-                _uiState.update { old ->
-                    old.copy(documentId = documentId)
-                }
-                documentSyncManager?.disconnect(
-                    code = 1000,
-                    reason = when (documentId) {
-                        null -> "Document closed."
-                        else -> "Document ID changed."
-                    }
-                )
-
-                if (documentId == null) {
-                    documentSyncManager = null
-                } else {
-                    getDocumentUseCase(documentId).first().let { resource ->
-                        _uiState.update { old ->
-                            old.copy(title = resource.data?.name ?: "")
-                        }
-                        currentResource.value = resource
-                    }
-
-                    val currentBackend =
-                        requireNotNull(getCurrentBackendConfigUseCase().value)
-                    val serverConfig = requireNotNull(currentBackend.serverConfig)
-                    val authConfig = requireNotNull(currentBackend.authConfig)
-
-                    documentSyncManager =
-                        DocumentSyncManager(
-                            hostname = serverConfig.domain,
-                            port = serverConfig.port,
-                            ssl = serverConfig.useSsl,
-                            basicAuthConfig = BasicAuthConfig(
-                                username = authConfig.username,
-                                password = authConfig.password
-                            ),
-                            documentId = documentId,
-                            currentText = {
-                                uiState.value.text?.toString() ?: ""
-                            },
-                            onConnectionStatusChanged = { connected, errorCode, throwable ->
-                                runOnUiThread {
-                                    val status = ConnectionStatus(connected, errorCode, throwable)
-                                    connectionStatus.value = status
-                                    events.value = status
-                                }
-                            },
-                            onInitialText = { initialText ->
-                                _uiState.update { old ->
-                                    old.copy(
-                                        loading = false,
-                                        text = AnnotatedString(initialText),
-                                        selection = TextRange.Zero,
-                                    )
-                                }
-
-                                // when an entity exists and a new text is given update the entity
-                                this@CodeEditorViewModel.documentId.value?.let { documentId ->
-                                    updateDocumentContentInCache(
-                                        documentId = documentId,
-                                        text = initialText
-                                    )
-                                }
-
-                                events.value = InitialText(initialText)
-
-                                // launch coroutine to continuously watch for changes
-                                watchTextChanges()
-                            },
-                            onTextChanged = ::onTextChanged,
-                            readOnly = uiState.value.editModeActive.not()
-                        )
-                    reconnectToServer()
-                }
+                initializeEditorWithDocument(documentId)
             }
         }
 
@@ -225,27 +154,6 @@ internal class CodeEditorViewModel @Inject constructor(
         }
 
         launch {
-            getDocumentUseCase(documentId.value ?: "")
-                .filterNotNull()
-                .collectLatest { resource: Resource<DocumentEntity?> ->
-                    currentResource.value = resource
-                    when (resource) {
-                        is Success -> {
-                            //if (offlineModeManager.isEnabled().not()) {
-                            reconnectToServer()
-                            //}
-                        }
-
-                        is Resource.Loading -> {}
-                        is Resource.Error -> Timber.e(resource.error)
-                        else -> {
-                            Timber.d { "$resource" }
-                        }
-                    }
-                }
-        }
-
-        launch {
             uiState.map { it.editModeActive }.distinctUntilChanged().collectLatest {
                 documentSyncManager?.readOnly = it.not()
             }
@@ -280,6 +188,105 @@ internal class CodeEditorViewModel @Inject constructor(
         }
     }
 
+    private suspend fun initializeEditorWithDocument(documentId: String?) {
+        _uiState.update { old ->
+            old.copy(documentId = documentId)
+        }
+        documentSyncManager?.disconnect(
+            code = 1000,
+            reason = when (documentId) {
+                null -> "Document closed."
+                else -> "Document ID changed."
+            }
+        )
+
+        when (documentId) {
+            null -> documentSyncManager = null
+            else -> {
+                val currentBackend =
+                    requireNotNull(getCurrentBackendConfigUseCase().value)
+                val serverConfig = requireNotNull(currentBackend.serverConfig)
+                val authConfig = requireNotNull(currentBackend.authConfig)
+
+                documentSyncManager =
+                    createDocumentSyncManager(documentId, serverConfig, authConfig)
+                loadDocumentResource(documentId)
+
+            }
+        }
+    }
+
+    private fun createDocumentSyncManager(
+        documentId: String,
+        serverConfig: BackendServerConfig,
+        authConfig: AuthConfig
+    ): DocumentSyncManager {
+        return DocumentSyncManager(
+            hostname = serverConfig.domain,
+            port = serverConfig.port,
+            ssl = serverConfig.useSsl,
+            basicAuthConfig = BasicAuthConfig(
+                username = authConfig.username,
+                password = authConfig.password
+            ),
+            documentId = documentId,
+            currentText = {
+                uiState.value.text?.toString() ?: ""
+            },
+            onConnectionStatusChanged = { connected, errorCode, throwable ->
+                runOnUiThread {
+                    val status = ConnectionStatus(connected, errorCode, throwable)
+                    connectionStatus.value = status
+                    events.value = status
+                }
+            },
+            onInitialText = { initialText ->
+                _uiState.update { old ->
+                    old.copy(
+                        loading = false,
+                        text = AnnotatedString(initialText),
+                        selection = TextRange.Zero,
+                    )
+                }
+
+                // when an entity exists and a new text is given update the entity
+                this@CodeEditorViewModel.documentId.value?.let { documentId ->
+                    updateDocumentContentInCache(
+                        documentId = documentId,
+                        text = initialText
+                    )
+                }
+
+                events.value = InitialText(initialText)
+
+                // launch coroutine to continuously watch for changes
+                watchTextChanges()
+            },
+            onTextChanged = ::onTextChanged,
+            readOnly = uiState.value.editModeActive.not()
+        )
+    }
+
+    private suspend fun loadDocumentResource(documentId: String) {
+        val resource = getDocumentUseCase(documentId)
+        _uiState.update { old ->
+            old.copy(title = resource.data?.name ?: "")
+        }
+        currentResource.value = resource
+        when (resource) {
+            is Success -> {
+                //if (offlineModeManager.isEnabled().not()) {
+                reconnectToServer()
+                //}
+            }
+
+            is Resource.Error -> Timber.e(resource.error)
+            else -> {
+                Timber.d { "$resource" }
+            }
+        }
+    }
+
     private fun showSnackbar(snackbar: SnackbarData?) {
         _uiState.update { old ->
             old.copy(snackbar = snackbar)
@@ -310,10 +317,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
     private fun onSnackbarAction(snackbar: SnackbarData) {
         when (snackbar) {
-            SnackbarData.ConnectionFailed -> {
-                dismissSnackbar()
-                reconnectToServer()
-            }
+            SnackbarData.ConnectionFailed -> onRetryClicked()
 
             SnackbarData.Disconnected -> {
                 dismissSnackbar()
@@ -325,9 +329,9 @@ internal class CodeEditorViewModel @Inject constructor(
     private fun dismissSnackbar() = showSnackbar(null)
 
     /**
-     *
+     * Sets the current document id for this CodeEditor instance
      */
-    fun loadDocument(documentId: String?) {
+    fun setCurrentDocumentId(documentId: String?) {
         this.documentId.value = documentId
     }
 
@@ -516,7 +520,8 @@ internal class CodeEditorViewModel @Inject constructor(
      * Called when the user wants to reconnect to the server
      * after a previous connection (attempt) has failed
      */
-    fun onRetryClicked() {
+    private fun onRetryClicked() {
+        dismissSnackbar()
         reconnectToServer()
     }
 

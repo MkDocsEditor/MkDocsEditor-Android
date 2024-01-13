@@ -5,8 +5,6 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,7 +21,7 @@ internal class OpenDocumentInBrowserUseCase @Inject constructor(
             return false
         }
 
-        val document = getDocumentUseCase(documentId).filterNotNull().first().data ?: return false
+        val document = getDocumentUseCase(documentId).data ?: return false
 
         val url = computeDocumentUrl(backendConfig, document)
         chromeCustomTabManager.openChromeCustomTab(url)

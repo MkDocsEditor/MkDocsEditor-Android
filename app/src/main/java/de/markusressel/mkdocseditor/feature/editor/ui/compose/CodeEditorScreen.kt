@@ -29,7 +29,7 @@ internal data class CodeEditorScreen(
         )
 
         LaunchedEffect(documentId) {
-            viewModel.loadDocument(documentId)
+            viewModel.setCurrentDocumentId(documentId)
         }
 
         CodeEditorScreenContent(
