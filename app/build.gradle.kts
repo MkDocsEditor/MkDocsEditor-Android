@@ -50,6 +50,7 @@ dependencies {
     //    androidTestImplementation("androidx.window:window-testing:$windowmanager_version")
 
 
+    implementation(libs.androidx.activity)
     implementation(libs.androidx.activity.compose)
 
     // Emoji

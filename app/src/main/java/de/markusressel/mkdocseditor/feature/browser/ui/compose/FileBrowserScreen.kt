@@ -23,6 +23,7 @@ import de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog.DeleteConf
 import de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog.EditDocumentDialog
 import de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog.EditSectionDialog
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreen
+import de.markusressel.mkdocseditor.feature.filepicker.ui.compose.FilePickerScreen
 import kotlinx.coroutines.flow.collectLatest
 
 object FileBrowserScreen : Screen {
@@ -50,6 +51,10 @@ object FileBrowserScreen : Screen {
                 when (event) {
                     is FileBrowserEvent.OpenDocumentEditor -> {
                         navigator.push(CodeEditorScreen(documentId = event.documentId))
+                    }
+
+                    is FileBrowserEvent.OpenResourceSelection -> {
+                        navigator.push(FilePickerScreen())
                     }
                 }
             }

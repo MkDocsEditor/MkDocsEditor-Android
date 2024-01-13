@@ -2,13 +2,14 @@
 aboutlibrariesVersion = "10.9.1"
 androidDesugarJdkLibs = "2.0.4"
 androidGradlePlugin = "8.2.1"
+androidxActivity = "1.8.2"
 androidxActivityCompose = "1.8.2"
 androidxAppCompat = "1.6.1"
 androidxDatastore = "1.0.0"
 androidxComposeBom = "2023.10.01"
 androidxComposeCompiler = "1.5.5"
 androidxCore = "1.12.0"
-androidxLifecycle = "2.6.2"
+androidxLifecycle = "2.7.0"
 androidxTestExtJunit = "1.1.5"
 androidxTestEspressoCore = "3.5.1"
 androidxWork = "2.9.0"
@@ -35,10 +36,10 @@ kotlinCoroutinesCore = "1.7.3"
 kotlinCoroutinesAndroid = "1.7.3"
 ksp = "1.9.20-1.0.14"
 kutePreferences = "master-SNAPSHOT"
-lifecycleCommonJava8 = "2.6.2"
-lifecycleViewmodelKtx = "2.6.2"
+lifecycleCommonJava8 = "2.7.0"
+lifecycleViewmodelKtx = "2.7.0"
 liveevent = "1.2.0"
-material3WindowSizeClass = "1.2.0-beta01"
+material3WindowSizeClass = "1.2.0-beta02"
 moshiVersion = "1.15.0"
 objectboxVersion = "3.7.1"
 okhttp = "4.10.0"
@@ -50,11 +51,11 @@ store4 = "4.0.7"
 store5 = "5.0.0-beta02"
 typedPreferences = "v2.1.1"
 materialDialogs = "0.9.0"
-uiToolingPreviewVersion = "1.6.0-beta03"
-uiToolingPreview = "1.6.0-beta03"
-uiToolingVersion = "1.6.0-beta03"
+uiToolingPreviewVersion = "1.6.0-rc01"
+uiToolingPreview = "1.6.0-rc01"
+uiToolingVersion = "1.6.0-rc01"
 windowVersion = "1.2.0"
-uiViewbinding = "1.6.0-beta03"
+uiViewbinding = "1.6.0-rc01"
 workTesting = "2.9.0"
 voyager = "1.1.0-alpha01"
 zoomlayout = "1.9.0"
@@ -66,6 +67,7 @@ android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", ve
 android-material = { group = "com.google.android.material", name = "material", version = "1.11.0" }
 android-material-compose-theme-adapter = { group = "com.google.android.material", name = "compose-theme-adapter", version = "1.2.1" }
 
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "androidxActivity" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidxActivityCompose" }
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidxAppCompat" }
@@ -79,7 +81,7 @@ androidx-compose-animation-graphics = { group = "androidx.compose.animation", na
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "androidxComposeBom" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
 androidx-compose-material = { group = "androidx.compose.material", name = "material" }
-androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version = "1.2.0-beta01" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version = "1.2.0-beta02" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-compose-ui-text = { group = "androidx.compose.ui", name = "ui-text" }
@@ -179,7 +181,7 @@ rxkotlin = { module = "io.reactivex.rxjava2:rxkotlin", version.ref = "rxkotlin" 
 
 store4 = { module = "org.mobilenativefoundation.store:store4", version.ref = "store4" }
 store5 = { module = "org.mobilenativefoundation.store:store5", version.ref = "store5" }
-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version = "0.18.5" }
+atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version = "0.20.2" }
 
 timber = { group = "com.jakewharton.timber", name = "timber", version = "5.0.1" }
 timberkt = { group = "com.github.ajalt", name = "timberkt", version = "1.5.1" }

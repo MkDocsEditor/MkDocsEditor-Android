@@ -18,15 +18,19 @@
 
 package de.markusressel.mkdocsrestclient
 
+import com.github.kittinunf.fuel.core.BlobDataPart
 import com.github.kittinunf.fuel.core.Deserializable
 import com.github.kittinunf.fuel.core.FoldableResponseInterceptor
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.FuelManager
 import com.github.kittinunf.fuel.core.Method
+import com.github.kittinunf.fuel.core.Parameters
 import com.github.kittinunf.fuel.core.Request
 import com.github.kittinunf.fuel.core.Response
 import com.github.kittinunf.fuel.core.awaitResponseResult
 import com.github.kittinunf.fuel.core.extensions.authentication
+import com.github.kittinunf.fuel.core.requests.UploadRequest
+import com.github.kittinunf.fuel.core.requests.upload
 import com.github.kittinunf.fuel.coroutines.awaitStringResult
 import com.github.kittinunf.result.Result
 import kotlinx.coroutines.Dispatchers
@@ -124,7 +128,7 @@ class RequestManager(
      */
     fun createRequest(
         url: String,
-        urlParameters: List<Pair<String, Any?>> = emptyList(),
+        urlParameters: Parameters = emptyList(),
         method: Method,
         timeout: Int = DEFAULT_TIMEOUT
     ): Request {
@@ -184,7 +188,7 @@ class RequestManager(
      */
     suspend inline fun <reified T : Any> doRequest(
         url: String,
-        urlParameters: List<Pair<String, Any?>>,
+        urlParameters: Parameters,
         method: Method
     ): Result<T, FuelError> {
         return withContext(Dispatchers.IO) {
@@ -217,6 +221,42 @@ class RequestManager(
                     .body(json)
                     .header(HEADER_CONTENT_TYPE_JSON)
             when (T::class) {
+                String::class -> request.awaitStringResult() as Result<T, FuelError>
+                else -> request.awaitResponseResult(deserializer).third
+            }
+        }
+    }
+
+    /**
+     * Creates an (authenticated) request
+     *
+     * @param url the url
+     * @param urlParameters query parameters
+     * @param method the request type (f.ex. GET)
+     */
+    fun createUploadRequest(
+        url: String,
+        urlParameters: Parameters = emptyList(),
+        timeout: Int = DEFAULT_TIMEOUT
+    ): UploadRequest {
+        return getAuthenticatedRequest(
+            fuelManager.upload(
+                url,
+                method = Method.POST,
+                urlParameters
+            )
+        ).timeout(timeout = timeout).upload()
+    }
+
+    suspend inline fun <reified T : Any> upload(
+        url: String,
+        blob: ByteArray,
+    ): Result<T, FuelError> {
+        return withContext(Dispatchers.IO) {
+            val request = createUploadRequest(url = url)
+            request.add(BlobDataPart(blob.inputStream().buffered(), name = "file"))
+            val deserializer: Deserializable<T> = deserializer()
+            when (String::class) {
                 String::class -> request.awaitStringResult() as Result<T, FuelError>
                 else -> request.awaitResponseResult(deserializer).third
             }

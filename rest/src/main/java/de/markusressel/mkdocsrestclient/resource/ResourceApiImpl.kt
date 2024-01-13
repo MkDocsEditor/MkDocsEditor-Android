@@ -37,16 +37,17 @@ class ResourceApiImpl(
         )
     }
 
-    override suspend fun getResourceContent(id: String): Result<String, FuelError> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override suspend fun getResourceContent(id: String): Result<ByteArray, FuelError> {
+        //requestManager.download("/resource/$id/")
+        return Result.of { throw Exception("Not implemented") }
     }
 
-    override suspend fun uploadResource(parentId: String): Result<String, FuelError> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override suspend fun uploadResource(parentId: String, name: String, content: ByteArray): Result<String, FuelError> {
+        return requestManager.upload("/resource/$parentId/$name", content)
     }
 
     override suspend fun deleteResource(id: String): Result<String, FuelError> {
-        return requestManager.doRequest("/document/$id/", Method.DELETE)
+        return requestManager.doRequest("/resource/$id/", Method.DELETE)
     }
 
 }

@@ -196,15 +196,15 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
         )
     }
 
-    override suspend fun getResourceContent(id: String): Result<String, FuelError> {
+    override suspend fun getResourceContent(id: String): Result<ByteArray, FuelError> {
         return DemoData.RootSection.findRecursive<ResourceModel> {
             it.id == id
         }?.let {
-            Result.success("This is the content of resource ${it.name}")
+            Result.success("This is the content of resource ${it.name}".encodeToByteArray())
         } ?: Result.error(FuelError.wrap(Exception("Resource not found")))
     }
 
-    override suspend fun uploadResource(parentId: String): Result<String, FuelError> {
+    override suspend fun uploadResource(parentId: String, name: String, content: ByteArray): Result<String, FuelError> {
         return Result.success("")
     }
 

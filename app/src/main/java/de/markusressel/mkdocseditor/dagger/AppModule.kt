@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.dagger
 
+import android.content.ContentResolver
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
@@ -44,6 +45,12 @@ class AppModule {
     @Singleton
     fun provideWifiManager(context: Context): WifiManager {
         return context.getSystemService(Context.WIFI_SERVICE) as WifiManager
+    }
+
+    @Provides
+    @Singleton
+    fun provideContentResolver(context: Context): ContentResolver {
+        return context.contentResolver
     }
 
     @Provides

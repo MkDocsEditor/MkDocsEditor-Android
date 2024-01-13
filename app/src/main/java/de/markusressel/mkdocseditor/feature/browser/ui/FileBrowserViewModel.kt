@@ -3,12 +3,14 @@ package de.markusressel.mkdocseditor.feature.browser.ui
 import androidx.core.text.trimmedLength
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import com.eightbitlab.rxbus.Bus
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.core.filterByExpectedType
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
+import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.browser.data.DocumentData
 import de.markusressel.mkdocseditor.feature.browser.data.ROOT_SECTION
@@ -26,6 +28,7 @@ import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameDocumen
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SearchUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SectionItem
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.UploadResourceUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
@@ -62,6 +65,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private val deleteSectionUseCase: DeleteSectionUseCase,
     private val applyCurrentBackendConfigUseCase: ApplyCurrentBackendConfigUseCase,
     private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
+    private val uploadResourceUseCase: UploadResourceUseCase,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -236,15 +240,11 @@ internal class FileBrowserViewModel @Inject constructor(
                 is UiEvent.CreateSectionDialogSaveClicked -> {
                     dismissCurrentDialog()
                     createNewSection(event.parentSectionId, event.name)
-                    reload()
                 }
 
                 is UiEvent.EditSectionDialogSaveClicked -> {
                     dismissCurrentDialog()
-                    if (isSectionNameValid(event.name)) {
-                        renameSectionUseCase(event.sectionId, event.name)
-                        reload()
-                    }
+                    renameSection(event.sectionId, event.name)
                 }
 
                 is UiEvent.EditSectionDialogDeleteClicked -> {
@@ -268,6 +268,7 @@ internal class FileBrowserViewModel @Inject constructor(
             }
         }
     }
+
 
     private fun showDeleteDocumentConfirmationDialog(documentId: String) {
         _uiState.update { old ->
@@ -297,7 +298,10 @@ internal class FileBrowserViewModel @Inject constructor(
 
     private fun setError(message: String?) {
         _uiState.update { old ->
-            old.copy(error = message)
+            old.copy(
+                isLoading = false,
+                error = message
+            )
         }
     }
 
@@ -494,11 +498,23 @@ internal class FileBrowserViewModel @Inject constructor(
             showLoading(true)
 
             createNewSectionUseCase(trimmedSectionName, parentSectionId)
+            reload()
         } catch (ex: Exception) {
             Timber.e(ex)
             setError(message = ex.localizedMessage ?: ex.javaClass.name)
-        } finally {
-            showLoading(false)
+        }
+    }
+
+    private suspend fun renameSection(sectionId: String, name: String) {
+        if (isSectionNameValid(name)) {
+            try {
+                showLoading(true)
+                renameSectionUseCase(sectionId, name)
+                reload()
+            } catch (ex: Exception) {
+                Timber.e(ex)
+                setError(message = ex.localizedMessage ?: ex.javaClass.name)
+            }
         }
     }
 
@@ -541,33 +557,30 @@ internal class FileBrowserViewModel @Inject constructor(
     private suspend fun deleteDocument(id: String) {
         try {
             deleteDocumentUseCase(id)
+            reload()
         } catch (ex: Exception) {
             Timber.e(ex)
             setError(message = ex.localizedMessage ?: ex.javaClass.name)
-        } finally {
-            reload()
         }
     }
 
     private suspend fun deleteResource(resourceId: String) {
         try {
             deleteResourceUseCase(resourceId)
+            reload()
         } catch (ex: Exception) {
             Timber.e(ex)
             setError(message = ex.localizedMessage ?: ex.javaClass.name)
-        } finally {
-            reload()
         }
     }
 
     private suspend fun deleteSection(sectionId: String) {
         try {
             deleteSectionUseCase(sectionId)
+            reload()
         } catch (ex: Exception) {
             Timber.e(ex)
             setError(message = ex.localizedMessage ?: ex.javaClass.name)
-        } finally {
-            reload()
         }
     }
 
@@ -602,8 +615,24 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private fun onUploadResourceFabClicked() {
-        // TODO: show file picker
+    private suspend fun onUploadResourceFabClicked() {
+        _events.send(FileBrowserEvent.OpenResourceSelection)
+        val obs = Bus.observe<BusEvent.FilePickerResult>()
+        obs.subscribe { event ->
+            val uri = event.uri
+            if (uri != null) {
+                launch {
+                    try {
+                        uploadResourceUseCase(currentSectionId.value, uri)
+                        reload()
+                    } catch (ex: Exception) {
+                        Timber.e(ex)
+                        setError(message = ex.localizedMessage ?: ex.javaClass.name)
+                    }
+                }
+            }
+            Bus.unregister(obs)
+        }
     }
 
     private fun onDocumentLongClicked(entity: DocumentData) {
@@ -689,4 +718,5 @@ internal sealed class UiEvent {
 
 internal sealed class FileBrowserEvent {
     data class OpenDocumentEditor(val documentId: String) : FileBrowserEvent()
+    data object OpenResourceSelection : FileBrowserEvent()
 }
