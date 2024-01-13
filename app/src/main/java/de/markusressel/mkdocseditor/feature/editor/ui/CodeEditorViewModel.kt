@@ -20,7 +20,6 @@ import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
-import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.ConnectionStatus
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.Error
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.InitialText
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
@@ -145,7 +144,7 @@ internal class CodeEditorViewModel @Inject constructor(
                     enabled -> disconnect("Offline mode activated")
                     else -> {
                         if (preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value.not()) {
-                            events.value = ConnectionStatus(
+                            connectionStatus.value = ConnectionStatus(
                                 connected = connectionStatus.value?.connected ?: false
                             )
                         } else {
@@ -164,12 +163,6 @@ internal class CodeEditorViewModel @Inject constructor(
 
         events.observeForever { event ->
             when (event) {
-                is ConnectionStatus -> {
-                    _uiState.update { old ->
-                        old.copy(loading = false)
-                    }
-                }
-
                 is Error -> _uiState.update { old ->
                     old.copy(loading = false)
                 }
@@ -231,7 +224,6 @@ internal class CodeEditorViewModel @Inject constructor(
                 runOnUiThread {
                     val status = ConnectionStatus(connected, errorCode, throwable)
                     connectionStatus.value = status
-                    events.value = status
                 }
             },
             onInitialText = { initialText ->
@@ -285,6 +277,77 @@ internal class CodeEditorViewModel @Inject constructor(
                 Timber.d { "$resource" }
             }
         }
+    }
+
+    /**
+     * Restores the editor state from persistence
+     *
+     * @param text the new text to use, or null to keep the current text
+     */
+    private fun restoreEditorState(
+        entity: DocumentEntity? = null,
+        text: String? = null
+    ) {
+        val content = entity?.content?.target
+        if (content != null) {
+            if (text != null) {
+                setEditorText(text)
+            } else {
+                // restore values from cache
+                setEditorText(content.text, content.selection)
+            }
+
+//            val absolutePosition = computeAbsolutePosition(PointF(content.panX, content.panY))
+//            codeEditorLayout.codeEditorView.moveTo(
+//                content.zoomLevel,
+//                absolutePosition.x,
+//                absolutePosition.y,
+//                animate = false
+//            )
+        } else {
+            if (text != null) {
+                setEditorText(text)
+            }
+        }
+    }
+
+    /**
+     * Set the editor content to the specified text.
+     *
+     * @param text the text to set
+     * @param selectionStart optional selection start index
+     * @param selectionEnd optional selection end index
+     */
+    private fun setEditorText(
+        text: String,
+        selectionStart: Int? = null,
+        selectionEnd: Int? = null
+    ) {
+        // we don't listen to selection changes when the text is changed via code
+        // because the selection will be restored from persistence anyway
+        // and the listener would override this
+//        selectionChangedListener = null
+        _uiState.update { old ->
+            old.copy(
+                text = AnnotatedString(text),
+                selection = selectionStart?.let {
+                    computeEditorSelection(text.length, it, selectionEnd)
+                } ?: old.selection
+            )
+        }
+//        selectionChangedListener = this
+    }
+
+    private fun computeEditorSelection(
+        maxIndex: Int,
+        selectionStart: Int,
+        selectionEnd: Int?
+    ): TextRange {
+        val endIndex = selectionEnd ?: selectionStart
+        return TextRange(
+            selectionStart.coerceIn(0, maxIndex),
+            endIndex.coerceIn(0, maxIndex)
+        )
     }
 
     private fun updateTitle(title: String) {
@@ -478,7 +541,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private fun disconnect(reason: String = "None", throwable: Throwable? = null) {
         disableEditMode()
         documentSyncManager?.disconnect(1000, reason)
-        events.value = ConnectionStatus(connected = false, throwable = throwable)
+        connectionStatus.value = ConnectionStatus(connected = false, throwable = throwable)
     }
 
     private fun updateDocumentContentInCache(documentId: String, text: String) =
@@ -488,13 +551,28 @@ internal class CodeEditorViewModel @Inject constructor(
 
 
     private fun saveEditorState() = launch {
+        // TODO: this will probably cause problems when deleting all characters in a document
+
+//            val positioningPercentage = getCurrentPositionPercentage()
+//
+//        if (positioningPercentage.x.isNaN() || positioningPercentage.y.isNaN()) {
+//            // don't save the state if it is incomplete
+//            return
+//        }
+//
+//        viewModel.saveEditorState(
+//            selection = codeEditorLayout.codeEditorView.codeEditText.selectionStart,
+//            panX = positioningPercentage.x,
+//            panY = positioningPercentage.y
+//        )
+
         dataRepository.saveEditorState(
-            documentId.value!!,
-            uiState.value.text?.toString(),
-            uiState.value.selection?.start ?: 0,
-            uiState.value.currentZoom,
-            uiState.value.panX,
-            uiState.value.panY
+            documentId = documentId.value!!,
+            text = uiState.value.text?.toString(),
+            selection = uiState.value.selection?.start ?: 0,
+            zoomLevel = uiState.value.currentZoom,
+            panX = uiState.value.panX,
+            panY = uiState.value.panY
         )
     }
 
@@ -609,4 +687,10 @@ internal class CodeEditorViewModel @Inject constructor(
 
         data object BackPressed : UiEvent()
     }
+
+    data class ConnectionStatus(
+        val connected: Boolean,
+        val errorCode: Int? = null,
+        val throwable: Throwable? = null
+    )
 }

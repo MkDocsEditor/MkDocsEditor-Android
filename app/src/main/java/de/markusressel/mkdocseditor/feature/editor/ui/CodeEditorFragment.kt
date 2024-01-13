@@ -17,14 +17,12 @@ import com.github.ajalt.timberkt.Timber
 import com.google.android.material.snackbar.Snackbar
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import dagger.hilt.android.AndroidEntryPoint
-import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.ui.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.ui.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch.Patch
-import java.util.*
+import java.util.LinkedList
 
 /**
  * Created by Markus on 07.01.2018.
@@ -106,60 +104,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-//        binding = FragmentEditorBinding.inflate(layoutInflater, container, false).apply {
-//            lifecycleOwner = this@CodeEditorFragment
-//            viewModel = this@CodeEditorFragment.viewModel
-//        }
-
-//        val parent = binding.root as ViewGroup
-//        return onCreateView(inflater, parent, savedInstanceState)
         return View(context)
-    }
-
-//    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-//        super.onCreateOptionsMenu(menu, inflater)
-//        optionsMenuComponent.onCreateOptionsMenu(menu, inflater)
-//    }
-//
-//    override fun onPrepareOptionsMenu(menu: Menu) {
-//        super.onPrepareOptionsMenu(menu)
-//        optionsMenuComponent.onPrepareOptionsMenu(menu)
-//    }
-//
-//    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-//        return super.onOptionsItemSelected(item) || optionsMenuComponent.onOptionsItemSelected(item)
-//    }
-
-    /**
-     * Restores the editor state from persistence
-     *
-     * @param text the new text to use, or null to keep the current text
-     */
-    private fun restoreEditorState(
-        entity: DocumentEntity? = null,
-        text: String? = null
-    ) {
-        val content = entity?.content?.target
-        if (content != null) {
-            if (text != null) {
-//                setEditorText(text)
-            } else {
-                // restore values from cache
-//                setEditorText(content.text, content.selection)
-            }
-
-//            val absolutePosition = computeAbsolutePosition(PointF(content.panX, content.panY))
-//            codeEditorLayout.codeEditorView.moveTo(
-//                content.zoomLevel,
-//                absolutePosition.x,
-//                absolutePosition.y,
-//                animate = false
-//            )
-        } else {
-            if (text != null) {
-//                setEditorText(text)
-            }
-        }
     }
 
     @CallSuper
@@ -225,43 +170,9 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
 
             events.observe(viewLifecycleOwner) { event ->
                 when (event) {
-                    is CodeEditorEvent.ConnectionStatus -> {
-                        noConnectionSnackbar?.dismiss()
-                        if (event.connected) {
-                            runOnUiThread {
-//                                codeEditorLayout.snack(R.string.connected, Snackbar.LENGTH_SHORT)
-                            }
-                        } else {
-//                            if (event.throwable != null) {
-//                                Timber.e(event.throwable) { "Websocket error code: ${event.errorCode}" }
-//                                noConnectionSnackbar = codeEditorLayout.snack(
-//                                    text = R.string.server_unavailable,
-//                                    duration = Snackbar.LENGTH_INDEFINITE,
-//                                    actionTitle = R.string.retry,
-//                                    action = {
-//                                        viewModel.onRetryClicked()
-//                                    })
-//                            } else if (viewModel.offlineModeManager.isEnabled().not()) {
-//                                noConnectionSnackbar = codeEditorLayout.snack(
-//                                    text = R.string.not_connected,
-//                                    duration = Snackbar.LENGTH_INDEFINITE,
-//                                    actionTitle = R.string.connect,
-//                                    action = {
-//                                        viewModel.onConnectClicked()
-//                                    })
-//                            }
-                        }
-                    }
 
                     is CodeEditorEvent.InitialText -> {
 //                        restoreEditorState(viewModel.documentEntityFlow.value?.data, event.text)
-                    }
-
-                    is CodeEditorEvent.TextChange -> {
-//                        handleExternalTextChange(
-//                            event.newText,
-//                            event.patches
-//                        )
                     }
 
                     is CodeEditorEvent.Error -> {
@@ -313,55 +224,7 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
 //        }
     }
 
-    /**
-     * Set the editor content to the specified text.
-     *
-     * @param text the text to set
-     * @param selectionStart optional selection start index
-     * @param selectionEnd optional selection end index
-     */
-//    private fun setEditorText(
-//        text: String,
-//        selectionStart: Int? = null,
-//        selectionEnd: Int? = null
-//    ) {
-//        codeEditorLayout.codeEditorView.apply {
-//            // we don't listen to selection changes when the text is changed via code
-//            // because the selection will be restored from persistence anyway
-//            // and the listener would override this
-//            selectionChangedListener = null
-//            this.text = text
-//            selectionStart?.let {
-//                setEditorSelection(text.length, it, selectionEnd)
-//            }
-//            selectionChangedListener = this@CodeEditorFragment
-//        }
-//    }
-
-//    private fun setEditorSelection(maxIndex: Int, selectionStart: Int, selectionEnd: Int?) {
-//        val endIndex = selectionEnd ?: selectionStart
-//        codeEditorLayout.codeEditorView.codeEditText.setSelection(
-//            selectionStart.coerceIn(0, maxIndex),
-//            endIndex.coerceIn(0, maxIndex)
-//        )
-//    }
-
 //    override fun onSelectionChanged(start: Int, end: Int, hasSelection: Boolean) {
-//        saveEditorState()
-//    }
-
-//    private fun handleExternalTextChange(newText: String, patches: LinkedList<Patch>) {
-//        val oldSelectionStart = codeEditorLayout.codeEditorView.codeEditText.selectionStart
-//        val oldSelectionEnd = codeEditorLayout.codeEditorView.codeEditText.selectionEnd
-//        viewModel.currentText.value = newText
-
-    // set new cursor position
-//        val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, patches)
-//            .coerceIn(0, newText.length)
-//        val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
-//            .coerceIn(0, newText.length)
-//
-//        setEditorText(newText, newSelectionStart, newSelectionEnd)
 //        saveEditorState()
 //    }
 
