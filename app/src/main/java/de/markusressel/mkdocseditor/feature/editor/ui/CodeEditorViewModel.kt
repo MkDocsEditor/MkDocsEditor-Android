@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
-import androidx.annotation.UiThread
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
 import androidx.lifecycle.MutableLiveData
@@ -138,6 +137,10 @@ internal class CodeEditorViewModel @Inject constructor(
 
         launch {
             isOfflineModeEnabledFlowUseCase().collect { enabled ->
+                _uiState.update { old ->
+                    old.copy(isOfflineModeBannerVisible = enabled)
+                }
+
                 when {
                     enabled -> disconnect("Offline mode activated")
                     else -> {
@@ -156,14 +159,6 @@ internal class CodeEditorViewModel @Inject constructor(
         launch {
             uiState.map { it.editModeActive }.distinctUntilChanged().collectLatest {
                 documentSyncManager?.readOnly = it.not()
-            }
-        }
-
-        launch {
-            isOfflineModeEnabledFlowUseCase().collectLatest {
-                _uiState.update { old ->
-                    old.copy(isOfflineModeBannerVisible = it)
-                }
             }
         }
 
@@ -268,22 +263,54 @@ internal class CodeEditorViewModel @Inject constructor(
 
     private suspend fun loadDocumentResource(documentId: String) {
         val resource = getDocumentUseCase(documentId)
-        _uiState.update { old ->
-            old.copy(title = resource.data?.name ?: "")
-        }
         currentResource.value = resource
         when (resource) {
             is Success -> {
-                //if (offlineModeManager.isEnabled().not()) {
-                reconnectToServer()
-                //}
+                _uiState.update { old ->
+                    old.copy(title = resource.data?.name ?: "")
+                }
+                if (isOfflineModeEnabledFlowUseCase().value) {
+                    showOfflineVersionIfPossible()
+                } else {
+                    reconnectToServer()
+                }
             }
 
-            is Resource.Error -> Timber.e(resource.error)
+            is Resource.Error -> {
+                Timber.e(resource.error) { "Error loading document resource" }
+                showOfflineVersionIfPossible()
+            }
+
             else -> {
                 Timber.d { "$resource" }
             }
         }
+    }
+
+    private fun showOfflineVersionIfPossible() {
+        val cachedContent = getCachedContent()
+        if (cachedContent != null) {
+            initializeInOfflineMode(cachedContent)
+        } else {
+            showNoOfflineVersionAvailableDialog()
+        }
+    }
+
+    private fun getCachedContent(): String? {
+        return currentResource.value?.data?.content?.target?.text
+    }
+
+    private fun initializeInOfflineMode(cachedContent: String) {
+        disableEditMode()
+        _uiState.update { old ->
+            old.copy(
+                text = AnnotatedString(cachedContent),
+            )
+        }
+    }
+
+    private fun showNoOfflineVersionAvailableDialog() {
+
     }
 
     private fun showSnackbar(snackbar: SnackbarData?) {
@@ -354,16 +381,6 @@ internal class CodeEditorViewModel @Inject constructor(
             } catch (ex: Exception) {
                 Timber.e(ex)
             }
-        }
-    }
-
-    /**
-     * Loads the last offline version of this document from persistence
-     */
-    @UiThread
-    fun loadTextFromPersistence() {
-        _uiState.update { old ->
-            old.copy(loading = false)
         }
     }
 
