@@ -301,33 +301,27 @@ internal class FileBrowserViewModel @Inject constructor(
 
 
     private fun showDeleteDocumentConfirmationDialog(documentId: String) {
-        _uiState.update { old ->
-            old.copy(
-                currentDialogState = DialogState.DeleteDocumentConfirmation(
-                    documentId = documentId,
-                )
+        showDialog(
+            DialogState.DeleteDocumentConfirmation(
+                documentId = documentId,
             )
-        }
+        )
     }
 
     private fun showDeleteSectionConfirmationDialog(sectionId: String) {
-        _uiState.update { old ->
-            old.copy(
-                currentDialogState = DialogState.DeleteSectionConfirmation(
-                    sectionId = sectionId,
-                )
+        showDialog(
+            DialogState.DeleteSectionConfirmation(
+                sectionId = sectionId,
             )
-        }
+        )
     }
 
     private fun showDeleteResourceConfirmationDialog(resourceId: String) {
-        _uiState.update { old ->
-            old.copy(
-                currentDialogState = DialogState.DeleteResourceConfirmation(
-                    resourceId = resourceId,
-                )
+        showDialog(
+            DialogState.DeleteResourceConfirmation(
+                resourceId = resourceId,
             )
-        }
+        )
     }
 
     private fun setFabConfig(fabConfig: FabConfig<FileBrowserFabId>) {
@@ -385,25 +379,21 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private suspend fun onSectionLongClicked(item: SectionData) {
-        _uiState.update { old ->
-            old.copy(
-                currentDialogState = DialogState.EditSection(
-                    sectionId = item.id,
-                    initialSectionName = item.name
-                )
+        showDialog(
+            DialogState.EditSection(
+                sectionId = item.id,
+                initialSectionName = item.name
             )
-        }
+        )
     }
 
     private suspend fun onResourceLongClicked(item: ResourceData) {
-        _uiState.update { old ->
-            old.copy(
-                currentDialogState = DialogState.EditResource(
-                    resourceId = item.id,
-                    initialResourceName = item.name
-                )
+        showDialog(
+            DialogState.EditResource(
+                resourceId = item.id,
+                initialResourceName = item.name
             )
-        }
+        )
     }
 
     private fun isDocumentNameValid(name: String): Boolean {
@@ -425,11 +415,13 @@ internal class FileBrowserViewModel @Inject constructor(
             && equallyNamedResourcesExist.not()
     }
 
-    private fun dismissCurrentDialog() {
+    private fun showDialog(dialogState: DialogState?) {
         _uiState.update { old ->
-            old.copy(currentDialogState = null)
+            old.copy(currentDialogState = dialogState)
         }
     }
+
+    private fun dismissCurrentDialog() = showDialog(null)
 
     /**
      * Open a specific section
@@ -639,27 +631,23 @@ internal class FileBrowserViewModel @Inject constructor(
     private fun onCreateSectionFabClicked() {
         val currentSectionId = currentSectionId.value
 
-        _uiState.update { old ->
-            old.copy(
-                currentDialogState = DialogState.CreateSection(
-                    parentSectionId = currentSectionId,
-                    initialSectionName = ""
-                )
+        showDialog(
+            DialogState.CreateSection(
+                parentSectionId = currentSectionId,
+                initialSectionName = ""
             )
-        }
+        )
     }
 
     private fun onCreateDocumentFabClicked() {
         val currentSectionId = currentSectionId.value
 
-        _uiState.update { old ->
-            old.copy(
-                currentDialogState = DialogState.CreateDocument(
-                    sectionId = currentSectionId,
-                    initialDocumentName = ""
-                )
+        showDialog(
+            DialogState.CreateDocument(
+                sectionId = currentSectionId,
+                initialDocumentName = ""
             )
-        }
+        )
     }
 
     private suspend fun onUploadResourceFabClicked() {
@@ -683,14 +671,12 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private fun onDocumentLongClicked(entity: DocumentData) {
-        _uiState.update { old ->
-            old.copy(
-                currentDialogState = DialogState.EditDocument(
-                    documentId = entity.id,
-                    initialDocumentName = entity.name
-                )
+        showDialog(
+            DialogState.EditDocument(
+                documentId = entity.id,
+                initialDocumentName = entity.name
             )
-        }
+        )
     }
 
     private suspend fun onDocumentClicked(entity: DocumentData) {
