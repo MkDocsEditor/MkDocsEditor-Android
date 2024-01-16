@@ -189,7 +189,7 @@ internal class CodeEditorViewModel @Inject constructor(
             else -> {
                 val currentBackend = requireNotNull(getCurrentBackendConfigUseCase())
                 val serverConfig = requireNotNull(currentBackend.serverConfig)
-                val authConfig = currentBackend.authConfig
+                val authConfig = currentBackend.backendAuthConfig
 
                 documentSyncManager =
                     createDocumentSyncManager(documentId, serverConfig, authConfig)

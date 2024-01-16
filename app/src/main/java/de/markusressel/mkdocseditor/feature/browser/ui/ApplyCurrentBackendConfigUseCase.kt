@@ -17,7 +17,7 @@ internal class ApplyCurrentBackendConfigUseCase @Inject constructor(
             restClient.setUseSSL(serverConfig.useSsl)
 
             restClient.setBasicAuthConfig(
-                config.authConfig?.let {
+                config.backendAuthConfig?.let {
                     BasicAuthConfig(
                         username = it.username,
                         password = it.password

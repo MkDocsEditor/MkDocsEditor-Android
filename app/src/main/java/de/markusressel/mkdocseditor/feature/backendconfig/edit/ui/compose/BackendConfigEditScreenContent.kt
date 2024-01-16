@@ -20,6 +20,7 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.auth.AuthConfigSection
+import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.server.MkDocsWebSection
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.server.ServerSection
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
@@ -101,14 +102,46 @@ internal fun BackendConfigEditScreenContent(
                             )
                         )
                     },
-                    currentWebBaseUri = uiState.currentWebBaseUri,
-                    onWebBaseUriChanged = { text ->
+                )
+
+                AuthConfigSection(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    editMode = uiState.authConfigEditMode,
+                    authConfigs = uiState.authConfigs,
+                    authConfig = uiState.currentAuthConfig,
+                    saveButtonEnabled = uiState.authConfigSaveButtonEnabled,
+                    currentAuthConfigUsername = uiState.currentAuthConfigUsername,
+                    currentAuthConfigPassword = uiState.currentAuthConfigPassword,
+                    onUiEvent = onUiEvent
+                )
+
+                MkDocsWebSection(
+                    modifier = Modifier.fillMaxWidth(),
+                    currentDomain = uiState.currentDomain,
+                    onDomainChanged = { text ->
                         onUiEvent(
-                            BackendConfigEditViewModel.UiEvent.WebBaseUriChanged(
+                            BackendConfigEditViewModel.UiEvent.DomainChanged(
                                 text
                             )
                         )
-                    }
+                    },
+                    currentPort = uiState.currentPort,
+                    onPortChanged = { text ->
+                        onUiEvent(
+                            BackendConfigEditViewModel.UiEvent.PortChanged(
+                                text
+                            )
+                        )
+                    },
+                    useSsl = uiState.currentUseSsl,
+                    onUseSslCheckedChanged = { checked ->
+                        onUiEvent(
+                            BackendConfigEditViewModel.UiEvent.UseSslChanged(
+                                checked
+                            )
+                        )
+                    },
                 )
 
                 AuthConfigSection(
@@ -189,7 +222,6 @@ private fun BackendConfigEditScreenContentPreview() {
                 currentDomain = "domain.com",
                 currentPort = "443",
                 currentUseSsl = true,
-                currentWebBaseUri = "https://domain.com",
                 currentAuthConfig = AuthConfig(
                     username = "user",
                     password = "password"

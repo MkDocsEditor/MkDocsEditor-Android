@@ -207,7 +207,7 @@
     },
     {
       "id": "5:5280773954032560660",
-      "lastPropertyId": "8:5420218892066969331",
+      "lastPropertyId": "10:4266997208975995230",
       "name": "BackendConfigEntity",
       "properties": [
         {
@@ -242,12 +242,28 @@
           "indexId": "11:8410212560139488673",
           "type": 11,
           "flags": 520,
-          "relationTarget": "BackendAuthConfigEntity"
+          "relationTarget": "UserPasswordAuthConfigEntity"
         },
         {
           "id": "8:5420218892066969331",
           "name": "isSelected",
           "type": 1
+        },
+        {
+          "id": "9:511510660300211826",
+          "name": "mkDocsWebConfigId",
+          "indexId": "16:6814491596420036690",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "MkDocsWebConfigEntity"
+        },
+        {
+          "id": "10:4266997208975995230",
+          "name": "mkDocsWebAuthConfigId",
+          "indexId": "17:8618384565784633255",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "UserPasswordAuthConfigEntity"
         }
       ],
       "relations": []
@@ -277,35 +293,59 @@
           "id": "4:6476544072334160281",
           "name": "useSsl",
           "type": 1
-        },
-        {
-          "id": "7:5340594149183698957",
-          "name": "webBaseUri",
-          "type": 9
         }
       ],
       "relations": []
     },
     {
-      "id": "7:6963505399939795788",
-      "lastPropertyId": "3:1450809219100709916",
-      "name": "BackendAuthConfigEntity",
+      "id": "8:5720091018054670391",
+      "lastPropertyId": "4:5059229998471043716",
+      "name": "MkDocsWebConfigEntity",
       "properties": [
         {
-          "id": "1:4742160120032621424",
+          "id": "1:4910204260819276005",
           "name": "entityId",
           "type": 6,
           "flags": 1
         },
         {
-          "id": "2:1145372074832984057",
+          "id": "2:362484977889288778",
+          "name": "domain",
+          "type": 9
+        },
+        {
+          "id": "3:8243767512680303261",
+          "name": "port",
+          "type": 5
+        },
+        {
+          "id": "4:5059229998471043716",
+          "name": "useSsl",
+          "type": 1
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "9:8251431603641461426",
+      "lastPropertyId": "3:7339607230058322200",
+      "name": "UserPasswordAuthConfigEntity",
+      "properties": [
+        {
+          "id": "1:1630928794599631771",
+          "name": "entityId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:6125526040093759038",
           "name": "username",
-          "indexId": "12:3708855796179649415",
+          "indexId": "18:2304470593862114636",
           "type": 9,
           "flags": 2080
         },
         {
-          "id": "3:1450809219100709916",
+          "id": "3:7339607230058322200",
           "name": "password",
           "type": 9
         }
@@ -313,24 +353,31 @@
       "relations": []
     }
   ],
-  "lastEntityId": "7:6963505399939795788",
-  "lastIndexId": "15:5675821949556110529",
+  "lastEntityId": "9:8251431603641461426",
+  "lastIndexId": "18:2304470593862114636",
   "lastRelationId": "5:6680787238725584468",
   "lastSequenceId": "0:0",
   "modelVersion": 5,
   "modelVersionParserMinimum": 5,
-  "retiredEntityUids": [],
+  "retiredEntityUids": [
+    6963505399939795788
+  ],
   "retiredIndexUids": [
     7384408086141472050,
     4446651935175240247,
-    2336407603629742715
+    2336407603629742715,
+    3708855796179649415
   ],
   "retiredPropertyUids": [
     5172956741253300140,
     3037818499188853511,
     4835462335252275695,
     600589880715002879,
-    4521086272698141036
+    4521086272698141036,
+    5340594149183698957,
+    4742160120032621424,
+    1145372074832984057,
+    1450809219100709916
   ],
   "retiredRelationUids": [
     503771180738858818,

@@ -16,7 +16,7 @@ internal class OpenDocumentInBrowserUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(documentId: String): Boolean {
         val backendConfig = requireNotNull(getCurrentBackendConfigUseCase())
-        val webBaseUri = backendConfig.serverConfig?.webBaseUri
+        val webBaseUri = backendConfig.mkDocsWebConfig?.domain
         if (webBaseUri.isNullOrBlank()) {
             return false
         }
@@ -29,11 +29,11 @@ internal class OpenDocumentInBrowserUseCase @Inject constructor(
     }
 
     private fun computeDocumentUrl(backendConfig: BackendConfig, document: DocumentEntity): String {
-        val webBaseUri = backendConfig.serverConfig?.webBaseUri
+        val webBaseUri = backendConfig.mkDocsWebConfig?.domain
         val protocol = webBaseUri?.substringBefore("://") ?: "https"
         val host = webBaseUri?.substringAfter("://")?.substringBefore("/") ?: "localhost"
 
-        val authConfig = backendConfig.authConfig
+        val authConfig = backendConfig.backendAuthConfig
         val username = authConfig?.username
         val password = authConfig?.password
         val basicAuthInUrl = "${username?.htmlEncode()}:${password?.htmlEncode()}"

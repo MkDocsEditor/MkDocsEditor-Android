@@ -8,7 +8,9 @@ data class BackendConfig(
     val name: String,
     val description: String,
     val serverConfig: BackendServerConfig?,
-    val authConfig: AuthConfig?,
+    val backendAuthConfig: AuthConfig?,
+    val mkDocsWebConfig: MkDocsWebConfig?,
+    val mkDocsWebAuthConfig: AuthConfig?,
     val isSelected: Boolean,
 )
 
@@ -18,5 +20,7 @@ internal fun BackendConfigEntity.toBackendConfig() = BackendConfig(
     description = description,
     isSelected = isSelected,
     serverConfig = serverConfig.target.toServerConfig(),
-    authConfig = authConfig.target?.toBackendAuthConfig(),
+    backendAuthConfig = authConfig.target?.toAuthConfig(),
+    mkDocsWebConfig = mkDocsWebConfig.target?.toMkDocsWebConfig(),
+    mkDocsWebAuthConfig = mkDocsWebAuthConfig.target?.toAuthConfig(),
 )

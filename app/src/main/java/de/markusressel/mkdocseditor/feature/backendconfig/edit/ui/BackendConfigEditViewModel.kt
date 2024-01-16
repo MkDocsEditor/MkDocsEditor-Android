@@ -8,6 +8,7 @@ import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.MkDocsWebConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendAuthConfigsUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.ValidateEditedBackendConfigUseCase
@@ -80,11 +81,16 @@ internal class BackendConfigEditViewModel @Inject constructor(
 
                 name = data.name,
                 description = data.description,
+
                 currentDomain = data.serverConfig?.domain ?: "",
                 currentPort = data.serverConfig?.port?.toString() ?: "",
                 currentUseSsl = data.serverConfig?.useSsl ?: false,
-                currentWebBaseUri = data.serverConfig?.webBaseUri ?: "",
-                currentAuthConfig = data.authConfig,
+
+                currentMkDocsWebDomain = data.mkDocsWebConfig?.domain ?: "",
+                currentMkDocsWebPort = data.mkDocsWebConfig?.port?.toString() ?: "",
+                currentMkDocsWebUseSsl = data.mkDocsWebConfig?.useSsl ?: false,
+
+                currentAuthConfig = data.backendAuthConfig,
                 isDeleteButtonEnabled = true,
             )
         }
@@ -109,7 +115,10 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 is UiEvent.DomainChanged -> processDomainInput(event.text)
                 is UiEvent.PortChanged -> processPortInput(event.port)
                 is UiEvent.UseSslChanged -> processUseSslInput(event.checked)
-                is UiEvent.WebBaseUriChanged -> processWebBaseUriInput(event.text)
+
+                is UiEvent.MkDocsWebDomainChanged -> processDomainInput(event.text)
+                is UiEvent.MkDocsWebPortChanged -> processPortInput(event.port)
+                is UiEvent.MkDocsWebUseSslChanged -> processUseSslInput(event.checked)
 
                 is UiEvent.AuthConfigSelectionChanged -> processAuthConfigSelectionChange(event.authConfig)
                 is UiEvent.AuthConfigAddButtonClicked -> enableAuthConfigEditMode()
@@ -152,13 +161,6 @@ internal class BackendConfigEditViewModel @Inject constructor(
     private suspend fun processUseSslInput(checked: Boolean) {
         _uiState.update { old ->
             old.copy(currentUseSsl = checked)
-        }
-        updateSaveButtonEnabled()
-    }
-
-    private suspend fun processWebBaseUriInput(text: String) {
-        _uiState.update { old ->
-            old.copy(currentWebBaseUri = text)
         }
         updateSaveButtonEnabled()
     }
@@ -248,10 +250,13 @@ internal class BackendConfigEditViewModel @Inject constructor(
                     domain = uiState.value.currentDomain,
                     port = uiState.value.currentPort.toInt(),
                     useSsl = uiState.value.currentUseSsl,
-                    // TODO: allow user override
-                    webBaseUri = uiState.value.currentWebBaseUri.takeIf {
-                        it.isNotBlank()
-                    } ?: "https://${uiState.value.currentDomain}:${uiState.value.currentPort}",
+                )
+
+                val mkDocsWebConfig = MkDocsWebConfig(
+                    id = uiState.value.currentBackendConfig?.mkDocsWebConfig?.id ?: 0,
+                    domain = uiState.value.currentMkDocsWebDomain,
+                    port = uiState.value.currentMkDocsWebPort.toInt(),
+                    useSsl = uiState.value.currentMkDocsWebUseSsl,
                 )
 
                 val config = BackendConfig(
@@ -260,7 +265,9 @@ internal class BackendConfigEditViewModel @Inject constructor(
                     description = uiState.value.description,
                     isSelected = false,
                     serverConfig = serverConfig,
-                    authConfig = uiState.value.currentAuthConfig,
+                    backendAuthConfig = uiState.value.currentAuthConfig,
+                    mkDocsWebConfig = mkDocsWebConfig,
+                    mkDocsWebAuthConfig = uiState.value.currentMkDocsWebAuthConfig,
                 )
                 saveBackendConfigUseCase(config)
                 _events.send(BackendEditEvent.CloseScreen)
@@ -353,10 +360,14 @@ internal class BackendConfigEditViewModel @Inject constructor(
 
         data class NameChanged(val text: String) : UiEvent()
         data class DescriptionChanged(val text: String) : UiEvent()
+
         data class DomainChanged(val text: String) : UiEvent()
         data class PortChanged(val port: String) : UiEvent()
         data class UseSslChanged(val checked: Boolean) : UiEvent()
-        data class WebBaseUriChanged(val text: String) : UiEvent()
+
+        data class MkDocsWebDomainChanged(val text: String) : UiEvent()
+        data class MkDocsWebPortChanged(val port: String) : UiEvent()
+        data class MkDocsWebUseSslChanged(val checked: Boolean) : UiEvent()
 
         data object AuthConfigSaveButtonClicked : UiEvent()
     }
@@ -376,9 +387,12 @@ internal class BackendConfigEditViewModel @Inject constructor(
         val currentDomain: String = "",
         val currentPort: String = "",
         val currentUseSsl: Boolean = false,
-        val currentWebBaseUri: String = "",
-
         val currentAuthConfig: AuthConfig? = null,
+
+        val currentMkDocsWebDomain: String = "",
+        val currentMkDocsWebPort: String = "",
+        val currentMkDocsWebUseSsl: Boolean = false,
+        val currentMkDocsWebAuthConfig: AuthConfig? = null,
 
         val authConfigEditMode: Boolean = false,
         val currentAuthConfigUsername: String = "",

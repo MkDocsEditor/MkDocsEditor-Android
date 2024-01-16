@@ -15,7 +15,7 @@ import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
-internal fun ServerSection(
+internal fun MkDocsWebSection(
     modifier: Modifier = Modifier,
     currentDomain: String,
     onDomainChanged: (String) -> Unit,
@@ -55,9 +55,9 @@ internal fun ServerSection(
 
 @CombinedPreview
 @Composable
-private fun ServerSectionSectionPreview() {
+private fun MkDocsWebSectionPreview() {
     MkDocsEditorTheme {
-        ServerSection(
+        MkDocsWebSection(
             currentDomain = "domain.com",
             onDomainChanged = {},
             currentPort = "443",

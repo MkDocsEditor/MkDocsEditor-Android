@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.MkDocsWebConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.list.ui.BackendSelectionViewModel
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
@@ -80,12 +81,20 @@ private fun BackendSelectionScreenContentPreview() {
                             domain = "mkdocksrest.backend.com",
                             port = 443,
                             useSsl = true,
-                            webBaseUri = "https://mkdocksrest.backend.com",
                         ),
-                        authConfig = AuthConfig(
+                        backendAuthConfig = AuthConfig(
                             username = "test",
                             password = "test",
-                        )
+                        ),
+                        mkDocsWebConfig = MkDocsWebConfig(
+                            domain = "mkdocksweb.backend.com",
+                            port = 443,
+                            useSsl = true,
+                        ),
+                        mkDocsWebAuthConfig = AuthConfig(
+                            username = "test",
+                            password = "test",
+                        ),
                     )
                 )
             ),

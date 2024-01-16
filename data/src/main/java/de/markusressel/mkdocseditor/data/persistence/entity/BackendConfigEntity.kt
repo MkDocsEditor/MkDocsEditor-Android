@@ -7,7 +7,7 @@ import io.objectbox.relation.ToOne
 
 
 @Entity
-data class BackendAuthConfigEntity(
+data class UserPasswordAuthConfigEntity(
     @Id var entityId: Long = 0,
     @Unique var username: String = "",
     var password: String = "",
@@ -19,7 +19,14 @@ data class BackendServerConfigEntity(
     var domain: String = "",
     var port: Int = 0,
     var useSsl: Boolean = false,
-    var webBaseUri: String = "",
+)
+
+@Entity
+data class MkDocsWebConfigEntity(
+    @Id var entityId: Long = 0,
+    var domain: String = "",
+    var port: Int = 0,
+    var useSsl: Boolean = false,
 )
 
 @Entity
@@ -30,5 +37,7 @@ data class BackendConfigEntity(
     var isSelected: Boolean = false,
 ) {
     lateinit var serverConfig: ToOne<BackendServerConfigEntity>
-    lateinit var authConfig: ToOne<BackendAuthConfigEntity>
+    lateinit var authConfig: ToOne<UserPasswordAuthConfigEntity>
+    lateinit var mkDocsWebConfig: ToOne<MkDocsWebConfigEntity>
+    lateinit var mkDocsWebAuthConfig: ToOne<UserPasswordAuthConfigEntity>
 }

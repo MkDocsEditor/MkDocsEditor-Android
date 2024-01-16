@@ -3,10 +3,10 @@ package de.markusressel.mkdocseditor.feature.backendconfig.common.data
 import de.markusressel.mkdocseditor.data.persistence.BackendAuthConfigPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.BackendConfigPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.BackendServerConfigPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.entity.BackendAuthConfigEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendConfigEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendConfigEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendServerConfigEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.UserPasswordAuthConfigEntity
 import io.objectbox.kotlin.flow
 import io.objectbox.kotlin.query
 import io.objectbox.kotlin.toFlow
@@ -53,11 +53,11 @@ internal class BackendConfigRepository @Inject constructor(
         isSelected = isSelected,
     ).apply {
         serverConfig.target = this@toBackendConfigEntity.serverConfig?.toBackendServerConfigEntity()
-        authConfig.target = this@toBackendConfigEntity.authConfig?.toBackendAuthConfigEntity()
+        authConfig.target = this@toBackendConfigEntity.backendAuthConfig?.toBackendAuthConfigEntity()
 
     }
 
-    private fun AuthConfig.toBackendAuthConfigEntity() = BackendAuthConfigEntity(
+    private fun AuthConfig.toBackendAuthConfigEntity() = UserPasswordAuthConfigEntity(
         entityId = id,
         username = username,
         password = password,
@@ -68,7 +68,6 @@ internal class BackendConfigRepository @Inject constructor(
         domain = domain,
         port = port,
         useSsl = useSsl,
-        webBaseUri = webBaseUri,
     )
 
     fun getBackendConfig(id: Long): BackendConfigEntity? {
