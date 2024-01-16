@@ -47,7 +47,7 @@ internal class OpenDocumentInBrowserUseCase @Inject constructor(
         val result = listOfNotNull(
             "$protocol://",
             "$basicAuthInUrl@".takeUnless { username.isNullOrBlank() || password.isNullOrBlank() },
-            "$host/$pagePath"
+            "$host/view/$pagePath"
         ).joinToString(separator = "")
 
         return result
