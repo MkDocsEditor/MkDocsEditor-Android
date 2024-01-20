@@ -31,12 +31,14 @@ import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SearchUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SectionItem
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.UploadResourceUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
+import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -86,7 +88,7 @@ internal class FileBrowserViewModel @Inject constructor(
             return field
         }
 
-    private val currentSearchResults = combine(
+    private val currentSearchResults: Flow<List<SearchResultItem>> = combine(
         uiState.map { it.currentSearchFilter }.distinctUntilChanged(),
         uiState.map { it.isSearchExpanded }.distinctUntilChanged(),
     ) { currentSearchFilter, isSearching ->
