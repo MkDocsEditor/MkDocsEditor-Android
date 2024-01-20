@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.dagger
 
+import android.accounts.AccountManager
 import android.content.ContentResolver
 import android.content.Context
 import android.net.ConnectivityManager
@@ -33,6 +34,12 @@ class AppModule {
     @Singleton
     fun provideContext(@ApplicationContext context: Context): Context {
         return context
+    }
+
+    @Provides
+    @Singleton
+    fun provideAccountManager(context: Context): AccountManager {
+        return AccountManager.get(context)
     }
 
     @Provides

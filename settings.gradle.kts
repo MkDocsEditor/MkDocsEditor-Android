@@ -34,3 +34,4 @@ rootProject.name = "MkDocsEditor"
 include(":app")
 include(":rest")
 include(":data")
+include(":auth")
