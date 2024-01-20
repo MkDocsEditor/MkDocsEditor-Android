@@ -54,14 +54,16 @@
     <string name="edit_backend_config_name_label">Name</string>
     <string name="edit_backend_config_description_label">Description</string>
 
-    <string name="edit_server_config_title">Server</string>
+    <string name="edit_server_config_title">Backend</string>
+    <string name="edit_server_config_description">Configure access to your MkDocsEditor backend instance.</string>
     <string name="edit_server_config_domain">Domain</string>
     <string name="edit_server_config_domain_label">Domain</string>
     <string name="edit_server_config_port">Port</string>
     <string name="edit_server_config_port_label">Port</string>
     <string name="edit_server_config_use_ssl">SSL</string>
 
-    <string name="edit_mkdocsweb_config_title">MkDocs Web Instance</string>
+    <string name="edit_mkdocsweb_config_title">Web</string>
+    <string name="edit_mkdocsweb_config_description">Configure access to your webserver instance that is hosting your MkDocs project.</string>
 
     <string name="edit_auth_config_title">Authentication</string>
     <string name="edit_auth_config_username">User</string>

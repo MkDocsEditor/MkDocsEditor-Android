@@ -19,9 +19,8 @@ import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
-import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.auth.AuthConfigSection
+import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.server.MkDocsBackendSection
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.server.MkDocsWebSection
-import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.server.ServerSection
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
@@ -76,8 +75,10 @@ internal fun BackendConfigEditScreenContent(
                     }
                 )
 
-                ServerSection(
+                MkDocsBackendSection(
                     modifier = Modifier.fillMaxWidth(),
+                    uiState = uiState,
+                    onUiEvent = onUiEvent,
                     currentDomain = uiState.currentDomain,
                     onDomainChanged = { text ->
                         onUiEvent(
@@ -102,22 +103,12 @@ internal fun BackendConfigEditScreenContent(
                             )
                         )
                     },
-                )
-
-                AuthConfigSection(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    editMode = uiState.authConfigEditMode,
-                    authConfigs = uiState.authConfigs,
-                    authConfig = uiState.currentAuthConfig,
-                    saveButtonEnabled = uiState.authConfigSaveButtonEnabled,
-                    currentAuthConfigUsername = uiState.currentAuthConfigUsername,
-                    currentAuthConfigPassword = uiState.currentAuthConfigPassword,
-                    onUiEvent = onUiEvent
                 )
 
                 MkDocsWebSection(
                     modifier = Modifier.fillMaxWidth(),
+                    uiState = uiState,
+                    onUiEvent = onUiEvent,
                     currentDomain = uiState.currentDomain,
                     onDomainChanged = { text ->
                         onUiEvent(
@@ -142,18 +133,6 @@ internal fun BackendConfigEditScreenContent(
                             )
                         )
                     },
-                )
-
-                AuthConfigSection(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    editMode = uiState.authConfigEditMode,
-                    authConfigs = uiState.authConfigs,
-                    authConfig = uiState.currentAuthConfig,
-                    saveButtonEnabled = uiState.authConfigSaveButtonEnabled,
-                    currentAuthConfigUsername = uiState.currentAuthConfigUsername,
-                    currentAuthConfigPassword = uiState.currentAuthConfigPassword,
-                    onUiEvent = onUiEvent
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))

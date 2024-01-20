@@ -18,7 +18,7 @@ import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
-internal fun MkDocsWebSection(
+internal fun MkDocsBackendSection(
     modifier: Modifier = Modifier,
     uiState: BackendConfigEditViewModel.UiState,
     onUiEvent: (BackendConfigEditViewModel.UiEvent) -> Unit,
@@ -30,17 +30,18 @@ internal fun MkDocsWebSection(
     onUseSslCheckedChanged: (Boolean) -> Unit,
 ) {
     Column(
-        modifier = modifier,
+        modifier = Modifier
+            .fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Column {
             Text(
-                text = stringResource(R.string.edit_mkdocsweb_config_title),
+                text = stringResource(R.string.edit_server_config_title),
                 style = MaterialTheme.typography.headlineSmall,
             )
 
             Text(
-                text = stringResource(R.string.edit_mkdocsweb_config_description),
+                text = stringResource(R.string.edit_server_config_description),
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -84,9 +85,9 @@ internal fun MkDocsWebSection(
 
 @CombinedPreview
 @Composable
-private fun MkDocsWebSectionPreview() {
+private fun ServerSectionSectionPreview() {
     MkDocsEditorTheme {
-        MkDocsWebSection(
+        MkDocsBackendSection(
             uiState = BackendConfigEditViewModel.UiState(),
             onUiEvent = {},
             currentDomain = "domain.com",

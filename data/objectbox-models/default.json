@@ -4,60 +4,211 @@
   "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
   "entities": [
     {
-      "id": "1:2926526248024942251",
-      "lastPropertyId": "9:1610102418278484175",
-      "name": "DocumentEntity",
+      "id": "1:5232764248578190389",
+      "lastPropertyId": "8:8522458317875095964",
+      "name": "BackendConfigEntity",
       "properties": [
         {
-          "id": "1:5077343992198129219",
+          "id": "1:1440625233967119218",
           "name": "entityId",
           "type": 6,
           "flags": 1
         },
         {
-          "id": "2:7847689444581009015",
-          "name": "type",
+          "id": "2:2570140164591087359",
+          "name": "name",
+          "indexId": "1:2372793548895399303",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:1517530174218792818",
+          "name": "description",
           "type": 9
         },
         {
-          "id": "3:2877497329939872470",
-          "name": "id",
-          "indexId": "6:9098769772210087060",
+          "id": "4:7782138355152181241",
+          "name": "isSelected",
+          "type": 1
+        },
+        {
+          "id": "5:7421497825906066614",
+          "name": "serverConfigId",
+          "indexId": "2:1645545832273767856",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "BackendServerConfigEntity"
+        },
+        {
+          "id": "6:8917636697278781734",
+          "name": "authConfigId",
+          "indexId": "3:4633623974844190582",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "UserPasswordAuthConfigEntity"
+        },
+        {
+          "id": "7:5158304835400043258",
+          "name": "mkDocsWebConfigId",
+          "indexId": "4:2628553225420407535",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "MkDocsWebConfigEntity"
+        },
+        {
+          "id": "8:8522458317875095964",
+          "name": "mkDocsWebAuthConfigId",
+          "indexId": "5:8308307037444076770",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "UserPasswordAuthConfigEntity"
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:3622576877812401747",
+      "lastPropertyId": "4:1526149039686296063",
+      "name": "BackendServerConfigEntity",
+      "properties": [
+        {
+          "id": "1:4299371153362969705",
+          "name": "entityId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:9043468636324114864",
+          "name": "domain",
+          "type": 9
+        },
+        {
+          "id": "3:5321808033263954542",
+          "name": "port",
+          "type": 5
+        },
+        {
+          "id": "4:1526149039686296063",
+          "name": "useSsl",
+          "type": 1
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "3:7376697307276643142",
+      "lastPropertyId": "9:595798190411184539",
+      "name": "DocumentContentEntity",
+      "properties": [
+        {
+          "id": "1:2196014820433855481",
+          "name": "entityId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:536216348586188664",
+          "name": "date",
+          "type": 6
+        },
+        {
+          "id": "3:198491670258196310",
+          "name": "documentId",
+          "indexId": "6:1809947664311906280",
           "type": 9,
           "flags": 34848
         },
         {
-          "id": "4:3731762822921679653",
+          "id": "4:6120328787271226653",
+          "name": "text",
+          "type": 9
+        },
+        {
+          "id": "5:3330628553543851791",
+          "name": "selection",
+          "type": 5
+        },
+        {
+          "id": "6:8194202410093749586",
+          "name": "zoomLevel",
+          "type": 7
+        },
+        {
+          "id": "7:717890448142873403",
+          "name": "panX",
+          "type": 7
+        },
+        {
+          "id": "8:7411437170535604265",
+          "name": "panY",
+          "type": 7
+        },
+        {
+          "id": "9:595798190411184539",
+          "name": "documentEntityId",
+          "indexId": "7:3361841898669503331",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "DocumentEntity"
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "4:926641655186087166",
+      "lastPropertyId": "9:4704703775551489654",
+      "name": "DocumentEntity",
+      "properties": [
+        {
+          "id": "1:1323020258849180343",
+          "name": "entityId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:1340902832689734247",
+          "name": "type",
+          "type": 9
+        },
+        {
+          "id": "3:6231786860087881292",
+          "name": "id",
+          "indexId": "8:868391126262820266",
+          "type": 9,
+          "flags": 34848
+        },
+        {
+          "id": "4:4625762747185443898",
           "name": "name",
           "type": 9
         },
         {
-          "id": "5:6896572699860369712",
+          "id": "5:8682272301505096693",
           "name": "filesize",
           "type": 6
         },
         {
-          "id": "6:682055277767430250",
+          "id": "6:6866372147101126692",
           "name": "modtime",
           "type": 10
         },
         {
-          "id": "7:7420037756201964866",
+          "id": "7:4514795691621417752",
+          "name": "url",
+          "type": 9
+        },
+        {
+          "id": "8:3816925323318827939",
           "name": "parentSectionId",
-          "indexId": "1:7990348667738896496",
+          "indexId": "9:8503363873347292794",
           "type": 11,
           "flags": 520,
           "relationTarget": "SectionEntity"
         },
         {
-          "id": "8:1739713704597877584",
-          "name": "url",
-          "type": 9
-        },
-        {
-          "id": "9:1610102418278484175",
+          "id": "9:4704703775551489654",
           "name": "contentId",
-          "indexId": "7:5786982190605967800",
+          "indexId": "10:786091223591354960",
           "type": 11,
           "flags": 520,
           "relationTarget": "DocumentContentEntity"
@@ -66,47 +217,76 @@
       "relations": []
     },
     {
-      "id": "2:8212061483126240332",
-      "lastPropertyId": "7:4214694157379714336",
-      "name": "ResourceEntity",
+      "id": "5:6178998657988909974",
+      "lastPropertyId": "4:8740471100009460681",
+      "name": "MkDocsWebConfigEntity",
       "properties": [
         {
-          "id": "1:5353900599577848829",
+          "id": "1:1962548543377896348",
           "name": "entityId",
           "type": 6,
           "flags": 1
         },
         {
-          "id": "2:541535185983359302",
+          "id": "2:1988646596295156777",
+          "name": "domain",
+          "type": 9
+        },
+        {
+          "id": "3:8899801976870595383",
+          "name": "port",
+          "type": 5
+        },
+        {
+          "id": "4:8740471100009460681",
+          "name": "useSsl",
+          "type": 1
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "6:5692318796492385646",
+      "lastPropertyId": "7:4482043807346583521",
+      "name": "ResourceEntity",
+      "properties": [
+        {
+          "id": "1:6575080608798590250",
+          "name": "entityId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:251778854469934914",
           "name": "type",
           "type": 9
         },
         {
-          "id": "3:3321631135779936723",
+          "id": "3:7662941305689691576",
           "name": "id",
-          "indexId": "5:4759547512337368257",
+          "indexId": "11:2360718211590085816",
           "type": 9,
           "flags": 34848
         },
         {
-          "id": "4:9076953536011419007",
+          "id": "4:5606943019204219245",
           "name": "name",
           "type": 9
         },
         {
-          "id": "5:4807809307958319444",
+          "id": "5:4747903206965495750",
           "name": "filesize",
           "type": 6
         },
         {
-          "id": "6:6856905628506227446",
+          "id": "6:1066262578735259865",
           "name": "modtime",
           "type": 10
         },
         {
-          "id": "7:4214694157379714336",
+          "id": "7:4482043807346583521",
           "name": "parentSectionId",
-          "indexId": "2:7773549802821406266",
+          "indexId": "12:2502806750615733383",
           "type": 11,
           "flags": 520,
           "relationTarget": "SectionEntity"
@@ -115,237 +295,57 @@
       "relations": []
     },
     {
-      "id": "3:235719595631472099",
-      "lastPropertyId": "4:5172956741253300140",
+      "id": "7:6823943467723170409",
+      "lastPropertyId": "3:1114644457609536857",
       "name": "SectionEntity",
       "properties": [
         {
-          "id": "1:2892506229152489829",
+          "id": "1:2169818506648651946",
           "name": "entityId",
           "type": 6,
           "flags": 1
         },
         {
-          "id": "2:6670502710821369689",
+          "id": "2:8586232991522767475",
           "name": "id",
-          "indexId": "15:5675821949556110529",
+          "indexId": "13:4839251905285887821",
           "type": 9,
           "flags": 34848
         },
         {
-          "id": "3:3447371683769506443",
+          "id": "3:1114644457609536857",
           "name": "name",
           "type": 9
         }
       ],
       "relations": [
         {
-          "id": "1:6603448843579803239",
+          "id": "1:4945763545727530783",
           "name": "subsections",
-          "targetId": "3:235719595631472099"
+          "targetId": "7:6823943467723170409"
         }
       ]
     },
     {
-      "id": "4:6020327021425912355",
-      "lastPropertyId": "9:6831743925540741243",
-      "name": "DocumentContentEntity",
-      "properties": [
-        {
-          "id": "1:4010330864444557434",
-          "name": "entityId",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:4451967370208148517",
-          "name": "documentId",
-          "indexId": "14:3862396068764564766",
-          "type": 9,
-          "flags": 34848
-        },
-        {
-          "id": "3:8030643017582213184",
-          "name": "text",
-          "type": 9
-        },
-        {
-          "id": "4:9214835000721331869",
-          "name": "documentEntityId",
-          "indexId": "4:1862623307980537823",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "DocumentEntity"
-        },
-        {
-          "id": "5:3855238911964327630",
-          "name": "zoomLevel",
-          "type": 7
-        },
-        {
-          "id": "6:6797550487402286039",
-          "name": "panX",
-          "type": 7
-        },
-        {
-          "id": "7:7940162275998274710",
-          "name": "panY",
-          "type": 7
-        },
-        {
-          "id": "8:5804734994323400310",
-          "name": "selection",
-          "type": 5
-        },
-        {
-          "id": "9:6831743925540741243",
-          "name": "date",
-          "type": 6
-        }
-      ],
-      "relations": []
-    },
-    {
-      "id": "5:5280773954032560660",
-      "lastPropertyId": "10:4266997208975995230",
-      "name": "BackendConfigEntity",
-      "properties": [
-        {
-          "id": "1:6687421185492995737",
-          "name": "entityId",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "3:4428696711109975059",
-          "name": "name",
-          "indexId": "13:120172541069889611",
-          "type": 9,
-          "flags": 2080
-        },
-        {
-          "id": "4:3174233894689239395",
-          "name": "description",
-          "type": 9
-        },
-        {
-          "id": "6:6387112741264564084",
-          "name": "serverConfigId",
-          "indexId": "10:7896467099022291851",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "BackendServerConfigEntity"
-        },
-        {
-          "id": "7:245551817175832864",
-          "name": "authConfigId",
-          "indexId": "11:8410212560139488673",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "UserPasswordAuthConfigEntity"
-        },
-        {
-          "id": "8:5420218892066969331",
-          "name": "isSelected",
-          "type": 1
-        },
-        {
-          "id": "9:511510660300211826",
-          "name": "mkDocsWebConfigId",
-          "indexId": "16:6814491596420036690",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "MkDocsWebConfigEntity"
-        },
-        {
-          "id": "10:4266997208975995230",
-          "name": "mkDocsWebAuthConfigId",
-          "indexId": "17:8618384565784633255",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "UserPasswordAuthConfigEntity"
-        }
-      ],
-      "relations": []
-    },
-    {
-      "id": "6:265077520647693716",
-      "lastPropertyId": "7:5340594149183698957",
-      "name": "BackendServerConfigEntity",
-      "properties": [
-        {
-          "id": "1:156999794696170099",
-          "name": "entityId",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:6013750560659278945",
-          "name": "domain",
-          "type": 9
-        },
-        {
-          "id": "3:3657966229099116058",
-          "name": "port",
-          "type": 5
-        },
-        {
-          "id": "4:6476544072334160281",
-          "name": "useSsl",
-          "type": 1
-        }
-      ],
-      "relations": []
-    },
-    {
-      "id": "8:5720091018054670391",
-      "lastPropertyId": "4:5059229998471043716",
-      "name": "MkDocsWebConfigEntity",
-      "properties": [
-        {
-          "id": "1:4910204260819276005",
-          "name": "entityId",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:362484977889288778",
-          "name": "domain",
-          "type": 9
-        },
-        {
-          "id": "3:8243767512680303261",
-          "name": "port",
-          "type": 5
-        },
-        {
-          "id": "4:5059229998471043716",
-          "name": "useSsl",
-          "type": 1
-        }
-      ],
-      "relations": []
-    },
-    {
-      "id": "9:8251431603641461426",
-      "lastPropertyId": "3:7339607230058322200",
+      "id": "8:8318613628503764037",
+      "lastPropertyId": "3:2869921408437767121",
       "name": "UserPasswordAuthConfigEntity",
       "properties": [
         {
-          "id": "1:1630928794599631771",
+          "id": "1:8548630545414417546",
           "name": "entityId",
           "type": 6,
           "flags": 1
         },
         {
-          "id": "2:6125526040093759038",
+          "id": "2:1754430532053693273",
           "name": "username",
-          "indexId": "18:2304470593862114636",
+          "indexId": "14:5068265450376249861",
           "type": 9,
           "flags": 2080
         },
         {
-          "id": "3:7339607230058322200",
+          "id": "3:2869921408437767121",
           "name": "password",
           "type": 9
         }
@@ -353,37 +353,15 @@
       "relations": []
     }
   ],
-  "lastEntityId": "9:8251431603641461426",
-  "lastIndexId": "18:2304470593862114636",
-  "lastRelationId": "5:6680787238725584468",
+  "lastEntityId": "8:8318613628503764037",
+  "lastIndexId": "14:5068265450376249861",
+  "lastRelationId": "1:4945763545727530783",
   "lastSequenceId": "0:0",
   "modelVersion": 5,
   "modelVersionParserMinimum": 5,
-  "retiredEntityUids": [
-    6963505399939795788
-  ],
-  "retiredIndexUids": [
-    7384408086141472050,
-    4446651935175240247,
-    2336407603629742715,
-    3708855796179649415
-  ],
-  "retiredPropertyUids": [
-    5172956741253300140,
-    3037818499188853511,
-    4835462335252275695,
-    600589880715002879,
-    4521086272698141036,
-    5340594149183698957,
-    4742160120032621424,
-    1145372074832984057,
-    1450809219100709916
-  ],
-  "retiredRelationUids": [
-    503771180738858818,
-    8530925730847970670,
-    297312641658732666,
-    6680787238725584468
-  ],
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [],
+  "retiredRelationUids": [],
   "version": 1
 }
