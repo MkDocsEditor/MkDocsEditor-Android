@@ -281,9 +281,6 @@ internal class FileBrowserViewModel @Inject constructor(
                 is UiEvent.TopAppBarActionClicked -> onTopAppBarActionClicked(event.action)
 
                 is UiEvent.SearchExpandedChanged -> onSearchExpandedChanged(event.isExpanded)
-                is UiEvent.SearchInputChanged -> onSearchInputChanged(event.text)
-                is UiEvent.SearchRequested -> onSearchRequested(event.query)
-                is UiEvent.SearchResultClicked -> onSearchResultClicked(event.item)
             }
         }
     }
@@ -341,32 +338,12 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private fun onSearchExpandedChanged(expanded: Boolean) {
+    private suspend fun onSearchExpandedChanged(expanded: Boolean) {
+        if (expanded) {
+            _events.send(FileBrowserEvent.OpenSearch)
+        }
         _uiState.update { old ->
             old.copy(isSearchExpanded = expanded)
-        }
-    }
-
-    private fun onSearchInputChanged(text: String) {
-        setSearch(text)
-    }
-
-    private fun onSearchRequested(query: String) {
-        setSearch(query)
-        _uiState.update { old ->
-            old.copy(isSearchExpanded = true)
-        }
-    }
-
-    private suspend fun onSearchResultClicked(item: Any) {
-        when (item) {
-            is DocumentData -> {
-                clearSearch()
-                onDocumentClicked(item)
-            }
-
-            is ResourceData -> onResourceClicked(item)
-            is SectionData -> onSectionClicked(item)
         }
     }
 
@@ -484,33 +461,6 @@ internal class FileBrowserViewModel @Inject constructor(
         }
         openSection(backstack.peek().sectionId, backstack.peek().sectionName, false)
         return true
-    }
-
-    /**
-     * Set the search string
-     *
-     * @return true if the value has changed, false otherwise
-     */
-    private fun setSearch(text: String): Boolean {
-        return if (uiState.value.currentSearchFilter != text) {
-            _uiState.update { old ->
-                old.copy(
-                    currentSearchFilter = text,
-                )
-            }
-            true
-        } else false
-    }
-
-    private fun clearSearch() {
-        setSearch("")
-        if (uiState.value.isSearchExpanded) {
-            _uiState.update { old ->
-                old.copy(
-                    isSearchExpanded = false,
-                )
-            }
-        }
     }
 
     /**
@@ -717,10 +667,7 @@ internal class FileBrowserViewModel @Inject constructor(
 internal sealed class UiEvent {
     data object Refresh : UiEvent()
 
-    data class SearchRequested(val query: String) : UiEvent()
-    data class SearchInputChanged(val text: String) : UiEvent()
     data class SearchExpandedChanged(val isExpanded: Boolean) : UiEvent()
-    data class SearchResultClicked(val item: Any) : UiEvent()
 
     data class DocumentClicked(val item: DocumentData) : UiEvent()
     data class DocumentLongClicked(val item: DocumentData) : UiEvent()
@@ -759,6 +706,7 @@ internal sealed class UiEvent {
 }
 
 internal sealed class FileBrowserEvent {
+    data object OpenSearch : FileBrowserEvent()
     data class OpenDocumentEditor(val documentId: String) : FileBrowserEvent()
     data object OpenResourceSelection : FileBrowserEvent()
 }

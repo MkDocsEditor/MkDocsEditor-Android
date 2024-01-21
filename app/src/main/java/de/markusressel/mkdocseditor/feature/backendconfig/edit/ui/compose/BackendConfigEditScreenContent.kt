@@ -55,9 +55,7 @@ internal fun BackendConfigEditScreenContent(
                     name = uiState.name,
                     onValueChanged = { text ->
                         onUiEvent(
-                            BackendConfigEditViewModel.UiEvent.NameChanged(
-                                text
-                            )
+                            BackendConfigEditViewModel.UiEvent.NameChanged(text)
                         )
                     }
                 )
@@ -68,9 +66,7 @@ internal fun BackendConfigEditScreenContent(
                     description = uiState.description,
                     onValueChanged = { text ->
                         onUiEvent(
-                            BackendConfigEditViewModel.UiEvent.DescriptionChanged(
-                                text
-                            )
+                            BackendConfigEditViewModel.UiEvent.DescriptionChanged(text)
                         )
                     }
                 )
@@ -82,25 +78,19 @@ internal fun BackendConfigEditScreenContent(
                     currentDomain = uiState.currentDomain,
                     onDomainChanged = { text ->
                         onUiEvent(
-                            BackendConfigEditViewModel.UiEvent.DomainChanged(
-                                text
-                            )
+                            BackendConfigEditViewModel.UiEvent.DomainChanged(text)
                         )
                     },
                     currentPort = uiState.currentPort,
                     onPortChanged = { text ->
                         onUiEvent(
-                            BackendConfigEditViewModel.UiEvent.PortChanged(
-                                text
-                            )
+                            BackendConfigEditViewModel.UiEvent.PortChanged(text)
                         )
                     },
                     useSsl = uiState.currentUseSsl,
                     onUseSslCheckedChanged = { checked ->
                         onUiEvent(
-                            BackendConfigEditViewModel.UiEvent.UseSslChanged(
-                                checked
-                            )
+                            BackendConfigEditViewModel.UiEvent.UseSslChanged(checked)
                         )
                     },
                 )
@@ -109,28 +99,22 @@ internal fun BackendConfigEditScreenContent(
                     modifier = Modifier.fillMaxWidth(),
                     uiState = uiState,
                     onUiEvent = onUiEvent,
-                    currentDomain = uiState.currentDomain,
+                    currentDomain = uiState.currentMkDocsWebDomain,
                     onDomainChanged = { text ->
                         onUiEvent(
-                            BackendConfigEditViewModel.UiEvent.DomainChanged(
-                                text
-                            )
+                            BackendConfigEditViewModel.UiEvent.MkDocsWebDomainChanged(text)
                         )
                     },
                     currentPort = uiState.currentPort,
                     onPortChanged = { text ->
                         onUiEvent(
-                            BackendConfigEditViewModel.UiEvent.PortChanged(
-                                text
-                            )
+                            BackendConfigEditViewModel.UiEvent.MkDocsWebPortChanged(text)
                         )
                     },
                     useSsl = uiState.currentUseSsl,
                     onUseSslCheckedChanged = { checked ->
                         onUiEvent(
-                            BackendConfigEditViewModel.UiEvent.UseSslChanged(
-                                checked
-                            )
+                            BackendConfigEditViewModel.UiEvent.MkDocsWebUseSslChanged(checked)
                         )
                     },
                 )

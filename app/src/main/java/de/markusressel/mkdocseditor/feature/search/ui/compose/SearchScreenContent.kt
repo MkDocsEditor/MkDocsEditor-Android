@@ -8,8 +8,8 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import de.markusressel.mkdocseditor.feature.browser.ui.UiEvent
 import de.markusressel.mkdocseditor.feature.search.ui.SearchViewModel
+import de.markusressel.mkdocseditor.feature.search.ui.SearchViewModel.UiEvent
 
 @Composable
 internal fun SearchScreenContent(

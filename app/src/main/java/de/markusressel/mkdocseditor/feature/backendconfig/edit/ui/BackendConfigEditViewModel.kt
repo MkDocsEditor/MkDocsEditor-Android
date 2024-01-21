@@ -116,9 +116,25 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 is UiEvent.PortChanged -> processPortInput(event.port)
                 is UiEvent.UseSslChanged -> processUseSslInput(event.checked)
 
-                is UiEvent.MkDocsWebDomainChanged -> processDomainInput(event.text)
-                is UiEvent.MkDocsWebPortChanged -> processPortInput(event.port)
-                is UiEvent.MkDocsWebUseSslChanged -> processUseSslInput(event.checked)
+                is UiEvent.MkDocsWebDomainChanged -> processWebDomainInput(event.text)
+                is UiEvent.MkDocsWebPortChanged -> processWebPortInput(event.port)
+                is UiEvent.MkDocsWebUseSslChanged -> processWebUseSslInput(event.checked)
+                is UiEvent.MkDocsWebAuthConfigSelectionChanged -> processMkDocsWebAuthConfigSelectionChange(
+                    event.authConfig
+                )
+
+                is UiEvent.MkDocsWebAuthConfigAddButtonClicked -> enableAuthConfigEditMode()
+                is UiEvent.MkDocsWebAuthConfigAbortButtonClicked -> disableAuthConfigEditMode()
+                is UiEvent.MkDocsWebAuthConfigDeleteButtonClicked -> deleteAuthConfig(event.authConfig)
+                is UiEvent.MkDocsWebAuthConfigUsernameInputChanged -> processAuthConfigUsernameInput(
+                    event.input
+                )
+
+                is UiEvent.MkDocsWebAuthConfigPasswordInputChanged -> processAuthConfigPasswordInput(
+                    event.input
+                )
+
+                is UiEvent.MkDocsWebSaveButtonClicked -> addAuthConfigFromCurrentInputs()
 
                 is UiEvent.AuthConfigSelectionChanged -> processAuthConfigSelectionChange(event.authConfig)
                 is UiEvent.AuthConfigAddButtonClicked -> enableAuthConfigEditMode()
@@ -161,6 +177,27 @@ internal class BackendConfigEditViewModel @Inject constructor(
     private suspend fun processUseSslInput(checked: Boolean) {
         _uiState.update { old ->
             old.copy(currentUseSsl = checked)
+        }
+        updateSaveButtonEnabled()
+    }
+
+    private suspend fun processWebDomainInput(text: String) {
+        _uiState.update { old ->
+            old.copy(currentMkDocsWebDomain = text)
+        }
+        updateSaveButtonEnabled()
+    }
+
+    private suspend fun processWebPortInput(port: String) {
+        _uiState.update { old ->
+            old.copy(currentMkDocsWebPort = port)
+        }
+        updateSaveButtonEnabled()
+    }
+
+    private suspend fun processWebUseSslInput(checked: Boolean) {
+        _uiState.update { old ->
+            old.copy(currentMkDocsWebUseSsl = checked)
         }
         updateSaveButtonEnabled()
     }
@@ -308,6 +345,13 @@ internal class BackendConfigEditViewModel @Inject constructor(
         updateSaveButtonEnabled()
     }
 
+    private suspend fun processMkDocsWebAuthConfigSelectionChange(authConfig: AuthConfig?) {
+        _uiState.update { old ->
+            old.copy(currentMkDocsWebAuthConfig = authConfig)
+        }
+        updateSaveButtonEnabled()
+    }
+
     private fun processAuthConfigUsernameInput(input: String) {
         _uiState.update { old ->
             old.copy(
@@ -368,6 +412,14 @@ internal class BackendConfigEditViewModel @Inject constructor(
         data class MkDocsWebDomainChanged(val text: String) : UiEvent()
         data class MkDocsWebPortChanged(val port: String) : UiEvent()
         data class MkDocsWebUseSslChanged(val checked: Boolean) : UiEvent()
+
+        data class MkDocsWebAuthConfigSelectionChanged(val authConfig: AuthConfig?) : UiEvent()
+        data object MkDocsWebAuthConfigAddButtonClicked : UiEvent()
+        data object MkDocsWebAuthConfigAbortButtonClicked : UiEvent()
+        data class MkDocsWebAuthConfigDeleteButtonClicked(val authConfig: AuthConfig) : UiEvent()
+        data class MkDocsWebAuthConfigUsernameInputChanged(val input: String) : UiEvent()
+        data class MkDocsWebAuthConfigPasswordInputChanged(val input: String) : UiEvent()
+        data object MkDocsWebSaveButtonClicked : UiEvent()
 
         data object AuthConfigSaveButtonClicked : UiEvent()
     }

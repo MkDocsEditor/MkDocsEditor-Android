@@ -24,15 +24,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
-import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
-import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel.UiEvent.AuthConfigAbortButtonClicked
-import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel.UiEvent.AuthConfigAddButtonClicked
-import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel.UiEvent.AuthConfigDeleteButtonClicked
-import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel.UiEvent.AuthConfigPasswordInputChanged
-import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel.UiEvent.AuthConfigSelectionChanged
-import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel.UiEvent.AuthConfigUsernameInputChanged
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
+
+sealed class AuthConfigUiEvent {
+    data object AbortButtonClicked : AuthConfigUiEvent()
+    data object AddButtonClicked : AuthConfigUiEvent()
+    data class DeleteButtonClicked(val authConfig: AuthConfig) : AuthConfigUiEvent()
+    data class SelectionChanged(val authConfig: AuthConfig) : AuthConfigUiEvent()
+    data class UsernameInputChanged(val username: String) : AuthConfigUiEvent()
+    data class PasswordInputChanged(val password: String) : AuthConfigUiEvent()
+
+    data object SaveButtonClicked : AuthConfigUiEvent()
+}
 
 @Composable
 internal fun AuthConfigSection(
@@ -43,7 +47,7 @@ internal fun AuthConfigSection(
     saveButtonEnabled: Boolean,
     currentAuthConfigUsername: String,
     currentAuthConfigPassword: String,
-    onUiEvent: (BackendConfigEditViewModel.UiEvent) -> Unit
+    onUiEvent: (AuthConfigUiEvent) -> Unit,
 ) {
     Card(modifier = modifier) {
         Column(
@@ -65,7 +69,7 @@ internal fun AuthConfigSection(
                         if (editMode) {
                             AuthAbortButton(
                                 modifier = Modifier,
-                                onClick = { onUiEvent(AuthConfigAbortButtonClicked) }
+                                onClick = { onUiEvent(AuthConfigUiEvent.AbortButtonClicked) }
                             )
                             AuthSaveButton(
                                 modifier = Modifier,
@@ -75,12 +79,18 @@ internal fun AuthConfigSection(
                         } else {
                             AuthAddButton(
                                 modifier = Modifier,
-                                onClick = { onUiEvent(AuthConfigAddButtonClicked) }
+                                onClick = { onUiEvent(AuthConfigUiEvent.AddButtonClicked) }
                             )
                             if (authConfig != null) {
                                 AuthDeleteButton(
                                     modifier = Modifier,
-                                    onClick = { onUiEvent(AuthConfigDeleteButtonClicked(authConfig)) }
+                                    onClick = {
+                                        onUiEvent(
+                                            AuthConfigUiEvent.DeleteButtonClicked(
+                                                authConfig
+                                            )
+                                        )
+                                    }
                                 )
                             }
                         }
@@ -95,10 +105,10 @@ internal fun AuthConfigSection(
                             currentUsername = currentAuthConfigUsername,
                             currentPassword = currentAuthConfigPassword,
                             onUsernameChanged = {
-                                onUiEvent(AuthConfigUsernameInputChanged(it))
+                                onUiEvent(AuthConfigUiEvent.UsernameInputChanged(it))
                             },
                             onPasswordChanged = {
-                                onUiEvent(AuthConfigPasswordInputChanged(it))
+                                onUiEvent(AuthConfigUiEvent.PasswordInputChanged(it))
                             }
                         )
                     } else {
@@ -122,7 +132,7 @@ internal fun AuthConfigSection(
 internal fun AuthConfigSelectionLayout(
     authConfigs: List<AuthConfig>,
     authConfig: AuthConfig?,
-    onUiEvent: (BackendConfigEditViewModel.UiEvent) -> Unit
+    onUiEvent: (AuthConfigUiEvent) -> Unit
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -163,7 +173,7 @@ internal fun AuthConfigSelectionLayout(
                     DropdownMenuItem(text = {
                         Text(item.username)
                     }, onClick = {
-                        onUiEvent(AuthConfigSelectionChanged(item))
+                        onUiEvent(AuthConfigUiEvent.SelectionChanged(item))
                         expanded = false
                     })
                 }

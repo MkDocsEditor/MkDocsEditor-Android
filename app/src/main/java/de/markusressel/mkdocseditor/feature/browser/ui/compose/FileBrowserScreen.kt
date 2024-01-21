@@ -25,6 +25,7 @@ import de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog.EditResour
 import de.markusressel.mkdocseditor.feature.browser.ui.compose.dialog.EditSectionDialog
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreen
 import de.markusressel.mkdocseditor.feature.filepicker.ui.compose.FilePickerScreen
+import de.markusressel.mkdocseditor.feature.search.ui.compose.SearchScreen
 import kotlinx.coroutines.flow.collectLatest
 
 object FileBrowserScreen : Screen {
@@ -50,6 +51,10 @@ object FileBrowserScreen : Screen {
         LaunchedEffect(Unit) {
             viewModel.events.collectLatest { event ->
                 when (event) {
+                    is FileBrowserEvent.OpenSearch -> {
+                        navigator.push(SearchScreen)
+                    }
+
                     is FileBrowserEvent.OpenDocumentEditor -> {
                         navigator.push(CodeEditorScreen(documentId = event.documentId))
                     }

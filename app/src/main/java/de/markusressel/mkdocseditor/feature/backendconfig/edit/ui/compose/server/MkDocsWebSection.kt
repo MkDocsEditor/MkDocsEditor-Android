@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.auth.AuthConfigSection
+import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.auth.AuthConfigUiEvent
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
@@ -72,11 +73,50 @@ internal fun MkDocsWebSection(
                 .fillMaxWidth(),
             editMode = uiState.authConfigEditMode,
             authConfigs = uiState.authConfigs,
-            authConfig = uiState.currentAuthConfig,
+            authConfig = uiState.currentMkDocsWebAuthConfig,
             saveButtonEnabled = uiState.authConfigSaveButtonEnabled,
             currentAuthConfigUsername = uiState.currentAuthConfigUsername,
             currentAuthConfigPassword = uiState.currentAuthConfigPassword,
-            onUiEvent = onUiEvent
+            onUiEvent = { event ->
+                onUiEvent(
+                    when (event) {
+                        is AuthConfigUiEvent.SelectionChanged -> {
+                            BackendConfigEditViewModel.UiEvent.MkDocsWebAuthConfigSelectionChanged(
+                                event.authConfig
+                            )
+                        }
+
+                        is AuthConfigUiEvent.AddButtonClicked -> {
+                            BackendConfigEditViewModel.UiEvent.MkDocsWebAuthConfigAddButtonClicked
+                        }
+
+                        is AuthConfigUiEvent.AbortButtonClicked ->
+                            BackendConfigEditViewModel.UiEvent.MkDocsWebAuthConfigAbortButtonClicked
+
+                        is AuthConfigUiEvent.DeleteButtonClicked -> {
+                            BackendConfigEditViewModel.UiEvent.MkDocsWebAuthConfigDeleteButtonClicked(
+                                event.authConfig
+                            )
+                        }
+
+                        is AuthConfigUiEvent.PasswordInputChanged -> {
+                            BackendConfigEditViewModel.UiEvent.MkDocsWebAuthConfigPasswordInputChanged(
+                                event.password
+                            )
+                        }
+
+                        is AuthConfigUiEvent.UsernameInputChanged -> {
+                            BackendConfigEditViewModel.UiEvent.MkDocsWebAuthConfigUsernameInputChanged(
+                                event.username
+                            )
+                        }
+
+                        is AuthConfigUiEvent.SaveButtonClicked -> {
+                            BackendConfigEditViewModel.UiEvent.MkDocsWebSaveButtonClicked
+                        }
+                    }
+                )
+            }
         )
     }
 }

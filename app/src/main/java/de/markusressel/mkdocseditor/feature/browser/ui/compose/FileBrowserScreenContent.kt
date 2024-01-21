@@ -43,8 +43,6 @@ import de.markusressel.mkdocseditor.feature.common.ui.compose.ErrorCard
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
-import de.markusressel.mkdocseditor.feature.search.ui.SearchViewModel
-import de.markusressel.mkdocseditor.feature.search.ui.compose.SearchScreenContent
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
@@ -173,17 +171,6 @@ internal fun FileBrowserScreenContent(
                     Spacer(modifier = Modifier.height(128.dp))
                 }
             }
-        }
-
-        if (uiState.isSearchExpanded) {
-            SearchScreenContent(
-                uiState = SearchViewModel.UiState(
-                    currentSearchFilter = uiState.currentSearchFilter,
-                    isSearchExpanded = uiState.isSearchExpanded,
-                    currentSearchResults = uiState.currentSearchResults,
-                ),
-                onUiEvent = onUiEvent,
-            )
         }
     }
 }
