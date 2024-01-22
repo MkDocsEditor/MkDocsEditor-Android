@@ -22,6 +22,7 @@ import de.markusressel.mkdocseditor.feature.browser.domain.usecase.CreateNewSect
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.DeleteDocumentUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.DeleteResourceUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.DeleteSectionUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.DownloadResourceUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetCurrentSectionPathUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetSectionItemsUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameDocumentUseCase
@@ -70,6 +71,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private val applyCurrentBackendConfigUseCase: ApplyCurrentBackendConfigUseCase,
     private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val uploadResourceUseCase: UploadResourceUseCase,
+    private val downloadResourceUseCase: DownloadResourceUseCase,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -640,7 +642,14 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private suspend fun onResourceClicked(entity: ResourceData) {
-        setError("Not yet supported")
+        try {
+            val result = downloadResourceUseCase(entity.id)
+            // TODO: write result to file
+            // TODO: open file using system intent
+        } catch (ex: Exception) {
+            Timber.e(ex)
+            setError(message = ex.localizedMessage ?: ex.javaClass.name)
+        }
     }
 
     private fun onSectionClicked(entity: SectionData) {

@@ -31,6 +31,7 @@ import com.github.kittinunf.fuel.core.awaitResponseResult
 import com.github.kittinunf.fuel.core.extensions.authentication
 import com.github.kittinunf.fuel.core.requests.UploadRequest
 import com.github.kittinunf.fuel.core.requests.upload
+import com.github.kittinunf.fuel.coroutines.awaitByteArrayResult
 import com.github.kittinunf.fuel.coroutines.awaitStringResult
 import com.github.kittinunf.result.Result
 import kotlinx.coroutines.Dispatchers
@@ -260,6 +261,15 @@ class RequestManager(
                 String::class -> request.awaitStringResult() as Result<T, FuelError>
                 else -> request.awaitResponseResult(deserializer).third
             }
+        }
+    }
+
+    suspend inline fun download(
+        url: String
+    ): Result<ByteArray, FuelError> {
+        return withContext(Dispatchers.IO) {
+            val request = createRequest(url = url, method = Method.GET)
+            request.awaitByteArrayResult()
         }
     }
 

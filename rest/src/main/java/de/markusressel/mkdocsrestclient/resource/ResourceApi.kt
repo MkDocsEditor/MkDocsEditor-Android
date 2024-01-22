@@ -32,14 +32,18 @@ interface ResourceApi {
     suspend fun getResource(id: String): Result<ResourceModel, FuelError>
 
     /**
-     * Get the actual content data of a resource
-     */
-    suspend fun getResourceContent(id: String): Result<ByteArray, FuelError>
-
-    /**
      * Create a new resource
      */
-    suspend fun uploadResource(parentId: String, name: String, content: ByteArray): Result<String, FuelError>
+    suspend fun uploadResource(
+        parentId: String,
+        name: String,
+        content: ByteArray
+    ): Result<String, FuelError>
+
+    /**
+     * Download a resource
+     */
+    suspend fun downloadResource(id: String): Result<ByteArray, FuelError>
 
     /**
      * Rename a resource

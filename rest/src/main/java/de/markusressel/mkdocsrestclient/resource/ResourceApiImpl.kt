@@ -37,16 +37,22 @@ class ResourceApiImpl(
         )
     }
 
-    override suspend fun getResourceContent(id: String): Result<ByteArray, FuelError> {
-        //requestManager.download("/resource/$id/")
-        return Result.of { throw Exception("Not implemented") }
-    }
-
-    override suspend fun uploadResource(parentId: String, name: String, content: ByteArray): Result<String, FuelError> {
+    override suspend fun uploadResource(
+        parentId: String,
+        name: String,
+        content: ByteArray
+    ): Result<String, FuelError> {
         return requestManager.upload("/resource/$parentId/$name/", content)
     }
 
-    override suspend fun renameResource(id: String, name: String): Result<ResourceModel, FuelError> {
+    override suspend fun downloadResource(id: String): Result<ByteArray, FuelError> {
+        return requestManager.download("/resource/$id/content/")
+    }
+
+    override suspend fun renameResource(
+        id: String,
+        name: String
+    ): Result<ResourceModel, FuelError> {
         return requestManager.doJsonRequest(
             url = "/resource/$id/",
             method = Method.PUT,
