@@ -55,7 +55,11 @@ class SectionApiImpl(
         val data = mapOf(
             "name" to name
         )
-        return requestManager.doJsonRequest(url = "/section/$id/", method = Method.PATCH, jsonData = data)
+        return requestManager.doJsonRequest(
+            url = "/section/$id/",
+            method = Method.PUT,
+            jsonData = data
+        )
     }
 
     override suspend fun deleteSection(id: String): Result<String, FuelError> {
