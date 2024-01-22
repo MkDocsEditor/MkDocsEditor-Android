@@ -101,6 +101,8 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 isDeleteButtonEnabled = true,
             )
         }
+
+        updateSaveButtonEnabled()
     }
 
     private suspend fun updateAuthConfigs() {

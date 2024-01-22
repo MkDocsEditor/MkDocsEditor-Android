@@ -16,7 +16,7 @@ internal class ValidateEditedBackendConfigUseCase @Inject constructor(
     ): Boolean {
         return name.run {
             name.isNotBlank() &&
-                description.isNotBlank() &&
+//                description.isNotBlank() &&
                 domain.isNotBlank() &&
                 (0..65535).contains(port.toIntOrNull() ?: -1) &&
                 authConfig?.run {
