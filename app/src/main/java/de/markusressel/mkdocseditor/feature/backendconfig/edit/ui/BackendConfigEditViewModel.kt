@@ -47,11 +47,16 @@ internal class BackendConfigEditViewModel @Inject constructor(
 
     fun initialize(id: Long?) {
         launch {
-            updateAuthConfigs()
-            if (id == null) {
-                clearInputs()
-            } else {
-                loadBackendConfig(id)
+            try {
+                updateAuthConfigs()
+                if (id == null) {
+                    clearInputs()
+                } else {
+                    loadBackendConfig(id)
+                }
+            } catch (e: Exception) {
+                Timber.e(e)
+                showError("Failed to load backend config")
             }
         }
     }
@@ -91,6 +96,8 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 currentMkDocsWebUseSsl = data.mkDocsWebConfig?.useSsl ?: false,
 
                 currentAuthConfig = data.backendAuthConfig,
+                currentMkDocsWebAuthConfig = data.mkDocsWebAuthConfig,
+
                 isDeleteButtonEnabled = true,
             )
         }

@@ -33,7 +33,7 @@ internal class OpenDocumentInBrowserUseCase @Inject constructor(
         val protocol = webBaseUri?.substringBefore("://") ?: "https"
         val host = webBaseUri?.substringAfter("://")?.substringBefore("/") ?: "localhost"
 
-        val authConfig = backendConfig.backendAuthConfig
+        val authConfig = backendConfig.mkDocsWebAuthConfig
         val username = authConfig?.username
         val password = authConfig?.password
         val basicAuthInUrl = "${username?.htmlEncode()}:${password?.htmlEncode()}"

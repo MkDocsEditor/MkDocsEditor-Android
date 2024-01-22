@@ -3,9 +3,11 @@ package de.markusressel.mkdocseditor.feature.backendconfig.common.data
 import de.markusressel.mkdocseditor.data.persistence.BackendAuthConfigPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.BackendConfigPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.BackendServerConfigPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.MkdDocsWebConfigPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendConfigEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendConfigEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendServerConfigEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.MkDocsWebConfigEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.UserPasswordAuthConfigEntity
 import io.objectbox.kotlin.flow
 import io.objectbox.kotlin.query
@@ -19,6 +21,7 @@ import javax.inject.Singleton
 internal class BackendConfigRepository @Inject constructor(
     private val backendConfigPersistenceManager: BackendConfigPersistenceManager,
     private val backendServerConfigPersistenceManager: BackendServerConfigPersistenceManager,
+    private val mkdDocsWebConfigPersistenceManager: MkdDocsWebConfigPersistenceManager,
     private val backendAuthConfigPersistenceManager: BackendAuthConfigPersistenceManager,
 ) {
 
@@ -46,6 +49,11 @@ internal class BackendConfigRepository @Inject constructor(
             .put(serverConfig.toBackendServerConfigEntity())
     }
 
+    fun addOrUpdate(mkDocsWebConfig: MkDocsWebConfig): Long {
+        return mkdDocsWebConfigPersistenceManager.standardOperation()
+            .put(mkDocsWebConfig.toMkDocsWebConfigEntity())
+    }
+
     private fun BackendConfig.toBackendConfigEntity() = BackendConfigEntity(
         entityId = id,
         name = name,
@@ -53,8 +61,12 @@ internal class BackendConfigRepository @Inject constructor(
         isSelected = isSelected,
     ).apply {
         serverConfig.target = this@toBackendConfigEntity.serverConfig?.toBackendServerConfigEntity()
-        authConfig.target = this@toBackendConfigEntity.backendAuthConfig?.toBackendAuthConfigEntity()
-
+        authConfig.target =
+            this@toBackendConfigEntity.backendAuthConfig?.toBackendAuthConfigEntity()
+        mkDocsWebConfig.target =
+            this@toBackendConfigEntity.mkDocsWebConfig?.toMkDocsWebConfigEntity()
+        mkDocsWebAuthConfig.target =
+            this@toBackendConfigEntity.mkDocsWebAuthConfig?.toBackendAuthConfigEntity()
     }
 
     private fun AuthConfig.toBackendAuthConfigEntity() = UserPasswordAuthConfigEntity(
@@ -64,6 +76,13 @@ internal class BackendConfigRepository @Inject constructor(
     )
 
     private fun BackendServerConfig.toBackendServerConfigEntity() = BackendServerConfigEntity(
+        entityId = id,
+        domain = domain,
+        port = port,
+        useSsl = useSsl,
+    )
+
+    private fun MkDocsWebConfig.toMkDocsWebConfigEntity() = MkDocsWebConfigEntity(
         entityId = id,
         domain = domain,
         port = port,

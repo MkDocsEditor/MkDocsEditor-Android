@@ -105,13 +105,13 @@ internal fun BackendConfigEditScreenContent(
                             BackendConfigEditViewModel.UiEvent.MkDocsWebDomainChanged(text)
                         )
                     },
-                    currentPort = uiState.currentPort,
+                    currentPort = uiState.currentMkDocsWebPort,
                     onPortChanged = { text ->
                         onUiEvent(
                             BackendConfigEditViewModel.UiEvent.MkDocsWebPortChanged(text)
                         )
                     },
-                    useSsl = uiState.currentUseSsl,
+                    useSsl = uiState.currentMkDocsWebUseSsl,
                     onUseSslCheckedChanged = { checked ->
                         onUiEvent(
                             BackendConfigEditViewModel.UiEvent.MkDocsWebUseSslChanged(checked)
