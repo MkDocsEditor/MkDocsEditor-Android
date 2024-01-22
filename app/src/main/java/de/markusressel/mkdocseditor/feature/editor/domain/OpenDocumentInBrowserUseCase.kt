@@ -24,14 +24,24 @@ internal class OpenDocumentInBrowserUseCase @Inject constructor(
         val document = getDocumentUseCase(documentId).data ?: return false
 
         val url = computeDocumentUrl(backendConfig, document)
-        chromeCustomTabManager.openChromeCustomTab(url)
-        return true
+        return if (url != null) {
+            chromeCustomTabManager.openChromeCustomTab(url)
+            true
+        } else {
+            false
+        }
     }
 
-    private fun computeDocumentUrl(backendConfig: BackendConfig, document: DocumentEntity): String {
-        val webBaseUri = backendConfig.mkDocsWebConfig?.domain
-        val protocol = webBaseUri?.substringBefore("://") ?: "https"
-        val host = webBaseUri?.substringAfter("://")?.substringBefore("/") ?: "localhost"
+    private fun computeDocumentUrl(
+        backendConfig: BackendConfig,
+        document: DocumentEntity
+    ): String? {
+        val mkdDocsWebConfig = backendConfig.mkDocsWebConfig
+        val domain = mkdDocsWebConfig?.domain ?: return null
+        val protocol = when (mkdDocsWebConfig.useSsl) {
+            true -> "https"
+            else -> "http"
+        }
 
         val authConfig = backendConfig.mkDocsWebAuthConfig
         val username = authConfig?.username
@@ -47,7 +57,7 @@ internal class OpenDocumentInBrowserUseCase @Inject constructor(
         val result = listOfNotNull(
             "$protocol://",
             "$basicAuthInUrl@".takeUnless { username.isNullOrBlank() || password.isNullOrBlank() },
-            "$host/view/$pagePath"
+            "$domain/view/$pagePath"
         ).joinToString(separator = "")
 
         return result
