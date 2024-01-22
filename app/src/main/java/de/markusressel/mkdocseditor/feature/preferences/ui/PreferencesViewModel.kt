@@ -1,5 +1,7 @@
 package de.markusressel.mkdocseditor.feature.preferences.ui
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.SavedStateHandle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.kutepreferences.core.KuteNavigator
@@ -24,9 +26,15 @@ internal class PreferencesViewModel @Inject constructor(
         KuteStyleManager.registerTypeHook { listItem ->
             when (listItem) {
                 is LastOfflineCacheUpdatePreferenceItem -> {
-                    LastOfflineCacheUpdatePreferenceItemView(lastUpdate = "N/A")
+                    val value by preferencesHolder.lastOfflineCacheUpdate.persistedValue.collectAsState()
+                    LastOfflineCacheUpdatePreferenceItemView(
+                        lastUpdate = preferencesHolder.lastOfflineCacheUpdate.createDescription(
+                            value
+                        ),
+                    )
                     true
                 }
+
                 else -> false
             }
 

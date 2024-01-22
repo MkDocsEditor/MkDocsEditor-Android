@@ -7,6 +7,7 @@ import android.os.Looper
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.AndroidEntryPoint
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
+import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +24,9 @@ class OfflineCacheSyncService : JobService() {
 
     @Inject
     internal lateinit var restClient: IMkDocsRestClient
+
+    @Inject
+    internal lateinit var preferencesHolder: KutePreferencesHolder
 
     @Inject
     internal lateinit var documentContentPersistenceManager: DocumentContentPersistenceManager
@@ -57,6 +61,7 @@ class OfflineCacheSyncService : JobService() {
             }
 
             Timber.d { "Offline cache sync job complete." }
+            preferencesHolder.lastOfflineCacheUpdate.updateToNow()
         }, 1000)
         Timber.d { "on start job: ${params.jobId}" }
 

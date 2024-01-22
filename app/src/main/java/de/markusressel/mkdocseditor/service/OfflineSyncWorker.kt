@@ -10,6 +10,7 @@ import dagger.assisted.AssistedInject
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.browser.ui.ApplyCurrentBackendConfigUseCase
+import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocsrestclient.ErrorResult
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import de.markusressel.mkdocsrestclient.deserializer
@@ -24,6 +25,7 @@ internal class OfflineSyncWorker @AssistedInject constructor(
     private val restClient: IMkDocsRestClient,
     private val documentContentPersistenceManager: DocumentContentPersistenceManager,
     private val applyCurrentBackendConfigUseCase: ApplyCurrentBackendConfigUseCase,
+    private val preferencesHolder: KutePreferencesHolder,
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result = coroutineScope {
@@ -65,6 +67,7 @@ internal class OfflineSyncWorker @AssistedInject constructor(
         }
 
         Timber.d { "Offline cache sync job complete." }
+        preferencesHolder.lastOfflineCacheUpdate.updateToNow()
         Result.success()
     }
 

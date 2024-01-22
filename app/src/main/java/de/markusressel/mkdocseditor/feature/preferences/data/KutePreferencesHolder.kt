@@ -89,7 +89,11 @@ class KutePreferencesHolder @Inject constructor(
     }
 
     val lastOfflineCacheUpdate by lazy {
-        LastOfflineCacheUpdatePreferenceItem()
+        LastOfflineCacheUpdatePreferenceItem(
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_time),
+            title = context.getString(R.string.category_offline_cache_title),
+            dataProvider = dataProvider,
+        )
     }
 
     val themePreference by lazy {
