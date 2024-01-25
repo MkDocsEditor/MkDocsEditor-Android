@@ -17,6 +17,8 @@
     <string name="error_and_no_offline_version">There was an error connecting to the server and there is
     no offline version available for read-only mode: %1$s</string>
 
+    <string name="screen_profile_title">Profile</string>
+
     <string name="screen_files_title">File Browser</string>
     <string name="file_browser_empty">No files</string>
     <string name="file_browser_sections_headline">Sections</string>

@@ -717,5 +717,6 @@ internal sealed class UiEvent {
 internal sealed class FileBrowserEvent {
     data object OpenSearch : FileBrowserEvent()
     data class OpenDocumentEditor(val documentId: String) : FileBrowserEvent()
+    data object OpenProfileScreen : FileBrowserEvent()
     data object OpenResourceSelection : FileBrowserEvent()
 }
