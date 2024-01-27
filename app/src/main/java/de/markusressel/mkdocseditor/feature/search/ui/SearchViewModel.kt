@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.extensions.common.android.launch
-import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SearchUseCase
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
+import de.markusressel.mkdocseditor.feature.search.domain.SearchUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest

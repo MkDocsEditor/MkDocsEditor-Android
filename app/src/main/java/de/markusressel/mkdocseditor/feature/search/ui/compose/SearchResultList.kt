@@ -1,11 +1,13 @@
 package de.markusressel.mkdocseditor.feature.search.ui.compose
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.feature.search.ui.compose.result.DocumentSearchResultItem
 import de.markusressel.mkdocseditor.feature.search.ui.compose.result.ResourceSearchResultItem
@@ -20,6 +22,7 @@ internal fun SearchResultList(
 ) {
     Column(
         modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items.forEach { item ->
             when (item) {

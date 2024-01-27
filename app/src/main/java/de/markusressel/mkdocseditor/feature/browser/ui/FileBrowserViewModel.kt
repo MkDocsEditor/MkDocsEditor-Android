@@ -28,11 +28,11 @@ import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetSectionIte
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameDocumentUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameResourceUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameSectionUseCase
-import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SearchUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SectionItem
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.UploadResourceUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
+import de.markusressel.mkdocseditor.feature.search.domain.SearchUseCase
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient

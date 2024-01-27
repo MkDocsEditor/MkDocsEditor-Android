@@ -1,10 +1,9 @@
-package de.markusressel.mkdocseditor.feature.browser.domain.usecase
+package de.markusressel.mkdocseditor.feature.search.domain
 
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.browser.data.DocumentData
 import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.browser.data.SectionData
-import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import javax.inject.Inject
 import javax.inject.Singleton
 

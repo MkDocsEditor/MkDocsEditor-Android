@@ -66,7 +66,10 @@ class DataRepository @Inject constructor(
         }.find()
 
         val documents = documentPersistenceManager.standardOperation().query {
-            filter { document -> searchRegex.containsMatchIn(document.name) }
+            filter { document ->
+                searchRegex.containsMatchIn(document.name)
+                    || searchRegex.containsMatchIn(document.content.target?.text ?: "")
+            }
         }.find()
 
         val resources = resourcePersistenceManager.standardOperation().query {
@@ -390,7 +393,7 @@ class DataRepository @Inject constructor(
         val parentSection = sectionPersistenceManager.findById(parentSectionId)
             ?: throw IllegalStateException(
                 "Parent section could not be found in persistence" +
-                        " while trying to create a new document in it"
+                    " while trying to create a new document in it"
             )
 
         return restClient.createDocument(parentSectionId, documentName).fold<String>(
