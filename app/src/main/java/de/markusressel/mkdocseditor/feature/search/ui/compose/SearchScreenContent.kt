@@ -72,6 +72,7 @@ private fun SearchScreenContentPreview() {
                     SearchResultItem.Document(
                         documentId = "documentId",
                         documentName = "documentName",
+                        documentExcerpt = "Dieser Teil des Dokuments enthält den Suchbefriff \"test\".",
                     ),
                     SearchResultItem.Section(
                         sectionId = "sectionId",

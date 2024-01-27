@@ -60,15 +60,15 @@ internal class SearchViewModel @Inject constructor(
     private fun onSearchResultClicked(searchResultItem: SearchResultItem) {
         when (searchResultItem) {
             is SearchResultItem.Section -> {
-
+                // TODO: close search, navigate to section
             }
 
             is SearchResultItem.Document -> {
-
+                // TODO: close search, navigate to section containing the document, open the document in the editor
             }
 
             is SearchResultItem.Resource -> {
-
+                // TODO: close search, navigate to section containing the resource, "open" the resource
             }
         }
     }

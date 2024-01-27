@@ -4,6 +4,7 @@ sealed class SearchResultItem {
     data class Document(
         val documentId: String,
         val documentName: String,
+        val documentExcerpt: String,
     ) : SearchResultItem()
 
     data class Section(

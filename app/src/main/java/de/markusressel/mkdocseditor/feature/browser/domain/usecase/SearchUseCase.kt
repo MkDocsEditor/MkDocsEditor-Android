@@ -18,6 +18,7 @@ internal class SearchUseCase @Inject constructor(
                 is DocumentData -> SearchResultItem.Document(
                     documentId = it.id,
                     documentName = it.name,
+                    documentExcerpt = it.getExcerpt(searchTerm),
                 )
 
                 is SectionData -> SearchResultItem.Section(
@@ -35,5 +36,14 @@ internal class SearchUseCase @Inject constructor(
                 }
             }
         }
+    }
+
+    private fun DocumentData.getExcerpt(searchTerm: String): String {
+        val excerptStartIndex = content?.text?.indexOf(searchTerm) ?: -1
+        val excerptEndIndex = excerptStartIndex + searchTerm.length + 100
+        return content?.text?.substring(
+            if (excerptStartIndex < 0) 0 else excerptStartIndex,
+            if (excerptEndIndex > content.text.length) content.text.length else excerptEndIndex
+        ) ?: ""
     }
 }
