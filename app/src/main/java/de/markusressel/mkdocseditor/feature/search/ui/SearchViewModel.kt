@@ -4,12 +4,12 @@ import androidx.core.text.trimmedLength
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SearchUseCase
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -24,19 +24,24 @@ internal class SearchViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(UiState())
     val uiState = _uiState.asStateFlow()
 
-    private val currentSearchResults: Flow<List<SearchResultItem>> = combine(
-        uiState.map { it.currentSearchFilter }.distinctUntilChanged(),
-        uiState.map { it.isSearchExpanded }.distinctUntilChanged(),
-    ) { currentSearchFilter, isSearching ->
-        when {
-            isSearching && currentSearchFilter.trimmedLength() > 0 -> searchUseCase(
-                currentSearchFilter
-            )
+    init {
+        launch {
+            uiState.map {
+                it.currentSearchFilter
+            }.distinctUntilChanged().collectLatest { currentSearchFilter ->
+                val searchResults = when {
+                    currentSearchFilter.trimmedLength() > 0 -> searchUseCase(
+                        currentSearchFilter
+                    )
 
-            else -> emptyList()
+                    else -> emptyList()
+                }
+                _uiState.update { old ->
+                    old.copy(currentSearchResults = searchResults)
+                }
+            }
         }
     }
-
 
     fun onUiEvent(event: UiEvent) {
         viewModelScope.launch {
@@ -93,25 +98,14 @@ internal class SearchViewModel @Inject constructor(
 
     private fun clearSearch() {
         setSearch("")
-        if (uiState.value.isSearchExpanded) {
-            _uiState.update { old ->
-                old.copy(
-                    isSearchExpanded = false,
-                )
-            }
-        }
     }
 
     private fun onSearchRequested(query: String) {
         setSearch(query)
-        _uiState.update { old ->
-            old.copy(isSearchExpanded = true)
-        }
     }
 
     data class UiState(
         val currentSearchFilter: String = "",
-        val isSearchExpanded: Boolean = false,
         val currentSearchResults: List<SearchResultItem> = emptyList(),
     )
 

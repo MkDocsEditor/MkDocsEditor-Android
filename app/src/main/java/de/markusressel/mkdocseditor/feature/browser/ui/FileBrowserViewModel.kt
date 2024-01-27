@@ -349,12 +349,10 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private fun onTopAppBarActionClicked(action: TopAppBarAction.FileBrowser) {
+    private suspend fun onTopAppBarActionClicked(action: TopAppBarAction.FileBrowser) {
         when (action) {
             TopAppBarAction.FileBrowser.Search -> {
-                _uiState.update { old ->
-                    old.copy(isSearchExpanded = true)
-                }
+                onSearchExpandedChanged(true)
             }
         }
     }
