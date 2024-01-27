@@ -1,6 +1,8 @@
 package de.markusressel.mkdocseditor.feature.search.ui.compose
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -16,12 +18,16 @@ internal fun SearchResultList(
     items: List<SearchResultItem>,
     onItemClicked: (SearchResultItem) -> Unit,
 ) {
-    Column {
+    Column(
+        modifier = modifier,
+    ) {
         items.forEach { item ->
             when (item) {
                 is SearchResultItem.Document -> {
                     DocumentSearchResultItem(
-                        modifier = modifier,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentHeight(),
                         item = item,
                         onItemClicked = onItemClicked,
                     )
@@ -29,7 +35,9 @@ internal fun SearchResultList(
 
                 is SearchResultItem.Section -> {
                     SectionSearchResultItem(
-                        modifier = modifier,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentHeight(),
                         item = item,
                         onItemClicked = onItemClicked,
                     )
@@ -37,7 +45,9 @@ internal fun SearchResultList(
 
                 is SearchResultItem.Resource -> {
                     ResourceSearchResultItem(
-                        modifier = modifier,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentHeight(),
                         item = item,
                         onItemClicked = onItemClicked,
                     )

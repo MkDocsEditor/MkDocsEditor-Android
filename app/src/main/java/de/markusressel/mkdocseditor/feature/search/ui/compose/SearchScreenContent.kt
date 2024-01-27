@@ -3,7 +3,8 @@ package de.markusressel.mkdocseditor.feature.search.ui.compose
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,11 +49,11 @@ internal fun SearchScreenContent(
         SearchResultList(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight()
                 .padding(
                     vertical = 16.dp,
                     horizontal = 16.dp,
-                ),
+                )
+                .verticalScroll(rememberScrollState()),
             items = uiState.currentSearchResults,
             onItemClicked = {
                 onUiEvent(UiEvent.SearchResultClicked(it))
