@@ -15,6 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import de.markusressel.kodehighlighter.core.ui.KodeText
+import de.markusressel.kodehighlighter.language.markdown.MarkdownRuleBook
+import de.markusressel.kodehighlighter.language.markdown.colorscheme.DarkBackgroundColorSchemeWithSpanStyle
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 
@@ -38,7 +41,7 @@ internal fun DocumentSearchResultItem(
         ) {
             Text(text = item.documentName)
 
-            if (item.documentExcerpt.isNotBlank()) {
+            if (item.documentExcerptData != null) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -46,7 +49,24 @@ internal fun DocumentSearchResultItem(
                         .background(MaterialTheme.colorScheme.inverseOnSurface)
                         .padding(8.dp)
                 ) {
-                    Text(text = item.documentExcerpt)
+                    val excerptData = item.documentExcerptData
+
+                    val text = listOfNotNull(
+                        "[…]".takeIf { excerptData.charsBefore > 0 },
+                        excerptData.excerpt,
+                        "[…]".takeIf { excerptData.charsAfter > 0 },
+                    ).joinToString(separator = " ")
+
+                    KodeText(
+                        text = text,
+                        languageRuleBook = MarkdownRuleBook(),
+                        colorScheme = DarkBackgroundColorSchemeWithSpanStyle(),
+                        textColor = MaterialTheme.colorScheme.onBackground,
+                        // TODO: add support for text style
+//                        textStyle = TextStyle(
+//                            fontFamily = FontFamily.Monospace,
+//                        ),
+                    )
                 }
             }
         }
@@ -61,7 +81,11 @@ private fun DocumentSearchResultItemPreview() {
             item = SearchResultItem.Document(
                 documentId = "1",
                 documentName = "Document 1",
-                documentExcerpt = "Excerpt 1",
+                documentExcerptData = SearchResultItem.Document.ExcerptData(
+                    charsBefore = 10,
+                    excerpt = "Excerpt 1",
+                    charsAfter = 10,
+                ),
             ),
             onItemClicked = {},
             onItemLongClicked = {},

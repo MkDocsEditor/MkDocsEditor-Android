@@ -2,24 +2,27 @@ package de.markusressel.mkdocseditor.feature.search.ui
 
 import androidx.core.text.trimmedLength
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.feature.search.domain.SearchUseCase
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 internal class SearchViewModel @Inject constructor(
     private val searchUseCase: SearchUseCase
 ) : ViewModel() {
+
+    private val _events = Channel<UiAction>(Channel.BUFFERED)
+    val events = _events.receiveAsFlow()
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState = _uiState.asStateFlow()
@@ -44,12 +47,9 @@ internal class SearchViewModel @Inject constructor(
     }
 
     fun onUiEvent(event: UiEvent) {
-        viewModelScope.launch {
+        launch {
             when (event) {
-                is UiEvent.SearchInputChanged -> {
-                    setSearch(event.searchFilter)
-                }
-
+                is UiEvent.SearchInputChanged -> setSearch(event.searchFilter)
                 is UiEvent.SearchExpandedChanged -> onSearchExpandedChanged(event.isSearchExpanded)
                 is UiEvent.SearchRequested -> onSearchRequested(event.searchFilter)
                 is UiEvent.SearchResultClicked -> onSearchResultClicked(event.searchResultItem)
@@ -91,7 +91,7 @@ internal class SearchViewModel @Inject constructor(
         }
     }
 
-    private fun onSearchExpandedChanged(searchExpanded: Boolean) {
+    private suspend fun onSearchExpandedChanged(searchExpanded: Boolean) {
         if (searchExpanded.not()) {
             clearSearch()
         }
@@ -114,8 +114,9 @@ internal class SearchViewModel @Inject constructor(
         } else false
     }
 
-    private fun clearSearch() {
+    private suspend fun clearSearch() {
         setSearch("")
+        _events.send(UiAction.NavigateBack)
     }
 
     private fun onSearchRequested(query: String) {
@@ -126,6 +127,10 @@ internal class SearchViewModel @Inject constructor(
         val currentSearchFilter: String = "",
         val currentSearchResults: List<SearchResultItem> = emptyList(),
     )
+
+    sealed class UiAction {
+        data object NavigateBack : UiAction()
+    }
 
     sealed class UiEvent {
         data class SearchInputChanged(val searchFilter: String) : UiEvent()

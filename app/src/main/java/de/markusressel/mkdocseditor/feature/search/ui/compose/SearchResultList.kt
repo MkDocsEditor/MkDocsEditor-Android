@@ -73,7 +73,11 @@ private fun SearchResultListPreview() {
                 SearchResultItem.Document(
                     documentId = "1",
                     documentName = "Document 1",
-                    documentExcerpt = "Excerpt 1",
+                    documentExcerptData = SearchResultItem.Document.ExcerptData(
+                        charsBefore = 10,
+                        excerpt = "Excerpt 1",
+                        charsAfter = 10,
+                    ),
                 ),
                 SearchResultItem.Section(
                     sectionId = "1",

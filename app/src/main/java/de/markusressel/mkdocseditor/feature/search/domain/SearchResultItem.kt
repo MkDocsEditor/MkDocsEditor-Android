@@ -4,8 +4,14 @@ sealed class SearchResultItem {
     data class Document(
         val documentId: String,
         val documentName: String,
-        val documentExcerpt: String,
-    ) : SearchResultItem()
+        val documentExcerptData: ExcerptData?,
+    ) : SearchResultItem() {
+        data class ExcerptData(
+            val excerpt: String,
+            val charsBefore: Int,
+            val charsAfter: Int,
+        )
+    }
 
     data class Section(
         val sectionId: String,

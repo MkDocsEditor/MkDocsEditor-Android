@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.feature.search.ui.compose
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import cafe.adriel.voyager.core.screen.Screen
@@ -15,6 +16,16 @@ object SearchScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val viewModel = getViewModel<SearchViewModel>()
         val uiState by viewModel.uiState.collectAsState()
+
+        LaunchedEffect(Unit) {
+            viewModel.events.collect { event ->
+                when (event) {
+                    is SearchViewModel.UiAction.NavigateBack -> {
+                        navigator.pop()
+                    }
+                }
+            }
+        }
 
         SearchScreenContent(
             uiState = uiState,

@@ -12,37 +12,76 @@ internal class SearchUseCase @Inject constructor(
     private val dataRepository: DataRepository,
 ) {
     operator fun invoke(searchTerm: String): List<SearchResultItem> {
-        return dataRepository.find(searchTerm).map {
-            when (it) {
-                is DocumentData -> SearchResultItem.Document(
-                    documentId = it.id,
-                    documentName = it.name,
-                    documentExcerpt = it.getExcerpt(searchTerm),
-                )
+        return dataRepository.find(searchTerm).map { item ->
+            when (item) {
+                is DocumentData -> {
+                    val (charsBefore, excerpt, charsAfter) = item.getInlineExcerpt(searchTerm)
+                    SearchResultItem.Document(
+                        documentId = item.id,
+                        documentName = item.name,
+                        documentExcerptData = SearchResultItem.Document.ExcerptData(
+                            excerpt = excerpt,
+                            charsBefore = charsBefore,
+                            charsAfter = charsAfter,
+                        ).takeIf { it.excerpt.isNotBlank() }
+                    )
+                }
 
                 is SectionData -> SearchResultItem.Section(
-                    sectionId = it.id,
-                    sectionName = it.name,
+                    sectionId = item.id,
+                    sectionName = item.name,
                 )
 
                 is ResourceData -> SearchResultItem.Resource(
-                    resourceId = it.id,
-                    resourceName = it.name,
+                    resourceId = item.id,
+                    resourceName = item.name,
                 )
 
                 else -> {
-                    throw IllegalArgumentException("Unknown type: ${it::class.java}")
+                    throw IllegalArgumentException("Unknown type: ${item::class.java}")
                 }
             }
         }
     }
 
-    private fun DocumentData.getExcerpt(searchTerm: String): String {
-        val excerptStartIndex = content?.text?.indexOf(searchTerm) ?: -1
-        val excerptEndIndex = excerptStartIndex + searchTerm.length + 100
-        return content?.text?.substring(
-            if (excerptStartIndex < 0) 0 else excerptStartIndex,
-            if (excerptEndIndex > content.text.length) content.text.length else excerptEndIndex
-        ) ?: ""
+    private fun DocumentData.getInlineExcerpt(
+        searchTerm: String,
+        charsBeforeMatch: Int = 10,
+        charsAfterMatch: Int = 50
+    ): Triple<Int, String, Int> {
+        val content = content?.text ?: ""
+        val matchingCharIndex = content.indexOf(searchTerm)
+        val startCharIndex = 0.coerceAtLeast(matchingCharIndex - charsBeforeMatch)
+        val endCharIndex = (content.length - 1).coerceIn(0, matchingCharIndex + charsAfterMatch)
+        val charsAfter = ((content.length - 1).coerceAtLeast(0) - endCharIndex).coerceAtLeast(0)
+        return Triple(
+            matchingCharIndex,
+            content.substring(startCharIndex, endCharIndex),
+            charsAfter
+        )
     }
+
+    private fun DocumentData.getExcerpt(
+        searchTerm: String,
+        wordsBeforeMatch: Int = 3,
+        wordsAfterMatch: Int = 10
+    ): String {
+        val words = (content?.text ?: "").split(" ")
+        val matchingWordIndex = words.indexOfFirst { it.contains(searchTerm) }
+        val startWordIndex = 0.coerceAtLeast(matchingWordIndex - wordsBeforeMatch)
+        val endWordIndex = (words.size - 1).coerceIn(0, matchingWordIndex + wordsAfterMatch)
+        return words.subList(startWordIndex, endWordIndex).joinToString(" ")
+    }
+
+//    private fun DocumentData.getExcerpt(
+//        searchTerm: String,
+//        linesBeforeMatch: Int = 0,
+//        linesAfterMatch: Int = 3
+//    ): String {
+//        val lines = (content?.text ?: "").split("\n")
+//        val matchingLineIndex = lines.indexOfFirst { it.contains(searchTerm) }
+//        val startLineIndex = 0.coerceAtLeast(matchingLineIndex - linesBeforeMatch)
+//        val endLineIndex = (lines.size - 1).coerceIn(0, matchingLineIndex + linesAfterMatch)
+//        return lines.subList(startLineIndex, endLineIndex).joinToString("\n")
+//    }
 }
