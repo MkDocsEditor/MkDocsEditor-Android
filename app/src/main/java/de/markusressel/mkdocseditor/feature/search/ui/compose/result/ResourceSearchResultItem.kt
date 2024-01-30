@@ -1,8 +1,9 @@
 package de.markusressel.mkdocseditor.feature.search.ui.compose.result
 
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -15,9 +16,17 @@ import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 internal fun ResourceSearchResultItem(
     modifier: Modifier = Modifier,
     item: SearchResultItem.Resource,
-    onItemClicked: (SearchResultItem.Resource) -> Unit
+    onItemClicked: (SearchResultItem.Resource) -> Unit,
+    onItemLongClicked: (SearchResultItem.Resource) -> Unit
 ) {
-    Card(modifier = modifier, onClick = { onItemClicked(item) }) {
+    ElevatedCard(
+        modifier = Modifier
+            .combinedClickable(
+                onClick = { onItemClicked(item) },
+                onLongClick = { onItemLongClicked(item) }
+            )
+            .then(modifier)
+    ) {
         Column(
             modifier = Modifier.padding(8.dp)
         ) {
@@ -36,6 +45,7 @@ private fun ResourceSearchResultItemPreview() {
                 resourceName = "Resource 1",
             ),
             onItemClicked = {},
+            onItemLongClicked = {},
         )
     }
 }

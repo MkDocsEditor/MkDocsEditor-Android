@@ -19,6 +19,7 @@ internal fun SearchResultList(
     modifier: Modifier = Modifier,
     items: List<SearchResultItem>,
     onItemClicked: (SearchResultItem) -> Unit,
+    onItemLongClicked: (SearchResultItem) -> Unit,
 ) {
     Column(
         modifier = modifier,
@@ -33,6 +34,7 @@ internal fun SearchResultList(
                             .wrapContentHeight(),
                         item = item,
                         onItemClicked = onItemClicked,
+                        onItemLongClicked = onItemLongClicked,
                     )
                 }
 
@@ -43,6 +45,7 @@ internal fun SearchResultList(
                             .wrapContentHeight(),
                         item = item,
                         onItemClicked = onItemClicked,
+                        onItemLongClicked = onItemLongClicked,
                     )
                 }
 
@@ -53,6 +56,7 @@ internal fun SearchResultList(
                             .wrapContentHeight(),
                         item = item,
                         onItemClicked = onItemClicked,
+                        onItemLongClicked = onItemLongClicked,
                     )
                 }
             }
@@ -81,6 +85,7 @@ private fun SearchResultListPreview() {
                 ),
             ),
             onItemClicked = {},
+            onItemLongClicked = {},
         )
     }
 }

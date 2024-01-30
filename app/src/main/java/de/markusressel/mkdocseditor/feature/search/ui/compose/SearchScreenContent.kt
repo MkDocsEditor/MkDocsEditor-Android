@@ -58,6 +58,9 @@ internal fun SearchScreenContent(
             onItemClicked = {
                 onUiEvent(UiEvent.SearchResultClicked(it))
             },
+            onItemLongClicked = {
+                onUiEvent(UiEvent.SearchResultLongClicked(it))
+            },
         )
     }
 }

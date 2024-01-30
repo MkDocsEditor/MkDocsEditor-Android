@@ -53,6 +53,7 @@ internal class SearchViewModel @Inject constructor(
                 is UiEvent.SearchExpandedChanged -> onSearchExpandedChanged(event.isSearchExpanded)
                 is UiEvent.SearchRequested -> onSearchRequested(event.searchFilter)
                 is UiEvent.SearchResultClicked -> onSearchResultClicked(event.searchResultItem)
+                is UiEvent.SearchResultLongClicked -> onSearchResultLongClicked(event.searchResultItem)
             }
         }
     }
@@ -69,6 +70,23 @@ internal class SearchViewModel @Inject constructor(
 
             is SearchResultItem.Resource -> {
                 // TODO: close search, navigate to section containing the resource, "open" the resource
+            }
+        }
+    }
+
+    private fun onSearchResultLongClicked(searchResultItem: SearchResultItem) {
+        when (searchResultItem) {
+            is SearchResultItem.Section -> {
+
+            }
+
+            is SearchResultItem.Document -> {
+
+            }
+
+            is SearchResultItem.Resource -> {
+
+
             }
         }
     }
@@ -115,6 +133,7 @@ internal class SearchViewModel @Inject constructor(
         data class SearchExpandedChanged(val isSearchExpanded: Boolean) : UiEvent()
 
         data class SearchResultClicked(val searchResultItem: SearchResultItem) : UiEvent()
+        data class SearchResultLongClicked(val searchResultItem: SearchResultItem) : UiEvent()
     }
 
 }
