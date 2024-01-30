@@ -17,6 +17,7 @@ import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 @Composable
 internal fun SearchResultList(
     modifier: Modifier = Modifier,
+    searchTerm: String,
     items: List<SearchResultItem>,
     onItemClicked: (SearchResultItem) -> Unit,
     onItemLongClicked: (SearchResultItem) -> Unit,
@@ -32,6 +33,7 @@ internal fun SearchResultList(
                         modifier = Modifier
                             .fillMaxWidth()
                             .wrapContentHeight(),
+                        searchTerm = searchTerm,
                         item = item,
                         onItemClicked = onItemClicked,
                         onItemLongClicked = onItemLongClicked,
@@ -90,6 +92,7 @@ private fun SearchResultListPreview() {
             ),
             onItemClicked = {},
             onItemLongClicked = {},
+            searchTerm = "Term",
         )
     }
 }

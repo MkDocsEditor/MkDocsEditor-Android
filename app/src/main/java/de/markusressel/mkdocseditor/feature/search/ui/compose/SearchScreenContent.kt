@@ -54,6 +54,7 @@ internal fun SearchScreenContent(
                     horizontal = 16.dp,
                 )
                 .verticalScroll(rememberScrollState()),
+            searchTerm = uiState.currentSearchFilter,
             items = uiState.currentSearchResults,
             onItemClicked = {
                 onUiEvent(UiEvent.SearchResultClicked(it))
