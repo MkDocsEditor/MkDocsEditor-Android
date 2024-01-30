@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.search.ui.compose
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -10,13 +11,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.feature.search.ui.SearchViewModel
 import de.markusressel.mkdocseditor.feature.search.ui.SearchViewModel.UiEvent
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
 internal fun SearchScreenContent(
@@ -38,35 +39,40 @@ internal fun SearchScreenContent(
             )
         },
     ) {
-        Text(
-            modifier = Modifier.padding(8.dp),
-            text = stringResource(
-                R.string.search_result_count_header,
-                uiState.currentSearchResults.size
-            )
-        )
+        Column(
+//            modifier = Modifier.background(MaterialTheme.colorScheme.background)
+        ) {
 
-        SearchResultList(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    vertical = 16.dp,
-                    horizontal = 16.dp,
+            Text(
+                modifier = Modifier.padding(8.dp),
+                text = stringResource(
+                    R.string.search_result_count_header,
+                    uiState.currentSearchResults.size
                 )
-                .verticalScroll(rememberScrollState()),
-            searchTerm = uiState.currentSearchFilter,
-            items = uiState.currentSearchResults,
-            onItemClicked = {
-                onUiEvent(UiEvent.SearchResultClicked(it))
-            },
-            onItemLongClicked = {
-                onUiEvent(UiEvent.SearchResultLongClicked(it))
-            },
-        )
+            )
+
+            SearchResultList(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        vertical = 16.dp,
+                        horizontal = 16.dp,
+                    )
+                    .verticalScroll(rememberScrollState()),
+                searchTerm = uiState.currentSearchFilter,
+                items = uiState.currentSearchResults,
+                onItemClicked = {
+                    onUiEvent(UiEvent.SearchResultClicked(it))
+                },
+                onItemLongClicked = {
+                    onUiEvent(UiEvent.SearchResultLongClicked(it))
+                },
+            )
+        }
     }
 }
 
-@Preview
+@CombinedPreview
 @Composable
 private fun SearchScreenContentPreview() {
     MkDocsEditorTheme {

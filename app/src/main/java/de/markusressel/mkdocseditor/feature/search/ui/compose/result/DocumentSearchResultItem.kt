@@ -2,13 +2,11 @@ package de.markusressel.mkdocseditor.feature.search.ui.compose.result
 
 import androidx.annotation.ColorInt
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.markusressel.kodehighlighter.core.LanguageRuleBook
 import de.markusressel.kodehighlighter.core.StyleFactory
@@ -31,7 +28,9 @@ import de.markusressel.kodehighlighter.core.ui.KodeText
 import de.markusressel.kodehighlighter.language.markdown.MarkdownRuleBook
 import de.markusressel.kodehighlighter.language.markdown.colorscheme.DarkBackgroundColorSchemeWithSpanStyle
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
+import de.markusressel.mkdocseditor.feature.search.ui.compose.SearchResultCard
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
 internal fun DocumentSearchResultItem(
@@ -41,13 +40,11 @@ internal fun DocumentSearchResultItem(
     onItemClicked: (SearchResultItem.Document) -> Unit,
     onItemLongClicked: (SearchResultItem.Document) -> Unit
 ) {
-    ElevatedCard(
-        modifier = Modifier
-            .combinedClickable(
-                onClick = { onItemClicked(item) },
-                onLongClick = { onItemLongClicked(item) }
-            )
-            .then(modifier),
+    SearchResultCard(
+        modifier = modifier,
+        item = item,
+        onItemClicked = onItemClicked,
+        onItemLongClicked = onItemLongClicked,
     ) {
         Column(
             modifier = Modifier.padding(8.dp)
@@ -145,7 +142,7 @@ class SearchHighlightingRuleBook(searchTerm: String) : LanguageRuleBook {
     }
 }
 
-@Preview
+@CombinedPreview
 @Composable
 private fun DocumentSearchResultItemPreview() {
     MkDocsEditorTheme {

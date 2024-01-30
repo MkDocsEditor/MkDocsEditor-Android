@@ -6,13 +6,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.feature.search.ui.compose.result.DocumentSearchResultItem
 import de.markusressel.mkdocseditor.feature.search.ui.compose.result.ResourceSearchResultItem
 import de.markusressel.mkdocseditor.feature.search.ui.compose.result.SectionSearchResultItem
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
 internal fun SearchResultList(
@@ -66,7 +66,7 @@ internal fun SearchResultList(
     }
 }
 
-@Preview
+@CombinedPreview
 @Composable
 private fun SearchResultListPreview() {
     MkDocsEditorTheme {
