@@ -9,7 +9,7 @@ import androidx.compose.ui.Modifier
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 
 @Composable
-fun <T : SearchResultItem> SearchResultCard(
+internal fun <T : SearchResultItem> SearchResultCard(
     modifier: Modifier = Modifier,
     item: T,
     onItemClicked: (T) -> Unit,
