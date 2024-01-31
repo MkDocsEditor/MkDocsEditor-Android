@@ -26,35 +26,33 @@ internal fun SearchResultList(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items.forEach { item ->
-            Column {
-                when (item) {
-                    is SearchResultItem.Document -> {
-                        DocumentSearchResultItem(
-                            modifier = Modifier.fillMaxWidth(),
-                            searchTerm = searchTerm,
-                            item = item,
-                            onItemClicked = onItemClicked,
-                            onItemLongClicked = onItemLongClicked,
-                        )
-                    }
+            when (item) {
+                is SearchResultItem.Document -> {
+                    DocumentSearchResultItem(
+                        modifier = Modifier.fillMaxWidth(),
+                        searchTerm = searchTerm,
+                        item = item,
+                        onItemClicked = onItemClicked,
+                        onItemLongClicked = onItemLongClicked,
+                    )
+                }
 
-                    is SearchResultItem.Section -> {
-                        SectionSearchResultItem(
-                            modifier = Modifier.fillMaxWidth(),
-                            item = item,
-                            onItemClicked = onItemClicked,
-                            onItemLongClicked = onItemLongClicked,
-                        )
-                    }
+                is SearchResultItem.Section -> {
+                    SectionSearchResultItem(
+                        modifier = Modifier.fillMaxWidth(),
+                        item = item,
+                        onItemClicked = onItemClicked,
+                        onItemLongClicked = onItemLongClicked,
+                    )
+                }
 
-                    is SearchResultItem.Resource -> {
-                        ResourceSearchResultItem(
-                            modifier = Modifier.fillMaxWidth(),
-                            item = item,
-                            onItemClicked = onItemClicked,
-                            onItemLongClicked = onItemLongClicked,
-                        )
-                    }
+                is SearchResultItem.Resource -> {
+                    ResourceSearchResultItem(
+                        modifier = Modifier.fillMaxWidth(),
+                        item = item,
+                        onItemClicked = onItemClicked,
+                        onItemLongClicked = onItemLongClicked,
+                    )
                 }
             }
         }
