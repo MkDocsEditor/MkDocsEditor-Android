@@ -12,6 +12,7 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntit
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
+import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel.Companion.ROOT_SECTION_ID
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
@@ -349,6 +350,33 @@ class DataRepository @Inject constructor(
         query = {
             documentPersistenceManager.standardOperation().query {
                 equal(DocumentEntity_.id, documentId, QueryBuilder.StringOrder.CASE_INSENSITIVE)
+            }.subscribe().toFlow().map { it.firstOrNull() }
+        },
+        fetch = {
+            restClient.getItemTree()
+        },
+        saveFetchResult = {
+            it.fold(
+                success = { sectionModel ->
+                    val entity = sectionModel.asEntity(documentContentPersistenceManager)
+                    sectionPersistenceManager.insertOrUpdateRoot(entity)
+                },
+                failure = { error ->
+                    Timber.e(error)
+                    throw error
+                }
+            )
+        },
+        shouldFetch = {
+            isOfflineModeEnabledFlowUseCase().value.not()
+        }
+    )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getResource(resourceId: String): Flow<Resource<ResourceEntity?>> = networkBoundResource(
+        query = {
+            resourcePersistenceManager.standardOperation().query {
+                equal(ResourceEntity_.id, resourceId, QueryBuilder.StringOrder.CASE_INSENSITIVE)
             }.subscribe().toFlow().map { it.firstOrNull() }
         },
         fetch = {

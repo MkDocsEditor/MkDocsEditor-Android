@@ -67,18 +67,18 @@ internal class SearchViewModel @Inject constructor(
         }
     }
 
-    private fun onSearchResultClicked(searchResultItem: SearchResultItem) {
+    private suspend fun onSearchResultClicked(searchResultItem: SearchResultItem) {
         when (searchResultItem) {
             is SearchResultItem.Section -> {
-                // TODO: close search, navigate to section
+                _events.send(UiAction.NavigateToSection(searchResultItem.sectionId))
             }
 
             is SearchResultItem.Document -> {
-                // TODO: close search, navigate to section containing the document, open the document in the editor
+                _events.send(UiAction.NavigateToDocument(searchResultItem.documentId))
             }
 
             is SearchResultItem.Resource -> {
-                // TODO: close search, navigate to section containing the resource, "open" the resource
+                _events.send(UiAction.NavigateToResource(searchResultItem.resourceId))
             }
         }
     }
@@ -140,6 +140,9 @@ internal class SearchViewModel @Inject constructor(
 
     sealed class UiAction {
         data object NavigateBack : UiAction()
+        data class NavigateToSection(val sectionId: String) : UiAction()
+        data class NavigateToDocument(val documentId: String) : UiAction()
+        data class NavigateToResource(val resourceId: String) : UiAction()
     }
 
     sealed class UiEvent {

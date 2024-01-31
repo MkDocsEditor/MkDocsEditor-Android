@@ -23,6 +23,9 @@ import de.markusressel.mkdocseditor.feature.browser.domain.usecase.DeleteDocumen
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.DeleteResourceUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.DeleteSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.DownloadResourceUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindParentSectionOfDocumentUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindParentSectionOfResourceUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetCurrentSectionPathUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetSectionItemsUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameDocumentUseCase
@@ -72,6 +75,9 @@ internal class FileBrowserViewModel @Inject constructor(
     private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val uploadResourceUseCase: UploadResourceUseCase,
     private val downloadResourceUseCase: DownloadResourceUseCase,
+    private val findSectionUseCase: FindSectionUseCase,
+    private val findParentSectionOfDocumentUseCase: FindParentSectionOfDocumentUseCase,
+    private val findParentSectionOfResourceUseCase: FindParentSectionOfResourceUseCase,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -108,6 +114,33 @@ internal class FileBrowserViewModel @Inject constructor(
     private var sectionJob: Job? = null
 
     init {
+        Bus.observe<BusEvent.CodeEditorBusEvent>().subscribe { event ->
+            launch {
+                when (event) {
+                    is BusEvent.CodeEditorBusEvent.GoToDocument -> {
+                        val parentSectionId = findParentSectionOfDocumentUseCase(event.documentId)
+                        parentSectionId?.let {
+                            openSection(parentSectionId.id, parentSectionId.name)
+                            // TODO: open editor with document
+                        }
+                    }
+
+                    is BusEvent.CodeEditorBusEvent.GoToResource -> {
+                        val parentSectionId = findParentSectionOfResourceUseCase(event.resourceId)
+                        parentSectionId?.let {
+                            openSection(parentSectionId.id, parentSectionId.name)
+                        }
+                    }
+
+                    is BusEvent.CodeEditorBusEvent.GoToSection -> {
+                        findSectionUseCase(event.sectionId).let {
+                            openSection(it.id, it.name)
+                        }
+                    }
+                }
+            }
+        }
+
         launch {
             try {
                 applyCurrentBackendConfigUseCase()

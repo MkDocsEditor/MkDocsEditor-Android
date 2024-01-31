@@ -15,4 +15,10 @@ sealed interface BusEvent {
     data class ThemeChangedEvent(val theme: String) : BusEvent
 
     data class FilePickerResult(val uri: Uri?) : BusEvent
+
+    sealed interface CodeEditorBusEvent : BusEvent {
+        data class GoToDocument(val documentId: String) : CodeEditorBusEvent
+        data class GoToSection(val sectionId: String) : CodeEditorBusEvent
+        data class GoToResource(val resourceId: String) : CodeEditorBusEvent
+    }
 }
