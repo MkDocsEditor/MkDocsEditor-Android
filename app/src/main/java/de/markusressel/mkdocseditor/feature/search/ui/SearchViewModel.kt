@@ -10,8 +10,10 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
@@ -31,7 +33,11 @@ internal class SearchViewModel @Inject constructor(
         launch {
             uiState.map {
                 it.currentSearchFilter
-            }.distinctUntilChanged().collectLatest { currentSearchFilter ->
+            }.distinctUntilChanged().onEach {
+                _uiState.update { old ->
+                    old.copy(isLoading = true)
+                }
+            }.debounce(300).collectLatest { currentSearchFilter ->
                 val searchResults = when {
                     currentSearchFilter.trimmedLength() > 0 -> searchUseCase(
                         currentSearchFilter
@@ -40,7 +46,10 @@ internal class SearchViewModel @Inject constructor(
                     else -> emptyList()
                 }
                 _uiState.update { old ->
-                    old.copy(currentSearchResults = searchResults)
+                    old.copy(
+                        currentSearchResults = searchResults,
+                        isLoading = false,
+                    )
                 }
             }
         }
@@ -124,6 +133,7 @@ internal class SearchViewModel @Inject constructor(
     }
 
     data class UiState(
+        val isLoading: Boolean = false,
         val currentSearchFilter: String = "",
         val currentSearchResults: List<SearchResultItem> = emptyList(),
     )

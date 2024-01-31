@@ -4,6 +4,8 @@ import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.browser.data.DocumentData
 import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.browser.data.SectionData
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,38 +13,39 @@ import javax.inject.Singleton
 internal class SearchUseCase @Inject constructor(
     private val dataRepository: DataRepository,
 ) {
-    operator fun invoke(searchTerm: String): List<SearchResultItem> {
-        return dataRepository.find(searchTerm).map { item ->
-            when (item) {
-                is DocumentData -> {
-                    val (charsBefore, excerpt, charsAfter) = item.getInlineExcerpt(searchTerm)
-                    SearchResultItem.Document(
-                        documentId = item.id,
-                        documentName = item.name,
-                        documentExcerptData = SearchResultItem.Document.ExcerptData(
-                            excerpt = excerpt,
-                            charsBefore = charsBefore,
-                            charsAfter = charsAfter,
-                        ).takeIf { it.excerpt.isNotBlank() }
+    suspend operator fun invoke(searchTerm: String): List<SearchResultItem> =
+        withContext(Dispatchers.IO) {
+            dataRepository.find(searchTerm).map { item ->
+                when (item) {
+                    is DocumentData -> {
+                        val (charsBefore, excerpt, charsAfter) = item.getInlineExcerpt(searchTerm)
+                        SearchResultItem.Document(
+                            documentId = item.id,
+                            documentName = item.name,
+                            documentExcerptData = SearchResultItem.Document.ExcerptData(
+                                excerpt = excerpt,
+                                charsBefore = charsBefore,
+                                charsAfter = charsAfter,
+                            ).takeIf { it.excerpt.isNotBlank() }
+                        )
+                    }
+
+                    is SectionData -> SearchResultItem.Section(
+                        sectionId = item.id,
+                        sectionName = item.name,
                     )
-                }
 
-                is SectionData -> SearchResultItem.Section(
-                    sectionId = item.id,
-                    sectionName = item.name,
-                )
+                    is ResourceData -> SearchResultItem.Resource(
+                        resourceId = item.id,
+                        resourceName = item.name,
+                    )
 
-                is ResourceData -> SearchResultItem.Resource(
-                    resourceId = item.id,
-                    resourceName = item.name,
-                )
-
-                else -> {
-                    throw IllegalArgumentException("Unknown type: ${item::class.java}")
+                    else -> {
+                        throw IllegalArgumentException("Unknown type: ${item::class.java}")
+                    }
                 }
             }
         }
-    }
 
     private fun DocumentData.getInlineExcerpt(
         searchTerm: String,

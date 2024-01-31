@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.common.ui.compose.LoadingOverlay
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.feature.search.ui.SearchViewModel
 import de.markusressel.mkdocseditor.feature.search.ui.SearchViewModel.UiEvent
@@ -39,38 +40,41 @@ internal fun SearchScreenContent(
             )
         },
     ) {
-        Column(
-//            modifier = Modifier.background(MaterialTheme.colorScheme.background)
+        LoadingOverlay(
+            modifier = Modifier.fillMaxSize(),
+            isLoading = uiState.isLoading,
         ) {
-
-            Text(
-                modifier = Modifier.padding(8.dp),
-                text = stringResource(
-                    R.string.search_result_count_header,
-                    uiState.currentSearchResults.size
-                )
-            )
-
-            SearchResultList(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        vertical = 16.dp,
-                        horizontal = 16.dp,
+            Column {
+                Text(
+                    modifier = Modifier.padding(8.dp),
+                    text = stringResource(
+                        R.string.search_result_count_header,
+                        uiState.currentSearchResults.size
                     )
-                    .verticalScroll(rememberScrollState()),
-                searchTerm = uiState.currentSearchFilter,
-                items = uiState.currentSearchResults,
-                onItemClicked = {
-                    onUiEvent(UiEvent.SearchResultClicked(it))
-                },
-                onItemLongClicked = {
-                    onUiEvent(UiEvent.SearchResultLongClicked(it))
-                },
-            )
+                )
+
+                SearchResultList(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            vertical = 16.dp,
+                            horizontal = 16.dp,
+                        )
+                        .verticalScroll(rememberScrollState()),
+                    searchTerm = uiState.currentSearchFilter,
+                    items = uiState.currentSearchResults,
+                    onItemClicked = {
+                        onUiEvent(UiEvent.SearchResultClicked(it))
+                    },
+                    onItemLongClicked = {
+                        onUiEvent(UiEvent.SearchResultLongClicked(it))
+                    },
+                )
+            }
         }
     }
 }
+
 
 @CombinedPreview
 @Composable
