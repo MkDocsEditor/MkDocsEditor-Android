@@ -35,11 +35,10 @@ import de.markusressel.kodehighlighter.core.rule.RuleMatch
 import de.markusressel.kodehighlighter.core.ui.KodeText
 import de.markusressel.kodehighlighter.language.markdown.MarkdownRuleBook
 import de.markusressel.kodehighlighter.language.markdown.colorscheme.DarkBackgroundColorSchemeWithSpanStyle
-import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.feature.common.ui.compose.colorAttribute
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.feature.search.ui.compose.SearchResultCard
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.feature.theme.documentBackgroundColor
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
@@ -67,7 +66,7 @@ internal fun DocumentSearchResultItem(
                         .size(16.dp)
                         .padding(end = 4.dp),
                     asset = MaterialDesignIconic.Icon.gmi_file,
-                    colorFilter = ColorFilter.tint(colorAttribute(R.attr.documentBackgroundColor)),
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.documentBackgroundColor),
                 )
                 Text(text = item.documentName)
             }

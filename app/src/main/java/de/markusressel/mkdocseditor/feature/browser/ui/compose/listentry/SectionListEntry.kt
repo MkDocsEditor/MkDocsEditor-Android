@@ -21,8 +21,8 @@ import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.browser.data.SectionData
-import de.markusressel.mkdocseditor.feature.common.ui.compose.colorAttribute
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.feature.theme.sectionBackgroundColor
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 
@@ -54,7 +54,7 @@ internal fun SectionListEntry(
                 modifier = Modifier
                     .size(32.dp),
                 asset = MaterialDesignIconic.Icon.gmi_folder,
-                colorFilter = ColorFilter.tint(colorAttribute(R.attr.sectionBackgroundColor)),
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.sectionBackgroundColor),
             )
 
             Column {

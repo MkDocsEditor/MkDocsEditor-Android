@@ -23,8 +23,8 @@ import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.browser.data.DocumentData
-import de.markusressel.mkdocseditor.feature.common.ui.compose.colorAttribute
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.feature.theme.documentBackgroundColor
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 import java.util.Date
 
@@ -60,7 +60,7 @@ internal fun DocumentListEntry(
                     modifier = Modifier
                         .size(32.dp),
                     asset = MaterialDesignIconic.Icon.gmi_file,
-                    colorFilter = ColorFilter.tint(colorAttribute(R.attr.documentBackgroundColor)),
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.documentBackgroundColor),
                 )
 
                 if (item.isOfflineAvailable) {
