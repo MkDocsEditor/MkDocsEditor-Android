@@ -42,6 +42,7 @@ import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -120,19 +121,23 @@ internal class FileBrowserViewModel @Inject constructor(
                     is BusEvent.CodeEditorBusEvent.GoToDocument -> {
                         val parentSectionId = findParentSectionOfDocumentUseCase(event.documentId)
                         parentSectionId?.let {
+                            delay(200)
                             openSection(parentSectionId.id, parentSectionId.name)
-                            // TODO: open editor with document
+                            delay(300)
+                            _events.send(FileBrowserEvent.OpenDocumentEditor(event.documentId))
                         }
                     }
 
                     is BusEvent.CodeEditorBusEvent.GoToResource -> {
                         val parentSectionId = findParentSectionOfResourceUseCase(event.resourceId)
                         parentSectionId?.let {
+                            delay(200)
                             openSection(parentSectionId.id, parentSectionId.name)
                         }
                     }
 
                     is BusEvent.CodeEditorBusEvent.GoToSection -> {
+                        delay(200)
                         findSectionUseCase(event.sectionId).let {
                             openSection(it.id, it.name)
                         }
