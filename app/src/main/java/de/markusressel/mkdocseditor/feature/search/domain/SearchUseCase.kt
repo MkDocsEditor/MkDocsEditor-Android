@@ -54,8 +54,9 @@ internal class SearchUseCase @Inject constructor(
     ): Triple<Int, String, Int> {
         val content = content?.text ?: ""
         val matchingCharIndex = content.indexOf(searchTerm)
-        val startCharIndex = 0.coerceAtLeast(matchingCharIndex - charsBeforeMatch)
-        val endCharIndex = (content.length - 1).coerceIn(0, matchingCharIndex + charsAfterMatch)
+        val startCharIndex = (matchingCharIndex - charsBeforeMatch).coerceAtLeast(0)
+        val endCharIndex =
+            (matchingCharIndex + charsAfterMatch).coerceIn(0, (content.length - 1).coerceAtLeast(0))
         val charsAfter = ((content.length - 1).coerceAtLeast(0) - endCharIndex).coerceAtLeast(0)
         return Triple(
             matchingCharIndex,
@@ -63,28 +64,4 @@ internal class SearchUseCase @Inject constructor(
             charsAfter
         )
     }
-
-    private fun DocumentData.getExcerpt(
-        searchTerm: String,
-        wordsBeforeMatch: Int = 3,
-        wordsAfterMatch: Int = 10
-    ): String {
-        val words = (content?.text ?: "").split(" ")
-        val matchingWordIndex = words.indexOfFirst { it.contains(searchTerm) }
-        val startWordIndex = 0.coerceAtLeast(matchingWordIndex - wordsBeforeMatch)
-        val endWordIndex = (words.size - 1).coerceIn(0, matchingWordIndex + wordsAfterMatch)
-        return words.subList(startWordIndex, endWordIndex).joinToString(" ")
-    }
-
-//    private fun DocumentData.getExcerpt(
-//        searchTerm: String,
-//        linesBeforeMatch: Int = 0,
-//        linesAfterMatch: Int = 3
-//    ): String {
-//        val lines = (content?.text ?: "").split("\n")
-//        val matchingLineIndex = lines.indexOfFirst { it.contains(searchTerm) }
-//        val startLineIndex = 0.coerceAtLeast(matchingLineIndex - linesBeforeMatch)
-//        val endLineIndex = (lines.size - 1).coerceIn(0, matchingLineIndex + linesAfterMatch)
-//        return lines.subList(startLineIndex, endLineIndex).joinToString("\n")
-//    }
 }
