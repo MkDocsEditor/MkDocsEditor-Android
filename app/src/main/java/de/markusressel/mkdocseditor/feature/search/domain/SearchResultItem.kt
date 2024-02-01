@@ -1,5 +1,7 @@
 package de.markusressel.mkdocseditor.feature.search.domain
 
+import androidx.compose.ui.text.AnnotatedString
+
 sealed class SearchResultItem {
     data class Document(
         val documentId: String,
@@ -7,7 +9,7 @@ sealed class SearchResultItem {
         val excerpts: List<ExcerptData> = emptyList(),
     ) : SearchResultItem() {
         data class ExcerptData(
-            val excerpt: String,
+            val excerpt: AnnotatedString,
             val charsBefore: Int,
             val charsAfter: Int,
         )

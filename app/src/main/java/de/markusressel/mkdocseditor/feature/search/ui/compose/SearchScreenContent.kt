@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.common.ui.compose.LoadingOverlay
@@ -90,7 +91,7 @@ private fun SearchScreenContentPreview() {
                         excerpts = listOf(
                             SearchResultItem.Document.ExcerptData(
                                 charsBefore = 10,
-                                excerpt = "Dieser Teil des Dokuments enthält den Suchbefriff \"test\".",
+                                excerpt = AnnotatedString("Dieser Teil des Dokuments enthält den Suchbefriff \"test\"."),
                                 charsAfter = 10,
                             )
                         ),

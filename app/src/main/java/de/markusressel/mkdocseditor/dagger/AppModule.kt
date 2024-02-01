@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.dagger
 
 import android.accounts.AccountManager
+import android.app.UiModeManager
 import android.content.ContentResolver
 import android.content.Context
 import android.net.ConnectivityManager
@@ -47,6 +48,11 @@ class AppModule {
     fun provideConnectivityManager(context: Context): ConnectivityManager {
         return context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     }
+
+    @Provides
+    @Singleton
+    fun provideUiModeManager(context: Context): UiModeManager =
+        (context.getSystemService(Context.UI_MODE_SERVICE) as UiModeManager)
 
     @Provides
     @Singleton

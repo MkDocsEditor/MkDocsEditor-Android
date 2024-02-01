@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
@@ -94,22 +95,22 @@ private fun DocumentSearchResultItemPreview() {
                 excerpts = listOf(
                     SearchResultItem.Document.ExcerptData(
                         charsBefore = 10,
-                        excerpt = "Excerpt 1",
+                        excerpt = AnnotatedString("Excerpt 1"),
                         charsAfter = 10,
                     ),
                     SearchResultItem.Document.ExcerptData(
                         charsBefore = 10,
-                        excerpt = "Excerpt 1",
+                        excerpt = AnnotatedString("Excerpt 2"),
                         charsAfter = 10,
                     ),
                     SearchResultItem.Document.ExcerptData(
                         charsBefore = 10,
-                        excerpt = "Excerpt 1",
+                        excerpt = AnnotatedString("Excerpt 3"),
                         charsAfter = 10,
                     ),
                     SearchResultItem.Document.ExcerptData(
                         charsBefore = 10,
-                        excerpt = "Excerpt 1",
+                        excerpt = AnnotatedString("Excerpt 4"),
                         charsAfter = 10,
                     ),
                 ),

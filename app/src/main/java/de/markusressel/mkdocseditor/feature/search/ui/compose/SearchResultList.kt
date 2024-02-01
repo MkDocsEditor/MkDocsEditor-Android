@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.feature.search.ui.compose.result.DocumentSearchResultItem
@@ -71,7 +72,7 @@ private fun SearchResultListPreview() {
                     excerpts = listOf(
                         SearchResultItem.Document.ExcerptData(
                             charsBefore = 10,
-                            excerpt = "Excerpt 1",
+                            excerpt = AnnotatedString("Excerpt 1"),
                             charsAfter = 10,
                         )
                     ),
