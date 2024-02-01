@@ -71,9 +71,11 @@ private fun SearchResultListPreview() {
                     documentName = "Document 1",
                     excerpts = listOf(
                         SearchResultItem.Document.ExcerptData(
-                            charsBefore = 10,
                             excerpt = AnnotatedString("Excerpt 1"),
+                            charsBefore = 10,
                             charsAfter = 10,
+                            charBeforeExcerptIsNewline = false,
+                            charAfterExcerptIsNewline = false,
                         )
                     ),
                 ),

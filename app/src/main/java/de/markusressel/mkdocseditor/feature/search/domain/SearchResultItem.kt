@@ -12,6 +12,8 @@ sealed class SearchResultItem {
             val excerpt: AnnotatedString,
             val charsBefore: Int,
             val charsAfter: Int,
+            val charBeforeExcerptIsNewline: Boolean,
+            val charAfterExcerptIsNewline: Boolean,
         )
     }
 

@@ -64,7 +64,7 @@ internal class SearchUseCase @Inject constructor(
 
     private suspend fun DocumentData.getInlineExcerpts(
         searchTerm: String,
-        charsBeforeMatch: Int = 20,
+        charsBeforeMatch: Int = 50,
         charsAfterMatch: Int = 50
     ): List<SearchResultItem.Document.ExcerptData> {
         val content = content?.text ?: ""
@@ -101,15 +101,22 @@ internal class SearchUseCase @Inject constructor(
         return matches.map { match ->
             val (startIndex, endIndex) = match.range.first to match.range.last
 
-            val excerptStartIndex = (startIndex - charsBeforeMatch).coerceAtLeast(0)
+            val excerptStartIndex =
+                content.goBack(from = startIndex, chars = charsBeforeMatch, until = '\n')
             val excerptEndIndex =
                 (endIndex + charsAfterMatch).coerceIn(0, (content.length - 1).coerceAtLeast(0))
             val charsAfterExcerptEntIndex =
                 ((content.length - 1).coerceAtLeast(0) - excerptEndIndex).coerceAtLeast(0)
+
+            val charBeforeMatchIsNewline = content.getOrNull(excerptStartIndex - 1) == '\n'
+            val charAfterMatchIsNewline = content.getOrNull(excerptEndIndex + 1) == '\n'
+
             SearchResultItem.Document.ExcerptData(
                 excerpt = annotatedContent.subSequence(excerptStartIndex, excerptEndIndex),
                 charsBefore = excerptStartIndex,
-                charsAfter = charsAfterExcerptEntIndex
+                charsAfter = charsAfterExcerptEntIndex,
+                charBeforeExcerptIsNewline = charBeforeMatchIsNewline,
+                charAfterExcerptIsNewline = charAfterMatchIsNewline,
             )
         }.toList()
     }
@@ -180,4 +187,24 @@ internal class SearchUseCase @Inject constructor(
     companion object {
         internal const val QuoteEllipsis = "[…]"
     }
+}
+
+/**
+ * Go back in a string until a certain character is found or a certain number of characters is reached
+ *
+ * @param from the index to start from
+ * @param chars the number of characters to go back at most
+ * @param until the character to stop at, regardless of whether [chars] is reached
+ */
+private fun String.goBack(from: Int, chars: Int, until: Char): Int {
+    var currentIndex = from
+    var charsLeft = chars
+    while (charsLeft > 0 && currentIndex > 0) {
+        if (this[currentIndex] == until) {
+            return currentIndex + 1
+        }
+        currentIndex--
+        charsLeft--
+    }
+    return currentIndex
 }

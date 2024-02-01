@@ -39,13 +39,21 @@ internal fun DocumentExcerpt(
             if (excerpt.charsBefore > 0) {
                 withStyle(SpanStyle(color = Color.Gray)) {
                     append(SearchUseCase.QuoteEllipsis)
-                    append(" ")
+                    if (excerpt.charBeforeExcerptIsNewline) {
+                        append("\n")
+                    } else {
+                        append(" ")
+                    }
                 }
             }
             append(excerpt.excerpt)
             if (excerpt.charsAfter > 0) {
                 withStyle(SpanStyle(color = Color.Gray)) {
-                    append(" ")
+                    if (excerpt.charAfterExcerptIsNewline) {
+                        append("\n")
+                    } else {
+                        append(" ")
+                    }
                     append(SearchUseCase.QuoteEllipsis)
                 }
             }
@@ -67,7 +75,9 @@ private fun DocumentExcerptPreview() {
             excerpt = SearchResultItem.Document.ExcerptData(
                 excerpt = AnnotatedString("This is a test excerpt"),
                 charsBefore = 20,
-                charsAfter = 50
+                charsAfter = 50,
+                charBeforeExcerptIsNewline = false,
+                charAfterExcerptIsNewline = false
             )
         )
     }

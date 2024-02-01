@@ -90,9 +90,11 @@ private fun SearchScreenContentPreview() {
                         documentName = "documentName",
                         excerpts = listOf(
                             SearchResultItem.Document.ExcerptData(
-                                charsBefore = 10,
                                 excerpt = AnnotatedString("Dieser Teil des Dokuments enthält den Suchbefriff \"test\"."),
+                                charsBefore = 10,
                                 charsAfter = 10,
+                                charBeforeExcerptIsNewline = false,
+                                charAfterExcerptIsNewline = false,
                             )
                         ),
                     ),
