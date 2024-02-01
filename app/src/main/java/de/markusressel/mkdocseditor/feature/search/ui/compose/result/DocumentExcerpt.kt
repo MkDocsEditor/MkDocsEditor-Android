@@ -26,6 +26,10 @@ import de.markusressel.kodehighlighter.core.ui.KodeText
 import de.markusressel.kodehighlighter.language.markdown.MarkdownRuleBook
 import de.markusressel.kodehighlighter.language.markdown.colorscheme.DarkBackgroundColorSchemeWithSpanStyle
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
+import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.util.compose.CombinedPreview
+
+private val QuoteEllipsis = "[…]"
 
 @Composable
 internal fun DocumentExcerpt(
@@ -41,9 +45,9 @@ internal fun DocumentExcerpt(
     ) {
 
         val text = listOfNotNull(
-            "[…]".takeIf { excerpt.charsBefore > 0 },
+            QuoteEllipsis.takeIf { excerpt.charsBefore > 0 },
             excerpt.excerpt,
-            "[…]".takeIf { excerpt.charsAfter > 0 },
+            QuoteEllipsis.takeIf { excerpt.charsAfter > 0 },
         ).joinToString(separator = " ")
 
         val ruleBook by remember(searchTerm) {
@@ -76,6 +80,21 @@ internal fun DocumentExcerpt(
     }
 }
 
+@CombinedPreview
+@Composable
+private fun DocumentExcerptPreview() {
+    MkDocsEditorTheme {
+        DocumentExcerpt(
+            searchTerm = "searchTerm",
+            excerpt = SearchResultItem.Document.ExcerptData(
+                excerpt = "This is a test excerpt",
+                charsBefore = 20,
+                charsAfter = 50
+            )
+        )
+    }
+}
+
 
 private class SearchHighlightingColorScheme(
     @ColorInt val color: Color = Color(0xFF0091EA),
@@ -93,6 +112,14 @@ private class SearchHighlightingColorScheme(
                     SpanStyle(
                         background = backgroundColor,
                         color = textColor
+                    )
+                }
+            }
+
+            is QuoteEllipsisRule -> {
+                setOf {
+                    SpanStyle(
+                        color = Color.Gray
                     )
                 }
             }
@@ -115,9 +142,19 @@ private class SearchHighlightingRuleBook(searchTerm: String) : LanguageRuleBook 
 
     private val markdownRules = MarkdownRuleBook().getRules()
 
+    private val quoteEllipsisRule = QuoteEllipsisRule()
     private val highlightingRule = SearchTermRule(searchTerm)
 
     override fun getRules(): List<LanguageRule> {
-        return listOf(highlightingRule) + markdownRules
+        return listOf(quoteEllipsisRule, highlightingRule) + markdownRules
+    }
+}
+
+private class QuoteEllipsisRule : LanguageRule {
+    override fun findMatches(text: CharSequence): List<RuleMatch> {
+        return RuleHelper.findRegexMatches(
+            text,
+            QuoteEllipsis.toRegex(RegexOption.LITERAL)
+        )
     }
 }

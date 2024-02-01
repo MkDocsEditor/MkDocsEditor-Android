@@ -47,7 +47,7 @@ internal class SearchUseCase @Inject constructor(
     private fun DocumentData.getInlineExcerpts(
         searchTerm: String,
         charsBeforeMatch: Int = 20,
-        charsAfterMatch: Int = 80
+        charsAfterMatch: Int = 50
     ): List<SearchResultItem.Document.ExcerptData> {
         val content = content?.text ?: ""
         val matches =
