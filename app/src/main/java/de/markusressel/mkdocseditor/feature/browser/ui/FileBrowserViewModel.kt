@@ -12,6 +12,7 @@ import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.extensions.common.android.launch
+import de.markusressel.mkdocseditor.extensions.common.delayUntil
 import de.markusressel.mkdocseditor.feature.browser.data.DocumentData
 import de.markusressel.mkdocseditor.feature.browser.data.ROOT_SECTION
 import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
@@ -55,6 +56,7 @@ import kotlinx.coroutines.flow.update
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 import java.util.Stack
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 
 @HiltViewModel
@@ -123,7 +125,7 @@ internal class FileBrowserViewModel @Inject constructor(
                         parentSectionId?.let {
                             delay(200)
                             openSection(parentSectionId.id, parentSectionId.name)
-                            delay(300)
+                            delayUntil(timeout = 500.milliseconds) { uiState.value.isLoading.not() }
                             _events.send(FileBrowserEvent.OpenDocumentEditor(event.documentId))
                         }
                     }
