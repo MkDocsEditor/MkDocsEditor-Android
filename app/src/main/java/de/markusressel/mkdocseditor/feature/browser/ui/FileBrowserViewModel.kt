@@ -56,7 +56,6 @@ import kotlinx.coroutines.flow.update
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 import java.util.Stack
 import javax.inject.Inject
-import kotlin.time.Duration.Companion.milliseconds
 
 
 @HiltViewModel
@@ -125,7 +124,7 @@ internal class FileBrowserViewModel @Inject constructor(
                         parentSectionId?.let {
                             delay(200)
                             openSection(parentSectionId.id, parentSectionId.name)
-                            delayUntil(timeout = 500.milliseconds) { uiState.value.isLoading.not() }
+                            delayUntil { uiState.value.isLoading.not() }
                             _events.send(FileBrowserEvent.OpenDocumentEditor(event.documentId))
                         }
                     }
