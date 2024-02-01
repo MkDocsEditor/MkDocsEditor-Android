@@ -9,7 +9,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
@@ -26,9 +30,16 @@ internal fun SearchScreenContent(
     uiState: SearchViewModel.UiState,
     onUiEvent: (UiEvent) -> Unit,
 ) {
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
     SearchBar(
         modifier = Modifier
-            .fillMaxSize(),
+            .fillMaxSize()
+            .focusRequester(focusRequester),
         query = uiState.currentSearchFilter,
         onQueryChange = { onUiEvent(UiEvent.SearchInputChanged(it)) },
         onSearch = { onUiEvent(UiEvent.SearchRequested(it)) },
