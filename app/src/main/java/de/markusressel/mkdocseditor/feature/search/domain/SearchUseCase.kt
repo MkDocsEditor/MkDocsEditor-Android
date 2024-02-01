@@ -18,15 +18,12 @@ internal class SearchUseCase @Inject constructor(
             dataRepository.find(searchTerm).map { item ->
                 when (item) {
                     is DocumentData -> {
-                        val (charsBefore, excerpt, charsAfter) = item.getInlineExcerpt(searchTerm)
+                        val excerpts =
+                            item.getInlineExcerpts(searchTerm).filter { it.excerpt.isNotBlank() }
                         SearchResultItem.Document(
                             documentId = item.id,
                             documentName = item.name,
-                            documentExcerptData = SearchResultItem.Document.ExcerptData(
-                                excerpt = excerpt,
-                                charsBefore = charsBefore,
-                                charsAfter = charsAfter,
-                            ).takeIf { it.excerpt.isNotBlank() }
+                            excerpts = excerpts
                         )
                     }
 
@@ -47,21 +44,26 @@ internal class SearchUseCase @Inject constructor(
             }
         }
 
-    private fun DocumentData.getInlineExcerpt(
+    private fun DocumentData.getInlineExcerpts(
         searchTerm: String,
-        charsBeforeMatch: Int = 10,
-        charsAfterMatch: Int = 50
-    ): Triple<Int, String, Int> {
+        charsBeforeMatch: Int = 20,
+        charsAfterMatch: Int = 80
+    ): List<SearchResultItem.Document.ExcerptData> {
         val content = content?.text ?: ""
-        val matchingCharIndex = content.indexOf(searchTerm)
-        val startCharIndex = (matchingCharIndex - charsBeforeMatch).coerceAtLeast(0)
-        val endCharIndex =
-            (matchingCharIndex + charsAfterMatch).coerceIn(0, (content.length - 1).coerceAtLeast(0))
-        val charsAfter = ((content.length - 1).coerceAtLeast(0) - endCharIndex).coerceAtLeast(0)
-        return Triple(
-            matchingCharIndex,
-            content.substring(startCharIndex, endCharIndex),
-            charsAfter
-        )
+        val matches = searchTerm.toRegex(RegexOption.LITERAL).findAll(content)
+        return matches.map { match ->
+            val (startIndex, endIndex) = match.range.first to match.range.last
+
+            val excerptStartIndex = (startIndex - charsBeforeMatch).coerceAtLeast(0)
+            val excerptEndIndex =
+                (endIndex + charsAfterMatch).coerceIn(0, (content.length - 1).coerceAtLeast(0))
+            val charsAfterExcerptEntIndex =
+                ((content.length - 1).coerceAtLeast(0) - excerptEndIndex).coerceAtLeast(0)
+            SearchResultItem.Document.ExcerptData(
+                excerpt = content.substring(excerptStartIndex, excerptEndIndex),
+                charsBefore = excerptStartIndex,
+                charsAfter = charsAfterExcerptEntIndex
+            )
+        }.toList()
     }
 }

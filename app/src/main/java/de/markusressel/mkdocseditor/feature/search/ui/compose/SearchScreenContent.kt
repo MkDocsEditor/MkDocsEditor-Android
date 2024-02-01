@@ -87,10 +87,12 @@ private fun SearchScreenContentPreview() {
                     SearchResultItem.Document(
                         documentId = "documentId",
                         documentName = "documentName",
-                        documentExcerptData = SearchResultItem.Document.ExcerptData(
-                            charsBefore = 10,
-                            excerpt = "Dieser Teil des Dokuments enthält den Suchbefriff \"test\".",
-                            charsAfter = 10,
+                        excerpts = listOf(
+                            SearchResultItem.Document.ExcerptData(
+                                charsBefore = 10,
+                                excerpt = "Dieser Teil des Dokuments enthält den Suchbefriff \"test\".",
+                                charsAfter = 10,
+                            )
                         ),
                     ),
                     SearchResultItem.Section(

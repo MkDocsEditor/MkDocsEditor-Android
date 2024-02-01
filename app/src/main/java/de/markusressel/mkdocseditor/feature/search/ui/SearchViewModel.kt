@@ -39,7 +39,7 @@ internal class SearchViewModel @Inject constructor(
                 }
             }.debounce(300).collectLatest { currentSearchFilter ->
                 val searchResults = when {
-                    currentSearchFilter.trimmedLength() > 0 -> searchUseCase(
+                    currentSearchFilter.trimmedLength() > 1 -> searchUseCase(
                         currentSearchFilter
                     )
 

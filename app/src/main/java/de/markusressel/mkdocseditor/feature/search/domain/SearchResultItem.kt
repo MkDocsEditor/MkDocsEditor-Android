@@ -4,7 +4,7 @@ sealed class SearchResultItem {
     data class Document(
         val documentId: String,
         val documentName: String,
-        val documentExcerptData: ExcerptData?,
+        val excerpts: List<ExcerptData> = emptyList(),
     ) : SearchResultItem() {
         data class ExcerptData(
             val excerpt: String,

@@ -105,5 +105,9 @@
 
     <string name="hint_new_document">New Document</string>
     <string name="error_document_already_exists">Document already exists!</string>
+    <plurals name="additional_search_term_matches_within_document">
+        <item quantity="one">… and %1$s further match</item>
+        <item quantity="other">… and %1$s further matches</item>
+    </plurals>
 
 </resources>
