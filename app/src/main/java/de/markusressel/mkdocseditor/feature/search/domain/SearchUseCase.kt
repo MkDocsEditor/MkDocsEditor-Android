@@ -50,7 +50,8 @@ internal class SearchUseCase @Inject constructor(
         charsAfterMatch: Int = 80
     ): List<SearchResultItem.Document.ExcerptData> {
         val content = content?.text ?: ""
-        val matches = searchTerm.toRegex(RegexOption.LITERAL).findAll(content)
+        val matches =
+            searchTerm.toRegex(setOf(RegexOption.LITERAL, RegexOption.IGNORE_CASE)).findAll(content)
 
         // TODO: skip match if it is already part of a previous excerpt
         //  or alternatively merge excerpts that are close to each other

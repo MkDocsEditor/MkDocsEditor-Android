@@ -104,7 +104,10 @@ private class SearchHighlightingColorScheme(
 
 private class SearchTermRule(val searchTerm: String) : LanguageRule {
     override fun findMatches(text: CharSequence): List<RuleMatch> {
-        return RuleHelper.findRegexMatches(text, searchTerm.toRegex(RegexOption.LITERAL))
+        return RuleHelper.findRegexMatches(
+            text,
+            searchTerm.toRegex(setOf(RegexOption.LITERAL, RegexOption.IGNORE_CASE))
+        )
     }
 }
 
