@@ -13,6 +13,7 @@ import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.extensions.common.android.launch
+import de.markusressel.mkdocseditor.extensions.common.safeSubstring
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
@@ -434,15 +435,28 @@ internal class CodeEditorViewModel @Inject constructor(
         val selectionStart = uiState.value.selection?.start ?: 0
         val selectionEnd = uiState.value.selection?.end ?: selectionStart
 
-        val newText = text.substring(0, selectionStart) +
-            "~~" +
-            text.substring(selectionStart, selectionEnd) +
-            "~~" +
-            text.substring(selectionEnd)
+        // check if the current selection is already striked through
+        val selectionIsStrikethrough = run {
+            val selectedText =
+                text.substring((selectionStart - 2).coerceAtLeast(0), (selectionEnd + 2).coerceAtMost(text.length))
+            selectedText.startsWith("~~") && selectedText.endsWith("~~")
+        }
 
-        onTextChanged(newText, LinkedList())
-        // move cursor to the end of the inserted text
-        setSelection(selectionStart + 2, selectionEnd + 2)
+        if (selectionIsStrikethrough) {
+            val newText = text.substring(0, selectionStart - 2) +
+                text.substring(selectionStart, selectionEnd) +
+                text.substring(selectionEnd + 2)
+            onTextChanged(newText, LinkedList())
+            setSelection(selectionStart - 2)
+        } else {
+            val newText = text.substring(0, selectionStart) +
+                "~~" +
+                text.substring(selectionStart, selectionEnd) +
+                "~~" +
+                text.substring(selectionEnd)
+            onTextChanged(newText, LinkedList())
+            setSelection(selectionStart + 2)
+        }
     }
 
     private fun formatItalic() {
@@ -450,15 +464,28 @@ internal class CodeEditorViewModel @Inject constructor(
         val selectionStart = uiState.value.selection?.start ?: 0
         val selectionEnd = uiState.value.selection?.end ?: selectionStart
 
-        val newText = text.substring(0, selectionStart) +
-            "*" +
-            text.substring(selectionStart, selectionEnd) +
-            "*" +
-            text.substring(selectionEnd)
+        // check if the current selection is already italic
+        val selectionIsItalic = run {
+            val selectedText =
+                text.safeSubstring((selectionStart - 1), (selectionEnd + 1))
+            selectedText.startsWith("*") && selectedText.endsWith("*")
+        }
 
-        onTextChanged(newText, LinkedList())
-        // move cursor to the end of the inserted text
-        setSelection(selectionStart + 1, selectionEnd + 1)
+        if (selectionIsItalic) {
+            val newText = text.substring(0, selectionStart - 1) +
+                text.substring(selectionStart, selectionEnd) +
+                text.substring(selectionEnd + 1)
+            onTextChanged(newText, LinkedList())
+            setSelection(selectionStart - 1)
+        } else {
+            val newText = text.substring(0, selectionStart) +
+                "*" +
+                text.substring(selectionStart, selectionEnd) +
+                "*" +
+                text.substring(selectionEnd)
+            onTextChanged(newText, LinkedList())
+            setSelection(selectionStart + 1)
+        }
     }
 
     private fun formatBold() {
@@ -466,15 +493,28 @@ internal class CodeEditorViewModel @Inject constructor(
         val selectionStart = uiState.value.selection?.start ?: 0
         val selectionEnd = uiState.value.selection?.end ?: selectionStart
 
-        val newText = text.substring(0, selectionStart) +
-            "**" +
-            text.substring(selectionStart, selectionEnd) +
-            "**" +
-            text.substring(selectionEnd)
+        // check if the current selection is already bold
+        val selectionIsBold = run {
+            val selectedText =
+                text.safeSubstring((selectionStart - 2), (selectionEnd + 2))
+            selectedText.startsWith("**") && selectedText.endsWith("**")
+        }
 
-        onTextChanged(newText, LinkedList())
-        // move cursor to the end of the inserted text
-        setSelection(selectionStart + 2, selectionEnd + 2)
+        if (selectionIsBold) {
+            val newText = text.substring(0, selectionStart - 2) +
+                text.substring(selectionStart, selectionEnd) +
+                text.substring(selectionEnd + 2)
+            onTextChanged(newText, LinkedList())
+            setSelection(selectionStart - 2)
+        } else {
+            val newText = text.substring(0, selectionStart) +
+                "**" +
+                text.substring(selectionStart, selectionEnd) +
+                "**" +
+                text.substring(selectionEnd)
+            onTextChanged(newText, LinkedList())
+            setSelection(selectionStart + 2)
+        }
     }
 
     private fun insertFileReference(selection: TextRange?, resource: ResourceData) {
