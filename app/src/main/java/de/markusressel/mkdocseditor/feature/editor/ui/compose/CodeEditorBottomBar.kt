@@ -23,6 +23,27 @@ internal fun CodeEditorBottomBar(
     onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
 ) {
     BottomAppBar(modifier) {
+        IconButton(onClick = { onUiEvent(CodeEditorViewModel.UiEvent.FormatBoldClicked) }) {
+            Image(
+                asset = MaterialDesignIconic.Icon.gmi_format_bold,
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
+            )
+        }
+
+        IconButton(onClick = { onUiEvent(CodeEditorViewModel.UiEvent.FormatItalicClicked) }) {
+            Image(
+                asset = MaterialDesignIconic.Icon.gmi_format_italic,
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
+            )
+        }
+
+        IconButton(onClick = { onUiEvent(CodeEditorViewModel.UiEvent.FormatStrikethroughClicked) }) {
+            Image(
+                asset = MaterialDesignIconic.Icon.gmi_format_strikethrough,
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
+            )
+        }
+
         IconButton(onClick = { onUiEvent(CodeEditorViewModel.UiEvent.InsertFileReferenceClicked) }) {
             Image(
                 asset = MaterialDesignIconic.Icon.gmi_file_add,

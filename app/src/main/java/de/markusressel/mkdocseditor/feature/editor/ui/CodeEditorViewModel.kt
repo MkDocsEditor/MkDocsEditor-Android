@@ -413,6 +413,10 @@ internal class CodeEditorViewModel @Inject constructor(
                     CodeEditorFabId.DisableEditMode -> disableEditMode()
                 }
 
+                is UiEvent.FormatBoldClicked -> formatBold()
+                is UiEvent.FormatItalicClicked -> formatItalic()
+                is UiEvent.FormatStrikethroughClicked -> formatStrikethrough()
+
                 is UiEvent.InsertFileReferenceClicked -> showResourceSelectionDialog()
                 is UiEvent.ResourceSelected -> {
                     dismissCurrentDialog()
@@ -423,6 +427,54 @@ internal class CodeEditorViewModel @Inject constructor(
                 is UiEvent.SnackbarActionClicked -> onSnackbarAction(event.snackbar)
             }
         }
+    }
+
+    private fun formatStrikethrough() {
+        val text = uiState.value.text?.toString() ?: ""
+        val selectionStart = uiState.value.selection?.start ?: 0
+        val selectionEnd = uiState.value.selection?.end ?: selectionStart
+
+        val newText = text.substring(0, selectionStart) +
+            "~~" +
+            text.substring(selectionStart, selectionEnd) +
+            "~~" +
+            text.substring(selectionEnd)
+
+        onTextChanged(newText, LinkedList())
+        // move cursor to the end of the inserted text
+        setSelection(selectionStart + 2, selectionEnd + 2)
+    }
+
+    private fun formatItalic() {
+        val text = uiState.value.text?.toString() ?: ""
+        val selectionStart = uiState.value.selection?.start ?: 0
+        val selectionEnd = uiState.value.selection?.end ?: selectionStart
+
+        val newText = text.substring(0, selectionStart) +
+            "*" +
+            text.substring(selectionStart, selectionEnd) +
+            "*" +
+            text.substring(selectionEnd)
+
+        onTextChanged(newText, LinkedList())
+        // move cursor to the end of the inserted text
+        setSelection(selectionStart + 1, selectionEnd + 1)
+    }
+
+    private fun formatBold() {
+        val text = uiState.value.text?.toString() ?: ""
+        val selectionStart = uiState.value.selection?.start ?: 0
+        val selectionEnd = uiState.value.selection?.end ?: selectionStart
+
+        val newText = text.substring(0, selectionStart) +
+            "**" +
+            text.substring(selectionStart, selectionEnd) +
+            "**" +
+            text.substring(selectionEnd)
+
+        onTextChanged(newText, LinkedList())
+        // move cursor to the end of the inserted text
+        setSelection(selectionStart + 2, selectionEnd + 2)
     }
 
     private fun insertFileReference(selection: TextRange?, resource: ResourceData) {
@@ -736,6 +788,10 @@ internal class CodeEditorViewModel @Inject constructor(
 
         data class ExpandableFabItemSelected(val item: FabConfig.Fab<CodeEditorFabId>) : UiEvent()
         data class SnackbarActionClicked(val snackbar: SnackbarData) : UiEvent()
+
+        data object FormatBoldClicked : UiEvent()
+        data object FormatItalicClicked : UiEvent()
+        data object FormatStrikethroughClicked : UiEvent()
 
         data object InsertFileReferenceClicked : UiEvent()
         data class ResourceSelected(val resource: ResourceData) : UiEvent()
