@@ -17,16 +17,15 @@ annotatedText = "1.0.0"
 annotation = "1.7.1"
 appauthVersion = "0.11.1"
 browserVersion = "1.8.0"
-codeHighlighterVersion = "4.0.0"
+codeHighlighterVersion = "4.0.3"
 collectionKtx = "1.4.0"
 commonsVersion = "master-SNAPSHOT"
 dexter = "6.2.2"
-dokkaGradlePlugin = "1.8.10"
 emojiBundled = "1.1.0"
 emoji = "1.1.0"
 fragmentKtx = "1.6.2"
 fuelVersion = "2.3.1"
-hilt = "2.49"
+hilt = "2.51"
 hiltExt = "1.2.0"
 hiltNavigationCompose = "1.2.0"
 iconicsVersion = "5.4.0"
@@ -112,8 +111,6 @@ aghajari-annotatedtext = { module = "io.github.aghajari:AnnotatedText", version.
 appauth = { module = "net.openid:appauth", version.ref = "appauthVersion" }
 commons-validator = { group = "commons-validator", name = "commons-validator", version = "1.7" }
 
-dokka-gradle-plugin = { group = "org.jetbrains.dokka", name = "dokka-gradle-plugin", version.ref = "dokkaGradlePlugin" }
-
 dexter = { module = "com.karumi:dexter", version.ref = "dexter" }
 fuel = { module = "com.github.kittinunf.fuel:fuel", version.ref = "fuelVersion" }
 fuel-android = { module = "com.github.kittinunf.fuel:fuel-android", version.ref = "fuelVersion" }
@@ -121,8 +118,6 @@ fuel-coroutines = { module = "com.github.kittinunf.fuel:fuel-coroutines", versio
 fuel-moshi = { module = "com.github.kittinunf.fuel:fuel-moshi", version.ref = "fuelVersion" }
 
 fengdai-compose-pulltorefresh = { group = "com.github.fengdai.compose", name = "pulltorefresh", version = "0.2.0" }
-
-godaddy-colorpicker = { group = "com.godaddy.android.colorpicker", name = "compose-color-picker", version = "0.5.1" }
 
 gson = { group = "com.google.code.gson", name = "gson", version = "2.10.1" }
 
