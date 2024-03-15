@@ -13,7 +13,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
-        android:name="de.markusressel.mkdocseditor.application.App"
+        android:name=".application.App"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -23,7 +23,7 @@
         android:usesCleartextTraffic="true">
 
         <activity
-            android:name="de.markusressel.mkdocseditor.ui.activity.MainActivityCompose"
+            android:name=".ui.activity.MainActivityCompose"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -33,7 +33,7 @@
         </activity>
 
         <service
-            android:name="de.markusressel.mkdocseditor.service.OfflineCacheSyncService"
+            android:name=".service.OfflineCacheSyncService"
             android:exported="false"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
