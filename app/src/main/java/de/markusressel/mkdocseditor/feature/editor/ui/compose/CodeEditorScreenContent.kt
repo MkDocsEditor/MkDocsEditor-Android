@@ -9,13 +9,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -42,7 +39,6 @@ import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
@@ -149,32 +145,6 @@ internal fun CodeEditorScreenContent(
                 }
             }
         }
-    }
-}
-
-@Composable
-internal fun CodeEditorBottomBar(
-    modifier: Modifier = Modifier,
-    uiState: CodeEditorViewModel.UiState,
-    onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
-) {
-    BottomAppBar(modifier) {
-        IconButton(onClick = { onUiEvent(CodeEditorViewModel.UiEvent.InsertFileReferenceClicked) }) {
-            Image(
-                asset = MaterialDesignIconic.Icon.gmi_file_add,
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
-            )
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        ExpandableFab(
-            mainItemModifier = Modifier.size(48.dp),
-            items = uiState.fabConfig.right,
-            onItemClicked = {
-                onUiEvent(CodeEditorViewModel.UiEvent.ExpandableFabItemSelected(item = it))
-            }
-        )
     }
 }
 
