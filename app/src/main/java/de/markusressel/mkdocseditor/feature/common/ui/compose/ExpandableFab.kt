@@ -48,6 +48,7 @@ fun <T> ExpandableFab(
     items: List<FabConfig.Fab<T>>,
     onItemClicked: (FabConfig.Fab<T>) -> Unit,
     modifier: Modifier = Modifier,
+    mainItemModifier: Modifier = Modifier,
     horizontalAlignment: Alignment.Horizontal = Alignment.End,
 ) {
     if (items.isEmpty()) {
@@ -144,7 +145,9 @@ fun <T> ExpandableFab(
 
         // main button to toggle options
         FloatingActionButton(
-            modifier = Modifier.zIndex(100F),
+            modifier = Modifier
+                .zIndex(100F)
+                .then(mainItemModifier),
             containerColor = MaterialTheme.colorScheme.secondary,
             onClick = {
                 if (items.size <= 1) {

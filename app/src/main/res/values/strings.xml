@@ -10,6 +10,7 @@
     <string name="unknown_error">Unknown Error</string>
 
     <string name="code_editor">Code Editor</string>
+    <string name="insert_link">Insert Link</string>
 
     <string name="no_offline_version_title">Not available offline</string>
     <string name="no_offline_version">Sorry, there is no offline version available. Try to connect to the server and re-open this file to get an updated offline version.</string>

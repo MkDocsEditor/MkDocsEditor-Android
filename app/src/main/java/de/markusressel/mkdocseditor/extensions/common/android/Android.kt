@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.AnnotatedString
 import androidx.core.text.toSpanned
 import androidx.lifecycle.ViewModel
@@ -46,4 +47,13 @@ fun ViewModel.launch(
 fun textResource(@StringRes id: Int): AnnotatedString {
     val resources = LocalContext.current.resources
     return resources.getText(id).toSpanned().asAnnotatedString().annotatedString
+}
+
+
+/**
+ * Checks if the current context is executed within a compose preview
+ */
+@Composable
+fun isComposePreview(): Boolean {
+    return LocalInspectionMode.current
 }

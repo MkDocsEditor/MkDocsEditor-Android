@@ -10,7 +10,7 @@ import javax.inject.Singleton
 class FindSectionUseCase @Inject constructor(
     private val dataRepository: DataRepository,
 ) {
-    suspend operator fun invoke(documentId: String): SectionData {
-        return dataRepository.sectionStore.get(documentId)
+    suspend operator fun invoke(sectionId: String): SectionData {
+        return dataRepository.sectionStore.get(sectionId)
     }
 }

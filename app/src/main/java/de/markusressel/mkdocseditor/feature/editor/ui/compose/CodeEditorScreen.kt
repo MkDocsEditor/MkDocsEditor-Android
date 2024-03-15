@@ -11,6 +11,7 @@ import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.dialog.SelectLinkTargetDialog
 
 internal data class CodeEditorScreen(
     private val documentId: String,
@@ -43,5 +44,23 @@ internal data class CodeEditorScreen(
             },
             onUiEvent = viewModel::onUiEvent
         )
+
+        when (val dialogState = uiState.currentDialogState) {
+            is CodeEditorViewModel.DialogState.SelectLinkTarget -> {
+                SelectLinkTargetDialog(
+                    uiState = dialogState,
+                    onItemSelected = { item ->
+                        viewModel.onUiEvent(
+                            CodeEditorViewModel.UiEvent.ResourceSelected(resource = item)
+                        )
+                    },
+                    onDismissRequest = {
+                        viewModel.onUiEvent(CodeEditorViewModel.UiEvent.DismissDialog)
+                    },
+                )
+            }
+
+            else -> {}
+        }
     }
 }

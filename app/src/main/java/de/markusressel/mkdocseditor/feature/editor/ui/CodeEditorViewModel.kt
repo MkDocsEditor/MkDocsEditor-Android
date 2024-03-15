@@ -17,6 +17,9 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
+import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindParentSectionOfDocumentUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindSectionUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
@@ -57,6 +60,8 @@ internal class CodeEditorViewModel @Inject constructor(
     private val networkManager: NetworkManager,
     private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val openDocumentInBrowserUseCase: OpenDocumentInBrowserUseCase,
+    private val findParentSectionOfDocumentUseCase: FindParentSectionOfDocumentUseCase,
+    private val findSectionUseCase: FindSectionUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
@@ -315,10 +320,6 @@ internal class CodeEditorViewModel @Inject constructor(
         selectionStart: Int? = null,
         selectionEnd: Int? = null
     ) {
-        // we don't listen to selection changes when the text is changed via code
-        // because the selection will be restored from persistence anyway
-        // and the listener would override this
-//        selectionChangedListener = null
         _uiState.update { old ->
             old.copy(
                 text = AnnotatedString(text),
@@ -327,7 +328,26 @@ internal class CodeEditorViewModel @Inject constructor(
                 } ?: old.selection
             )
         }
-//        selectionChangedListener = this
+    }
+
+    /**
+     * Set the editor content to the specified text.
+     *
+     * @param text the text to set
+     * @param selectionStart optional selection start index
+     * @param selectionEnd optional selection end index
+     */
+    private fun setSelection(
+        selectionStart: Int? = null,
+        selectionEnd: Int? = null
+    ) {
+        _uiState.update { old ->
+            old.copy(
+                selection = selectionStart?.let {
+                    computeEditorSelection(old.text?.length ?: 0, it, selectionEnd)
+                } ?: old.selection
+            )
+        }
     }
 
     private fun computeEditorSelection(
@@ -385,16 +405,48 @@ internal class CodeEditorViewModel @Inject constructor(
     fun onUiEvent(event: UiEvent) {
         launch {
             when (event) {
+                is UiEvent.DismissDialog -> dismissCurrentDialog()
+
                 is UiEvent.TopAppBarActionClicked -> onTopAppBarActionClicked(event.action)
                 is UiEvent.ExpandableFabItemSelected -> when (event.item.id) {
                     CodeEditorFabId.EnableEditMode -> enableEditMode()
                     CodeEditorFabId.DisableEditMode -> disableEditMode()
                 }
 
+                is UiEvent.InsertFileReferenceClicked -> showResourceSelectionDialog()
+                is UiEvent.ResourceSelected -> {
+                    dismissCurrentDialog()
+                    insertFileReference(uiState.value.selection, event.resource)
+                }
+
                 is UiEvent.BackPressed -> onClose()
                 is UiEvent.SnackbarActionClicked -> onSnackbarAction(event.snackbar)
             }
         }
+    }
+
+    private fun insertFileReference(selection: TextRange?, resource: ResourceData) {
+        val text = uiState.value.text?.toString() ?: ""
+        val selectionStart = selection?.start ?: 0
+        val selectionEnd = selection?.end ?: selectionStart
+
+        val referenceText = "![${resource.name}](./${resource.name})"
+        val newText = text.substring(0, selectionStart) +
+            referenceText +
+            text.substring(selectionEnd)
+
+        onTextChanged(newText, LinkedList())
+        // move cursor to the end of the inserted text
+        setSelection(selectionStart + referenceText.length)
+    }
+
+    private suspend fun showResourceSelectionDialog() {
+        val documentId = requireNotNull(documentId.value)
+        val parentSectionId = requireNotNull(findParentSectionOfDocumentUseCase(documentId)).id
+        val parentSection = findSectionUseCase(parentSectionId)
+        showDialog(
+            DialogState.SelectLinkTarget(items = parentSection.resources)
+        )
     }
 
     private suspend fun onTopAppBarActionClicked(action: TopAppBarAction.CodeEditor) {
@@ -602,6 +654,14 @@ internal class CodeEditorViewModel @Inject constructor(
         }
     }
 
+    private fun showDialog(dialogState: DialogState?) {
+        _uiState.update { old ->
+            old.copy(currentDialogState = dialogState)
+        }
+    }
+
+    private fun dismissCurrentDialog() = showDialog(null)
+
     /**
      * Called when the user wants to connect to the server
      */
@@ -642,6 +702,8 @@ internal class CodeEditorViewModel @Inject constructor(
 
 
     data class UiState(
+        val currentDialogState: DialogState? = null,
+
         val showInBrowserActionVisible: Boolean = true,
 
         val fabConfig: FabConfig<CodeEditorFabId> = FabConfig(),
@@ -668,10 +730,15 @@ internal class CodeEditorViewModel @Inject constructor(
     )
 
     sealed class UiEvent {
+        object DismissDialog : UiEvent()
+
         data class TopAppBarActionClicked(val action: TopAppBarAction.CodeEditor) : UiEvent()
 
         data class ExpandableFabItemSelected(val item: FabConfig.Fab<CodeEditorFabId>) : UiEvent()
         data class SnackbarActionClicked(val snackbar: SnackbarData) : UiEvent()
+
+        data object InsertFileReferenceClicked : UiEvent()
+        data class ResourceSelected(val resource: ResourceData) : UiEvent()
 
         data object BackPressed : UiEvent()
     }
@@ -685,5 +752,11 @@ internal class CodeEditorViewModel @Inject constructor(
     sealed class CodeEditorFabId {
         data object EnableEditMode : CodeEditorFabId()
         data object DisableEditMode : CodeEditorFabId()
+    }
+
+    sealed interface DialogState {
+        data class SelectLinkTarget(
+            val items: List<ResourceData> = emptyList(),
+        ) : DialogState
     }
 }

@@ -13,6 +13,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
+import de.markusressel.mkdocseditor.extensions.common.android.isComposePreview
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.ShowInBrowserAction
 
 @Composable
@@ -36,9 +37,12 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
     actions: List<T> = emptyList(),
     onActionClicked: (T) -> Unit = {},
 ) {
-    val navigator = LocalNavigator.currentOrThrow
-
-    val defaultNavigationAction: () -> Unit = { navigator.pop() }
+    val defaultNavigationAction: () -> Unit = if (isComposePreview().not()) {
+        val navigator = LocalNavigator.currentOrThrow
+        { navigator.pop() }
+    } else {
+        {}
+    }
 
     TopAppBar(
         title = { Text(text = title) },
