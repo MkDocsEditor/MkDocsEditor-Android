@@ -430,32 +430,32 @@ internal class CodeEditorViewModel @Inject constructor(
         }
     }
 
-    private fun formatStrikethrough() {
+    private fun formatBold() {
         val text = uiState.value.text?.toString() ?: ""
         val selectionStart = uiState.value.selection?.start ?: 0
         val selectionEnd = uiState.value.selection?.end ?: selectionStart
 
-        // check if the current selection is already striked through
-        val selectionIsStrikethrough = run {
+        // check if the current selection is already bold
+        val selectionIsBold = run {
             val selectedText =
-                text.substring((selectionStart - 2).coerceAtLeast(0), (selectionEnd + 2).coerceAtMost(text.length))
-            selectedText.startsWith("~~") && selectedText.endsWith("~~")
+                text.safeSubstring((selectionStart - 2), (selectionEnd + 2))
+            selectedText.startsWith("**") && selectedText.endsWith("**")
         }
 
-        if (selectionIsStrikethrough) {
+        if (selectionIsBold) {
             val newText = text.substring(0, selectionStart - 2) +
                 text.substring(selectionStart, selectionEnd) +
                 text.substring(selectionEnd + 2)
             onTextChanged(newText, LinkedList())
-            setSelection(selectionStart - 2)
+            setSelection(selectionStart - 2, selectionEnd - 2)
         } else {
             val newText = text.substring(0, selectionStart) +
-                "~~" +
+                "**" +
                 text.substring(selectionStart, selectionEnd) +
-                "~~" +
+                "**" +
                 text.substring(selectionEnd)
             onTextChanged(newText, LinkedList())
-            setSelection(selectionStart + 2)
+            setSelection(selectionStart + 2, selectionEnd + 2)
         }
     }
 
@@ -476,7 +476,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 text.substring(selectionStart, selectionEnd) +
                 text.substring(selectionEnd + 1)
             onTextChanged(newText, LinkedList())
-            setSelection(selectionStart - 1)
+            setSelection(selectionStart - 1, selectionEnd - 1)
         } else {
             val newText = text.substring(0, selectionStart) +
                 "*" +
@@ -484,36 +484,36 @@ internal class CodeEditorViewModel @Inject constructor(
                 "*" +
                 text.substring(selectionEnd)
             onTextChanged(newText, LinkedList())
-            setSelection(selectionStart + 1)
+            setSelection(selectionStart + 1, selectionEnd + 1)
         }
     }
 
-    private fun formatBold() {
+    private fun formatStrikethrough() {
         val text = uiState.value.text?.toString() ?: ""
         val selectionStart = uiState.value.selection?.start ?: 0
         val selectionEnd = uiState.value.selection?.end ?: selectionStart
 
-        // check if the current selection is already bold
-        val selectionIsBold = run {
+        // check if the current selection is already striked through
+        val selectionIsStrikethrough = run {
             val selectedText =
-                text.safeSubstring((selectionStart - 2), (selectionEnd + 2))
-            selectedText.startsWith("**") && selectedText.endsWith("**")
+                text.substring((selectionStart - 2).coerceAtLeast(0), (selectionEnd + 2).coerceAtMost(text.length))
+            selectedText.startsWith("~~") && selectedText.endsWith("~~")
         }
 
-        if (selectionIsBold) {
+        if (selectionIsStrikethrough) {
             val newText = text.substring(0, selectionStart - 2) +
                 text.substring(selectionStart, selectionEnd) +
                 text.substring(selectionEnd + 2)
             onTextChanged(newText, LinkedList())
-            setSelection(selectionStart - 2)
+            setSelection(selectionStart - 2, selectionEnd - 2)
         } else {
             val newText = text.substring(0, selectionStart) +
-                "**" +
+                "~~" +
                 text.substring(selectionStart, selectionEnd) +
-                "**" +
+                "~~" +
                 text.substring(selectionEnd)
             onTextChanged(newText, LinkedList())
-            setSelection(selectionStart + 2)
+            setSelection(selectionStart + 2, selectionEnd + 2)
         }
     }
 
