@@ -3,22 +3,15 @@ package de.markusressel.mkdocseditor.feature.editor.ui
 //import com.otaliastudios.zoom.ZoomEngine
 //import de.markusressel.kodeeditor.library.view.CodeEditorLayout
 //import de.markusressel.kodeeditor.library.view.SelectionChangedListener
-import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.CallSuper
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.asLiveData
 import com.github.ajalt.timberkt.Timber
 import com.google.android.material.snackbar.Snackbar
-import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import dagger.hilt.android.AndroidEntryPoint
-import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.ui.component.OptionsMenuComponent
 import de.markusressel.mkdocseditor.ui.fragment.base.DaggerSupportFragmentBase
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch.Patch
@@ -39,65 +32,6 @@ class CodeEditorFragment : DaggerSupportFragmentBase()
 //    private lateinit var codeEditorLayout: CodeEditorLayout
 
     private var noConnectionSnackbar: Snackbar? = null
-
-    private val optionsMenuComponent: OptionsMenuComponent by lazy {
-        OptionsMenuComponent(
-            this,
-            optionsMenuRes = R.menu.options_menu_editor,
-            onCreateOptionsMenu = { menu: Menu?, _: MenuInflater? ->
-                // set refresh icon
-                menu?.findItem(R.id.refresh)?.apply {
-                    val refreshIcon =
-                        iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_refresh)
-                    icon = refreshIcon
-                }
-
-                // set "edit" icon
-//                viewModel.editModeActive.observe(viewLifecycleOwner) { editModeActive ->
-//                    menu?.findItem(R.id.edit)?.apply {
-//                        icon = if (editModeActive) {
-//                            iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_eye)
-//                        } else {
-//                            iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_edit)
-//                        }
-//                    }
-//                    activity?.invalidateOptionsMenu()
-//                }
-
-                viewModel.editable.asLiveData().observe(viewLifecycleOwner) { editable ->
-                    // set "edit" icon
-                    menu?.findItem(R.id.edit)?.apply {
-                        // invisible initially, until a server connection is established
-//                        isVisible = viewModel.offlineModeManager.isEnabled().not() && editable
-                    }
-                    activity?.invalidateOptionsMenu()
-                }
-            },
-            onOptionsMenuItemClicked = {
-                when (it.itemId) {
-//                    R.id.open_in_browser -> viewModel.onOpenInBrowserClicked()
-                    R.id.edit -> viewModel.enableEditMode()
-                    else -> false
-                }
-            },
-            onPrepareOptionsMenu = { menu ->
-                // set open in browser icon
-                menu?.findItem(R.id.open_in_browser)?.apply {
-                    val openInBrowserIcon =
-                        iconHandler.getOptionsMenuIcon(MaterialDesignIconic.Icon.gmi_open_in_browser)
-                    icon = openInBrowserIcon
-//                    if (viewModel.preferencesHolder.webUriPreference.persistedValue.value.isBlank()) {
-//                        isVisible = false
-//                        isEnabled = false
-//                    }
-                }
-            })
-    }
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        optionsMenuComponent
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
