@@ -22,12 +22,12 @@ This project is still a work in progress and is **not yet ready for production**
 MkDocsEditor aims to provide an easy way for you to manage your existing [MkDocs](https://www.mkdocs.org/) projects:
 * [ ] Section management (folders)
   * [x] create sections
-  * [ ] rename sections
+  * [x] rename sections
   * [ ] move an entire section to another location
-  * [ ] delete a section and all the content inside it
+  * [x] delete a section and all the content inside it
 * [ ] Document management (`*.md` files)
   * [x] create documents
-  * [ ] rename documents
+  * [x] rename documents
   * [x] edit documents
   * [x] see the result on your hosted website right away
   * [ ] move a document
@@ -35,10 +35,10 @@ MkDocsEditor aims to provide an easy way for you to manage your existing [MkDocs
   * [x] delete documents
     * [ ] delete unused resources that are referenced in it
 * [ ] Resource file management (any file that is not a markdown file really)
-  * [ ] upload resource files
-  * [ ] download linked resources
-  * [ ] open linked resources (if supported by another app on your device)
-  * [ ] delete resource files
+  * [x] upload resource files
+  * [x] download linked resources
+  * [x] open linked resources (if supported by another app on your device)
+  * [x] delete resource files
     * [ ] automatically replace any reference to this resource in a document with a "deleted" note
 
 ## Realtime collaborative editing
