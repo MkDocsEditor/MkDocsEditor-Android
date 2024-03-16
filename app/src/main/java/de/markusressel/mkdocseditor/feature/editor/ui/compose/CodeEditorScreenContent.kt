@@ -91,7 +91,11 @@ internal fun CodeEditorScreenContent(
             )
         },
         bottomBar = {
-            AnimatedVisibility(visible = uiState.isOfflineModeBannerVisible.not()) {
+            AnimatedVisibility(
+                visible = uiState.isBottomAppBarVisible,
+                enter = slideInVertically(initialOffsetY = { it }),
+                exit = slideOutVertically(targetOffsetY = { it }),
+            ) {
                 CodeEditorBottomBar(
                     modifier = Modifier.fillMaxWidth(),
                     uiState = uiState,

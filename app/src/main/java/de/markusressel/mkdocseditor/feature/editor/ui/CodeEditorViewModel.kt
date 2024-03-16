@@ -107,6 +107,12 @@ internal class CodeEditorViewModel @Inject constructor(
                         disableEditMode()
                     }
                 }
+
+                _uiState.update { old ->
+                    old.copy(
+                        isBottomAppBarVisible = editable,
+                    )
+                }
             }
         }
 
@@ -143,7 +149,9 @@ internal class CodeEditorViewModel @Inject constructor(
         launch {
             isOfflineModeEnabledFlowUseCase().collect { enabled ->
                 _uiState.update { old ->
-                    old.copy(isOfflineModeBannerVisible = enabled)
+                    old.copy(
+                        isOfflineModeBannerVisible = enabled,
+                    )
                 }
 
                 when {
@@ -389,6 +397,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 title = currentResource.value?.data?.name ?: "",
                 text = AnnotatedString(cachedContent),
                 isOfflineModeBannerVisible = true,
+                isBottomAppBarVisible = false,
             )
         }
     }
@@ -726,7 +735,8 @@ internal class CodeEditorViewModel @Inject constructor(
                 editModeActive = uiState.value.editModeActive.not(),
                 fabConfig = old.fabConfig.copy(
                     right = listOf(DisableEditModeFabConfig)
-                )
+                ),
+                isBottomAppBarVisible = true,
             )
         }
         return true
@@ -741,7 +751,8 @@ internal class CodeEditorViewModel @Inject constructor(
                         true -> listOf(EnableEditModeFabConfig)
                         else -> listOf()
                     }
-                )
+                ),
+                isBottomAppBarVisible = false,
             )
         }
     }
@@ -817,6 +828,7 @@ internal class CodeEditorViewModel @Inject constructor(
         val panY: Float = 0F,
 
         val isOfflineModeBannerVisible: Boolean = false,
+        val isBottomAppBarVisible: Boolean = false,
 
         val snackbar: SnackbarData? = null,
     )
