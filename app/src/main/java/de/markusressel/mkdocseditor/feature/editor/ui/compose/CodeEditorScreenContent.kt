@@ -91,11 +91,13 @@ internal fun CodeEditorScreenContent(
             )
         },
         bottomBar = {
-            CodeEditorBottomBar(
-                modifier = Modifier.fillMaxWidth(),
-                uiState = uiState,
-                onUiEvent = onUiEvent,
-            )
+            AnimatedVisibility(visible = uiState.isOfflineModeBannerVisible.not()) {
+                CodeEditorBottomBar(
+                    modifier = Modifier.fillMaxWidth(),
+                    uiState = uiState,
+                    onUiEvent = onUiEvent,
+                )
+            }
         },
         snackbarHost = {
             AnimatedVisibility(
