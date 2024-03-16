@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -66,6 +67,10 @@ object FileBrowserScreen : Screen {
 
                     is FileBrowserEvent.OpenResourceSelection -> {
                         navigator.push(FilePickerScreen())
+                    }
+
+                    is FileBrowserEvent.Toast -> {
+                        Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                     }
                 }
             }

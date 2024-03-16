@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.browser.ui
 
+import android.content.Context
 import androidx.core.text.trimmedLength
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -29,6 +30,7 @@ import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindParentSec
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetCurrentSectionPathUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetSectionItemsUseCase
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.LaunchShareFileIntentUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameDocumentUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameResourceUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameSectionUseCase
@@ -61,6 +63,7 @@ import javax.inject.Inject
 @HiltViewModel
 internal class FileBrowserViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
+    private val context: Context,
     private val restClient: IMkDocsRestClient,
     private val getSectionItemsUseCase: GetSectionItemsUseCase,
     private val createNewSectionUseCase: CreateNewSectionUseCase,
@@ -80,6 +83,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private val findSectionUseCase: FindSectionUseCase,
     private val findParentSectionOfDocumentUseCase: FindParentSectionOfDocumentUseCase,
     private val findParentSectionOfResourceUseCase: FindParentSectionOfResourceUseCase,
+    private val launchShareFileIntentUseCase: LaunchShareFileIntentUseCase,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -680,9 +684,10 @@ internal class FileBrowserViewModel @Inject constructor(
 
     private suspend fun onResourceClicked(entity: ResourceData) {
         try {
-            val result = downloadResourceUseCase(entity.id)
-            // TODO: write result to file
-            // TODO: open file using system intent
+            val result = downloadResourceUseCase.invoke(entity.id, entity.name)
+            _events.send(FileBrowserEvent.Toast("Resource downloaded to ${result.toAbsolutePath()}"))
+            launchShareFileIntentUseCase(result)
+//            _events.send(FileBrowserEvent.ShareFile(fileUri, mimeType))
         } catch (ex: Exception) {
             Timber.e(ex)
             setError(message = ex.localizedMessage ?: ex.javaClass.name)
@@ -754,6 +759,8 @@ internal sealed class UiEvent {
 internal sealed class FileBrowserEvent {
     data object OpenSearch : FileBrowserEvent()
     data class OpenDocumentEditor(val documentId: String) : FileBrowserEvent()
+    data class Toast(val message: String) : FileBrowserEvent()
+
     data object OpenProfileScreen : FileBrowserEvent()
     data object OpenResourceSelection : FileBrowserEvent()
 }

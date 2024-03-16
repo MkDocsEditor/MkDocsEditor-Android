@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.dagger
 
 import android.accounts.AccountManager
+import android.app.DownloadManager
 import android.app.UiModeManager
 import android.content.ContentResolver
 import android.content.Context
@@ -47,6 +48,12 @@ class AppModule {
     @Singleton
     fun provideConnectivityManager(context: Context): ConnectivityManager {
         return context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    }
+
+    @Provides
+    @Singleton
+    fun provideDownloadManager(context: Context): DownloadManager {
+        return context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     }
 
     @Provides
