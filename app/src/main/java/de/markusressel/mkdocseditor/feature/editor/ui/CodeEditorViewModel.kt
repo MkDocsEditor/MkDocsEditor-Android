@@ -26,7 +26,6 @@ import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.Error
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
-import de.markusressel.mkdocseditor.network.NetworkManager
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.ui.activity.SnackbarData
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
@@ -58,7 +57,6 @@ internal class CodeEditorViewModel @Inject constructor(
     private val getDocumentUseCase: GetDocumentUseCase,
     private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
     private val preferencesHolder: KutePreferencesHolder,
-    private val networkManager: NetworkManager,
     private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val openDocumentInBrowserUseCase: OpenDocumentInBrowserUseCase,
     private val findParentSectionOfDocumentUseCase: FindParentSectionOfDocumentUseCase,
