@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.feature.browser.ui
 
-import android.content.Context
 import androidx.core.text.trimmedLength
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -41,7 +40,6 @@ import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.feature.search.domain.SearchUseCase
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
-import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -63,8 +61,6 @@ import javax.inject.Inject
 @HiltViewModel
 internal class FileBrowserViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
-    private val context: Context,
-    private val restClient: IMkDocsRestClient,
     private val getSectionItemsUseCase: GetSectionItemsUseCase,
     private val createNewSectionUseCase: CreateNewSectionUseCase,
     private val searchUseCase: SearchUseCase,
