@@ -822,7 +822,7 @@ internal class CodeEditorViewModel @Inject constructor(
     )
 
     sealed class UiEvent {
-        object DismissDialog : UiEvent()
+        data object DismissDialog : UiEvent()
 
         data class TopAppBarActionClicked(val action: TopAppBarAction.CodeEditor) : UiEvent()
 
