@@ -683,8 +683,15 @@ internal class FileBrowserViewModel @Inject constructor(
 
     private suspend fun onResourceClicked(entity: ResourceData) {
         try {
-            _events.send(FileBrowserEvent.Toast("Downloading resource..."))
-            val result = downloadResourceUseCase.invoke(entity.id, entity.name)
+            val result = try {
+                _events.send(FileBrowserEvent.Toast("Downloading resource..."))
+                downloadResourceUseCase.invoke(entity.id, entity.name)
+            } catch (ex: Exception) {
+                Timber.e(ex)
+                setError(message = "Download failed: ${ex.localizedMessage ?: ex.javaClass.name}")
+                return
+            }
+
             val mimeType = result.getMimeType()
             if (mimeType.startsWith("image/") || mimeType.startsWith("video/") || mimeType.startsWith("audio/")) {
                 launchOpenInIntentUseCase(result)

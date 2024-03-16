@@ -6,6 +6,7 @@ import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import java.nio.file.Path
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.io.path.exists
 
 
 @Singleton
@@ -24,7 +25,20 @@ class DownloadResourceUseCase @Inject constructor(
 //
 //        val pdfUri = downloadManager.getUriForDownloadedFile(downloadID)
 
-        val result = restClient.downloadResource(resourceId).get()
-        return appStorageManager.writeToFile(name, result)
+        val existingFile = appStorageManager.getFile(name)
+
+        return try {
+            val data = restClient.downloadResource(resourceId).get()
+            appStorageManager.writeToFile(
+                name = name,
+                data = data,
+                override = true,
+            )
+        } catch (ex: Exception) {
+            if (existingFile.exists()) {
+                return existingFile
+            }
+            throw ex
+        }
     }
 }
