@@ -16,7 +16,6 @@ import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel.Companion.ROOT_SECTION_ID
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
-import de.markusressel.mkdocseditor.storage.AppStorageManager
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.networkBoundResource
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
@@ -28,6 +27,7 @@ import io.objectbox.kotlin.toFlow
 import io.objectbox.query.QueryBuilder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import org.mobilenativefoundation.store.store5.Bookkeeper
 import org.mobilenativefoundation.store.store5.Converter
@@ -51,7 +51,8 @@ class DataRepository @Inject constructor(
     private val documentPersistenceManager: DocumentPersistenceManager,
     private val documentContentPersistenceManager: DocumentContentPersistenceManager,
     private val resourcePersistenceManager: ResourcePersistenceManager,
-    private val appStorageManager: AppStorageManager,
+
+    private val dataFactory: DataFactory,
 ) {
 
     /**
@@ -79,7 +80,9 @@ class DataRepository @Inject constructor(
             filter { resource -> searchRegex.containsMatchIn(resource.name) }
         }.find()
 
-        return sections.map { it.toSectionData() } + documents.map { it.toDocumentData() } + resources.map { it.toResourceData() }
+        return sections.map(dataFactory::toSectionData) +
+            documents.map(dataFactory::toDocumentData) +
+            resources.map(dataFactory::toResourceData)
     }
 
 
@@ -127,7 +130,7 @@ class DataRepository @Inject constructor(
 
     private val sourceOfTruth = SourceOfTruth.of<String, SectionEntity, SectionData>(
         reader = { sectionId ->
-            sectionPersistenceManager.findByIdFlow(sectionId).map { it?.toSectionData() }
+            sectionPersistenceManager.findByIdFlow(sectionId).filterNotNull().map(dataFactory::toSectionData)
         },
         writer = { key, entity ->
             // NOTE: this always stores the whole tree
@@ -272,49 +275,6 @@ class DataRepository @Inject constructor(
 
         return s
     }
-
-    private fun SectionEntity.toSectionData(): SectionData = SectionData(
-        entityId = entityId,
-        id = id,
-        name = name,
-        subsections = subsections.map { it.toSectionData() },
-        documents = documents.map { it.toDocumentData() }.toList(),
-        resources = resources.map { it.toResourceData() }.toList()
-    )
-
-    private fun ResourceEntity.toResourceData() = ResourceData(
-        entityId = entityId,
-        id = id,
-        name = name,
-        filesize = filesize,
-        modtime = modtime,
-        isOfflineAvailable = appStorageManager.exists(id, name),
-    )
-
-    private fun DocumentEntity.toDocumentData() = DocumentData(
-        entityId = entityId,
-        id = id,
-        name = name,
-        filesize = filesize,
-        modtime = modtime,
-        url = url,
-        content = content.target.toDocumentContentData(),
-        isOfflineAvailable = content.target != null
-    )
-
-    private fun DocumentContentEntity?.toDocumentContentData() = when {
-        this == null -> null
-        else -> DocumentContentData(
-            id = entityId,
-            date = date,
-            text = text,
-            selection = selection,
-            zoomLevel = zoomLevel,
-            panX = panX,
-            panY = panY,
-        )
-    }
-
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getDocumentContent(documentId: String) = networkBoundResource(

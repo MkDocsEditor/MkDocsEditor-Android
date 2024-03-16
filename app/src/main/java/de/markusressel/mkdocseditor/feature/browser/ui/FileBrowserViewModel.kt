@@ -133,10 +133,14 @@ internal class FileBrowserViewModel @Inject constructor(
                     }
 
                     is BusEvent.CodeEditorBusEvent.GoToResource -> {
-                        val parentSectionId = findParentSectionOfResourceUseCase(event.resourceId)
-                        parentSectionId?.let {
+                        val parentSection = findParentSectionOfResourceUseCase(event.resourceId)
+                        parentSection?.let {
                             delay(200)
-                            openSection(parentSectionId.id, parentSectionId.name)
+                            openSection(parentSection.id, parentSection.name)
+                            parentSection.resources.firstOrNull { it.id == event.resourceId }?.let {
+                                delayUntil { uiState.value.isLoading.not() }
+                                onResourceClicked(it)
+                            }
                         }
                     }
 
