@@ -25,11 +25,12 @@ class DownloadResourceUseCase @Inject constructor(
 //
 //        val pdfUri = downloadManager.getUriForDownloadedFile(downloadID)
 
-        val existingFile = appStorageManager.getFile(name)
+        val existingFile = appStorageManager.getFile(resourceId, name)
 
         return try {
             val data = restClient.downloadResource(resourceId).get()
             appStorageManager.writeToFile(
+                id = resourceId,
                 name = name,
                 data = data,
                 override = true,
