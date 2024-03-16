@@ -66,9 +66,8 @@ internal fun FileBrowserScreenContent(
                     .padding(16.dp)
                     .wrapContentSize(),
                 text = uiState.error ?: "Error",
-                onRetry = {
-                    onUiEvent(UiEvent.Refresh)
-                }
+                onRetry = { onUiEvent(UiEvent.Refresh) },
+                onDismiss = { onUiEvent(UiEvent.DismissError) }
             )
         }
 

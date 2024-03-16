@@ -8,4 +8,5 @@ data class ResourceData(
     val name: String,
     val filesize: Long,
     val modtime: Date,
+    val isOfflineAvailable: Boolean
 )

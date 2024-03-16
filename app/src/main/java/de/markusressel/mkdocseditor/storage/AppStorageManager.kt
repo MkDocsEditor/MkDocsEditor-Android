@@ -18,6 +18,16 @@ class AppStorageManager @Inject constructor(
 ) {
 
     /**
+     * Checks if a file exists within local app storage
+     *
+     * @param id a unique id of the file
+     * @param name the name of the file
+     */
+    fun exists(id: String, name: String): Boolean {
+        return getFile(id, name).exists()
+    }
+
+    /**
      * Get a file by name
      *
      * @param id a unique id of the file

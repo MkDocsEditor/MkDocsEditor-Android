@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.feature.browser.ui.compose.listentry
 
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -49,12 +50,24 @@ internal fun ResourceListEntry(
             modifier = Modifier.padding(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Image(
-                modifier = Modifier
-                    .size(32.dp),
-                asset = MaterialDesignIconic.Icon.gmi_attachment,
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.resourceBackgroundColor),
-            )
+            Box {
+                Image(
+                    modifier = Modifier
+                        .size(32.dp),
+                    asset = MaterialDesignIconic.Icon.gmi_attachment,
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.resourceBackgroundColor),
+                )
+
+                if (item.isOfflineAvailable) {
+                    Image(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .align(Alignment.BottomEnd),
+                        asset = MaterialDesignIconic.Icon.gmi_save,
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.resourceBackgroundColor),
+                    )
+                }
+            }
 
             Column {
 
@@ -86,6 +99,7 @@ private fun ResourceListEntryPreview() {
                 name = "Sample File.jpg",
                 filesize = 1234,
                 modtime = Date(),
+                isOfflineAvailable = true
             ),
             onClick = {},
             onLongClick = {}

@@ -219,6 +219,7 @@ private fun FileBrowserListPreview() {
                     name = "Sample Ressource.png",
                     filesize = 1234,
                     modtime = Date(),
+                    isOfflineAvailable = true
                 )
             ),
             onDocumentClicked = {},

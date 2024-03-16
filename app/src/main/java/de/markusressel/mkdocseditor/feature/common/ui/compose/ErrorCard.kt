@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.IconButton
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -18,48 +19,61 @@ import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesign
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
-@CombinedPreview
-@Composable
-private fun ErrorCardPreview() {
-    MkDocsEditorTheme {
-        ErrorCard(
-            text = "Something went wrong :(",
-            onRetry = {}
-        )
-    }
-}
-
-
 @Composable
 fun ErrorCard(
     modifier: Modifier = Modifier,
     text: String,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit
 ) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer
         ),
-        onClick = onRetry,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 modifier = Modifier
-                    .padding(8.dp),
+                    .padding(8.dp)
+                    .weight(1f),
                 text = text,
                 color = MaterialTheme.colorScheme.onErrorContainer
             )
 
-            Image(
-                modifier = Modifier
-                    .padding(8.dp)
-                    .size(32.dp),
-                asset = MaterialDesignIconic.Icon.gmi_refresh,
-                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onErrorContainer),
-            )
+            IconButton(onClick = onRetry) {
+                Image(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .size(32.dp),
+                    asset = MaterialDesignIconic.Icon.gmi_refresh,
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onErrorContainer),
+                )
+            }
+
+            IconButton(onClick = onDismiss) {
+                Image(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .size(32.dp),
+                    asset = MaterialDesignIconic.Icon.gmi_close,
+                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onErrorContainer),
+                )
+            }
         }
+    }
+}
+
+@CombinedPreview
+@Composable
+private fun ErrorCardPreview() {
+    MkDocsEditorTheme {
+        ErrorCard(
+            text = "Something went wrong :(",
+            onRetry = {},
+            onDismiss = {}
+        )
     }
 }

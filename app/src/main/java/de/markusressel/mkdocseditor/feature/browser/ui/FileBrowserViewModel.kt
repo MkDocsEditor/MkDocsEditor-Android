@@ -239,6 +239,7 @@ internal class FileBrowserViewModel @Inject constructor(
     internal fun onUiEvent(event: UiEvent) {
         launch {
             when (event) {
+                is UiEvent.DismissError -> clearError()
                 is UiEvent.Refresh -> reload()
                 is UiEvent.DocumentClicked -> onDocumentClicked(event.item)
                 is UiEvent.DocumentLongClicked -> onDocumentLongClicked(event.item)
@@ -372,6 +373,8 @@ internal class FileBrowserViewModel @Inject constructor(
             old.copy(fabConfig = fabConfig)
         }
     }
+
+    private fun clearError() = setError(null)
 
     private fun setError(message: String?) {
         _uiState.update { old ->
@@ -618,7 +621,7 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private suspend fun reload() {
-        setError(null)
+        clearError()
         startSectionDataJob(currentSectionId.value)
     }
 
@@ -726,6 +729,7 @@ internal class FileBrowserViewModel @Inject constructor(
 }
 
 internal sealed class UiEvent {
+    data object DismissError : UiEvent()
     data object Refresh : UiEvent()
 
     data class SearchExpandedChanged(val isExpanded: Boolean) : UiEvent()

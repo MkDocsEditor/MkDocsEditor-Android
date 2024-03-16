@@ -92,14 +92,16 @@ private fun SelectLinkTargetDialogPreview() {
                         id = "id",
                         name = "Image.jpg",
                         filesize = 0,
-                        modtime = java.util.Date()
+                        modtime = java.util.Date(),
+                        isOfflineAvailable = true
                     ),
                     ResourceData(
                         entityId = 0,
                         id = "id",
                         name = "Some other file.txt",
                         filesize = 0,
-                        modtime = java.util.Date()
+                        modtime = java.util.Date(),
+                        isOfflineAvailable = true
                     )
                 ),
             ),

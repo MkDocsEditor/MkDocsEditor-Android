@@ -16,6 +16,7 @@ import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.feature.browser.ui.FileBrowserViewModel.Companion.ROOT_SECTION_ID
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
+import de.markusressel.mkdocseditor.storage.AppStorageManager
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.networkBoundResource
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
@@ -50,6 +51,7 @@ class DataRepository @Inject constructor(
     private val documentPersistenceManager: DocumentPersistenceManager,
     private val documentContentPersistenceManager: DocumentContentPersistenceManager,
     private val resourcePersistenceManager: ResourcePersistenceManager,
+    private val appStorageManager: AppStorageManager,
 ) {
 
     /**
@@ -286,6 +288,7 @@ class DataRepository @Inject constructor(
         name = name,
         filesize = filesize,
         modtime = modtime,
+        isOfflineAvailable = appStorageManager.exists(id, name),
     )
 
     private fun DocumentEntity.toDocumentData() = DocumentData(
