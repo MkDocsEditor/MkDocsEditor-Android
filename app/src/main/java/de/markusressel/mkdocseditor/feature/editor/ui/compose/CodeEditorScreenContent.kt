@@ -134,18 +134,14 @@ internal fun CodeEditorScreenContent(
                     CodeEditorLayout(
                         modifier = Modifier.fillMaxSize(),
                         text = tfv,
-                        onTextChanged = {
-                            onTextChanged(it)
-                        },
+                        onTextChanged = onTextChanged,
                         readOnly = false
                     )
                 } else {
                     CodeEditorLayout(
                         modifier = Modifier.fillMaxSize(),
                         text = tfv,
-                        onTextChanged = {
-                            onTextChanged(it)
-                        },
+                        onTextChanged = onTextChanged,
                         readOnly = true
                     )
                 }
