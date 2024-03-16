@@ -51,7 +51,7 @@
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="de.markusressel.mkdocseditor.fileprovider"
+            android:authorities="@string/authorities_fileprovider_id"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
