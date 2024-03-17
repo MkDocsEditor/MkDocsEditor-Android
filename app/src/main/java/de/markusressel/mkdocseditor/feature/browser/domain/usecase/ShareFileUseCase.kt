@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.extensions.common.getMimeType
+import de.markusressel.mkdocseditor.extensions.common.startsWithAny
 import java.nio.file.Path
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -24,7 +25,7 @@ class ShareFileUseCase @Inject constructor(
 
         val mimeType = contentUri.getMimeType(context)
 
-        if (mimeType.startsWith("image/") || mimeType.startsWith("video/") || mimeType.startsWith("audio/")) {
+        if (mimeType.startsWithAny("image/", "video/", "audio/")) {
             launchOpenInIntentUseCase(contentUri, mimeType)
         } else {
             launchSendFileIntentUseCase(contentUri, mimeType)

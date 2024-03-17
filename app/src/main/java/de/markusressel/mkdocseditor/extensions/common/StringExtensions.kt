@@ -4,3 +4,7 @@ fun String.safeSubstring(startIndex: Int): String = substring(startIndex.coerceI
 
 fun String.safeSubstring(startIndex: Int, endIndex: Int): String =
     substring(startIndex.coerceIn(0, length), endIndex.coerceIn(0, length))
+
+fun String.startsWithAny(vararg others: String): Boolean {
+    return others.any { startsWith(it) }
+}
