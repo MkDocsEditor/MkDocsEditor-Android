@@ -143,11 +143,13 @@ internal fun FileBrowserScreenContent(
                     state.endRefresh()
                 }
             }
-            Box(Modifier.nestedScroll(state.nestedScrollConnection)) {
+            Box(
+                Modifier
+                    .padding(paddingValues)
+                    .nestedScroll(state.nestedScrollConnection)
+            ) {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     item {
                         FileBrowserLoadingIndicator(
@@ -189,9 +191,7 @@ internal fun FileBrowserScreenContent(
                 }
 
                 PullToRefreshContainer(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 32.dp),
+                    modifier = Modifier.align(Alignment.TopCenter),
                     state = state,
                 )
             }
