@@ -2,6 +2,9 @@ package de.markusressel.mkdocseditor.feature.browser.ui.compose
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -17,9 +20,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,11 +33,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.github.fengdai.compose.pulltorefresh.PullToRefresh
-import com.github.fengdai.compose.pulltorefresh.rememberPullToRefreshState
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
@@ -127,51 +132,92 @@ internal fun FileBrowserScreenContent(
                 )
             }
         ) { paddingValues ->
-            Column(
-                modifier = Modifier.padding(paddingValues)
-            ) {
-                PullToRefresh(
-                    //modifier = modifier,
-                    state = rememberPullToRefreshState(
-                        isRefreshing = uiState.isLoading
-                    ),
-                    onRefresh = { onUiEvent(UiEvent.Refresh) },
-                ) {
-                    FileBrowserList(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentHeight()
-                            .verticalScroll(rememberScrollState())
-                            .padding(
-                                vertical = 16.dp,
-                                horizontal = 16.dp,
-                            ),
-                        items = uiState.listItems,
-                        onDocumentClicked = {
-                            onUiEvent(UiEvent.DocumentClicked(it))
-                        },
-                        onDocumentLongClicked = {
-                            onUiEvent(UiEvent.DocumentLongClicked(it))
-                        },
-                        onResourceClicked = {
-                            onUiEvent(UiEvent.ResourceClicked(it))
-                        },
-                        onResourceLongClicked = {
-                            onUiEvent(UiEvent.ResourceLongClicked(it))
-                        },
-                        onSectionClicked = {
-                            onUiEvent(UiEvent.SectionClicked(it))
-                        },
-                        onSectionLongClicked = {
-                            onUiEvent(UiEvent.SectionLongClicked(it))
-                        },
-                    )
-
-                    Spacer(modifier = Modifier.height(128.dp))
+            val state = rememberPullToRefreshState()
+            if (state.isRefreshing) {
+                LaunchedEffect(true) {
+                    onUiEvent(UiEvent.Refresh)
                 }
+            }
+            LaunchedEffect(uiState.isLoading) {
+                if (uiState.isLoading.not()) {
+                    state.endRefresh()
+                }
+            }
+            Box(Modifier.nestedScroll(state.nestedScrollConnection)) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                ) {
+                    item {
+                        FileBrowserLoadingIndicator(
+                            modifier = Modifier.fillMaxWidth(),
+                            isLoading = uiState.isLoading
+                        )
+
+                        FileBrowserList(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .wrapContentHeight()
+                                .padding(
+                                    vertical = 16.dp,
+                                    horizontal = 16.dp,
+                                ),
+                            items = uiState.listItems,
+                            onDocumentClicked = {
+                                onUiEvent(UiEvent.DocumentClicked(it))
+                            },
+                            onDocumentLongClicked = {
+                                onUiEvent(UiEvent.DocumentLongClicked(it))
+                            },
+                            onResourceClicked = {
+                                onUiEvent(UiEvent.ResourceClicked(it))
+                            },
+                            onResourceLongClicked = {
+                                onUiEvent(UiEvent.ResourceLongClicked(it))
+                            },
+                            onSectionClicked = {
+                                onUiEvent(UiEvent.SectionClicked(it))
+                            },
+                            onSectionLongClicked = {
+                                onUiEvent(UiEvent.SectionLongClicked(it))
+                            },
+                        )
+
+                        Spacer(modifier = Modifier.height(128.dp))
+                    }
+                }
+
+                PullToRefreshContainer(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 32.dp),
+                    state = state,
+                )
             }
         }
     }
+}
+
+@Composable
+internal fun FileBrowserLoadingIndicator(
+    isLoading: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val alpha: Float by animateFloatAsState(
+        label = "progressAlphaAnimation",
+        targetValue = if (isLoading) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 300,
+            easing = LinearOutSlowInEasing,
+        ),
+    )
+
+    LinearProgressIndicator(
+        modifier = Modifier
+            .alpha(alpha)
+            .then(modifier)
+    )
 }
 
 

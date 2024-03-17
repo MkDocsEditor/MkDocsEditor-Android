@@ -144,9 +144,6 @@ dependencies {
 
     implementation(libs.mikepenz.aboutlibraries)
 
-    // Pull to Refresh (Compose)
-    implementation(libs.fengdai.compose.pulltorefresh)
-
     // Spanned Text to AnnotatedString
     implementation(libs.aghajari.annotatedtext)
 
