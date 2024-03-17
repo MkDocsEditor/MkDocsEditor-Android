@@ -47,6 +47,8 @@ import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.activity.SnackbarData
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 
 @Composable
 internal fun CodeEditorScreenContent(
@@ -54,6 +56,7 @@ internal fun CodeEditorScreenContent(
     uiState: CodeEditorViewModel.UiState,
     onTextChanged: (TextFieldValue) -> Unit,
     onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
+    webViewActionFlow: Flow<WebViewAction>,
 ) {
     var tfv: TextFieldValue by remember(uiState.documentId) {
         val text = uiState.text ?: AnnotatedString("")
@@ -125,25 +128,47 @@ internal fun CodeEditorScreenContent(
                 .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues),
         ) {
-            Column {
-                if (uiState.isOfflineModeBannerVisible) {
-                    OfflineModeBanner()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                // Markdown Editor
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    if (uiState.isOfflineModeBannerVisible) {
+                        OfflineModeBanner()
+                    }
+
+                    if (uiState.editModeActive) {
+                        CodeEditorLayout(
+                            modifier = Modifier.fillMaxSize(),
+                            text = tfv,
+                            onTextChanged = onTextChanged,
+                            readOnly = false
+                        )
+                    } else {
+                        CodeEditorLayout(
+                            modifier = Modifier.fillMaxSize(),
+                            text = tfv,
+                            onTextChanged = onTextChanged,
+                            readOnly = true
+                        )
+                    }
                 }
 
-                if (uiState.editModeActive) {
-                    CodeEditorLayout(
-                        modifier = Modifier.fillMaxSize(),
-                        text = tfv,
-                        onTextChanged = onTextChanged,
-                        readOnly = false
-                    )
-                } else {
-                    CodeEditorLayout(
-                        modifier = Modifier.fillMaxSize(),
-                        text = tfv,
-                        onTextChanged = onTextChanged,
-                        readOnly = true
-                    )
+                // Page Preview
+                AnimatedVisibility(
+                    modifier = Modifier.weight(1f),
+                    visible = uiState.isPreviewVisible
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        uiState.webUrl?.let {
+                            PagePreview(url = it, actions = webViewActionFlow)
+                        }
+                    }
                 }
             }
         }
@@ -232,7 +257,7 @@ internal fun OfflineModeBanner(
 
 @CombinedPreview
 @Composable
-private fun CodeEditorScreenContentPreview() {
+private fun CodeEditorScreenContentOfflinePreview() {
     MkDocsEditorTheme {
         CodeEditorScreenContent(
             uiState = CodeEditorViewModel.UiState(
@@ -245,6 +270,29 @@ private fun CodeEditorScreenContentPreview() {
             ),
             onTextChanged = {},
             onUiEvent = {},
+            webViewActionFlow = MutableSharedFlow()
+        )
+    }
+}
+
+
+@CombinedPreview
+@Composable
+private fun CodeEditorScreenContentOnlinePreview() {
+    MkDocsEditorTheme {
+        CodeEditorScreenContent(
+            uiState = CodeEditorViewModel.UiState(
+                text = buildAnnotatedString { append("# Hallo Welt!") },
+                webUrl = "https://www.google.com",
+                isOfflineModeBannerVisible = false,
+                fabConfig = FabConfig(
+                    right = listOf(EnableEditModeFabConfig)
+                ),
+                isBottomAppBarVisible = true
+            ),
+            onTextChanged = {},
+            onUiEvent = {},
+            webViewActionFlow = MutableSharedFlow()
         )
     }
 }

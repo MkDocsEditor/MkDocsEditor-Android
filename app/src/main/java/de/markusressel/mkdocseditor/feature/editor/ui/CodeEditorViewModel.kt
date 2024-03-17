@@ -22,9 +22,11 @@ import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindParentSectionOfDocumentUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindSectionUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
+import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUrlUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.Error
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.WebViewAction
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.ui.activity.SnackbarData
@@ -35,6 +37,7 @@ import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -44,6 +47,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
@@ -58,6 +62,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
     private val preferencesHolder: KutePreferencesHolder,
     private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
+    private val getDocumentUrlUseCase: GetDocumentUrlUseCase,
     private val openDocumentInBrowserUseCase: OpenDocumentInBrowserUseCase,
     private val findParentSectionOfDocumentUseCase: FindParentSectionOfDocumentUseCase,
     private val findSectionUseCase: FindSectionUseCase,
@@ -85,6 +90,9 @@ internal class CodeEditorViewModel @Inject constructor(
     ) { offlineModeEnabled, connectionStatus ->
         offlineModeEnabled.not() && (connectionStatus?.connected ?: false)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = false)
+
+    private val webViewActionChannel = Channel<WebViewAction>(Channel.BUFFERED)
+    val webViewActionFlow = webViewActionChannel.receiveAsFlow()
 
     private var documentSyncManager: DocumentSyncManager? = null
 
@@ -173,6 +181,15 @@ internal class CodeEditorViewModel @Inject constructor(
             }
         }
 
+        launch {
+            while (true) {
+                delay(1000 * 5)
+                if (uiState.value.isOfflineModeBannerVisible.not() && uiState.value.webUrl != null) {
+                    webViewActionChannel.send(WebViewAction.Refresh)
+                }
+            }
+        }
+
         events.observeForever { event ->
             when (event) {
                 is Error -> _uiState.update { old ->
@@ -185,8 +202,18 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     private suspend fun initializeEditorWithDocument(documentId: String?) {
+        val backendConfig = getCurrentBackendConfigUseCase()
+        val documentUrl = if (documentId != null && backendConfig != null) {
+            val document = requireNotNull(getDocumentUseCase(documentId).data)
+            getDocumentUrlUseCase(backendConfig, document)
+        } else {
+            null
+        }
         _uiState.update { old ->
-            old.copy(documentId = documentId)
+            old.copy(
+                documentId = documentId,
+                webUrl = documentUrl
+            )
         }
         documentSyncManager?.disconnect(
             code = 1000,
@@ -813,6 +840,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
         val documentId: String? = null,
         val title: String = "",
+        val webUrl: String? = null,
 
         /**
          * Indicates whether the CodeEditor is in "edit" mode or not
@@ -826,6 +854,7 @@ internal class CodeEditorViewModel @Inject constructor(
         val panY: Float = 0F,
 
         val isOfflineModeBannerVisible: Boolean = false,
+        val isPreviewVisible: Boolean = false,
         val isBottomAppBarVisible: Boolean = false,
 
         val snackbar: SnackbarData? = null,

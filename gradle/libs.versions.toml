@@ -55,6 +55,7 @@ materialDialogs = "0.9.0"
 uiToolingPreviewVersion = "1.6.3"
 uiToolingPreview = "1.6.3"
 uiToolingVersion = "1.6.3"
+webkitVersion = "1.10.0"
 windowVersion = "1.2.0"
 uiViewbinding = "1.6.3"
 workTesting = "2.9.0"
@@ -105,6 +106,7 @@ androidx-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref =
 androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "uiToolingPreview" }
 androidx-ui-viewbinding = { module = "androidx.compose.ui:ui-viewbinding", version.ref = "uiViewbinding" }
 androidx-window = { module = "androidx.window:window", version.ref = "windowVersion" }
+androidx-webkit = { module = "androidx.webkit:webkit", version.ref = "webkitVersion" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "androidxWork" }
 androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "workTesting" }
 

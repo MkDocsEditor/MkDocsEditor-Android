@@ -42,7 +42,8 @@ internal data class CodeEditorScreen(
                     it.selection
                 )
             },
-            onUiEvent = viewModel::onUiEvent
+            onUiEvent = viewModel::onUiEvent,
+            webViewActionFlow = viewModel.webViewActionFlow,
         )
 
         when (val dialogState = uiState.currentDialogState) {
