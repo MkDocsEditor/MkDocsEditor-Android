@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package de.markusressel.mkdocsrestclient
 
 import com.github.kittinunf.fuel.core.FuelError
