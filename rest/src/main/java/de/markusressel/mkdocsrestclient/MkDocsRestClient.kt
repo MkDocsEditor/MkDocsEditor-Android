@@ -5,6 +5,8 @@ import com.github.kittinunf.fuel.core.Method
 import com.github.kittinunf.result.Result
 import de.markusressel.mkdocsrestclient.document.DocumentApi
 import de.markusressel.mkdocsrestclient.document.DocumentApiImpl
+import de.markusressel.mkdocsrestclient.mkdocs.MkDocsApi
+import de.markusressel.mkdocsrestclient.mkdocs.MkDocsApiImpl
 import de.markusressel.mkdocsrestclient.resource.ResourceApi
 import de.markusressel.mkdocsrestclient.resource.ResourceApiImpl
 import de.markusressel.mkdocsrestclient.section.SectionApi
@@ -18,10 +20,12 @@ import de.markusressel.mkdocsrestclient.section.SectionModel
  */
 class MkDocsRestClient constructor(
     private val requestManager: RequestManager = RequestManager(),
+    mkDocsApi: MkDocsApi = MkDocsApiImpl(requestManager),
     sectionApi: SectionApi = SectionApiImpl(requestManager),
     documentApi: DocumentApi = DocumentApiImpl(requestManager),
     resourceApi: ResourceApi = ResourceApiImpl(requestManager)
 ) : IMkDocsRestClient,
+    MkDocsApi by mkDocsApi,
     SectionApi by sectionApi,
     DocumentApi by documentApi,
     ResourceApi by resourceApi {

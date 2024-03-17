@@ -233,6 +233,10 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
 
     override fun enableLogging() {}
     override fun disableLogging() {}
+
+    override suspend fun getMkDocsConfig(): Result<Map<String, Any?>, FuelError> {
+        return Result.success(emptyMap())
+    }
 }
 
 inline fun <reified T : Any> SectionModel.findRecursive(noinline filter: (T) -> Boolean): T? {
