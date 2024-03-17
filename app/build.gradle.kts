@@ -1,3 +1,5 @@
+import de.markusressel.mkdocseditor.kotlinOptions
+
 plugins {
     id("mkdocseditor.android.application")
     id("mkdocseditor.android.application.compose")
@@ -19,6 +21,15 @@ android {
         versionName = "0.1.0"
 
         setProperty("archivesBaseName", "MkDocsEditor_v${versionName}_(${versionCode})")
+    }
+
+    kotlinOptions {
+        freeCompilerArgs = freeCompilerArgs + listOf(
+            "-opt-in=kotlin.RequiresOptIn",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
+            "-opt-in=androidx.compose.animation.ExperimentalAnimationApi"
+        )
     }
 }
 

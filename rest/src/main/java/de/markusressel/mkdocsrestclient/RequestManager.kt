@@ -173,6 +173,7 @@ class RequestManager(
         return withContext(Dispatchers.IO) {
             val deserializer: Deserializable<T> = deserializer()
             val request = createRequest(url = url, method = method)
+            @Suppress("UNCHECKED_CAST")
             when (T::class) {
                 String::class -> request.awaitStringResult() as Result<T, FuelError>
                 else -> request.awaitResponseResult(deserializer).third
@@ -195,6 +196,7 @@ class RequestManager(
         return withContext(Dispatchers.IO) {
             val deserializer: Deserializable<T> = deserializer()
             val request = createRequest(url = url, urlParameters = urlParameters, method = method)
+            @Suppress("UNCHECKED_CAST")
             when (T::class) {
                 String::class -> request.awaitStringResult() as Result<T, FuelError>
                 else -> request.awaitResponseResult(deserializer).third
@@ -221,6 +223,7 @@ class RequestManager(
                 createRequest(url = url, method = method)
                     .body(json)
                     .header(HEADER_CONTENT_TYPE_JSON)
+            @Suppress("UNCHECKED_CAST")
             when (T::class) {
                 String::class -> request.awaitStringResult() as Result<T, FuelError>
                 else -> request.awaitResponseResult(deserializer).third
@@ -233,7 +236,7 @@ class RequestManager(
      *
      * @param url the url
      * @param urlParameters query parameters
-     * @param method the request type (f.ex. GET)
+     * @param timeout the request timeout
      */
     fun createUploadRequest(
         url: String,
@@ -257,6 +260,7 @@ class RequestManager(
             val request = createUploadRequest(url = url)
             request.add(BlobDataPart(blob.inputStream().buffered(), name = "file"))
             val deserializer: Deserializable<T> = deserializer()
+            @Suppress("UNCHECKED_CAST")
             when (String::class) {
                 String::class -> request.awaitStringResult() as Result<T, FuelError>
                 else -> request.awaitResponseResult(deserializer).third
