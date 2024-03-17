@@ -4,10 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
-import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.extensions.common.getMimeType
-import java.nio.file.Path
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,15 +11,7 @@ import javax.inject.Singleton
 class LaunchOpenInIntentUseCase @Inject constructor(
     private val context: Context,
 ) {
-    suspend operator fun invoke(filePath: Path) {
-        val contentUri: Uri = FileProvider.getUriForFile(
-            context,
-            context.getString(R.string.authorities_fileprovider_id),
-            filePath.toFile()
-        )
-
-        val mimeType = filePath.getMimeType()
-
+    operator fun invoke(contentUri: Uri, mimeType: String) {
         val sendIntent: Intent = Intent().apply {
             action = Intent.ACTION_DEFAULT
             type = mimeType

@@ -13,7 +13,6 @@ import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.extensions.common.delayUntil
-import de.markusressel.mkdocseditor.extensions.common.getMimeType
 import de.markusressel.mkdocseditor.feature.browser.data.DocumentData
 import de.markusressel.mkdocseditor.feature.browser.data.ROOT_SECTION
 import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
@@ -30,12 +29,11 @@ import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindParentSec
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetCurrentSectionPathUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.GetSectionItemsUseCase
-import de.markusressel.mkdocseditor.feature.browser.domain.usecase.LaunchOpenInIntentUseCase
-import de.markusressel.mkdocseditor.feature.browser.domain.usecase.LaunchSendFileIntentUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameDocumentUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameResourceUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.RenameSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.SectionItem
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.ShareFileUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.UploadResourceUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
@@ -81,8 +79,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private val findSectionUseCase: FindSectionUseCase,
     private val findParentSectionOfDocumentUseCase: FindParentSectionOfDocumentUseCase,
     private val findParentSectionOfResourceUseCase: FindParentSectionOfResourceUseCase,
-    private val launchOpenInIntentUseCase: LaunchOpenInIntentUseCase,
-    private val launchSendFileIntentUseCase: LaunchSendFileIntentUseCase,
+    private val shareFileUseCase: ShareFileUseCase,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -699,12 +696,7 @@ internal class FileBrowserViewModel @Inject constructor(
                 return
             }
 
-            val mimeType = result.getMimeType()
-            if (mimeType.startsWith("image/") || mimeType.startsWith("video/") || mimeType.startsWith("audio/")) {
-                launchOpenInIntentUseCase(result)
-            } else {
-                launchSendFileIntentUseCase(result)
-            }
+            shareFileUseCase(result)
         } catch (ex: Exception) {
             Timber.e(ex)
             setError(message = ex.localizedMessage ?: ex.javaClass.name)
