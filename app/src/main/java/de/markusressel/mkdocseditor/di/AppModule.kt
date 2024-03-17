@@ -1,4 +1,4 @@
-package de.markusressel.mkdocseditor.dagger
+package de.markusressel.mkdocseditor.di
 
 import android.accounts.AccountManager
 import android.app.DownloadManager
