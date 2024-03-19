@@ -18,6 +18,7 @@ import de.markusressel.mkdocseditor.feature.browser.data.ROOT_SECTION
 import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.browser.data.SectionBackstackItem
 import de.markusressel.mkdocseditor.feature.browser.data.SectionData
+import de.markusressel.mkdocseditor.feature.browser.domain.usecase.ComputePathToSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.CreateNewDocumentUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.CreateNewSectionUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.DeleteDocumentUseCase
@@ -64,6 +65,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private val getSectionItemsUseCase: GetSectionItemsUseCase,
     private val createNewSectionUseCase: CreateNewSectionUseCase,
     private val searchUseCase: SearchUseCase,
+    private val computePathToSectionUseCase: ComputePathToSectionUseCase,
     private val getCurrentSectionPathUseCase: GetCurrentSectionPathUseCase,
     private val createNewDocumentUseCase: CreateNewDocumentUseCase,
     private val renameDocumentUseCase: RenameDocumentUseCase,
@@ -123,7 +125,7 @@ internal class FileBrowserViewModel @Inject constructor(
                         val parentSectionId = findParentSectionOfDocumentUseCase(event.documentId)
                         parentSectionId?.let {
                             delay(200)
-                            openSection(parentSectionId.id, parentSectionId.name)
+                            openSection(parentSectionId.id)
                             delayUntil { uiState.value.isLoading.not() }
                             _events.send(FileBrowserEvent.OpenDocumentEditor(event.documentId))
                         }
@@ -133,7 +135,7 @@ internal class FileBrowserViewModel @Inject constructor(
                         val parentSection = findParentSectionOfResourceUseCase(event.resourceId)
                         parentSection?.let {
                             delay(200)
-                            openSection(parentSection.id, parentSection.name)
+                            openSection(parentSection.id)
                             parentSection.resources.firstOrNull { it.id == event.resourceId }?.let {
                                 delayUntil { uiState.value.isLoading.not() }
                                 onResourceClicked(it)
@@ -144,7 +146,7 @@ internal class FileBrowserViewModel @Inject constructor(
                     is BusEvent.CodeEditorBusEvent.GoToSection -> {
                         delay(200)
                         findSectionUseCase(event.sectionId).let {
-                            openSection(it.id, it.name)
+                            openSection(it.id)
                         }
                     }
                 }
@@ -456,20 +458,22 @@ internal class FileBrowserViewModel @Inject constructor(
      */
     internal fun openSection(
         sectionId: String,
-        sectionName: String?,
         addToBackstack: Boolean = true,
     ) {
-        if (
-            uiState.value.isSearchExpanded.not()
-            && currentSectionId.value == sectionId
-        ) {
-            // ignore if no search is currently active and this section is already set
-            return
-        }
-
         Timber.d { "Opening Section '${sectionId}'" }
-        if (addToBackstack) {
-            backstack.push(SectionBackstackItem(sectionId, sectionName))
+
+        // determine the path to the given section and create a backstack for it
+        computePathToSectionUseCase(sectionId).let { path ->
+            if (addToBackstack) {
+                backstack.clear()
+                path.filter {
+                    it.id != ROOT_SECTION_ID
+                }.map {
+                    SectionBackstackItem(it.id, it.name)
+                }.let {
+                    backstack.addAll(it)
+                }
+            }
         }
 
         // set the section id on the ViewModel
@@ -505,7 +509,7 @@ internal class FileBrowserViewModel @Inject constructor(
         } else {
             backstack.pop()
         }
-        openSection(backstack.peek().sectionId, backstack.peek().sectionName, false)
+        openSection(backstack.peek().sectionId, false)
         return true
     }
 
@@ -706,7 +710,6 @@ internal class FileBrowserViewModel @Inject constructor(
     private fun onSectionClicked(entity: SectionData) {
         openSection(
             sectionId = entity.id,
-            sectionName = entity.name,
             addToBackstack = true
         )
     }

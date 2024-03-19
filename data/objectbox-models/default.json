@@ -296,7 +296,7 @@
     },
     {
       "id": "7:6823943467723170409",
-      "lastPropertyId": "3:1114644457609536857",
+      "lastPropertyId": "4:625466954520196684",
       "name": "SectionEntity",
       "properties": [
         {
@@ -316,6 +316,14 @@
           "id": "3:1114644457609536857",
           "name": "name",
           "type": 9
+        },
+        {
+          "id": "4:625466954520196684",
+          "name": "parentSectionId",
+          "indexId": "15:2219698567833615695",
+          "type": 11,
+          "flags": 520,
+          "relationTarget": "SectionEntity"
         }
       ],
       "relations": [
@@ -354,7 +362,7 @@
     }
   ],
   "lastEntityId": "8:8318613628503764037",
-  "lastIndexId": "14:5068265450376249861",
+  "lastIndexId": "15:2219698567833615695",
   "lastRelationId": "1:4945763545727530783",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

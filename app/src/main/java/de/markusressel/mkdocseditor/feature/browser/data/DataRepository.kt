@@ -165,11 +165,16 @@ class DataRepository @Inject constructor(
         )
 
 
-    private fun SectionModel.asEntity(documentContentPersistenceManager: DocumentContentPersistenceManager): SectionEntity {
+    private fun SectionModel.asEntity(
+        documentContentPersistenceManager: DocumentContentPersistenceManager,
+        parentSection: SectionEntity? = null
+    ): SectionEntity {
         val s = SectionEntity(0, this.id, this.name)
 
+        s.parentSection.target = parentSection
+
         s.subsections.addAll(this.subsections.map {
-            it.asEntity(documentContentPersistenceManager)
+            it.asEntity(parentSection = s, documentContentPersistenceManager = documentContentPersistenceManager)
         })
 
         s.documents.addAll(this.documents.map {
@@ -427,6 +432,18 @@ class DataRepository @Inject constructor(
 
     suspend fun getAllDocuments(): List<DocumentData> {
         return sectionStore.get(ROOT_SECTION_ID).getDocumentsRecursive()
+    }
+
+    fun getSectionsTo(sectionId: String): List<SectionData> {
+        val result = mutableListOf<SectionData>()
+
+        var section = sectionPersistenceManager.findById(sectionId)
+        while (section != null) {
+            result.add(dataFactory.toSectionData(section))
+            section = section.parentSection.target
+        }
+
+        return result.reversed().toList()
     }
 
 }

@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -126,59 +127,161 @@ internal fun CodeEditorScreenContent(
             }
         }
     ) { paddingValues ->
+        var splitOrientation by remember { mutableStateOf(SplitOrientation.Vertical) }
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(paddingValues),
+                .padding(paddingValues)
+                .onGloballyPositioned { layoutCoordinates ->
+                    val width = layoutCoordinates.size.width
+                    val height = layoutCoordinates.size.height
+                    splitOrientation = when {
+                        width > height -> SplitOrientation.Horizontal
+                        else -> SplitOrientation.Vertical
+                    }
+                },
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-            ) {
-                // Markdown Editor
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    if (uiState.isOfflineModeBannerVisible) {
-                        OfflineModeBanner()
-                    }
-
-                    if (uiState.editModeActive) {
-                        CodeEditorLayout(
-                            modifier = Modifier.fillMaxSize(),
-                            text = tfv,
-                            onTextChanged = onTextChanged,
-                            readOnly = false
-                        )
-                    } else {
-                        CodeEditorLayout(
-                            modifier = Modifier.fillMaxSize(),
-                            text = tfv,
-                            onTextChanged = onTextChanged,
-                            readOnly = true
-                        )
-                    }
+            when (splitOrientation) {
+                SplitOrientation.Vertical -> {
+                    VerticalSplit(
+                        uiState = uiState,
+                        tfv = tfv,
+                        onTextChanged = onTextChanged,
+                        webViewActionFlow = webViewActionFlow
+                    )
                 }
 
-                // Page Preview
-                AnimatedVisibility(
-                    modifier = Modifier.weight(1f),
-                    enter = slideInHorizontally { it },
-                    exit = slideOutHorizontally { it },
-                    visible = uiState.isPreviewVisible
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        uiState.webUrl?.let {
-                            PagePreview(url = it, actions = webViewActionFlow)
-                        }
-                    }
+                SplitOrientation.Horizontal -> {
+                    HorizontalSplit(
+                        uiState = uiState,
+                        tfv = tfv,
+                        onTextChanged = onTextChanged,
+                        webViewActionFlow = webViewActionFlow
+                    )
                 }
             }
         }
     }
+}
+
+@Composable
+internal fun VerticalSplit(
+    uiState: CodeEditorViewModel.UiState,
+    tfv: TextFieldValue,
+    onTextChanged: (TextFieldValue) -> Unit,
+    webViewActionFlow: Flow<WebViewAction>
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        // Markdown Editor
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            if (uiState.isOfflineModeBannerVisible) {
+                OfflineModeBanner()
+            }
+
+            if (uiState.editModeActive) {
+                CodeEditorLayout(
+                    modifier = Modifier.fillMaxSize(),
+                    text = tfv,
+                    onTextChanged = onTextChanged,
+                    readOnly = false
+                )
+            } else {
+                CodeEditorLayout(
+                    modifier = Modifier.fillMaxSize(),
+                    text = tfv,
+                    onTextChanged = onTextChanged,
+                    readOnly = true
+                )
+            }
+        }
+
+        // Page Preview
+        AnimatedVisibility(
+            modifier = Modifier.weight(1f),
+            enter = slideInVertically { it },
+            exit = slideOutVertically { it },
+            visible = uiState.isPreviewVisible
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                uiState.webUrl?.let {
+                    PagePreview(
+                        modifier = Modifier.fillMaxWidth(),
+                        url = it,
+                        actions = webViewActionFlow
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun HorizontalSplit(
+    uiState: CodeEditorViewModel.UiState,
+    tfv: TextFieldValue,
+    onTextChanged: (TextFieldValue) -> Unit,
+    webViewActionFlow: Flow<WebViewAction>
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        // Markdown Editor
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            if (uiState.isOfflineModeBannerVisible) {
+                OfflineModeBanner()
+            }
+
+            if (uiState.editModeActive) {
+                CodeEditorLayout(
+                    modifier = Modifier.fillMaxSize(),
+                    text = tfv,
+                    onTextChanged = onTextChanged,
+                    readOnly = false
+                )
+            } else {
+                CodeEditorLayout(
+                    modifier = Modifier.fillMaxSize(),
+                    text = tfv,
+                    onTextChanged = onTextChanged,
+                    readOnly = true
+                )
+            }
+        }
+
+        // Page Preview
+        AnimatedVisibility(
+            modifier = Modifier.weight(1f),
+            enter = slideInHorizontally { it },
+            exit = slideOutHorizontally { it },
+            visible = uiState.isPreviewVisible
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                uiState.webUrl?.let {
+                    PagePreview(
+                        modifier = Modifier.fillMaxWidth(),
+                        url = it,
+                        actions = webViewActionFlow
+                    )
+                }
+            }
+        }
+    }
+}
+
+enum class SplitOrientation {
+    Vertical,
+    Horizontal
 }
 
 
