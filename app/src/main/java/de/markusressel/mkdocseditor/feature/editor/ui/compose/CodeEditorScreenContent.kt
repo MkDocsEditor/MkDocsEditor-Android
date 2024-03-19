@@ -37,6 +37,7 @@ import androidx.compose.ui.text.coerceIn
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
+import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
@@ -86,6 +87,7 @@ internal fun CodeEditorScreenContent(
             MkDocsEditorTopAppBar<TopAppBarAction.CodeEditor>(
                 title = uiState.title,
                 actions = listOf(
+                    TopAppBarAction.CodeEditor.TogglePreviewAction,
                     TopAppBarAction.CodeEditor.ShowInBrowserAction
                 ),
                 onActionClicked = {
@@ -172,6 +174,23 @@ internal fun CodeEditorScreenContent(
                 }
             }
         }
+    }
+}
+
+
+@Composable
+internal fun TogglePreviewAction(
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    IconButton(
+        modifier = modifier,
+        onClick = onClick
+    ) {
+        Image(
+            asset = GoogleMaterial.Icon.gmd_vertical_split,
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
+        )
     }
 }
 

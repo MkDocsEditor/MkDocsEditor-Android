@@ -15,6 +15,7 @@ import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.extensions.common.android.isComposePreview
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.ShowInBrowserAction
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.TogglePreviewAction
 
 @Composable
 fun MkDocsEditorTopAppBar(
@@ -66,6 +67,12 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
                         )
                     }
 
+                    is TopAppBarAction.CodeEditor.TogglePreviewAction -> {
+                        TogglePreviewAction(
+                            modifier = Modifier.align(Alignment.CenterVertically),
+                            onClick = { onActionClicked(action) }
+                        )
+                    }
                     is TopAppBarAction.CodeEditor.ShowInBrowserAction -> {
                         ShowInBrowserAction(
                             modifier = Modifier.align(Alignment.CenterVertically),

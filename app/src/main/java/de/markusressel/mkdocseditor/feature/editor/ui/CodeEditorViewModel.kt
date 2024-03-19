@@ -579,7 +579,14 @@ internal class CodeEditorViewModel @Inject constructor(
 
     private suspend fun onTopAppBarActionClicked(action: TopAppBarAction.CodeEditor) {
         when (action) {
+            is TopAppBarAction.CodeEditor.TogglePreviewAction -> togglePreviewVisibility()
             is TopAppBarAction.CodeEditor.ShowInBrowserAction -> onOpenInBrowserClicked()
+        }
+    }
+
+    private fun togglePreviewVisibility() {
+        _uiState.update { old ->
+            old.copy(isPreviewVisible = old.isPreviewVisible.not())
         }
     }
 

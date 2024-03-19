@@ -87,6 +87,7 @@ dependencies {
     implementation(libs.mikepenz.iconics.typeface.api)
 
     // fonts
+    implementation(libs.mikepenz.iconics.typeface.community.material)
     implementation(libs.mikepenz.iconics.typeface.google.material)
     implementation(libs.mikepenz.iconics.typeface.material)
 

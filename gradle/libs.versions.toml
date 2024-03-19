@@ -162,6 +162,7 @@ mikepenz-iconics-compose = { group = "com.mikepenz", name = "iconics-compose", v
 mikepenz-iconics-typeface-api = { module = "com.mikepenz:iconics-typeface-api", version.ref = "iconicsVersion" }
 mikepenz-iconics-typeface-material = { group = "com.mikepenz", name = "material-design-iconic-typeface", version = "2.2.0.8-kotlin" }
 mikepenz-iconics-typeface-google-material = { module = "com.mikepenz:google-material-typeface", version = "4.0.0.2-kotlin" }
+mikepenz-iconics-typeface-community-material = { module = "com.mikepenz:community-material-typeface", version = "7.0.96.0-kotlin" }
 
 moshi = { module = "com.squareup.moshi:moshi", version.ref = "moshiVersion" }
 moshi-adapters = { module = "com.squareup.moshi:moshi-adapters", version.ref = "moshiVersion" }
