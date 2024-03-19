@@ -29,6 +29,7 @@ import de.markusressel.mkdocseditor.feature.filepicker.ui.compose.FilePickerScre
 import de.markusressel.mkdocseditor.feature.profile.ui.compose.ProfileScreen
 import de.markusressel.mkdocseditor.feature.search.ui.compose.SearchScreen
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.runBlocking
 
 object FileBrowserScreen : Screen {
     @Composable
@@ -42,7 +43,9 @@ object FileBrowserScreen : Screen {
         BackHandler(
             enabled = uiState.canGoUp,
             onBack = {
-                val consumed = viewModel.navigateUp()
+                val consumed = runBlocking {
+                    viewModel.navigateUp()
+                }
                 if (consumed.not()) {
                     navigator.pop()
                 }

@@ -456,7 +456,7 @@ internal class FileBrowserViewModel @Inject constructor(
      * @param sectionId the section to open
      * @param addToBackstack true, when the section should be added to backstack, false otherwise
      */
-    internal fun openSection(
+    internal suspend fun openSection(
         sectionId: String,
         addToBackstack: Boolean = true,
     ) {
@@ -492,7 +492,7 @@ internal class FileBrowserViewModel @Inject constructor(
      *
      * @return true, when there was an item on the backstack and a navigation was done, false otherwise
      */
-    fun navigateUp(targetSectionId: String? = null): Boolean {
+    suspend fun navigateUp(targetSectionId: String? = null): Boolean {
         if (
             targetSectionId != null
             && (backstack.none { it.sectionId == targetSectionId } || backstack.peek().sectionId == targetSectionId)
@@ -516,7 +516,7 @@ internal class FileBrowserViewModel @Inject constructor(
     /**
      * Show the top level preferences page
      */
-    private fun showTopLevel() {
+    private suspend fun showTopLevel() {
         backstack.clear()
         currentSectionId.value = ROOT_SECTION_ID
         _uiState.update { old ->
@@ -707,7 +707,7 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private fun onSectionClicked(entity: SectionData) {
+    private suspend fun onSectionClicked(entity: SectionData) {
         openSection(
             sectionId = entity.id,
             addToBackstack = true
