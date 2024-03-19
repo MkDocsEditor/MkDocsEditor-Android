@@ -5,6 +5,9 @@ package de.markusressel.mkdocsrestclient
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.result.Result
 import de.markusressel.mkdocsrestclient.document.DocumentModel
+import de.markusressel.mkdocsrestclient.mkdocs.MkDocsConfigModel
+import de.markusressel.mkdocsrestclient.mkdocs.MkDocsConfigThemeModel
+import de.markusressel.mkdocsrestclient.mkdocs.MkDocsConfigThemePalette
 import de.markusressel.mkdocsrestclient.resource.ResourceModel
 import de.markusressel.mkdocsrestclient.section.SectionModel
 import java.util.Date
@@ -236,8 +239,36 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
     override fun enableLogging() {}
     override fun disableLogging() {}
 
-    override suspend fun getMkDocsConfig(): Result<Map<String, Any?>, FuelError> {
-        return Result.success(emptyMap())
+    override suspend fun getMkDocsConfig(): Result<MkDocsConfigModel, FuelError> {
+        return Result.success(
+            MkDocsConfigModel(
+                copyright = "© 2021",
+
+                editUri = "",
+
+                extra = emptyMap(),
+                extraCss = emptyList(),
+                markdownExtensions = emptyList(),
+
+                repoName = "mkdocs",
+                repoUrl = "https://repo.domain.com",
+
+                siteAuthor = "John Doe",
+                siteDescription = "Project documentation with Markdown",
+                siteDir = "/some/path/to/docs/",
+                siteName = "MkDocs",
+                siteUrl = "https://www.mkdocs.org/",
+
+                theme = MkDocsConfigThemeModel(
+                    name = "mkdocs",
+                    palette = MkDocsConfigThemePalette(
+                        Primary = "#000000",
+                        Accent = "#FFFFFF"
+                    ),
+                    customDir = ""
+                ),
+            )
+        )
     }
 }
 

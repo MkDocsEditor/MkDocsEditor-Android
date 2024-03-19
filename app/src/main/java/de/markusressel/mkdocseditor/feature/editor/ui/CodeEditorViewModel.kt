@@ -17,6 +17,7 @@ import de.markusressel.mkdocseditor.extensions.common.safeSubstring
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
+import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentProjectConfigUseCase
 import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindParentSectionOfDocumentUseCase
@@ -59,6 +60,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val dataRepository: DataRepository,
     private val getDocumentUseCase: GetDocumentUseCase,
+    private val getCurrentProjectConfigUseCase: GetCurrentProjectConfigUseCase,
     private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
     private val preferencesHolder: KutePreferencesHolder,
     private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,

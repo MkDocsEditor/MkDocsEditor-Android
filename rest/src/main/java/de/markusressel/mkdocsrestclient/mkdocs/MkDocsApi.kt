@@ -11,6 +11,6 @@ interface MkDocsApi {
     /**
      * Get the MkDocs configuration
      */
-    suspend fun getMkDocsConfig(): Result<Map<String, Any?>, FuelError>
+    suspend fun getMkDocsConfig(): Result<MkDocsConfigModel, FuelError>
 
 }

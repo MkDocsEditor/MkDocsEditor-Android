@@ -12,7 +12,7 @@ class MkDocsApiImpl(
     private val requestManager: RequestManager
 ) : MkDocsApi {
 
-    override suspend fun getMkDocsConfig(): Result<Map<String, Any?>, FuelError> {
+    override suspend fun getMkDocsConfig(): Result<MkDocsConfigModel, FuelError> {
         return requestManager.doRequest(
             url = "/mkdocs/config/",
             method = Method.GET
