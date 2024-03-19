@@ -12,13 +12,6 @@ This project is still a work in progress and is **not yet ready for production**
 
 ![File-Browser](screenshots/FileBrowser-Wide.jpg)
 
-# Build Status
-
-| Master |
-|--------|
-| [![Master](https://travis-ci.org/MkDocsEditor/MkDocsEditor-Android.svg?branch=master)](https://travis-ci.org/MkDocsEditor/MkDocsEditor-Android/branches) |
-| [![codebeat badge](https://codebeat.co/badges/606cd0dd-3e92-4639-904a-9ad5015a5cd3)](https://codebeat.co/projects/github-com-markusressel-MkDocsEditor-Android-master) |
-
 # What is this?
 
 MkDocsEditor aims to provide an easy way for you to manage your existing [MkDocs](https://www.mkdocs.org/) projects:
