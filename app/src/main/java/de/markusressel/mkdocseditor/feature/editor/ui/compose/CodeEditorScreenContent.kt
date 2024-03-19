@@ -1,7 +1,9 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -162,6 +164,8 @@ internal fun CodeEditorScreenContent(
                 // Page Preview
                 AnimatedVisibility(
                     modifier = Modifier.weight(1f),
+                    enter = slideInHorizontally { it },
+                    exit = slideOutHorizontally { it },
                     visible = uiState.isPreviewVisible
                 ) {
                     Column(
