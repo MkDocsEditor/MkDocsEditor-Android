@@ -10,6 +10,8 @@ A realtime collaborative editor for MkDocs projects.
 
 This project is still a work in progress and is **not yet ready for production**.
 
+![File-Browser](screenshots/FileBrowser-Wide.jpg)
+
 # Build Status
 
 | Master |
@@ -28,7 +30,7 @@ MkDocsEditor aims to provide an easy way for you to manage your existing [MkDocs
 * [ ] Document management (`*.md` files)
   * [x] create documents
   * [x] rename documents
-  * [x] edit documents
+  * [x] edit documents in realtime
   * [x] see the result on your hosted website right away
   * [ ] move a document
     * [ ] move all resources that are referenced in it, if possible
@@ -37,9 +39,11 @@ MkDocsEditor aims to provide an easy way for you to manage your existing [MkDocs
 * [ ] Resource file management (any file that is not a markdown file really)
   * [x] upload resource files
   * [x] download linked resources
-  * [x] open linked resources (if supported by another app on your device)
+  * [x] open/share linked resources (if supported by another app on your device)
   * [x] delete resource files
     * [ ] automatically replace any reference to this resource in a document with a "deleted" note
+* [x] Search
+* [x] Full Offline Cache
 
 ## Realtime collaborative editing
 
