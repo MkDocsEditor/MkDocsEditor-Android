@@ -12,6 +12,8 @@ This project is still a work in progress and is **not yet ready for production**
 
 ![File-Browser](screenshots/FileBrowser-Wide.jpg)
 
+![Code Editor](screenshots/CodeEditor.jpg)
+
 # What is this?
 
 MkDocsEditor aims to provide an easy way for you to manage your existing [MkDocs](https://www.mkdocs.org/) projects:
