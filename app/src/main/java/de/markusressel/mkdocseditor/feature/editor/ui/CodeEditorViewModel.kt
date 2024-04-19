@@ -757,7 +757,7 @@ internal class CodeEditorViewModel @Inject constructor(
     /**
      * Called when the user activates the edit mode
      */
-    fun enableEditMode(): Boolean {
+    private fun enableEditMode(): Boolean {
         // invert state of edit mode
         _uiState.update { old ->
             old.copy(
