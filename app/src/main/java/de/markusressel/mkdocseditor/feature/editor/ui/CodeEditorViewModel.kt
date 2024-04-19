@@ -13,7 +13,6 @@ import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.extensions.common.android.launch
-import de.markusressel.mkdocseditor.extensions.common.safeSubstring
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
@@ -23,7 +22,9 @@ import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindParentSectionOfDocumentUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindSectionUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
+import de.markusressel.mkdocseditor.feature.editor.domain.FormatBoldUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatCodeBlockUseCase
+import de.markusressel.mkdocseditor.feature.editor.domain.FormatItalicUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatListBulletedUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatStrikethroughUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUrlUseCase
@@ -74,6 +75,8 @@ internal class CodeEditorViewModel @Inject constructor(
     private val formatCodeBlockUseCase: FormatCodeBlockUseCase,
     private val formatListBulletedUseCase: FormatListBulletedUseCase,
     private val formatStrikethroughUseCase: FormatStrikethroughUseCase,
+    private val formatItalicUseCase: FormatItalicUseCase,
+    private val formatBoldUseCase: FormatBoldUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
@@ -479,28 +482,14 @@ internal class CodeEditorViewModel @Inject constructor(
         val selectionStart = uiState.value.selection?.start ?: 0
         val selectionEnd = uiState.value.selection?.end ?: selectionStart
 
-        // check if the current selection is already bold
-        val selectionIsBold = run {
-            val selectedText =
-                text.safeSubstring((selectionStart - 2), (selectionEnd + 2))
-            selectedText.startsWith("**") && selectedText.endsWith("**")
-        }
+        val (newText, newSelectionStart, newSelectionEnd) = formatBoldUseCase(
+            text,
+            selectionStart,
+            selectionEnd
+        )
 
-        if (selectionIsBold) {
-            val newText = text.substring(0, selectionStart - 2) +
-                text.substring(selectionStart, selectionEnd) +
-                text.substring(selectionEnd + 2)
-            onTextChanged(newText, LinkedList())
-            setSelection(selectionStart - 2, selectionEnd - 2)
-        } else {
-            val newText = text.substring(0, selectionStart) +
-                "**" +
-                text.substring(selectionStart, selectionEnd) +
-                "**" +
-                text.substring(selectionEnd)
-            onTextChanged(newText, LinkedList())
-            setSelection(selectionStart + 2, selectionEnd + 2)
-        }
+        onTextChanged(newText, LinkedList())
+        setSelection(newSelectionStart, newSelectionEnd)
     }
 
     private fun formatItalic() {
@@ -508,28 +497,14 @@ internal class CodeEditorViewModel @Inject constructor(
         val selectionStart = uiState.value.selection?.start ?: 0
         val selectionEnd = uiState.value.selection?.end ?: selectionStart
 
-        // check if the current selection is already italic
-        val selectionIsItalic = run {
-            val selectedText =
-                text.safeSubstring((selectionStart - 1), (selectionEnd + 1))
-            selectedText.startsWith("*") && selectedText.endsWith("*")
-        }
+        val (newText, newSelectionStart, newSelectionEnd) = formatItalicUseCase(
+            text,
+            selectionStart,
+            selectionEnd
+        )
 
-        if (selectionIsItalic) {
-            val newText = text.substring(0, selectionStart - 1) +
-                text.substring(selectionStart, selectionEnd) +
-                text.substring(selectionEnd + 1)
-            onTextChanged(newText, LinkedList())
-            setSelection(selectionStart - 1, selectionEnd - 1)
-        } else {
-            val newText = text.substring(0, selectionStart) +
-                "*" +
-                text.substring(selectionStart, selectionEnd) +
-                "*" +
-                text.substring(selectionEnd)
-            onTextChanged(newText, LinkedList())
-            setSelection(selectionStart + 1, selectionEnd + 1)
-        }
+        onTextChanged(newText, LinkedList())
+        setSelection(newSelectionStart, newSelectionEnd)
     }
 
     private fun formatStrikethrough() {
