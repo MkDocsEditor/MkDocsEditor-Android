@@ -70,6 +70,7 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
                     is TopAppBarAction.CodeEditor.TogglePreviewAction -> {
                         TogglePreviewAction(
                             modifier = Modifier.align(Alignment.CenterVertically),
+                            orientation = action.orientation,
                             onClick = { onActionClicked(action) }
                         )
                     }

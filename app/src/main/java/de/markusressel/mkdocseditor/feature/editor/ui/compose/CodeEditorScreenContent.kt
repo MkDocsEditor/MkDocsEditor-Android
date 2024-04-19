@@ -62,6 +62,8 @@ internal fun CodeEditorScreenContent(
     onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
     webViewActionFlow: Flow<WebViewAction>,
 ) {
+    var splitOrientation by remember { mutableStateOf(SplitOrientation.Vertical) }
+
     var tfv: TextFieldValue by remember(uiState.documentId) {
         val text = uiState.text ?: AnnotatedString("")
         val selection = uiState.selection?.coerceIn(0, text.length) ?: TextRange.Zero
@@ -87,10 +89,10 @@ internal fun CodeEditorScreenContent(
     Scaffold(
         modifier = modifier,
         topBar = {
-            MkDocsEditorTopAppBar<TopAppBarAction.CodeEditor>(
+            MkDocsEditorTopAppBar(
                 title = uiState.title,
                 actions = listOf(
-                    TopAppBarAction.CodeEditor.TogglePreviewAction,
+                    TopAppBarAction.CodeEditor.TogglePreviewAction(splitOrientation),
                     TopAppBarAction.CodeEditor.ShowInBrowserAction
                 ),
                 onActionClicked = {
@@ -127,7 +129,6 @@ internal fun CodeEditorScreenContent(
             }
         }
     ) { paddingValues ->
-        var splitOrientation by remember { mutableStateOf(SplitOrientation.Vertical) }
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -288,6 +289,7 @@ enum class SplitOrientation {
 @Composable
 internal fun TogglePreviewAction(
     modifier: Modifier,
+    orientation: SplitOrientation,
     onClick: () -> Unit
 ) {
     IconButton(
@@ -295,7 +297,10 @@ internal fun TogglePreviewAction(
         onClick = onClick
     ) {
         Image(
-            asset = GoogleMaterial.Icon.gmd_vertical_split,
+            asset = when (orientation) {
+                SplitOrientation.Vertical -> GoogleMaterial.Icon.gmd_horizontal_split
+                SplitOrientation.Horizontal -> GoogleMaterial.Icon.gmd_vertical_split
+            },
             colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
         )
     }
