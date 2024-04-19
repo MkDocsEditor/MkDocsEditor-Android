@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.extensions.common.android.launch
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.profile.domain.GetActiveProfileUseCase
 import de.markusressel.mkdocseditor.feature.profile.domain.GetProfilesUseCase
@@ -55,8 +56,11 @@ internal class ProfileViewModel @Inject constructor(
                     ProfileFabId.DisableEditMode -> TODO()
                 }
 
+                is UiEvent.SwitchProfileClicked -> TODO()
+
                 is UiEvent.BackPressed -> {}
                 is UiEvent.SnackbarActionClicked -> onSnackbarAction(event.snackbar)
+
             }
         }
     }
@@ -81,8 +85,14 @@ internal class ProfileViewModel @Inject constructor(
     data class UiState(
         val fabConfig: FabConfig<ProfileFabId> = FabConfig(),
         val loading: Boolean = false,
+
         val activeProfile: ProfileData? = null,
         val profiles: List<ProfileData> = emptyList(),
+
+        val profilesExpanded: Boolean = false,
+
+        val backendConfigs: List<BackendConfig> = emptyList(),
+
         val snackbar: SnackbarData? = null,
     )
 
@@ -91,6 +101,8 @@ internal class ProfileViewModel @Inject constructor(
 
         data class ExpandableFabItemSelected(val item: FabConfig.Fab<ProfileFabId>) : UiEvent()
         data class SnackbarActionClicked(val snackbar: SnackbarData) : UiEvent()
+
+        data object SwitchProfileClicked : UiEvent()
 
         data object BackPressed : UiEvent()
     }

@@ -82,7 +82,10 @@ internal fun FileBrowserScreenContent(
                     MkDocsEditorTopAppBar<TopAppBarAction.FileBrowser>(
                         canGoBack = false,
                         title = stringResource(id = R.string.screen_files_title),
-                        actions = listOf(TopAppBarAction.FileBrowser.Search),
+                        actions = listOf(
+                            TopAppBarAction.FileBrowser.Search,
+                            TopAppBarAction.FileBrowser.Profile,
+                        ),
                         onActionClicked = { action ->
                             onUiEvent(UiEvent.TopAppBarActionClicked(action))
                         }

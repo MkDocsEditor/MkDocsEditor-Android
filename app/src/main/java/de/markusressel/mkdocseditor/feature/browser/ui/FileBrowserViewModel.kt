@@ -399,8 +399,12 @@ internal class FileBrowserViewModel @Inject constructor(
 
     private suspend fun onTopAppBarActionClicked(action: TopAppBarAction.FileBrowser) {
         when (action) {
-            TopAppBarAction.FileBrowser.Search -> {
+            is TopAppBarAction.FileBrowser.Search -> {
                 onSearchExpandedChanged(true)
+            }
+
+            is TopAppBarAction.FileBrowser.Profile -> {
+                _events.send(FileBrowserEvent.OpenProfileScreen)
             }
         }
     }

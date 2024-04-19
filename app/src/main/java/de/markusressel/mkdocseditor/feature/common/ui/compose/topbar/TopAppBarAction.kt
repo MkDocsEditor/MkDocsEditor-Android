@@ -10,5 +10,6 @@ sealed interface TopAppBarAction {
 
     sealed interface FileBrowser : TopAppBarAction {
         data object Search : FileBrowser
+        data object Profile : FileBrowser
     }
 }
