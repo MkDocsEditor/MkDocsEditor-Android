@@ -453,6 +453,8 @@ internal class CodeEditorViewModel @Inject constructor(
                 is UiEvent.FormatBoldClicked -> formatBold()
                 is UiEvent.FormatItalicClicked -> formatItalic()
                 is UiEvent.FormatStrikethroughClicked -> formatStrikethrough()
+                is UiEvent.FormatListBulletedClicked -> formatListBulleted()
+                is UiEvent.FormatCodeBlockClicked -> formatCodeBlock()
 
                 is UiEvent.InsertFileReferenceClicked -> showResourceSelectionDialog()
                 is UiEvent.ResourceSelected -> {
@@ -551,6 +553,35 @@ internal class CodeEditorViewModel @Inject constructor(
             onTextChanged(newText, LinkedList())
             setSelection(selectionStart + 2, selectionEnd + 2)
         }
+    }
+
+    private fun formatCodeBlock() {
+        val text = uiState.value.text?.toString() ?: ""
+        val selectionStart = uiState.value.selection?.start ?: 0
+        val selectionEnd = uiState.value.selection?.end ?: selectionStart
+
+        val newText = text.substring(0, selectionStart) +
+            "```\n" +
+            text.substring(selectionStart, selectionEnd) +
+            "\n```\n" +
+            text.substring(selectionEnd)
+
+        onTextChanged(newText, LinkedList())
+        setSelection(selectionStart + 4, selectionEnd + 4)
+    }
+
+    private fun formatListBulleted() {
+        val text = uiState.value.text?.toString() ?: ""
+        val selectionStart = uiState.value.selection?.start ?: 0
+        val selectionEnd = uiState.value.selection?.end ?: selectionStart
+
+        val newText = text.substring(0, selectionStart) +
+            "- " +
+            text.substring(selectionStart, selectionEnd) +
+            text.substring(selectionEnd)
+
+        onTextChanged(newText, LinkedList())
+        setSelection(selectionStart + 2, selectionEnd + 2)
     }
 
     private fun insertFileReference(selection: TextRange?, resource: ResourceData) {
@@ -880,6 +911,8 @@ internal class CodeEditorViewModel @Inject constructor(
         data object FormatBoldClicked : UiEvent()
         data object FormatItalicClicked : UiEvent()
         data object FormatStrikethroughClicked : UiEvent()
+        data object FormatListBulletedClicked : UiEvent()
+        data object FormatCodeBlockClicked : UiEvent()
 
         data object InsertFileReferenceClicked : UiEvent()
         data class ResourceSelected(val resource: ResourceData) : UiEvent()

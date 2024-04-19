@@ -44,6 +44,20 @@ internal fun CodeEditorBottomBar(
             )
         }
 
+        IconButton(onClick = { onUiEvent(CodeEditorViewModel.UiEvent.FormatListBulletedClicked) }) {
+            Image(
+                asset = MaterialDesignIconic.Icon.gmi_format_list_bulleted,
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
+            )
+        }
+
+        IconButton(onClick = { onUiEvent(CodeEditorViewModel.UiEvent.FormatCodeBlockClicked) }) {
+            Image(
+                asset = MaterialDesignIconic.Icon.gmi_code,
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
+            )
+        }
+
         IconButton(onClick = { onUiEvent(CodeEditorViewModel.UiEvent.InsertFileReferenceClicked) }) {
             Image(
                 asset = MaterialDesignIconic.Icon.gmi_file_add,
