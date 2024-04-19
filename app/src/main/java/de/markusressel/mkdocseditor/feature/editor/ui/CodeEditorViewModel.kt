@@ -23,6 +23,9 @@ import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindParentSectionOfDocumentUseCase
 import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindSectionUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
+import de.markusressel.mkdocseditor.feature.editor.domain.FormatCodeBlockUseCase
+import de.markusressel.mkdocseditor.feature.editor.domain.FormatListBulletedUseCase
+import de.markusressel.mkdocseditor.feature.editor.domain.FormatStrikethroughUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUrlUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
@@ -68,6 +71,9 @@ internal class CodeEditorViewModel @Inject constructor(
     private val openDocumentInBrowserUseCase: OpenDocumentInBrowserUseCase,
     private val findParentSectionOfDocumentUseCase: FindParentSectionOfDocumentUseCase,
     private val findSectionUseCase: FindSectionUseCase,
+    private val formatCodeBlockUseCase: FormatCodeBlockUseCase,
+    private val formatListBulletedUseCase: FormatListBulletedUseCase,
+    private val formatStrikethroughUseCase: FormatStrikethroughUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
@@ -531,28 +537,14 @@ internal class CodeEditorViewModel @Inject constructor(
         val selectionStart = uiState.value.selection?.start ?: 0
         val selectionEnd = uiState.value.selection?.end ?: selectionStart
 
-        // check if the current selection is already striked through
-        val selectionIsStrikethrough = run {
-            val selectedText =
-                text.substring((selectionStart - 2).coerceAtLeast(0), (selectionEnd + 2).coerceAtMost(text.length))
-            selectedText.startsWith("~~") && selectedText.endsWith("~~")
-        }
+        val (newText, newSelectionStart, newSelectionEnd) = formatStrikethroughUseCase(
+            text,
+            selectionStart,
+            selectionEnd
+        )
 
-        if (selectionIsStrikethrough) {
-            val newText = text.substring(0, selectionStart - 2) +
-                text.substring(selectionStart, selectionEnd) +
-                text.substring(selectionEnd + 2)
-            onTextChanged(newText, LinkedList())
-            setSelection(selectionStart - 2, selectionEnd - 2)
-        } else {
-            val newText = text.substring(0, selectionStart) +
-                "~~" +
-                text.substring(selectionStart, selectionEnd) +
-                "~~" +
-                text.substring(selectionEnd)
-            onTextChanged(newText, LinkedList())
-            setSelection(selectionStart + 2, selectionEnd + 2)
-        }
+        onTextChanged(newText, LinkedList())
+        setSelection(newSelectionStart, newSelectionEnd)
     }
 
     private fun formatCodeBlock() {
@@ -560,14 +552,10 @@ internal class CodeEditorViewModel @Inject constructor(
         val selectionStart = uiState.value.selection?.start ?: 0
         val selectionEnd = uiState.value.selection?.end ?: selectionStart
 
-        val newText = text.substring(0, selectionStart) +
-            "```\n" +
-            text.substring(selectionStart, selectionEnd) +
-            "\n```\n" +
-            text.substring(selectionEnd)
+        val (newText, newSelectionStart, newSelectionEnd) = formatCodeBlockUseCase(text, selectionStart, selectionEnd)
 
         onTextChanged(newText, LinkedList())
-        setSelection(selectionStart + 4, selectionEnd + 4)
+        setSelection(newSelectionStart, newSelectionEnd)
     }
 
     private fun formatListBulleted() {
@@ -575,13 +563,14 @@ internal class CodeEditorViewModel @Inject constructor(
         val selectionStart = uiState.value.selection?.start ?: 0
         val selectionEnd = uiState.value.selection?.end ?: selectionStart
 
-        val newText = text.substring(0, selectionStart) +
-            "- " +
-            text.substring(selectionStart, selectionEnd) +
-            text.substring(selectionEnd)
+        val (newText, newSelectionStart, newSelectionEnd) = formatListBulletedUseCase(
+            text,
+            selectionStart,
+            selectionEnd
+        )
 
         onTextChanged(newText, LinkedList())
-        setSelection(selectionStart + 2, selectionEnd + 2)
+        setSelection(newSelectionStart, newSelectionEnd)
     }
 
     private fun insertFileReference(selection: TextRange?, resource: ResourceData) {
