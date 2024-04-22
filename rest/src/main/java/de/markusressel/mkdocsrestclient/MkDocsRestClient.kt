@@ -59,7 +59,7 @@ class MkDocsRestClient constructor(
     }
 
     override suspend fun getItemTree(): Result<SectionModel, FuelError> {
-        return requestManager.doRequest("/tree/", Method.GET)
+        return getSectionTree()
     }
 
     override fun enableLogging() {

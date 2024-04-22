@@ -27,6 +27,11 @@ import com.github.kittinunf.result.Result
 interface SectionApi {
 
     /**
+     * Get the full tree of all sections
+     */
+    suspend fun getSectionTree(): Result<SectionModel, FuelError>
+
+    /**
      * Get a section
      */
     suspend fun getSection(id: String): Result<SectionModel, FuelError>

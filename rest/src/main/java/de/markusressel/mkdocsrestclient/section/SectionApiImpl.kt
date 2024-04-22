@@ -30,6 +30,10 @@ class SectionApiImpl(
     private val requestManager: RequestManager
 ) : SectionApi {
 
+    override suspend fun getSectionTree(): Result<SectionModel, FuelError> {
+        return requestManager.doRequest(url = "/section/", method = Method.GET)
+    }
+
     override suspend fun getSection(id: String): Result<SectionModel, FuelError> {
         return requestManager.doRequest(
             url = "/section/$id/",
