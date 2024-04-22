@@ -26,6 +26,9 @@ MkDocsEditor aims to provide an easy way for you to manage your existing [MkDocs
   * [x] create documents
   * [x] rename documents
   * [x] edit documents in realtime
+    * [x] Quick formatting toolbar
+    * [x] Syntax highlighting
+    * [x] Markdown preview
   * [x] see the result on your hosted website right away
   * [ ] move a document
     * [ ] move all resources that are referenced in it, if possible
