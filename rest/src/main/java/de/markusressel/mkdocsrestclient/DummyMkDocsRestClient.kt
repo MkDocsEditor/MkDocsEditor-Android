@@ -102,6 +102,10 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
         return Result.success(DemoData.RootSection)
     }
 
+    override suspend fun getSectionTree(): Result<SectionModel, FuelError> {
+        return Result.success(DemoData.RootSection)
+    }
+
     override suspend fun getSection(id: String): Result<SectionModel, FuelError> {
         return Result.success(
             DemoData.RootSection.findRecursive<SectionModel> {
