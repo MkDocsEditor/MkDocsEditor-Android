@@ -1,4 +1,3 @@
-import de.markusressel.mkdocseditor.kotlinOptions
 
 plugins {
     id("mkdocseditor.android.application")
