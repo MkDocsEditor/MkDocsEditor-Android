@@ -14,9 +14,9 @@ import javax.inject.Inject
 abstract class DaggerSupportFragmentBase : Fragment() {
 
     @Inject
-    protected lateinit var iconHandler: IconHandler
+    internal lateinit var iconHandler: IconHandler
 
     @Inject
-    protected lateinit var preferencesHolder: KutePreferencesHolder
+    internal lateinit var preferencesHolder: KutePreferencesHolder
 
 }

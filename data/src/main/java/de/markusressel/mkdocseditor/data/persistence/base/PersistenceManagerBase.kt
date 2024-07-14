@@ -9,10 +9,12 @@ import kotlin.reflect.KClass
 /**
  * Base class of a persistance manager for a specific type
  */
-open class PersistenceManagerBase<EntityType : Any>(val entityType: KClass<EntityType>) {
+open class PersistenceManagerBase<EntityType : Any>(
+    private val entityType: KClass<EntityType>
+) {
 
     @Inject
-    protected lateinit var boxStore: BoxStore
+    internal lateinit var boxStore: BoxStore
 
     private val box: Box<EntityType> by lazy {
         boxStore.boxFor(entityType)
