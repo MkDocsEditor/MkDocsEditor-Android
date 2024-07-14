@@ -5,6 +5,7 @@ clean:
 
 build:
 	./gradlew assembleDebug
+apk: build
 
 buildRelease:
 	./gradlew assembleRelease
