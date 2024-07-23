@@ -3,7 +3,9 @@ package de.markusressel.mkdocseditor.feature.main.ui.compose
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -12,6 +14,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailDefaults
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +37,7 @@ fun MkDocsEditorNavigationRail(
 ) {
     NavigationRail(
         modifier = Modifier.fillMaxHeight(),
+        windowInsets = NavigationRailDefaults.windowInsets.only(sides = WindowInsetsSides.Top)
     ) {
         val primaryItems by remember(navItems) { derivedStateOf { navItems.filterIsInstance<NavItem.Primary>() } }
         val secondaryItems by remember(navItems) { derivedStateOf { navItems.filterIsInstance<NavItem.Secondary>() } }
