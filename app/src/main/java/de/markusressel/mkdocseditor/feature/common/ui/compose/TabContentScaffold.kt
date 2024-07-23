@@ -57,6 +57,9 @@ private fun TabContentScaffoldPreview() {
                     Text(text = "Bottom bar")
                 }
             },
+            floatingActionButton = {
+                Text(text = "Floating action button")
+            },
             content = { paddingValues ->
                 // Content
                 Text(
