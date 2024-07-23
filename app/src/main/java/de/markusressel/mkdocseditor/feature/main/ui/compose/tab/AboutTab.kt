@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.feature.main.ui.compose.tab
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -22,7 +23,9 @@ object AboutTab : Tab {
     @Composable
     override fun Content() {
         AboutScreen(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
         )
     }
 }

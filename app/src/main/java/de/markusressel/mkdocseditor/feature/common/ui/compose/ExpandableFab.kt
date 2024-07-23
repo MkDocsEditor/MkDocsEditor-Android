@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -57,9 +56,7 @@ fun <T> ExpandableFab(
     var expanded by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier
-            .padding(16.dp)
-            .then(modifier),
+        modifier = modifier,
         verticalArrangement = Arrangement.Bottom,
         horizontalAlignment = horizontalAlignment,
     ) {
@@ -175,7 +172,6 @@ fun <T> ExpandableFab(
 private fun ExpandableFabPreview() {
     MkDocsEditorTheme {
         ExpandableFab(
-            modifier = Modifier.fillMaxSize(),
             items = listOf(
                 FabConfig.Fab(
                     id = 0,

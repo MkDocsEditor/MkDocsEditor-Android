@@ -2,10 +2,8 @@ package de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -46,7 +44,8 @@ internal fun BackendConfigEditScreenContent(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
+                    .padding(top = 16.dp)
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 BackendConfigNameEditField(
@@ -119,21 +118,23 @@ internal fun BackendConfigEditScreenContent(
                     },
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                SaveButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = uiState.saveButtonEnabled,
-                    onClick = { onUiEvent(BackendConfigEditViewModel.UiEvent.SaveClicked) }
-                )
-
-                if (uiState.isDeleteButtonEnabled) {
-                    DeleteButton(
+                Column(
+                    modifier = Modifier.padding(top = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    SaveButton(
                         modifier = Modifier.fillMaxWidth(),
-                        onClick = { onUiEvent(BackendConfigEditViewModel.UiEvent.DeleteClicked) }
+                        enabled = uiState.saveButtonEnabled,
+                        onClick = { onUiEvent(BackendConfigEditViewModel.UiEvent.SaveClicked) }
                     )
-                }
 
+                    if (uiState.isDeleteButtonEnabled) {
+                        DeleteButton(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { onUiEvent(BackendConfigEditViewModel.UiEvent.DeleteClicked) }
+                        )
+                    }
+                }
             }
         }
     }

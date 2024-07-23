@@ -4,7 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -48,7 +47,6 @@ internal fun ProfileScreenContent(
         },
         floatingActionButton = {
             ExpandableFab(
-                modifier = Modifier.fillMaxSize(),
                 items = uiState.fabConfig.right,
                 onItemClicked = {
                     onUiEvent(UiEvent.ExpandableFabItemSelected(item = it))

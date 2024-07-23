@@ -127,7 +127,6 @@ internal fun FileBrowserScreenContent(
             },
             floatingActionButton = {
                 ExpandableFab(
-                    modifier = Modifier.fillMaxSize(),
                     items = uiState.fabConfig.right,
                     onItemClicked = {
                         onUiEvent(UiEvent.ExpandableFabItemSelected(item = it))
@@ -148,8 +147,8 @@ internal fun FileBrowserScreenContent(
             }
             Box(
                 Modifier
-                    .padding(paddingValues)
                     .nestedScroll(state.nestedScrollConnection)
+                    .padding(paddingValues)
             ) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()

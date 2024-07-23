@@ -1,11 +1,18 @@
 package de.markusressel.mkdocseditor.feature.search.ui.compose
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,6 +24,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.navigator.LocalNavigator
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.common.ui.compose.LoadingOverlay
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
@@ -31,9 +39,37 @@ internal fun SearchScreenContent(
     onUiEvent: (UiEvent) -> Unit,
 ) {
     val focusRequester = remember { FocusRequester() }
+    val navigator = LocalNavigator.current
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+
+    val leadingIcon = @Composable {
+        val visibilityState = remember {
+            MutableTransitionState(false).apply {
+                targetState = true
+            }
+        }
+
+        AnimatedVisibility(
+            visibleState = visibilityState,
+            enter = expandHorizontally(),
+            exit = shrinkHorizontally(),
+        ) {
+            IconButton(
+                onClick = {
+                    focusRequester.freeFocus()
+                    navigator?.pop()
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onBackground,
+                )
+            }
+        }
     }
 
     SearchBar(
@@ -51,6 +87,7 @@ internal fun SearchScreenContent(
                 )
             )
         },
+        leadingIcon = leadingIcon.takeIf { true },
     ) {
         LoadingOverlay(
             modifier = Modifier.fillMaxSize(),
@@ -71,8 +108,7 @@ internal fun SearchScreenContent(
                         .padding(
                             vertical = 16.dp,
                             horizontal = 16.dp,
-                        )
-                        .verticalScroll(rememberScrollState()),
+                        ),
                     searchTerm = uiState.currentSearchFilter,
                     items = uiState.currentSearchResults,
                     onItemClicked = {

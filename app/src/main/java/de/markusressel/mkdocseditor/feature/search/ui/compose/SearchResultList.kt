@@ -1,8 +1,10 @@
 package de.markusressel.mkdocseditor.feature.search.ui.compose
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
@@ -22,40 +24,45 @@ internal fun SearchResultList(
     onItemClicked: (SearchResultItem) -> Unit,
     onItemLongClicked: (SearchResultItem) -> Unit,
 ) {
-    Column(
+    LazyColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items.forEach { item ->
-            when (item) {
-                is SearchResultItem.Document -> {
-                    DocumentSearchResultItem(
-                        modifier = Modifier.fillMaxWidth(),
-                        searchTerm = searchTerm,
-                        item = item,
-                        onItemClicked = onItemClicked,
-                        onItemLongClicked = onItemLongClicked,
-                    )
-                }
+            item {
+                when (item) {
+                    is SearchResultItem.Document -> {
+                        DocumentSearchResultItem(
+                            modifier = Modifier.fillMaxWidth(),
+                            searchTerm = searchTerm,
+                            item = item,
+                            onItemClicked = onItemClicked,
+                            onItemLongClicked = onItemLongClicked,
+                        )
+                    }
 
-                is SearchResultItem.Section -> {
-                    SectionSearchResultItem(
-                        modifier = Modifier.fillMaxWidth(),
-                        item = item,
-                        onItemClicked = onItemClicked,
-                        onItemLongClicked = onItemLongClicked,
-                    )
-                }
+                    is SearchResultItem.Section -> {
+                        SectionSearchResultItem(
+                            modifier = Modifier.fillMaxWidth(),
+                            item = item,
+                            onItemClicked = onItemClicked,
+                            onItemLongClicked = onItemLongClicked,
+                        )
+                    }
 
-                is SearchResultItem.Resource -> {
-                    ResourceSearchResultItem(
-                        modifier = Modifier.fillMaxWidth(),
-                        item = item,
-                        onItemClicked = onItemClicked,
-                        onItemLongClicked = onItemLongClicked,
-                    )
+                    is SearchResultItem.Resource -> {
+                        ResourceSearchResultItem(
+                            modifier = Modifier.fillMaxWidth(),
+                            item = item,
+                            onItemClicked = onItemClicked,
+                            onItemLongClicked = onItemLongClicked,
+                        )
+                    }
                 }
             }
+        }
+        item {
+            Spacer(modifier = Modifier.imePadding())
         }
     }
 }

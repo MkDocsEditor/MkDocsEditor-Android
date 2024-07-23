@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.feature.main.ui.compose
 
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -28,6 +29,7 @@ import de.markusressel.mkdocseditor.feature.main.ui.compose.tab.FileBrowserTab
 import de.markusressel.mkdocseditor.feature.main.ui.compose.tab.SettingsTab
 import de.markusressel.mkdocseditor.ui.activity.UiState
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 internal fun MainScreenContent(
     navigationType: NavigationLayoutType,
@@ -57,21 +59,27 @@ internal fun MainScreenContent(
         ) { tabNavigator ->
             globalTabNavigator = tabNavigator
 
-            Scaffold(bottomBar = {
-                if (navigationType == NavigationLayoutType.BOTTOM_NAVIGATION) {
-                    BottomBar(
-                        selectedNavItem = tabNavigator.current.toNavItem(),
-                        navItems = uiState.bottomBarNavItems,
-                        onItemSelected = { navItem ->
-                            tabNavigator.current = navItem.toTab(
-                                contentType = contentType,
-                                onBackPressed = onBackPressedCallback
-                            )
-                        },
-                    )
+            Scaffold(
+                bottomBar = {
+                    if (navigationType == NavigationLayoutType.BOTTOM_NAVIGATION) {
+                        BottomBar(
+                            selectedNavItem = tabNavigator.current.toNavItem(),
+                            navItems = uiState.bottomBarNavItems,
+                            onItemSelected = { navItem ->
+                                tabNavigator.current = navItem.toTab(
+                                    contentType = contentType,
+                                    onBackPressed = onBackPressedCallback
+                                )
+                            },
+                        )
+                    }
                 }
-            }) { paddingValues ->
-                Box(modifier = Modifier.padding(paddingValues)) {
+            ) { paddingValues ->
+                Box(
+                    modifier = Modifier.padding(
+                        bottom = paddingValues.calculateBottomPadding()
+                    )
+                ) {
                     Row {
                         // Navigation Rail
                         AnimatedVisibility(

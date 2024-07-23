@@ -21,8 +21,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import de.markusressel.kutepreferences.ui.theme.KutePreferencesTheme
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
+import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 @Composable
 fun MkDocsEditorNavigationRail(
@@ -138,6 +140,23 @@ private fun ColumnScope.SecondaryNavRailItems(
             onClick = {
                 onItemSelected(item)
             }
+        )
+    }
+}
+
+@CombinedPreview
+@Composable
+private fun MkDocsEditorNavigationRailPreview() {
+    KutePreferencesTheme {
+        MkDocsEditorNavigationRail(
+            navItems = listOf(
+                NavItem.BackendSelection,
+                NavItem.FileBrowser,
+                NavItem.Settings,
+                NavItem.About
+            ),
+            selectedNavItem = NavItem.BackendSelection,
+            onItemSelected = {}
         )
     }
 }
