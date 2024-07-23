@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -19,6 +18,7 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.server.MkDocsBackendSection
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.server.MkDocsWebSection
+import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
@@ -28,7 +28,7 @@ internal fun BackendConfigEditScreenContent(
     uiState: BackendConfigEditViewModel.UiState,
     onUiEvent: (BackendConfigEditViewModel.UiEvent) -> Unit,
 ) {
-    Scaffold(
+    TabContentScaffold(
         topBar = {
             MkDocsEditorTopAppBar(
                 title = "Backend Configuration",
@@ -119,7 +119,7 @@ internal fun BackendConfigEditScreenContent(
                 )
 
                 Column(
-                    modifier = Modifier.padding(top = 24.dp),
+                    modifier = Modifier.padding(vertical = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     SaveButton(

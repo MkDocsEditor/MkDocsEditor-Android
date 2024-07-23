@@ -14,7 +14,6 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,6 +26,7 @@ import androidx.compose.ui.zIndex
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
+import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.profile.domain.model.ProfileData
 import de.markusressel.mkdocseditor.feature.profile.ui.ProfileViewModel
@@ -39,7 +39,7 @@ internal fun ProfileScreenContent(
     uiState: ProfileViewModel.UiState,
     onUiEvent: (UiEvent) -> Unit,
 ) {
-    Scaffold(
+    TabContentScaffold(
         topBar = {
             MkDocsEditorTopAppBar(
                 title = stringResource(id = R.string.screen_profile_title),

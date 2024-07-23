@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -46,6 +45,7 @@ import de.markusressel.mkdocseditor.feature.browser.ui.UiEvent
 import de.markusressel.mkdocseditor.feature.browser.ui.UiState
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ErrorCard
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
+import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
@@ -76,7 +76,7 @@ internal fun FileBrowserScreenContent(
             )
         }
 
-        Scaffold(
+        TabContentScaffold(
             topBar = {
                 Column {
                     MkDocsEditorTopAppBar<TopAppBarAction.FileBrowser>(

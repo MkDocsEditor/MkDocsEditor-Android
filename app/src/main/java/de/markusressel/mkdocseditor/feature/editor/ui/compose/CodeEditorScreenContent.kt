@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,6 +42,7 @@ import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
@@ -86,7 +86,7 @@ internal fun CodeEditorScreenContent(
         derivedStateOf { true }
     }
 
-    Scaffold(
+    TabContentScaffold(
         modifier = modifier,
         topBar = {
             MkDocsEditorTopAppBar(
@@ -127,7 +127,7 @@ internal fun CodeEditorScreenContent(
                     onUiEvent = onUiEvent,
                 )
             }
-        }
+        },
     ) { paddingValues ->
         Box(
             modifier = Modifier
