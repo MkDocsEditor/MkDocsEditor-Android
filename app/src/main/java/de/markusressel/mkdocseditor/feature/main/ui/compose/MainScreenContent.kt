@@ -8,8 +8,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
@@ -28,15 +34,39 @@ internal fun MainScreenContent(
     contentType: ContentLayoutType,
     uiState: UiState,
 ) {
+    val navigator = LocalNavigator.current
+    var globalTabNavigator: TabNavigator? by remember {
+        mutableStateOf(null)
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        TabNavigator(uiState.initialTab.toTab(contentType)) { tabNavigator ->
+        val onBackPressedCallback = {
+            onBackPressed(
+                navigator = navigator,
+                tabNavigator = globalTabNavigator,
+                initialTab = uiState.initialTab,
+                contentType = contentType
+            )
+        }
+
+        TabNavigator(
+            tab = uiState.initialTab.toTab(
+                contentType = contentType,
+                onBackPressed = onBackPressedCallback
+            )
+        ) { tabNavigator ->
+            globalTabNavigator = tabNavigator
+
             Scaffold(bottomBar = {
                 if (navigationType == NavigationLayoutType.BOTTOM_NAVIGATION) {
                     BottomBar(
                         selectedNavItem = tabNavigator.current.toNavItem(),
                         navItems = uiState.bottomBarNavItems,
                         onItemSelected = { navItem ->
-                            tabNavigator.current = navItem.toTab(contentType)
+                            tabNavigator.current = navItem.toTab(
+                                contentType = contentType,
+                                onBackPressed = onBackPressedCallback
+                            )
                         },
                     )
                 }
@@ -52,7 +82,10 @@ internal fun MainScreenContent(
                                 selectedNavItem = tabNavigator.current.toNavItem(),
                                 navItems = uiState.bottomBarNavItems,
                                 onItemSelected = { navItem ->
-                                    tabNavigator.current = navItem.toTab(contentType)
+                                    tabNavigator.current = navItem.toTab(
+                                        contentType = contentType,
+                                        onBackPressed = onBackPressedCallback
+                                    )
                                 },
                             )
                         }
@@ -66,10 +99,33 @@ internal fun MainScreenContent(
     }
 }
 
-private fun NavItem.toTab(contentType: ContentLayoutType): Tab = when (this) {
+private fun onBackPressed(
+    navigator: Navigator?,
+    tabNavigator: TabNavigator?,
+    initialTab: NavItem,
+    contentType: ContentLayoutType,
+) {
+    if (navigator != null && navigator.pop()) {
+        val consumed = navigator.popUntil { it is BackendSelectionTab || it is FileBrowserTab }
+        if (consumed || tabNavigator == null) {
+            return
+        }
+    }
+    if (tabNavigator != null) {
+        tabNavigator.current = initialTab.toTab(
+            contentType = contentType,
+            onBackPressed = { onBackPressed(navigator, tabNavigator, initialTab, contentType) }
+        )
+    }
+}
+
+private fun NavItem.toTab(
+    contentType: ContentLayoutType,
+    onBackPressed: () -> Unit
+): Tab = when (this) {
     is NavItem.BackendSelection -> BackendSelectionTab
     is NavItem.FileBrowser -> FileBrowserTab(contentType)
-    is NavItem.Settings -> SettingsTab
+    is NavItem.Settings -> SettingsTab(onBackPressed)
     is NavItem.About -> AboutTab
 }
 

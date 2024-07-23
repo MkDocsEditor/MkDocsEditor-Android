@@ -294,14 +294,14 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 val serverConfig = BackendServerConfig(
                     id = uiState.value.currentBackendConfig?.serverConfig?.id ?: 0,
                     domain = uiState.value.currentDomain,
-                    port = uiState.value.currentPort.toInt(),
+                    port = uiState.value.currentPort.takeIf { it.isNotBlank() }?.toInt() ?: 8123,
                     useSsl = uiState.value.currentUseSsl,
                 )
 
                 val mkDocsWebConfig = MkDocsWebConfig(
                     id = uiState.value.currentBackendConfig?.mkDocsWebConfig?.id ?: 0,
                     domain = uiState.value.currentMkDocsWebDomain,
-                    port = uiState.value.currentMkDocsWebPort.toInt(),
+                    port = uiState.value.currentMkDocsWebPort.takeIf { it.isNotBlank() }?.toInt() ?: 80,
                     useSsl = uiState.value.currentMkDocsWebUseSsl,
                 )
 

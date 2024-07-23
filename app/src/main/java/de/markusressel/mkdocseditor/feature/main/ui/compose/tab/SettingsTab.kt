@@ -8,7 +8,9 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import de.markusressel.mkdocseditor.feature.preferences.ui.compose.PreferencesScreen
 
-object SettingsTab : Tab {
+class SettingsTab(
+    private val onBackPressed: () -> Unit,
+) : Tab {
     override val options: TabOptions
         @Composable
         get() = remember {
@@ -23,10 +25,7 @@ object SettingsTab : Tab {
     override fun Content() {
         PreferencesScreen(
             modifier = Modifier.fillMaxSize(),
-            onBack = {
-                // FIXME:
-//                onUiEvent(UiEvent.BottomNavItemSelected(NavItem.FileBrowser))
-            }
+            onBack = onBackPressed,
         )
     }
 }

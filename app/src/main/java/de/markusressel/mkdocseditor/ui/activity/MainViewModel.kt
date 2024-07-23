@@ -6,7 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigFlowUseCase
-import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
+import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetInitialTabUseCase
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,7 +38,7 @@ internal sealed class UiEvent {}
 @HiltViewModel
 internal class MainViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
-    private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
+    private val getInitialTabUseCase: GetInitialTabUseCase,
     private val getCurrentBackendConfigFlowUseCase: GetCurrentBackendConfigFlowUseCase,
 ) : ViewModel() {
 
@@ -51,13 +51,11 @@ internal class MainViewModel @Inject constructor(
                     NavItem.Settings,
                     NavItem.About,
                 ),
-                initialTab = when {
-                    getCurrentBackendConfigUseCase() != null -> NavItem.FileBrowser
-                    else -> NavItem.BackendSelection
-                },
+                initialTab = getInitialTabUseCase(),
             )
         )
     }
+
     internal val uiState = _uiState.asStateFlow()
 
     init {
@@ -68,7 +66,7 @@ internal class MainViewModel @Inject constructor(
         }
     }
 
-    private fun updateNavItems(backendConfig: BackendConfig?) {
+    private suspend fun updateNavItems(backendConfig: BackendConfig?) {
         val newNavItems = when {
             backendConfig != null -> listOf(
                 NavItem.BackendSelection,
@@ -85,7 +83,8 @@ internal class MainViewModel @Inject constructor(
         }
         _uiState.update { old ->
             old.copy(
-                bottomBarNavItems = newNavItems
+                bottomBarNavItems = newNavItems,
+                initialTab = getInitialTabUseCase(),
             )
         }
     }
