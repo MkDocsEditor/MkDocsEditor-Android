@@ -1,6 +1,8 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -204,20 +207,16 @@ internal fun VerticalSplit(
         // Page Preview
         AnimatedVisibility(
             modifier = Modifier.weight(1f),
-            enter = slideInVertically { it },
-            exit = slideOutVertically { it },
+            enter = fadeIn() + slideInVertically { it },
+            exit = fadeOut() + slideOutVertically { it },
             visible = uiState.isPreviewVisible
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                uiState.webUrl?.let {
-                    PagePreview(
-                        modifier = Modifier.fillMaxWidth(),
-                        url = it,
-                        actions = webViewActionFlow
-                    )
-                }
+            uiState.webUrl?.let {
+                PagePreview(
+                    modifier = Modifier.fillMaxWidth(),
+                    url = it,
+                    actions = webViewActionFlow
+                )
             }
         }
     }
@@ -261,20 +260,16 @@ internal fun HorizontalSplit(
         // Page Preview
         AnimatedVisibility(
             modifier = Modifier.weight(1f),
-            enter = slideInHorizontally { it },
-            exit = slideOutHorizontally { it },
+            enter = fadeIn() + slideInHorizontally { it },
+            exit = fadeOut() + slideOutHorizontally { it },
             visible = uiState.isPreviewVisible
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                uiState.webUrl?.let {
-                    PagePreview(
-                        modifier = Modifier.fillMaxWidth(),
-                        url = it,
-                        actions = webViewActionFlow
-                    )
-                }
+            uiState.webUrl?.let {
+                PagePreview(
+                    modifier = Modifier.fillMaxHeight(),
+                    url = it,
+                    actions = webViewActionFlow
+                )
             }
         }
     }
