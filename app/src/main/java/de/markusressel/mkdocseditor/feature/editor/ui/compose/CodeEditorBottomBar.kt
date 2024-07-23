@@ -1,8 +1,11 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -22,7 +25,12 @@ internal fun CodeEditorBottomBar(
     uiState: CodeEditorViewModel.UiState,
     onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
 ) {
-    BottomAppBar(modifier) {
+    BottomAppBar(
+        modifier = modifier,
+        windowInsets = BottomAppBarDefaults.windowInsets.only(
+            sides = WindowInsetsSides.Left + WindowInsetsSides.Right + WindowInsetsSides.Top
+        )
+    ) {
         IconButton(onClick = { onUiEvent(CodeEditorViewModel.UiEvent.FormatBoldClicked) }) {
             Image(
                 asset = MaterialDesignIconic.Icon.gmi_format_bold,
