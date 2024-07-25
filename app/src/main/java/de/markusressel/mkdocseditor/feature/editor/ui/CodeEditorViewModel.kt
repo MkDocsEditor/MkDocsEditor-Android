@@ -17,10 +17,6 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentProjectConfigUseCase
-import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
-import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
-import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindParentSectionOfDocumentUseCase
-import de.markusressel.mkdocseditor.feature.browser.domain.usecase.FindSectionUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatBoldUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatCodeBlockUseCase
@@ -32,6 +28,10 @@ import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.Error
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.WebViewAction
+import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
+import de.markusressel.mkdocseditor.feature.filebrowser.data.ResourceData
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.FindParentSectionOfDocumentUseCase
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.FindSectionUseCase
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.ui.activity.SnackbarData

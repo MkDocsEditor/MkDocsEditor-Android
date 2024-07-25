@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.SlideTransition
-import de.markusressel.mkdocseditor.feature.browser.ui.compose.FileBrowserScreen
+import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.FileBrowserScreen
 
 @Composable
 internal fun MkDocsEditorListOnlyContent(

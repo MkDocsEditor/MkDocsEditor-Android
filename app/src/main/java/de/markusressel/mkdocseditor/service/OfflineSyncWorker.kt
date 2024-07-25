@@ -8,8 +8,8 @@ import com.github.ajalt.timberkt.Timber
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
-import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
-import de.markusressel.mkdocseditor.feature.browser.ui.ApplyCurrentBackendConfigUseCase
+import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
+import de.markusressel.mkdocseditor.feature.filebrowser.ui.ApplyCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocsrestclient.ErrorResult
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient

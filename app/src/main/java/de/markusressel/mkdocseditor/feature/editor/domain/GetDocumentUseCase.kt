@@ -1,7 +1,7 @@
 package de.markusressel.mkdocseditor.feature.editor.domain
 
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
-import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
+import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
 import de.markusressel.mkdocseditor.util.Resource
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject

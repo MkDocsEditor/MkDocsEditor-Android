@@ -12,10 +12,10 @@ import de.markusressel.kodehighlighter.core.rule.RuleMatch
 import de.markusressel.kodehighlighter.core.util.AnnotatedStringHighlighter
 import de.markusressel.kodehighlighter.language.markdown.MarkdownRuleBook
 import de.markusressel.kodehighlighter.language.markdown.colorscheme.DarkBackgroundColorSchemeWithSpanStyle
-import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
-import de.markusressel.mkdocseditor.feature.browser.data.DocumentData
-import de.markusressel.mkdocseditor.feature.browser.data.ResourceData
-import de.markusressel.mkdocseditor.feature.browser.data.SectionData
+import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
+import de.markusressel.mkdocseditor.feature.filebrowser.data.DocumentData
+import de.markusressel.mkdocseditor.feature.filebrowser.data.ResourceData
+import de.markusressel.mkdocseditor.feature.filebrowser.data.SectionData
 import de.markusressel.mkdocseditor.feature.theme.md_theme_dark_onPrimary
 import de.markusressel.mkdocseditor.feature.theme.md_theme_dark_primary
 import de.markusressel.mkdocseditor.feature.theme.md_theme_light_onPrimary
