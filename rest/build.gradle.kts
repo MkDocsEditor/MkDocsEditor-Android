@@ -33,6 +33,8 @@ dependencies {
     api(libs.markusressel.commons.android.core)
     api(libs.markusressel.commons.android.material)
 
+    api(libs.automerge)
+
 //    testimplementation("junit:junit:4.12")
 //    androidTestImplementation("androidx.test:runner:1.1.1-alpha01")
 //    androidTestImplementation("androidx.test.espresso:espresso-core:3.1.1-alpha01")

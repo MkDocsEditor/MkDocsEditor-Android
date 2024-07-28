@@ -40,6 +40,7 @@ import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.Resource.Success
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
+import de.markusressel.mkdocsrestclient.sync.automerge.Automerge2DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
@@ -105,7 +106,8 @@ internal class CodeEditorViewModel @Inject constructor(
     private val webViewActionChannel = Channel<WebViewAction>(Channel.BUFFERED)
     val webViewActionFlow = webViewActionChannel.receiveAsFlow()
 
-    private var documentSyncManager: DocumentSyncManager? = null
+    //    private var documentSyncManager: DocumentSyncManager? = null
+    private var automergeDocumentSyncManaager: Automerge2DocumentSyncManager? = null
 
     init {
         launch {
@@ -188,7 +190,8 @@ internal class CodeEditorViewModel @Inject constructor(
 
         launch {
             uiState.map { it.editModeActive }.distinctUntilChanged().collectLatest {
-                documentSyncManager?.readOnly = it.not()
+//                documentSyncManager?.readOnly = it.not()
+                automergeDocumentSyncManaager?.readOnly = it.not()
             }
         }
 
@@ -226,7 +229,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 webUrl = documentUrl
             )
         }
-        documentSyncManager?.disconnect(
+        automergeDocumentSyncManaager?.disconnect(
             code = 1000,
             reason = when (documentId) {
                 null -> "Document closed."
@@ -235,14 +238,14 @@ internal class CodeEditorViewModel @Inject constructor(
         )
 
         when (documentId) {
-            null -> documentSyncManager = null
+            null -> automergeDocumentSyncManaager = null
             else -> {
                 val currentBackend = requireNotNull(getCurrentBackendConfigUseCase())
                 val serverConfig = requireNotNull(currentBackend.serverConfig)
                 val authConfig = currentBackend.backendAuthConfig
 
-                documentSyncManager =
-                    createDocumentSyncManager(documentId, serverConfig, authConfig)
+                automergeDocumentSyncManaager = createAutomergeSyncManager(documentId, serverConfig, authConfig)
+
                 loadDocumentResource(documentId)
             }
         }
@@ -254,6 +257,53 @@ internal class CodeEditorViewModel @Inject constructor(
         authConfig: AuthConfig?
     ): DocumentSyncManager {
         return DocumentSyncManager(
+            hostname = serverConfig.domain,
+            port = serverConfig.port,
+            ssl = serverConfig.useSsl,
+            basicAuthConfig = authConfig?.let {
+                BasicAuthConfig(
+                    username = authConfig.username,
+                    password = authConfig.password
+                )
+            },
+            documentId = documentId,
+            currentText = {
+                uiState.value.text?.toString() ?: ""
+            },
+            onConnectionStatusChanged = { connected, errorCode, throwable ->
+                runOnUiThread {
+                    val status = ConnectionStatus(connected, errorCode, throwable)
+                    connectionStatus.value = status
+                }
+            },
+            onInitialText = { initialText ->
+                setEditorText(initialText)
+
+                // when an entity exists and a new text is given update the entity
+                updateDocumentContentInCache(
+                    documentId = documentId,
+                    text = initialText
+                )
+
+                restoreEditorState(
+                    entity = runBlocking { getDocumentUseCase(documentId) }.data,
+                    text = initialText
+                )
+
+                // launch coroutine to continuously watch for changes
+                watchTextChanges()
+            },
+            onTextChanged = ::onTextChanged,
+            readOnly = uiState.value.editModeActive.not()
+        )
+    }
+
+    private fun createAutomergeSyncManager(
+        documentId: String,
+        serverConfig: BackendServerConfig,
+        authConfig: AuthConfig?
+    ): Automerge2DocumentSyncManager {
+        return Automerge2DocumentSyncManager(
             hostname = serverConfig.domain,
             port = serverConfig.port,
             ssl = serverConfig.useSsl,
@@ -611,8 +661,8 @@ internal class CodeEditorViewModel @Inject constructor(
         launch {
             try {
                 try {
-                    while (documentSyncManager?.isConnected == true) {
-                        documentSyncManager?.sync()
+                    while (automergeDocumentSyncManaager?.isConnected == true) {
+                        automergeDocumentSyncManaager?.sync()
                         delay(syncInterval)
                     }
                 } catch (ex: CancellationException) {
@@ -699,10 +749,10 @@ internal class CodeEditorViewModel @Inject constructor(
         _uiState.update { old ->
             old.copy(loading = true)
         }
-        if (documentSyncManager?.isConnected == true) {
-            documentSyncManager?.disconnect(1000, reason = "Editor want's to refresh connection")
+        if (automergeDocumentSyncManaager?.isConnected == true) {
+            automergeDocumentSyncManaager?.disconnect(1000, reason = "Editor want's to refresh connection")
         }
-        documentSyncManager?.connect()
+        automergeDocumentSyncManaager?.connect()
     }
 
     /**
@@ -713,7 +763,7 @@ internal class CodeEditorViewModel @Inject constructor(
      */
     private fun disconnect(reason: String = "None", throwable: Throwable? = null) {
         disableEditMode()
-        documentSyncManager?.disconnect(1000, reason)
+        automergeDocumentSyncManaager?.disconnect(1000, reason)
         connectionStatus.value = ConnectionStatus(connected = false, throwable = throwable)
     }
 
@@ -815,7 +865,7 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     private fun onClose() {
-        documentSyncManager?.disconnect(1000, "Closed")
+        automergeDocumentSyncManaager?.disconnect(1000, "Closed")
     }
 
     companion object {
