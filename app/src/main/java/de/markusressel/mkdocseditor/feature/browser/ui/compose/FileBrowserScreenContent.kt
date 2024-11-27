@@ -22,7 +22,7 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -135,67 +134,60 @@ internal fun FileBrowserScreenContent(
             }
         ) { paddingValues ->
             val state = rememberPullToRefreshState()
-            if (state.isRefreshing) {
-                LaunchedEffect(true) {
-                    onUiEvent(UiEvent.Refresh)
-                }
-            }
-            LaunchedEffect(uiState.isLoading) {
-                if (uiState.isLoading.not()) {
-                    state.endRefresh()
-                }
-            }
+
             Box(
-                Modifier
-                    .nestedScroll(state.nestedScrollConnection)
-                    .padding(paddingValues)
+                Modifier.padding(paddingValues)
             ) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    item {
-                        FileBrowserLoadingIndicator(
-                            modifier = Modifier.fillMaxWidth(),
-                            isLoading = uiState.isLoading
-                        )
-
-                        FileBrowserList(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .wrapContentHeight()
-                                .padding(
-                                    vertical = 16.dp,
-                                    horizontal = 16.dp,
-                                ),
-                            items = uiState.listItems,
-                            onDocumentClicked = {
-                                onUiEvent(UiEvent.DocumentClicked(it))
-                            },
-                            onDocumentLongClicked = {
-                                onUiEvent(UiEvent.DocumentLongClicked(it))
-                            },
-                            onResourceClicked = {
-                                onUiEvent(UiEvent.ResourceClicked(it))
-                            },
-                            onResourceLongClicked = {
-                                onUiEvent(UiEvent.ResourceLongClicked(it))
-                            },
-                            onSectionClicked = {
-                                onUiEvent(UiEvent.SectionClicked(it))
-                            },
-                            onSectionLongClicked = {
-                                onUiEvent(UiEvent.SectionLongClicked(it))
-                            },
-                        )
-
-                        Spacer(modifier = Modifier.height(128.dp))
-                    }
-                }
-
-                PullToRefreshContainer(
+                PullToRefreshBox(
                     modifier = Modifier.align(Alignment.TopCenter),
                     state = state,
-                )
+                    isRefreshing = uiState.isLoading,
+                    onRefresh = {
+                        onUiEvent(UiEvent.Refresh)
+                    }
+                ) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        item {
+                            FileBrowserLoadingIndicator(
+                                modifier = Modifier.fillMaxWidth(),
+                                isLoading = uiState.isLoading
+                            )
+
+                            FileBrowserList(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .wrapContentHeight()
+                                    .padding(
+                                        vertical = 16.dp,
+                                        horizontal = 16.dp,
+                                    ),
+                                items = uiState.listItems,
+                                onDocumentClicked = {
+                                    onUiEvent(UiEvent.DocumentClicked(it))
+                                },
+                                onDocumentLongClicked = {
+                                    onUiEvent(UiEvent.DocumentLongClicked(it))
+                                },
+                                onResourceClicked = {
+                                    onUiEvent(UiEvent.ResourceClicked(it))
+                                },
+                                onResourceLongClicked = {
+                                    onUiEvent(UiEvent.ResourceLongClicked(it))
+                                },
+                                onSectionClicked = {
+                                    onUiEvent(UiEvent.SectionClicked(it))
+                                },
+                                onSectionLongClicked = {
+                                    onUiEvent(UiEvent.SectionLongClicked(it))
+                                },
+                            )
+
+                            Spacer(modifier = Modifier.height(128.dp))
+                        }
+                    }
+                }
             }
         }
     }
