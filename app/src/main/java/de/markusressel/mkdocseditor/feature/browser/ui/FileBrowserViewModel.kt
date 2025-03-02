@@ -3,6 +3,7 @@ package de.markusressel.mkdocseditor.feature.browser.ui
 import androidx.core.text.trimmedLength
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.core.filterByExpectedType
@@ -122,36 +123,34 @@ internal class FileBrowserViewModel @Inject constructor(
     private var sectionJob: Job? = null
 
     init {
-        eventBusManager.observe<BusEvent.CodeEditorBusEvent>().subscribe { event ->
-            launch {
-                when (event) {
-                    is BusEvent.CodeEditorBusEvent.GoToDocument -> {
-                        val parentSectionId = findParentSectionOfDocumentUseCase(event.documentId)
-                        parentSectionId?.let {
-                            delay(200)
-                            openSection(parentSectionId.id)
-                            delayUntil { uiState.value.isLoading.not() }
-                            _events.send(FileBrowserEvent.OpenDocumentEditor(event.documentId))
-                        }
-                    }
-
-                    is BusEvent.CodeEditorBusEvent.GoToResource -> {
-                        val parentSection = findParentSectionOfResourceUseCase(event.resourceId)
-                        parentSection?.let {
-                            delay(200)
-                            openSection(parentSection.id)
-                            parentSection.resources.firstOrNull { it.id == event.resourceId }?.let {
-                                delayUntil { uiState.value.isLoading.not() }
-                                onResourceClicked(it)
-                            }
-                        }
-                    }
-
-                    is BusEvent.CodeEditorBusEvent.GoToSection -> {
+        eventBusManager.observe<BusEvent.CodeEditorBusEvent>().subscribe(viewModelScope) { event ->
+            when (event) {
+                is BusEvent.CodeEditorBusEvent.GoToDocument -> {
+                    val parentSectionId = findParentSectionOfDocumentUseCase(event.documentId)
+                    parentSectionId?.let {
                         delay(200)
-                        findSectionUseCase(event.sectionId).let {
-                            openSection(it.id)
+                        openSection(parentSectionId.id)
+                        delayUntil { uiState.value.isLoading.not() }
+                        _events.send(FileBrowserEvent.OpenDocumentEditor(event.documentId))
+                    }
+                }
+
+                is BusEvent.CodeEditorBusEvent.GoToResource -> {
+                    val parentSection = findParentSectionOfResourceUseCase(event.resourceId)
+                    parentSection?.let {
+                        delay(200)
+                        openSection(parentSection.id)
+                        parentSection.resources.firstOrNull { it.id == event.resourceId }?.let {
+                            delayUntil { uiState.value.isLoading.not() }
+                            onResourceClicked(it)
                         }
+                    }
+                }
+
+                is BusEvent.CodeEditorBusEvent.GoToSection -> {
+                    delay(200)
+                    findSectionUseCase(event.sectionId).let {
+                        openSection(it.id)
                     }
                 }
             }

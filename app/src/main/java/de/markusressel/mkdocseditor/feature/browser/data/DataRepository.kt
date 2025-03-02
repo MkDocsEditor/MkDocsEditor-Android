@@ -27,6 +27,7 @@ import io.objectbox.kotlin.toFlow
 import io.objectbox.query.QueryBuilder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import org.mobilenativefoundation.store.store5.Bookkeeper
@@ -54,6 +55,8 @@ class DataRepository @Inject constructor(
 
     private val dataFactory: DataFactory,
 ) {
+
+    val backgroundSyncInProgress = MutableStateFlow(false)
 
     /**
      * Find all data that matches the given search
@@ -130,7 +133,8 @@ class DataRepository @Inject constructor(
 
     private val sourceOfTruth = SourceOfTruth.of<String, SectionEntity, SectionData>(
         reader = { sectionId ->
-            sectionPersistenceManager.findByIdFlow(sectionId).filterNotNull().map(dataFactory::toSectionData)
+            sectionPersistenceManager.findByIdFlow(sectionId).filterNotNull()
+                .map(dataFactory::toSectionData)
         },
         writer = { key, entity ->
             // NOTE: this always stores the whole tree
@@ -174,7 +178,10 @@ class DataRepository @Inject constructor(
         s.parentSection.target = parentSection
 
         s.subsections.addAll(this.subsections.map {
-            it.asEntity(parentSection = s, documentContentPersistenceManager = documentContentPersistenceManager)
+            it.asEntity(
+                parentSection = s,
+                documentContentPersistenceManager = documentContentPersistenceManager
+            )
         })
 
         s.documents.addAll(this.documents.map {
