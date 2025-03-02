@@ -71,7 +71,7 @@ class KutePreferencesHolder @Inject constructor(
         title = context.getString(R.string.action_force_offline_cache_update_title),
         description = context.getString(R.string.action_force_offline_cache_update_description),
         onClick = {
-            eventBusManager.send(BusEvent.ScheduleOfflineCacheUpdateRequestEvent)
+            eventBusManager.send(BusEvent.SettingsEvent.ScheduleOfflineCacheUpdateRequestEvent)
         }
     )
 
@@ -109,7 +109,7 @@ class KutePreferencesHolder @Inject constructor(
             defaultValue = R.string.theme_dark_value,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { old, new ->
-                eventBusManager.send(BusEvent.ThemeChangedEvent(new))
+                eventBusManager.send(BusEvent.SettingsEvent.ThemeChangedEvent(new))
             })
     }
 
@@ -120,7 +120,7 @@ class KutePreferencesHolder @Inject constructor(
             defaultValue = false,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { old, new ->
-                eventBusManager.send(BusEvent.OfflineModeChangedEvent(new))
+                eventBusManager.send(BusEvent.SettingsEvent.OfflineModeChangedEvent(new))
             })
     }
 
@@ -244,7 +244,7 @@ class KutePreferencesHolder @Inject constructor(
             defaultValue = false,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { old, new ->
-                eventBusManager.send(BusEvent.LogNetworkRequestsChangedEvent(new))
+                eventBusManager.send(BusEvent.DebugEvent.LogNetworkRequestsChangedEvent(new))
             })
     }
 

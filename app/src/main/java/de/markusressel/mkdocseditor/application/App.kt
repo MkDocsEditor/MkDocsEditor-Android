@@ -71,7 +71,7 @@ class App : Application(), Configuration.Provider {
     }
 
     private fun listenToEvents() {
-        eventBusManager.observe<BusEvent.ScheduleOfflineCacheUpdateRequestEvent>()
+        eventBusManager.observe<BusEvent.SettingsEvent.ScheduleOfflineCacheUpdateRequestEvent>()
             .subscribe { event ->
                 runCatching {
                     scheduleOfflineCacheUpdateUseCase(evenInOfflineMode = true)
@@ -80,7 +80,8 @@ class App : Application(), Configuration.Provider {
                 }
             }
 
-        eventBusManager.observe<BusEvent.LogNetworkRequestsChangedEvent>().subscribe { event ->
+        eventBusManager.observe<BusEvent.DebugEvent.LogNetworkRequestsChangedEvent>()
+            .subscribe { event ->
             if (event.enabled) {
                 mkDocsRestClient.enableLogging()
             } else {
@@ -88,7 +89,7 @@ class App : Application(), Configuration.Provider {
             }
         }
         preferencesHolder.logNetworkRequests.persistedValue.let {
-            eventBusManager.send(BusEvent.LogNetworkRequestsChangedEvent(it.value))
+            eventBusManager.send(BusEvent.DebugEvent.LogNetworkRequestsChangedEvent(it.value))
         }
     }
 

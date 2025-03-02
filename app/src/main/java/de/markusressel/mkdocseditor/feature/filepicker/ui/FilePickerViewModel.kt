@@ -17,7 +17,7 @@ internal class FilePickerViewModel @Inject constructor(
     fun onUiEvent(event: UiEvent) {
         when (event) {
             is UiEvent.FilePickerResult -> {
-                eventBusManager.send(BusEvent.FilePickerResult(event.uri))
+                eventBusManager.send(BusEvent.FeatureEvent.FilePickerEvent.FilePickerResult(event.uri))
             }
         }
     }

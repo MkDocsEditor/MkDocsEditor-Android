@@ -26,7 +26,7 @@ class EventBusManager @Inject constructor() {
         }
     }
 
-    fun unregister(obs: Flow<BusEvent.FilePickerResult>) {
+    fun unregister(obs: Flow<BusEvent.FeatureEvent.FilePickerEvent.FilePickerResult>) {
         TODO("Not yet implemented")
     }
 }

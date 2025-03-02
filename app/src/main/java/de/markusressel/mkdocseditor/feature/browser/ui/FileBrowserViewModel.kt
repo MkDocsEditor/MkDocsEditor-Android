@@ -661,7 +661,8 @@ internal class FileBrowserViewModel @Inject constructor(
 
     private suspend fun onUploadResourceFabClicked() {
         _events.send(FileBrowserEvent.OpenResourceSelection)
-        eventBusManager.observe<BusEvent.FilePickerResult>().collect { event ->
+        eventBusManager.observe<BusEvent.FeatureEvent.FilePickerEvent.FilePickerResult>()
+            .collect { event ->
             val uri = event.uri
             if (uri != null) {
                 launch {
