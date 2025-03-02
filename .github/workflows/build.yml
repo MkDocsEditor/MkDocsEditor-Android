@@ -13,6 +13,7 @@ jobs:
       - uses: actions/setup-java@v1
         with:
           java-version: 17
+          distribution: temurin
       - name: Execute unit tests
         run: ./gradlew app:testDebugUnitTest --stacktrace
   ANDROID_BUILD_APK:
@@ -23,6 +24,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           java-version: 17
+          distribution: temurin
 
       - name: Setup custom keystore file
         run: |
