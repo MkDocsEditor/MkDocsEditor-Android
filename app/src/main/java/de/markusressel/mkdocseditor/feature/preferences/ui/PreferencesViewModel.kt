@@ -8,17 +8,17 @@ import de.markusressel.kutepreferences.core.KuteNavigator
 import de.markusressel.kutepreferences.ui.views.KuteStyleManager
 import de.markusressel.kutepreferences.ui.vm.KutePreferencesViewModel
 import de.markusressel.mkdocseditor.BuildConfig
-import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.feature.preferences.domain.LastOfflineCacheUpdatePreferenceItem
 import de.markusressel.mkdocseditor.feature.preferences.ui.compose.LastOfflineCacheUpdatePreferenceItemView
+import de.markusressel.mkdocseditor.network.domain.IsOfflineCacheUpdateInProgressUseCase
 import javax.inject.Inject
 
 @HiltViewModel
 internal class PreferencesViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     preferencesHolder: KutePreferencesHolder,
-    private val dataRepository: DataRepository,
+    private val isOfflineCacheUpdateInProgressUseCase: IsOfflineCacheUpdateInProgressUseCase,
     private val kuteNavigator: KuteNavigator,
 ) : KutePreferencesViewModel(
     navigator = kuteNavigator
@@ -29,7 +29,7 @@ internal class PreferencesViewModel @Inject constructor(
             when (listItem) {
                 is LastOfflineCacheUpdatePreferenceItem -> {
                     val value by preferencesHolder.lastOfflineCacheUpdate.persistedValue.collectAsState()
-                    val isUpdating by dataRepository.backgroundSyncInProgress.collectAsState()
+                    val isUpdating by isOfflineCacheUpdateInProgressUseCase().collectAsState()
                     LastOfflineCacheUpdatePreferenceItemView(
                         lastUpdate = preferencesHolder.lastOfflineCacheUpdate.createDescription(
                             value

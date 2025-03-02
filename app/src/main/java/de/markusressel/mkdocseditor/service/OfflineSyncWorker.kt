@@ -29,12 +29,12 @@ internal class OfflineSyncWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         return try {
-            dataRepository.backgroundSyncInProgress.value = true
+            dataRepository._backgroundSyncInProgress.value = true
             work()
         } catch (e: Exception) {
             Result.failure()
         } finally {
-            dataRepository.backgroundSyncInProgress.value = false
+            dataRepository._backgroundSyncInProgress.value = false
         }
     }
 

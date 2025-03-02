@@ -28,6 +28,7 @@ import io.objectbox.query.QueryBuilder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import org.mobilenativefoundation.store.store5.Bookkeeper
@@ -56,7 +57,13 @@ class DataRepository @Inject constructor(
     private val dataFactory: DataFactory,
 ) {
 
-    val backgroundSyncInProgress = MutableStateFlow(false)
+    /**
+     * Flag indicating if a background sync is currently in progress
+     *
+     * @see [OfflineSyncWorker]
+     */
+    val _backgroundSyncInProgress = MutableStateFlow(false)
+    val backgroundSyncInProgress = _backgroundSyncInProgress.asStateFlow()
 
     /**
      * Find all data that matches the given search
