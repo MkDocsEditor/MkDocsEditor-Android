@@ -3,20 +3,21 @@ package de.markusressel.mkdocseditor.feature.filepicker.ui
 import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.eightbitlab.rxbus.Bus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.event.BusEvent
+import de.markusressel.mkdocseditor.event.EventBusManager
 import javax.inject.Inject
 
 @HiltViewModel
 internal class FilePickerViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
+    private val eventBusManager: EventBusManager,
 ) : ViewModel() {
 
     fun onUiEvent(event: UiEvent) {
         when (event) {
             is UiEvent.FilePickerResult -> {
-                Bus.send(BusEvent.FilePickerResult(event.uri))
+                eventBusManager.send(BusEvent.FilePickerResult(event.uri))
             }
         }
     }

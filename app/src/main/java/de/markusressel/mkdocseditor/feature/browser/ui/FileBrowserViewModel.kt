@@ -3,7 +3,6 @@ package de.markusressel.mkdocseditor.feature.browser.ui
 import androidx.core.text.trimmedLength
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.eightbitlab.rxbus.Bus
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.core.filterByExpectedType
@@ -11,6 +10,8 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.event.BusEvent
+import de.markusressel.mkdocseditor.event.EventBusManager
+import de.markusressel.mkdocseditor.event.subscribe
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.extensions.common.delayUntil
 import de.markusressel.mkdocseditor.feature.browser.data.DocumentData
@@ -54,9 +55,11 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.job
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 import java.util.Stack
 import javax.inject.Inject
+import kotlin.coroutines.coroutineContext
 
 
 @HiltViewModel
@@ -82,6 +85,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private val findParentSectionOfDocumentUseCase: FindParentSectionOfDocumentUseCase,
     private val findParentSectionOfResourceUseCase: FindParentSectionOfResourceUseCase,
     private val shareFileUseCase: ShareFileUseCase,
+    private val eventBusManager: EventBusManager,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -118,7 +122,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private var sectionJob: Job? = null
 
     init {
-        Bus.observe<BusEvent.CodeEditorBusEvent>().subscribe { event ->
+        eventBusManager.observe<BusEvent.CodeEditorBusEvent>().subscribe { event ->
             launch {
                 when (event) {
                     is BusEvent.CodeEditorBusEvent.GoToDocument -> {
@@ -658,8 +662,7 @@ internal class FileBrowserViewModel @Inject constructor(
 
     private suspend fun onUploadResourceFabClicked() {
         _events.send(FileBrowserEvent.OpenResourceSelection)
-        val obs = Bus.observe<BusEvent.FilePickerResult>()
-        obs.subscribe { event ->
+        eventBusManager.observe<BusEvent.FilePickerResult>().collect { event ->
             val uri = event.uri
             if (uri != null) {
                 launch {
@@ -672,7 +675,7 @@ internal class FileBrowserViewModel @Inject constructor(
                     }
                 }
             }
-            Bus.unregister(obs)
+            coroutineContext.job.cancel()
         }
     }
 

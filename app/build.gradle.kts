@@ -107,10 +107,6 @@ dependencies {
     // optional - Test helpers
     androidTestImplementation(libs.androidx.work.testing)
 
-    // RxBus (event bus)
-    implementation(libs.rxkotlin)
-    implementation(libs.rxbus)
-
     // Permissions
     implementation(libs.dexter)
 

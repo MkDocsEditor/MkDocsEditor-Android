@@ -5,13 +5,14 @@ import androidx.emoji.bundled.BundledEmojiCompatConfig
 import androidx.emoji.text.EmojiCompat
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
-import com.eightbitlab.rxbus.Bus
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.HiltAndroidApp
 import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.application.log.FileTree
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.event.BusEvent
+import de.markusressel.mkdocseditor.event.EventBusManager
+import de.markusressel.mkdocseditor.event.subscribe
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.domain.ScheduleOfflineCacheUpdateUseCase
@@ -45,6 +46,9 @@ class App : Application(), Configuration.Provider {
     @Inject
     internal lateinit var scheduleOfflineCacheUpdateUseCase: ScheduleOfflineCacheUpdateUseCase
 
+    @Inject
+    internal lateinit var eventBusManager: EventBusManager
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
@@ -67,17 +71,16 @@ class App : Application(), Configuration.Provider {
     }
 
     private fun listenToEvents() {
-        Bus.observe<BusEvent.ScheduleOfflineCacheUpdateRequestEvent>().subscribe { event ->
-            MainScope().launch {
+        eventBusManager.observe<BusEvent.ScheduleOfflineCacheUpdateRequestEvent>()
+            .subscribe { event ->
                 runCatching {
                     scheduleOfflineCacheUpdateUseCase(evenInOfflineMode = true)
                 }.onFailure {
                     Timber.e(it) { "Failed to schedule offline cache update" }
                 }
             }
-        }
 
-        Bus.observe<BusEvent.LogNetworkRequestsChangedEvent>().subscribe { event ->
+        eventBusManager.observe<BusEvent.LogNetworkRequestsChangedEvent>().subscribe { event ->
             if (event.enabled) {
                 mkDocsRestClient.enableLogging()
             } else {
@@ -85,7 +88,7 @@ class App : Application(), Configuration.Provider {
             }
         }
         preferencesHolder.logNetworkRequests.persistedValue.let {
-            Bus.send(BusEvent.LogNetworkRequestsChangedEvent(it.value))
+            eventBusManager.send(BusEvent.LogNetworkRequestsChangedEvent(it.value))
         }
     }
 

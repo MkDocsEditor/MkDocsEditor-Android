@@ -8,11 +8,20 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.eightbitlab.rxbus.Bus
 import de.markusressel.mkdocseditor.event.BusEvent
+import de.markusressel.mkdocseditor.event.EventBusManager
 import de.markusressel.mkdocseditor.feature.search.ui.SearchViewModel
+import javax.inject.Inject
 
-object SearchScreen : Screen {
+abstract class HiltScreen : Screen {
+
+    @field:Inject
+    internal lateinit var eventBusManager: EventBusManager
+
+}
+
+object SearchScreen : HiltScreen() {
+
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
@@ -28,17 +37,17 @@ object SearchScreen : Screen {
 
                     is SearchViewModel.UiAction.NavigateToDocument -> {
                         navigator.pop()
-                        Bus.send(BusEvent.CodeEditorBusEvent.GoToDocument(event.documentId))
+                        eventBusManager.send(BusEvent.CodeEditorBusEvent.GoToDocument(event.documentId))
                     }
 
                     is SearchViewModel.UiAction.NavigateToResource -> {
                         navigator.pop()
-                        Bus.send(BusEvent.CodeEditorBusEvent.GoToResource(event.resourceId))
+                        eventBusManager.send(BusEvent.CodeEditorBusEvent.GoToResource(event.resourceId))
                     }
 
                     is SearchViewModel.UiAction.NavigateToSection -> {
                         navigator.pop()
-                        Bus.send(BusEvent.CodeEditorBusEvent.GoToSection(event.sectionId))
+                        eventBusManager.send(BusEvent.CodeEditorBusEvent.GoToSection(event.sectionId))
                     }
                 }
             }

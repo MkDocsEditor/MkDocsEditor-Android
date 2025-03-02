@@ -45,8 +45,6 @@ objectboxVersion = "3.7.1"
 okhttp = "4.10.0"
 pagingCompose = "3.3.6"
 pagingRuntimeKtx = "3.3.6"
-rxbus = "1.0.2"
-rxkotlin = "2.3.0"
 store4 = "4.0.7"
 store5 = "5.0.0-beta02"
 typedPreferences = "v2.1.1"
@@ -174,8 +172,6 @@ objectbox-android = { module = "io.objectbox:objectbox-android", version.ref = "
 objectbox-gradle-plugin = { group = "io.objectbox", name = "objectbox-gradle-plugin", version.ref = "objectboxVersion" }
 
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
-rxbus = { module = "com.eightbitlab:rxbus", version.ref = "rxbus" }
-rxkotlin = { module = "io.reactivex.rxjava2:rxkotlin", version.ref = "rxkotlin" }
 
 store4 = { module = "org.mobilenativefoundation.store:store4", version.ref = "store4" }
 store5 = { module = "org.mobilenativefoundation.store:store5", version.ref = "store5" }
