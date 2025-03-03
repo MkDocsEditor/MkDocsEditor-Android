@@ -105,7 +105,7 @@ androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "
 
 aghajari-annotatedtext = { module = "io.github.aghajari:AnnotatedText", version.ref = "annotatedText" }
 appauth = { module = "net.openid:appauth", version.ref = "appauthVersion" }
-automerge = { group = "org.automerge", name = "automerge", version = "0.0.6" }
+automerge = { group = "org.automerge", name = "automerge", version = "0.0.7" }
 
 commons-validator = { group = "commons-validator", name = "commons-validator", version = "1.9.0" }
 
