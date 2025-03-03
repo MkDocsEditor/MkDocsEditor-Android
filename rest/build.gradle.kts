@@ -15,6 +15,9 @@ dependencies {
     ksp(libs.moshi.kotlin.codegen)
     implementation(libs.moshi.adapters)
 
+    // for synchronizing incremental changes in a document
+    implementation(libs.automerge)
+
     //for JVM
     api(libs.fuel)
     //for Kotlin Coroutines
