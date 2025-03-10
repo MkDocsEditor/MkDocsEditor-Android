@@ -54,7 +54,7 @@ webkitVersion = "1.12.1"
 windowVersion = "1.3.0"
 uiViewbinding = "1.7.8"
 workTesting = "2.10.0"
-voyager = "1.1.0-beta02"
+voyager = "1.1.0-beta03"
 zoomlayout = "1.9.0"
 
 [libraries]
