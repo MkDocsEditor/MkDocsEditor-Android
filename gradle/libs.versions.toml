@@ -31,6 +31,7 @@ hiltNavigationCompose = "1.3.0"
 iconicsVersion = "5.5.0-compose01"
 javaxAnnotationVersion = "10.0-b28"
 junit4 = "4.13.2"
+junit5 = "5.9.1"
 kotlin = "2.2.21"
 kotlinCoroutinesCore = "1.10.2"
 kotlinCoroutinesAndroid = "1.10.2"
@@ -201,6 +202,7 @@ voyager-rxjava = { module = "cafe.adriel.voyager:voyager-rxjava", version.ref = 
 zoomlayout = { module = "com.otaliastudios:zoomlayout", version.ref = "zoomlayout" }
 
 junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
+junit5 = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit5" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "androidxTestEspressoCore" }
 
