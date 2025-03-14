@@ -36,7 +36,10 @@ dependencies {
     api(libs.markusressel.commons.android.core)
     api(libs.markusressel.commons.android.material)
 
-//    testimplementation("junit:junit:4.12")
+    testImplementation(libs.junit5)
+    testImplementation(libs.mockk)
+    testImplementation(libs.mockk.android)
+    testImplementation(libs.kluent)
 //    androidTestImplementation("androidx.test:runner:1.1.1-alpha01")
 //    androidTestImplementation("androidx.test.espresso:espresso-core:3.1.1-alpha01")
 }
