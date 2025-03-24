@@ -175,7 +175,7 @@ okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 
 store4 = { module = "org.mobilenativefoundation.store:store4", version.ref = "store4" }
 store5 = { module = "org.mobilenativefoundation.store:store5", version.ref = "store5" }
-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version = "0.20.2" }
+atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version = "0.27.0" }
 
 timber = { group = "com.jakewharton.timber", name = "timber", version = "5.0.1" }
 timberkt = { group = "com.github.ajalt", name = "timberkt", version = "1.5.1" }
