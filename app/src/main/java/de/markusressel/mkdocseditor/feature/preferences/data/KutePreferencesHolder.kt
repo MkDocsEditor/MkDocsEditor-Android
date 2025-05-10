@@ -3,7 +3,6 @@
 package de.markusressel.mkdocseditor.feature.preferences.data
 
 import android.content.Context
-import com.eightbitlab.rxbus.Bus
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.commons.android.material.toast
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
@@ -20,6 +19,7 @@ import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
 import de.markusressel.mkdocseditor.event.BusEvent
+import de.markusressel.mkdocseditor.event.EventBusManager
 import de.markusressel.mkdocseditor.feature.preferences.domain.LastOfflineCacheUpdatePreferenceItem
 import de.markusressel.mkdocseditor.ui.IconHandler
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -42,6 +42,7 @@ class KutePreferencesHolder @Inject constructor(
     private val documentPersistenceManager: DocumentPersistenceManager,
     private val documentContentPersistenceManager: DocumentContentPersistenceManager,
     private val resourcePersistenceManager: ResourcePersistenceManager,
+    private val eventBusManager: EventBusManager,
 ) {
 
     val offlineCacheCategory by lazy {
@@ -70,7 +71,7 @@ class KutePreferencesHolder @Inject constructor(
         title = context.getString(R.string.action_force_offline_cache_update_title),
         description = context.getString(R.string.action_force_offline_cache_update_description),
         onClick = {
-            Bus.send(BusEvent.ScheduleOfflineCacheUpdateRequestEvent)
+            eventBusManager.send(BusEvent.SettingsEvent.ScheduleOfflineCacheUpdateRequestEvent)
         }
     )
 
@@ -108,7 +109,7 @@ class KutePreferencesHolder @Inject constructor(
             defaultValue = R.string.theme_dark_value,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { old, new ->
-                Bus.send(BusEvent.ThemeChangedEvent(new))
+                eventBusManager.send(BusEvent.SettingsEvent.ThemeChangedEvent(new))
             })
     }
 
@@ -119,7 +120,7 @@ class KutePreferencesHolder @Inject constructor(
             defaultValue = false,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { old, new ->
-                Bus.send(BusEvent.OfflineModeChangedEvent(new))
+                eventBusManager.send(BusEvent.SettingsEvent.OfflineModeChangedEvent(new))
             })
     }
 
@@ -243,7 +244,7 @@ class KutePreferencesHolder @Inject constructor(
             defaultValue = false,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { old, new ->
-                Bus.send(BusEvent.LogNetworkRequestsChangedEvent(new))
+                eventBusManager.send(BusEvent.DebugEvent.LogNetworkRequestsChangedEvent(new))
             })
     }
 

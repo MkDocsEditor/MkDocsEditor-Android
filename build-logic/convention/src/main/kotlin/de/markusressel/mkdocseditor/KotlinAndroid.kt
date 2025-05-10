@@ -13,8 +13,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-const val COMPILE_SDK = 34
-const val TARGET_SDK = 34
+const val COMPILE_SDK = 35
+const val TARGET_SDK = 35
 
 /**
  * Configure base Kotlin with Android options

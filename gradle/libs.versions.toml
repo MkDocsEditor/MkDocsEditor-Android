@@ -1,62 +1,60 @@
 [versions]
-aboutlibrariesVersion = "10.9.1"
-androidDesugarJdkLibs = "2.0.4"
-androidGradlePlugin = "8.5.2"
-androidxActivity = "1.9.1"
-androidxActivityCompose = "1.9.1"
+aboutlibrariesVersion = "11.6.3"
+androidDesugarJdkLibs = "2.1.5"
+androidGradlePlugin = "8.9.1"
+androidxActivity = "1.10.1"
+androidxActivityCompose = "1.10.1"
 androidxAppCompat = "1.7.0"
-androidxDatastore = "1.1.1"
-androidxComposeBom = "2024.06.00"
-androidxCore = "1.13.1"
-androidxLifecycle = "2.8.4"
+androidxDatastore = "1.1.3"
+androidxComposeBom = "2025.03.00"
+androidxCore = "1.15.0"
+androidxLifecycle = "2.8.7"
 androidxTestExtJunit = "1.2.1"
 androidxTestEspressoCore = "3.6.1"
-androidxWork = "2.9.1"
+androidxWork = "2.10.0"
 annotatedText = "1.0.0"
-annotation = "1.8.2"
+annotation = "1.9.1"
 appauthVersion = "0.11.1"
 browserVersion = "1.8.0"
 codeHighlighterVersion = "4.0.3"
-collectionKtx = "1.4.3"
+collectionKtx = "1.4.5"
 commonsVersion = "master-SNAPSHOT"
-composeShimmer = "1.3.0"
-dexter = "6.2.2"
+composeShimmer = "1.3.1"
+dexter = "6.2.3"
 emojiBundled = "1.1.0"
 emoji = "1.1.0"
-fragmentKtx = "1.8.2"
+fragmentKtx = "1.8.6"
 fuelVersion = "2.3.1"
-hilt = "2.51.1"
+hilt = "2.55"
 hiltExt = "1.2.0"
 hiltNavigationCompose = "1.2.0"
-iconicsVersion = "5.4.0"
+iconicsVersion = "5.5.0-compose01"
 javaxAnnotationVersion = "10.0-b28"
 junit4 = "4.13.2"
-kotlin = "2.0.0"
+kotlin = "2.1.10"
 kotlinCoroutinesCore = "1.8.1"
 kotlinCoroutinesAndroid = "1.8.1"
-ksp = "2.0.0-1.0.23"
-kutePreferences = "67bfc43fd9"
-lifecycleCommonJava8 = "2.8.4"
-lifecycleViewmodelKtx = "2.8.4"
+ksp = "2.1.10-1.0.31"
+kutePreferences = "0bdc308a3b"
+lifecycleCommonJava8 = "2.8.7"
+lifecycleViewmodelKtx = "2.8.7"
 liveevent = "1.2.0"
-material3WindowSizeClass = "1.2.1"
-moshiVersion = "1.15.0"
-objectboxVersion = "3.7.1"
+material3WindowSizeClass = "1.3.1"
+moshiVersion = "1.15.2"
+objectboxVersion = "4.2.0"
 okhttp = "4.10.0"
-pagingCompose = "3.3.2"
-pagingRuntimeKtx = "3.3.2"
-rxbus = "1.0.2"
-rxkotlin = "2.3.0"
+pagingCompose = "3.3.6"
+pagingRuntimeKtx = "3.3.6"
 store4 = "4.0.7"
 store5 = "5.0.0-beta02"
 typedPreferences = "v2.1.1"
 materialDialogs = "0.9.0"
-uiToolingVersion = "1.6.8"
-webkitVersion = "1.11.0"
+uiToolingVersion = "1.7.8"
+webkitVersion = "1.12.1"
 windowVersion = "1.3.0"
-uiViewbinding = "1.6.8"
-workTesting = "2.9.1"
-voyager = "1.1.0-beta02"
+uiViewbinding = "1.7.8"
+workTesting = "2.10.0"
+voyager = "1.1.0-beta03"
 zoomlayout = "1.9.0"
 
 [libraries]
@@ -80,7 +78,7 @@ androidx-compose-animation-graphics = { group = "androidx.compose.animation", na
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "androidxComposeBom" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
 androidx-compose-material = { group = "androidx.compose.material", name = "material" }
-androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version = "1.2.1" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version = "1.3.1" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-compose-ui-text = { group = "androidx.compose.ui", name = "ui-text" }
@@ -107,7 +105,7 @@ androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "
 
 aghajari-annotatedtext = { module = "io.github.aghajari:AnnotatedText", version.ref = "annotatedText" }
 appauth = { module = "net.openid:appauth", version.ref = "appauthVersion" }
-automerge = { group = "org.automerge", name = "automerge", version = "0.0.6" }
+automerge = { group = "org.automerge", name = "automerge", version = "0.0.7" }
 
 commons-validator = { group = "commons-validator", name = "commons-validator", version = "1.9.0" }
 
@@ -119,7 +117,7 @@ fuel-android = { module = "com.github.kittinunf.fuel:fuel-android", version.ref 
 fuel-coroutines = { module = "com.github.kittinunf.fuel:fuel-coroutines", version.ref = "fuelVersion" }
 fuel-moshi = { module = "com.github.kittinunf.fuel:fuel-moshi", version.ref = "fuelVersion" }
 
-gson = { group = "com.google.code.gson", name = "gson", version = "2.11.0" }
+gson = { group = "com.google.code.gson", name = "gson", version = "2.12.1" }
 
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
@@ -160,7 +158,7 @@ mikepenz-iconics-views = { group = "com.mikepenz", name = "iconics-views", versi
 mikepenz-iconics-compose = { group = "com.mikepenz", name = "iconics-compose", version.ref = "iconicsVersion" }
 mikepenz-iconics-typeface-api = { module = "com.mikepenz:iconics-typeface-api", version.ref = "iconicsVersion" }
 mikepenz-iconics-typeface-material = { group = "com.mikepenz", name = "material-design-iconic-typeface", version = "2.2.0.8-kotlin" }
-mikepenz-iconics-typeface-google-material = { module = "com.mikepenz:google-material-typeface", version = "4.0.0.2-kotlin" }
+mikepenz-iconics-typeface-google-material = { module = "com.mikepenz:google-material-typeface", version = "4.0.0.3-kotlin" }
 mikepenz-iconics-typeface-community-material = { module = "com.mikepenz:community-material-typeface", version = "7.0.96.0-kotlin" }
 
 moshi = { module = "com.squareup.moshi:moshi", version.ref = "moshiVersion" }
@@ -174,12 +172,10 @@ objectbox-android = { module = "io.objectbox:objectbox-android", version.ref = "
 objectbox-gradle-plugin = { group = "io.objectbox", name = "objectbox-gradle-plugin", version.ref = "objectboxVersion" }
 
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
-rxbus = { module = "com.eightbitlab:rxbus", version.ref = "rxbus" }
-rxkotlin = { module = "io.reactivex.rxjava2:rxkotlin", version.ref = "rxkotlin" }
 
 store4 = { module = "org.mobilenativefoundation.store:store4", version.ref = "store4" }
 store5 = { module = "org.mobilenativefoundation.store:store5", version.ref = "store5" }
-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version = "0.20.2" }
+atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version = "0.27.0" }
 
 timber = { group = "com.jakewharton.timber", name = "timber", version = "5.0.1" }
 timberkt = { group = "com.github.ajalt", name = "timberkt", version = "1.5.1" }

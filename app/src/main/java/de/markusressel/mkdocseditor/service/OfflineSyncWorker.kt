@@ -14,7 +14,6 @@ import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHold
 import de.markusressel.mkdocsrestclient.ErrorResult
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import de.markusressel.mkdocsrestclient.deserializer
-import kotlinx.coroutines.coroutineScope
 
 
 @HiltWorker
@@ -28,21 +27,32 @@ internal class OfflineSyncWorker @AssistedInject constructor(
     private val preferencesHolder: KutePreferencesHolder,
 ) : CoroutineWorker(appContext, workerParams) {
 
-    override suspend fun doWork(): Result = coroutineScope {
+    override suspend fun doWork(): Result {
+        return try {
+            dataRepository._backgroundSyncInProgress.value = true
+            work()
+        } catch (e: Exception) {
+            Result.failure()
+        } finally {
+            dataRepository._backgroundSyncInProgress.value = false
+        }
+    }
+
+    private suspend fun work(): Result {
         val documentIds = inputData.getStringArray(DOCUMENT_IDS_KEY)
         if (documentIds == null) {
             Timber.wtf { "Missing documentIds parameter!" }
-            return@coroutineScope Result.failure()
+            return Result.failure()
         }
 
         try {
             applyCurrentBackendConfigUseCase()
         } catch (ex: Exception) {
             Timber.e(ex)
-            return@coroutineScope Result.failure()
+            return Result.failure()
         }
 
-        Timber.d { "Scheduling background thread for updating offline cache of ${documentIds.size} documents..." }
+        Timber.d { "Running background worker for updating offline cache of ${documentIds.size} documents..." }
         // use random order to evenly distribute probability of caching a document
         documentIds.toSet().shuffled().forEach { documentId ->
             restClient.getDocumentContent(documentId).fold(success = { text ->
@@ -68,7 +78,7 @@ internal class OfflineSyncWorker @AssistedInject constructor(
 
         Timber.d { "Offline cache sync job complete." }
         preferencesHolder.lastOfflineCacheUpdate.updateToNow()
-        Result.success()
+        return Result.success()
     }
 
     companion object {
