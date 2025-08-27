@@ -1,6 +1,6 @@
 package de.markusressel.mkdocseditor.network.domain
 
-import de.markusressel.mkdocseditor.feature.browser.data.DataRepository
+import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 import javax.inject.Singleton

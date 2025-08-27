@@ -18,17 +18,26 @@ android {
 
         versionCode = 1
         versionName = "0.1.0"
-
-        setProperty("archivesBaseName", "MkDocsEditor_v${versionName}_(${versionCode})")
     }
 
-    kotlinOptions {
-        freeCompilerArgs = freeCompilerArgs + listOf(
-            "-opt-in=kotlin.RequiresOptIn",
-            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-            "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
-            "-opt-in=androidx.compose.animation.ExperimentalAnimationApi"
-        )
+    androidComponents {
+        onVariants { variant ->
+            variant.outputs.forEach { output ->
+                val outputImpl = output as com.android.build.api.variant.impl.VariantOutputImpl
+                outputImpl.outputFileName.set("MkDocsEditor_v${defaultConfig.versionName}_(${defaultConfig.versionCode}).apk")
+            }
+        }
+    }
+
+    kotlin {
+        compilerOptions {
+            freeCompilerArgs.addAll(
+                "-opt-in=kotlin.RequiresOptIn",
+                "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+                "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
+                "-opt-in=androidx.compose.animation.ExperimentalAnimationApi"
+            )
+        }
     }
 }
 

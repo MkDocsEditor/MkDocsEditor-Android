@@ -13,7 +13,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-const val COMPILE_SDK = 35
+const val COMPILE_SDK = 36
 const val TARGET_SDK = 35
 
 /**
@@ -27,7 +27,7 @@ internal fun Project.configureKotlinAndroid(
 
         defaultConfig {
             minSdk = 29
-            buildToolsVersion = "34.0.0"
+            buildToolsVersion = "36.0.0"
             testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         }
 

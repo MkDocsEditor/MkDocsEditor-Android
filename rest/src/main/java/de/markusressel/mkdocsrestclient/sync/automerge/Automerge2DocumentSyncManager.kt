@@ -52,8 +52,7 @@ class Automerge2DocumentSyncManager(
         "$protocol://$hostname:$port/document/$documentId/ws"
     }
 
-    private val websocketConnectionHandler =
-        WebsocketConnectionHandler(websocketUrl, basicAuthConfig)
+    private val websocketConnectionHandler = WebsocketConnectionHandler(websocketUrl, basicAuthConfig)
 
     /**
      * The URL used for the websocket connection
