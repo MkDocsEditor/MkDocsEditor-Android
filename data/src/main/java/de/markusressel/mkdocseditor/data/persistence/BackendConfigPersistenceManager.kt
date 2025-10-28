@@ -15,9 +15,7 @@ class BackendConfigPersistenceManager @Inject constructor(
     fun selectBackendConfig(id: Long) {
         boxStore.runInTx {
             // disable all others
-            standardOperation().query {
-                equal(BackendConfigEntity_.isSelected, true)
-            }.find().forEach {
+            standardOperation().query(BackendConfigEntity_.isSelected.equal(true)).build().find().forEach {
                 standardOperation().put(it.apply { isSelected = false })
             }
 

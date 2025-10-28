@@ -1,13 +1,11 @@
-
 plugins {
     id("mkdocseditor.android.application")
     id("mkdocseditor.android.application.compose")
     id("mkdocseditor.android.compose.voyager")
     id("mkdocseditor.android.application.flavors")
     id("mkdocseditor.android.hilt")
-    id("kotlin-parcelize")
     id("com.google.devtools.ksp")
-    id("com.mikepenz.aboutlibraries.plugin")
+    id("com.mikepenz.aboutlibraries.plugin.android")
 }
 
 android {
@@ -57,7 +55,9 @@ dependencies {
 
     // Jetpack Compose
     implementation(libs.android.material)
+//    implementation(libs.androidx.compose.material)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.material3.window.size.clazz)
 
 //    implementation("androidx.compose.ui:ui-desktop:1.6.0-alpha07")
@@ -75,6 +75,7 @@ dependencies {
     // Emoji
     implementation(libs.androidx.emoji)
     implementation(libs.androidx.emoji.bundled)
+    implementation(libs.androidx.documentfile)
 
     compileOnly(libs.javax.annotation)
 
@@ -145,7 +146,7 @@ dependencies {
 
     // AboutLibraries ("About" screen)
     implementation(libs.mikepenz.aboutlibraries.core)
-    implementation(libs.mikepenz.aboutlibraries.compose)
+    implementation(libs.mikepenz.aboutlibraries.compose.m3)
 
     implementation(libs.mikepenz.aboutlibraries)
 

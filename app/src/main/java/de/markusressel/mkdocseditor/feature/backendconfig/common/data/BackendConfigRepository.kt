@@ -28,9 +28,11 @@ internal class BackendConfigRepository @Inject constructor(
     fun getBackendConfigs() = backendConfigPersistenceManager.standardOperation().all.toList()
 
     fun getBackendConfigsFlow(): Flow<List<BackendConfigEntity>> {
-        return backendConfigPersistenceManager.standardOperation().query {
-            order(BackendConfigEntity_.name)
-        }.flow()
+        return backendConfigPersistenceManager.standardOperation()
+            .query()
+            .order(BackendConfigEntity_.name)
+            .build()
+            .flow()
     }
 
     fun getAuthConfigs() = backendAuthConfigPersistenceManager.standardOperation().all.toList()

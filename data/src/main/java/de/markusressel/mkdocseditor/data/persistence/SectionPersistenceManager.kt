@@ -6,7 +6,6 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity_
-import io.objectbox.kotlin.query
 import io.objectbox.kotlin.toFlow
 import io.objectbox.query.QueryBuilder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -33,9 +32,11 @@ class SectionPersistenceManager @Inject constructor(
      * Find a section by it's document id (not the database entity id)
      */
     fun findById(sectionId: String): SectionEntity? {
-        return standardOperation().query {
-            equal(SectionEntity_.id, sectionId, QueryBuilder.StringOrder.CASE_INSENSITIVE)
-        }.findUnique()
+        return standardOperation().query(
+            SectionEntity_.id.equal(
+                sectionId, QueryBuilder.StringOrder.CASE_INSENSITIVE
+            )
+        ).build().findUnique()
     }
 
     /**
@@ -43,9 +44,11 @@ class SectionPersistenceManager @Inject constructor(
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     fun findByIdFlow(sectionId: String): Flow<SectionEntity?> {
-        return standardOperation().query {
-            equal(SectionEntity_.id, sectionId, QueryBuilder.StringOrder.CASE_INSENSITIVE)
-        }.subscribe().toFlow().map { it.firstOrNull() }
+        return standardOperation().query(
+            SectionEntity_.id.equal(
+                sectionId, QueryBuilder.StringOrder.CASE_INSENSITIVE
+            )
+        ).build().subscribe().toFlow().map { it.firstOrNull() }
     }
 
     /**
@@ -75,39 +78,44 @@ class SectionPersistenceManager @Inject constructor(
         parentSection: SectionEntity? = null
     ): SectionEntity {
         // use existing section or insert new one
-        val sectionEntity = standardOperation().query {
-            equal(SectionEntity_.id, section.id, QueryBuilder.StringOrder.CASE_INSENSITIVE)
-        }.findUnique() ?: run {
-            val newSection = standardOperation().get(standardOperation().put(section))
-            parentSection?.subsections?.add(newSection)
-            newSection
-        }
+        val sectionEntity =
+            standardOperation().query(
+                SectionEntity_.id.equal(section.id, QueryBuilder.StringOrder.CASE_INSENSITIVE)
+            ).build().findUnique() ?: run {
+                val newSection = standardOperation().get(standardOperation().put(section))
+                parentSection?.subsections?.add(newSection)
+                newSection
+            }
 
         section.documents.forEach { newDocument ->
-            val documentEntity = documentPersistenceManager.standardOperation().query {
-                equal(DocumentEntity_.id, newDocument.id, QueryBuilder.StringOrder.CASE_INSENSITIVE)
-            }.findUnique()?.apply {
-                filesize = newDocument.filesize
-                modtime = newDocument.modtime
-            } ?: newDocument
+            val documentEntity = documentPersistenceManager.standardOperation()
+                .query(
+                    DocumentEntity_.id.equal(newDocument.id, QueryBuilder.StringOrder.CASE_INSENSITIVE)
+                ).build().findUnique()?.apply {
+                    filesize = newDocument.filesize
+                    modtime = newDocument.modtime
+                } ?: newDocument
             documentEntity.parentSection.target = sectionEntity
 
             val documentContentEntity =
-                documentContentPersistenceManager.standardOperation().query {
-                    equal(DocumentContentEntity_.documentId, documentEntity.id, QueryBuilder.StringOrder.CASE_INSENSITIVE)
-                }.findUnique()
+                documentContentPersistenceManager.standardOperation().query(
+                    DocumentContentEntity_.documentId.equal(
+                        documentEntity.id,
+                        QueryBuilder.StringOrder.CASE_INSENSITIVE
+                    )
+                ).build().findUnique()
             documentEntity.content.target = documentContentEntity
 
             documentPersistenceManager.standardOperation().put(documentEntity)
         }
 
         section.resources.forEach { newResource ->
-            val resourceEntity = resourcePersistenceManager.standardOperation().query {
-                equal(ResourceEntity_.id, newResource.id, QueryBuilder.StringOrder.CASE_INSENSITIVE)
-            }.findUnique()?.apply {
-                filesize = newResource.filesize
-                modtime = newResource.modtime
-            } ?: newResource
+            val resourceEntity = resourcePersistenceManager.standardOperation()
+                .query(ResourceEntity_.id.equal(newResource.id, QueryBuilder.StringOrder.CASE_INSENSITIVE)).build()
+                .findUnique()?.apply {
+                    filesize = newResource.filesize
+                    modtime = newResource.modtime
+                } ?: newResource
             resourceEntity.parentSection.target = sectionEntity
 
             resourcePersistenceManager.standardOperation().put(resourceEntity)
@@ -132,38 +140,38 @@ class SectionPersistenceManager @Inject constructor(
         findIdsRecursive(newData, sectionIds, documentIds, resourceIds)
 
         // remove stale sections
-        val existingSectionIds = standardOperation().query {
-            `in`(SectionEntity_.id, sectionIds.toTypedArray(), QueryBuilder.StringOrder.CASE_INSENSITIVE)
-        }.findIds()
+        val existingSectionIds = standardOperation()
+            .query(SectionEntity_.id.oneOf(sectionIds.toTypedArray(), QueryBuilder.StringOrder.CASE_INSENSITIVE))
+            .build().findIds()
 
         // find others
-        val missingSectionIds = standardOperation().query {
-            notIn(SectionEntity_.entityId, existingSectionIds)
-        }.findIds()
+        val missingSectionIds = standardOperation()
+            .query(SectionEntity_.entityId.notOneOf(existingSectionIds))
+            .build().findIds()
 
         standardOperation().removeByIds(missingSectionIds.toList())
 
         // remove stale documents
-        val existingDocumentIds = documentPersistenceManager.standardOperation().query {
-            `in`(DocumentEntity_.id, documentIds.toTypedArray(), QueryBuilder.StringOrder.CASE_INSENSITIVE)
-        }.findIds()
+        val existingDocumentIds = documentPersistenceManager.standardOperation()
+            .query(DocumentEntity_.id.oneOf(documentIds.toTypedArray(), QueryBuilder.StringOrder.CASE_INSENSITIVE))
+            .build().findIds()
 
         // find others
-        val missingDocumentIds = documentPersistenceManager.standardOperation().query {
-            notIn(DocumentEntity_.entityId, existingDocumentIds)
-        }.findIds()
+        val missingDocumentIds = documentPersistenceManager.standardOperation()
+            .query(DocumentEntity_.entityId.notOneOf(existingDocumentIds))
+            .build().findIds()
 
         documentPersistenceManager.standardOperation().removeByIds(missingDocumentIds.toList())
 
         // remove stale resources
-        val existingResourceIds = resourcePersistenceManager.standardOperation().query {
-            `in`(ResourceEntity_.id, resourceIds.toTypedArray(), QueryBuilder.StringOrder.CASE_INSENSITIVE)
-        }.findIds()
+        val existingResourceIds = resourcePersistenceManager.standardOperation()
+            .query(ResourceEntity_.id.oneOf(resourceIds.toTypedArray(), QueryBuilder.StringOrder.CASE_INSENSITIVE))
+            .build().findIds()
 
         // find others
-        val missingResourceIds = resourcePersistenceManager.standardOperation().query {
-            notIn(ResourceEntity_.entityId, existingResourceIds)
-        }.findIds()
+        val missingResourceIds = resourcePersistenceManager.standardOperation()
+            .query(ResourceEntity_.entityId.notOneOf(existingResourceIds))
+            .build().findIds()
 
         resourcePersistenceManager.standardOperation().removeByIds(missingResourceIds.toList())
     }
@@ -174,9 +182,9 @@ class SectionPersistenceManager @Inject constructor(
      * @param sectionId ID of the section
      */
     fun delete(sectionId: String) {
-        val existingSectionIds = standardOperation().query {
-            equal(SectionEntity_.id, sectionId, QueryBuilder.StringOrder.CASE_INSENSITIVE)
-        }.findIds()
+        val existingSectionIds = standardOperation()
+            .query(SectionEntity_.id.equal(sectionId, QueryBuilder.StringOrder.CASE_INSENSITIVE))
+            .build().findIds()
 
         standardOperation().removeByIds(existingSectionIds.toList())
     }

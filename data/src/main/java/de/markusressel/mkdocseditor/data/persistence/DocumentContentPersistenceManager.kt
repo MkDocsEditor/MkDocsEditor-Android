@@ -4,7 +4,6 @@ import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
-import io.objectbox.kotlin.query
 import io.objectbox.query.QueryBuilder
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,9 +28,11 @@ class DocumentContentPersistenceManager @Inject constructor(
         panX: Float? = null,
         panY: Float? = null
     ) {
-        val entity = standardOperation().query {
-            equal(DocumentContentEntity_.documentId, documentId, QueryBuilder.StringOrder.CASE_INSENSITIVE)
-        }.findUnique()
+        val entity = standardOperation().query(
+            DocumentContentEntity_.documentId.equal(
+                documentId, QueryBuilder.StringOrder.CASE_INSENSITIVE
+            )
+        ).order(DocumentContentEntity_.documentId).build().findUnique()
             ?: DocumentContentEntity(
                 entityId = 0,
                 date = System.currentTimeMillis(),
@@ -40,9 +41,12 @@ class DocumentContentPersistenceManager @Inject constructor(
 
         // attach parent if necessary
         if (entity.documentEntity.isNull) {
-            val documentEntity = documentPersistenceManager.standardOperation().query {
-                equal(DocumentEntity_.id, documentId, QueryBuilder.StringOrder.CASE_INSENSITIVE)
-            }.findUnique()
+            val documentEntity = documentPersistenceManager.standardOperation()
+                .query(
+                    DocumentEntity_.id.equal(
+                        documentId, QueryBuilder.StringOrder.CASE_INSENSITIVE
+                    )
+                ).build().findUnique()
             entity.documentEntity.target = documentEntity
         }
 
