@@ -4,8 +4,8 @@ plugins {
     id("mkdocseditor.android.compose.voyager")
     id("mkdocseditor.android.application.flavors")
     id("mkdocseditor.android.hilt")
-    id("com.google.devtools.ksp")
     id("com.mikepenz.aboutlibraries.plugin.android")
+    id("com.google.devtools.ksp")
 }
 
 android {
