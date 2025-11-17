@@ -1,7 +1,7 @@
 [versions]
 aboutlibrariesVersion = "13.1.0"
 androidDesugarJdkLibs = "2.1.5"
-androidGradlePlugin = "8.13.0"
+androidGradlePlugin = "8.13.1"
 androidxActivity = "1.11.0"
 androidxActivityCompose = "1.11.0"
 androidxAppCompat = "1.7.1"
