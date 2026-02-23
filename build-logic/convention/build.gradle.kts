@@ -8,24 +8,31 @@ plugins {
 group = "de.markusressel.mkdocseditor.buildlogic"
 version = "0.1.0"
 
+kotlin {
+    jvmToolchain(21)
+}
+
 java {
     // Up to Java 11 APIs are available through desugaring
     // https://developer.android.com/studio/write/java11-minimal-support-table
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
 }
 
 tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
+        jvmTarget.set(JvmTarget.JVM_21)
     }
 }
 
 dependencies {
-    compileOnly(libs.android.gradle.plugin)
-    compileOnly(libs.kotlin.gradle.plugin)
-    compileOnly(libs.ksp.gradle.plugin)
-    compileOnly(libs.objectbox.gradle.plugin)
+    implementation(libs.android.gradle.plugin)
+    implementation(libs.kotlin.gradle.plugin)
+    implementation(libs.ksp.gradle.plugin)
+    implementation(libs.objectbox.gradle.plugin)
 }
 
 gradlePlugin {

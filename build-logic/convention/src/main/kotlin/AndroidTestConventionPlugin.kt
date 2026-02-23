@@ -1,4 +1,4 @@
-import com.android.build.gradle.TestExtension
+import com.android.build.api.dsl.TestExtension
 import de.markusressel.mkdocseditor.TARGET_SDK
 import de.markusressel.mkdocseditor.configureKotlinAndroid
 import org.gradle.api.Plugin
