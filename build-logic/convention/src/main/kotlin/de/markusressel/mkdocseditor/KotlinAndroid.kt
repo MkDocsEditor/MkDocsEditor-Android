@@ -9,6 +9,7 @@ import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.provideDelegate
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 const val COMPILE_SDK = 36
@@ -17,6 +18,10 @@ const val TARGET_SDK = 35
 internal fun Project.configureKotlinAndroid(commonExtension: CommonExtension) {
     commonExtension.apply {
         compileSdk = COMPILE_SDK
+
+        kotlinExtension.apply {
+            jvmToolchain(21)
+        }
 
         compileOptions.apply {
             // Up to Java 11 APIs are available through desugaring
