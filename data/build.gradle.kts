@@ -1,3 +1,5 @@
+import com.android.build.api.dsl.LibraryExtension
+
 plugins {
     id("mkdocseditor.android.library")
     id("mkdocseditor.android.hilt")
@@ -5,7 +7,7 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
-android {
+extensions.getByType<LibraryExtension>().apply {
     namespace = "de.markusressel.mkdocseditor.data"
 }
 
