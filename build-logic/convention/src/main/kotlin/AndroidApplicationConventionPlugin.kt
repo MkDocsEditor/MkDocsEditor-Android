@@ -2,7 +2,6 @@ import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import de.markusressel.mkdocseditor.TARGET_SDK
 import de.markusressel.mkdocseditor.configureKotlinAndroid
-import de.markusressel.mkdocseditor.configureKotlinAndroidToolchain
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
@@ -14,13 +13,11 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
             with(pluginManager) {
                 apply("com.android.application")
                 apply("org.jetbrains.kotlin.android")
-                apply("org.jetbrains.kotlin.android")
                 apply("mkdocseditor.android.logging")
             }
 
             group = "de.markusressel.mkdocseditor"
 
-            configureKotlinAndroidToolchain()
             extensions.configure<ApplicationExtension> {
                 configureKotlinAndroid(this)
 

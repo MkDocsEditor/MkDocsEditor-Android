@@ -1,7 +1,6 @@
 import com.android.build.api.dsl.LibraryExtension
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import de.markusressel.mkdocseditor.configureKotlinAndroid
-import de.markusressel.mkdocseditor.configureKotlinAndroidToolchain
 import de.markusressel.mkdocseditor.disableUnnecessaryAndroidTests
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -22,7 +21,6 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
 
             group = "de.markusressel.mkdocseditor.library"
 
-            configureKotlinAndroidToolchain()
             extensions.configure<LibraryExtension> {
                 configureKotlinAndroid(this)
             }
