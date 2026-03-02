@@ -6,11 +6,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import de.markusressel.mkdocseditor.feature.main.ui.compose.LocalMainScreenOnBack
 import de.markusressel.mkdocseditor.feature.preferences.ui.compose.PreferencesScreen
 
-class SettingsTab(
-    private val onBackPressed: () -> Unit,
-) : Tab {
+object SettingsTab : Tab {
     override val options: TabOptions
         @Composable
         get() = remember {
@@ -23,9 +22,11 @@ class SettingsTab(
 
     @Composable
     override fun Content() {
+        val onBack = LocalMainScreenOnBack.current
+
         PreferencesScreen(
             modifier = Modifier.fillMaxSize(),
-            onBack = onBackPressed,
+            onBack = onBack,
         )
     }
 }

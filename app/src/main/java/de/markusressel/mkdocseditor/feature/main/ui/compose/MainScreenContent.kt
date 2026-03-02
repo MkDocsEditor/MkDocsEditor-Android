@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -28,6 +30,8 @@ import de.markusressel.mkdocseditor.feature.main.ui.compose.tab.BackendSelection
 import de.markusressel.mkdocseditor.feature.main.ui.compose.tab.FileBrowserTab
 import de.markusressel.mkdocseditor.feature.main.ui.compose.tab.SettingsTab
 import de.markusressel.mkdocseditor.ui.activity.UiState
+
+val LocalMainScreenOnBack = staticCompositionLocalOf<() -> Unit> { {} }
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
@@ -51,55 +55,54 @@ internal fun MainScreenContent(
             )
         }
 
-        TabNavigator(
-            tab = uiState.initialTab.toTab(
-                contentType = contentType,
-                onBackPressed = onBackPressedCallback
-            )
-        ) { tabNavigator ->
-            globalTabNavigator = tabNavigator
+        CompositionLocalProvider(LocalMainScreenOnBack provides onBackPressedCallback) {
+            TabNavigator(
+                tab = uiState.initialTab.toTab(
+                    contentType = contentType,
+                )
+            ) { tabNavigator ->
+                globalTabNavigator = tabNavigator
 
-            Scaffold(
-                bottomBar = {
-                    if (navigationType == NavigationLayoutType.BOTTOM_NAVIGATION) {
-                        BottomBar(
-                            selectedNavItem = tabNavigator.current.toNavItem(),
-                            navItems = uiState.bottomBarNavItems,
-                            onItemSelected = { navItem ->
-                                tabNavigator.current = navItem.toTab(
-                                    contentType = contentType,
-                                    onBackPressed = onBackPressedCallback
-                                )
-                            },
-                        )
-                    }
-                }
-            ) { paddingValues ->
-                Box(
-                    modifier = Modifier.padding(
-                        bottom = paddingValues.calculateBottomPadding()
-                    )
-                ) {
-                    Row {
-                        // Navigation Rail
-                        AnimatedVisibility(
-                            modifier = Modifier.zIndex(1000f),
-                            visible = navigationType == NavigationLayoutType.NAVIGATION_RAIL
-                        ) {
-                            MkDocsEditorNavigationRail(
+                Scaffold(
+                    bottomBar = {
+                        if (navigationType == NavigationLayoutType.BOTTOM_NAVIGATION) {
+                            BottomBar(
                                 selectedNavItem = tabNavigator.current.toNavItem(),
                                 navItems = uiState.bottomBarNavItems,
                                 onItemSelected = { navItem ->
                                     tabNavigator.current = navItem.toTab(
                                         contentType = contentType,
-                                        onBackPressed = onBackPressedCallback
                                     )
                                 },
                             )
                         }
+                    }
+                ) { paddingValues ->
+                    Box(
+                        modifier = Modifier.padding(
+                            bottom = paddingValues.calculateBottomPadding()
+                        )
+                    ) {
+                        Row {
+                            // Navigation Rail
+                            AnimatedVisibility(
+                                modifier = Modifier.zIndex(1000f),
+                                visible = navigationType == NavigationLayoutType.NAVIGATION_RAIL
+                            ) {
+                                MkDocsEditorNavigationRail(
+                                    selectedNavItem = tabNavigator.current.toNavItem(),
+                                    navItems = uiState.bottomBarNavItems,
+                                    onItemSelected = { navItem ->
+                                        tabNavigator.current = navItem.toTab(
+                                            contentType = contentType,
+                                        )
+                                    },
+                                )
+                            }
 
-                        // Actual tab content
-                        CurrentTab()
+                            // Actual tab content
+                            CurrentTab()
+                        }
                     }
                 }
             }
@@ -122,18 +125,16 @@ private fun onBackPressed(
     if (tabNavigator != null) {
         tabNavigator.current = initialTab.toTab(
             contentType = contentType,
-            onBackPressed = { onBackPressed(navigator, tabNavigator, initialTab, contentType) }
         )
     }
 }
 
 private fun NavItem.toTab(
     contentType: ContentLayoutType,
-    onBackPressed: () -> Unit
 ): Tab = when (this) {
     is NavItem.BackendSelection -> BackendSelectionTab
     is NavItem.FileBrowser -> FileBrowserTab(contentType)
-    is NavItem.Settings -> SettingsTab(onBackPressed)
+    is NavItem.Settings -> SettingsTab
     is NavItem.About -> AboutTab
 }
 
