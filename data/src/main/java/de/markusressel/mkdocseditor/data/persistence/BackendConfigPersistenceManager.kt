@@ -3,13 +3,14 @@ package de.markusressel.mkdocseditor.data.persistence
 import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendConfigEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendConfigEntity_
-import io.objectbox.kotlin.query
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class BackendConfigPersistenceManager @Inject constructor(
-    private val backendServerConfigPersistenceManager: BackendServerConfigPersistenceManager
+    private val backendAuthConfigPersistenceManager: BackendAuthConfigPersistenceManager,
+    private val backendServerConfigPersistenceManager: BackendServerConfigPersistenceManager,
+    private val mkdDocsWebConfigPersistenceManager: MkdDocsWebConfigPersistenceManager,
 ) : PersistenceManagerBase<BackendConfigEntity>(BackendConfigEntity::class) {
 
     fun selectBackendConfig(id: Long) {
@@ -20,9 +21,8 @@ class BackendConfigPersistenceManager @Inject constructor(
             }
 
             // enable the given one
-            val backendConfigEntity = standardOperation().query {
-                equal(BackendConfigEntity_.entityId, id)
-            }.findUnique()
+            val backendConfigEntity =
+                standardOperation().query(BackendConfigEntity_.entityId.equal(id)).build().findUnique()
             requireNotNull(backendConfigEntity)
             standardOperation().put(backendConfigEntity.apply { isSelected = true })
         }
@@ -31,6 +31,10 @@ class BackendConfigPersistenceManager @Inject constructor(
     fun add(entity: BackendConfigEntity): Long {
         var id = 0L
         boxStore.runInTx {
+            entity.authConfig.target?.let { backendAuthConfigPersistenceManager.standardOperation().put(it) }
+            backendServerConfigPersistenceManager.standardOperation().put(entity.serverConfig.target)
+            entity.mkDocsWebConfig.target?.let { mkdDocsWebConfigPersistenceManager.standardOperation().put(it) }
+            entity.mkDocsWebAuthConfig.target?.let { backendAuthConfigPersistenceManager.standardOperation().put(it) }
             id = standardOperation().put(entity)
         }
         return id
