@@ -42,8 +42,10 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                 }
             }
             dependencies {
-                add("androidTestImplementation", kotlin("test"))
                 add("testImplementation", kotlin("test"))
+                if (projectDir.resolve("src/androidTest").exists()) {
+                    add("androidTestImplementation", kotlin("test"))
+                }
             }
         }
     }

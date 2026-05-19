@@ -2,6 +2,7 @@ plugins {
     id("mkdocseditor.android.library")
     id("mkdocseditor.android.hilt")
     id(libs.plugins.io.objectbox.get().pluginId)
+    id("org.jetbrains.kotlin.kapt")
     id("com.google.devtools.ksp")
 }
 
@@ -29,7 +30,7 @@ dependencies {
     // ObjectBox
     api(libs.objectbox.android)
     api(libs.objectbox.kotlin)
-    ksp(libs.objectbox.processor)
+    kapt(libs.objectbox.processor)
     compileOnly(libs.objectbox.gradle.plugin)
 
     // Store
