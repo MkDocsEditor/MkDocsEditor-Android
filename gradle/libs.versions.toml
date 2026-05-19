@@ -1,7 +1,7 @@
 [versions]
 aboutlibrariesVersion = "13.2.1"
 androidDesugarJdkLibs = "2.1.5"
-androidGradlePlugin = "9.0.1"
+androidGradlePlugin = "9.1.1"
 androidxActivity = "1.12.4"
 androidxActivityCompose = "1.12.4"
 androidxAppCompat = "1.7.1"
@@ -151,7 +151,7 @@ markusressel-typedpreferences = { group = "com.github.markusressel", name = "Typ
 markusressel-kutepreferences-core = { group = "com.github.markusressel.KutePreferences", name = "core", version.ref = "kutePreferences" }
 markusressel-kutepreferences-ui = { group = "com.github.markusressel.KutePreferences", name = "ui", version.ref = "kutePreferences" }
 
-markusressel-kodeeditor = { group = "com.github.markusressel", name = "KodeEditor", version = "5.0.1" }
+markusressel-kodeeditor = { group = "com.github.markusressel", name = "KodeEditor", version = "7120cfd3fc" }
 
 mikepenz-aboutlibraries = { module = "com.mikepenz:aboutlibraries", version.ref = "aboutlibrariesVersion" }
 mikepenz-aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutlibrariesVersion" }
