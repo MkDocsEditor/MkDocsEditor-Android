@@ -1,10 +1,12 @@
+import com.android.build.api.dsl.LibraryExtension
+
 plugins {
     id("mkdocseditor.android.library")
     id("mkdocseditor.android.hilt")
     id("com.google.devtools.ksp")
 }
 
-android {
+extensions.configure<LibraryExtension> {
     namespace = "de.markusressel.mkdocsrestclient"
 }
 

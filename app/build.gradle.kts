@@ -1,3 +1,6 @@
+import com.android.build.api.dsl.ApplicationExtension
+import com.android.build.api.variant.ApplicationAndroidComponentsExtension
+
 plugins {
     id("mkdocseditor.android.application")
     id("mkdocseditor.android.application.compose")
@@ -8,7 +11,7 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
-android {
+extensions.configure<ApplicationExtension> {
     namespace = "de.markusressel.mkdocseditor"
 
     defaultConfig {
@@ -16,15 +19,6 @@ android {
 
         versionCode = 1
         versionName = "0.1.0"
-    }
-
-    androidComponents {
-        onVariants { variant ->
-            variant.outputs.forEach { output ->
-                val outputImpl = output as com.android.build.api.variant.impl.VariantOutputImpl
-                outputImpl.outputFileName.set("MkDocsEditor_v${defaultConfig.versionName}_(${defaultConfig.versionCode}).apk")
-            }
-        }
     }
 
     kotlin {
@@ -35,6 +29,16 @@ android {
                 "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
                 "-opt-in=androidx.compose.animation.ExperimentalAnimationApi"
             )
+        }
+    }
+}
+
+extensions.configure<ApplicationAndroidComponentsExtension> {
+    onVariants { variant ->
+        val appExtension = extensions.getByType<ApplicationExtension>()
+        variant.outputs.forEach { output ->
+            val outputImpl = output as com.android.build.api.variant.impl.VariantOutputImpl
+            outputImpl.outputFileName.set("MkDocsEditor_v${appExtension.defaultConfig.versionName}_(${appExtension.defaultConfig.versionCode}).apk")
         }
     }
 }

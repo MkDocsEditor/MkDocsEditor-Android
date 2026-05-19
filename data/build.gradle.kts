@@ -1,3 +1,5 @@
+import com.android.build.api.dsl.LibraryExtension
+
 plugins {
     id("mkdocseditor.android.library")
     id("mkdocseditor.android.hilt")
@@ -6,7 +8,7 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
-android {
+extensions.configure<LibraryExtension> {
     namespace = "de.markusressel.mkdocseditor.data"
 }
 
@@ -30,6 +32,7 @@ dependencies {
     // ObjectBox
     api(libs.objectbox.android)
     api(libs.objectbox.kotlin)
+    // KSP is NOT supported atm, see: https://github.com/objectbox/objectbox-java/issues/1075
     kapt(libs.objectbox.processor)
     compileOnly(libs.objectbox.gradle.plugin)
 
