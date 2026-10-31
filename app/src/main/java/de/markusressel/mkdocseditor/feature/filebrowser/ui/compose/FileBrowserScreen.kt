@@ -14,6 +14,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.extensions.common.android.textResource
+import de.markusressel.mkdocseditor.feature.auth.login.ui.compose.LoginScreen
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreen
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.DialogState
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.FileBrowserEvent
@@ -66,6 +67,10 @@ object FileBrowserScreen : Screen {
 
                     is FileBrowserEvent.OpenProfileScreen -> {
                         navigator.push(ProfileScreen)
+                    }
+
+                    is FileBrowserEvent.OpenLogin -> {
+                        navigator.push(LoginScreen(backendId = event.backendId))
                     }
 
                     is FileBrowserEvent.OpenResourceSelection -> {

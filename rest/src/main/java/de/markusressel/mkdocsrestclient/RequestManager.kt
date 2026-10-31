@@ -28,7 +28,6 @@ import com.github.kittinunf.fuel.core.Parameters
 import com.github.kittinunf.fuel.core.Request
 import com.github.kittinunf.fuel.core.Response
 import com.github.kittinunf.fuel.core.awaitResponseResult
-import com.github.kittinunf.fuel.core.extensions.authentication
 import com.github.kittinunf.fuel.core.requests.UploadRequest
 import com.github.kittinunf.fuel.core.requests.upload
 import com.github.kittinunf.fuel.coroutines.awaitByteArrayResult
@@ -45,8 +44,17 @@ class RequestManager(
     hostname: String = "localhost",
     port: Int = 8080,
     ssl: Boolean = true,
-    var basicAuthConfig: BasicAuthConfig? = null
+    /**
+     * Supplies the Authorization header of every request
+     */
+    var authorizationProvider: AuthorizationProvider = AuthorizationProvider.NONE,
 ) {
+
+    /**
+     * Called (on a network thread) whenever the server answers 401
+     */
+    @Volatile
+    var unauthorizedListener: (() -> Unit)? = null
 
     /**
      * The hostname of the server
@@ -87,8 +95,19 @@ class RequestManager(
         }
 
 
+    private val unauthorizedInterceptor: FoldableResponseInterceptor =
+        { next: (Request, Response) -> Response ->
+            { req: Request, res: Response ->
+                if (res.statusCode == 401) {
+                    unauthorizedListener?.invoke()
+                }
+                next(req, res)
+            }
+        }
+
     init {
         updateBaseUrl()
+        fuelManager.addResponseInterceptor(unauthorizedInterceptor)
     }
 
     /**
@@ -138,11 +157,13 @@ class RequestManager(
     }
 
     /**
-     * Applies basic authentication parameters to a request
+     * Applies the Authorization header to a request
      */
     private fun getAuthenticatedRequest(request: Request): Request {
-        basicAuthConfig?.let {
-            return request.authentication().basic(username = it.username, password = it.password)
+        // API client: no WWW-Authenticate challenges, passes the CSRF check of the backend
+        request.header(HEADER_REQUESTED_WITH)
+        authorizationProvider.authorization()?.let {
+            return request.header("Authorization" to it)
         }
 
         return request
@@ -279,6 +300,7 @@ class RequestManager(
 
     companion object {
         val HEADER_CONTENT_TYPE_JSON = "Content-Type" to "application/json"
+        val HEADER_REQUESTED_WITH = "X-Requested-With" to "MkDocsEditor-Android"
         const val DEFAULT_TIMEOUT = 3000
     }
 

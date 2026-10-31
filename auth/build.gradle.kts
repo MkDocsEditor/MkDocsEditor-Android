@@ -8,6 +8,11 @@ plugins {
 
 extensions.configure<LibraryExtension> {
     namespace = "de.markusressel.mkdocseditor.auth"
+
+    // FakeAuthApi and friends, for the tests of this module and of the app
+    testFixtures {
+        enable = true
+    }
 }
 
 dependencies {
@@ -17,6 +22,8 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.core)
     api(libs.okhttp)
+
+    testFixturesImplementation(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit4)
     testImplementation(libs.okhttp.mockwebserver)

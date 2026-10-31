@@ -17,6 +17,8 @@ import de.markusressel.kutepreferences.core.KuteNavigator
 import de.markusressel.kutepreferences.core.persistence.DefaultKutePreferenceDataProvider
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.mkdocseditor.data.persistence.entity.MyObjectBox
+import de.markusressel.mkdocseditor.feature.auth.common.data.AndroidCredentialClient
+import de.markusressel.mkdocseditor.feature.auth.common.data.CredentialClient
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocsrestclient.DummyMkDocsRestClient
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
@@ -104,6 +106,10 @@ class AppModule {
             else -> MkDocsRestClient()
         }
     }
+
+    @Provides
+    @Singleton
+    fun provideCredentialClient(): CredentialClient = AndroidCredentialClient()
 
     @Provides
     @Singleton

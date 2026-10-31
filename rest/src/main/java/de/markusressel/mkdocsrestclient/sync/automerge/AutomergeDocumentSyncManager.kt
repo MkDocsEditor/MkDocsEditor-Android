@@ -4,7 +4,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import androidx.annotation.MainThread
-import de.markusressel.mkdocsrestclient.BasicAuthConfig
+import de.markusressel.mkdocsrestclient.AuthorizationProvider
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.CloseCode
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionHandler
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionListener
@@ -23,7 +23,7 @@ class AutomergeDocumentSyncManager(
     private val hostname: String,
     private val port: Int,
     private val ssl: Boolean,
-    basicAuthConfig: BasicAuthConfig?,
+    authorizationProvider: AuthorizationProvider,
     documentId: String,
     store: LocalDocumentStore,
     private val listener: Listener,
@@ -54,7 +54,7 @@ class AutomergeDocumentSyncManager(
         },
     )
 
-    private val connection = WebsocketConnectionHandler(basicAuthConfig)
+    private val connection = WebsocketConnectionHandler(authorizationProvider)
 
     /** true while the user of this manager wants to be connected */
     private var wantConnection = false
@@ -232,6 +232,11 @@ class AutomergeDocumentSyncManager(
         listener.onConnectionStatusChanged(false, code ?: httpStatus, throwable)
 
         if (!wantConnection) return
+        if (code == null && (httpStatus == 401 || httpStatus == 403)) {
+            // the upgrade was refused: reconnecting does not help until the user signs in again
+            wantConnection = false
+            return
+        }
         when (code) {
             // not recoverable by reconnecting
             CloseCode.NORMAL, CloseCode.UNAUTHORIZED, CloseCode.FORBIDDEN,

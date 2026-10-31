@@ -1,7 +1,6 @@
 package de.markusressel.mkdocsrestclient.sync.websocket
 
-import de.markusressel.mkdocsrestclient.BasicAuthConfig
-import okhttp3.Credentials
+import de.markusressel.mkdocsrestclient.AuthorizationProvider
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -18,10 +17,10 @@ import java.util.concurrent.TimeUnit
  */
 class WebsocketConnectionHandler(
     /**
-     * Configuration for HTTP Basic Auth. The header is sent with the upgrade request
-     * right away: the server does not answer with 401, it waits for a ticket instead.
+     * Supplies the Authorization header of the upgrade request (a bearer session), evaluated
+     * on every connect. Without one the server waits for a ticket in the hello message.
      */
-    private val basicAuthConfig: BasicAuthConfig?,
+    private val authorizationProvider: AuthorizationProvider,
     private val client: OkHttpClient = defaultClient,
 ) {
 
@@ -50,9 +49,7 @@ class WebsocketConnectionHandler(
         isConnected = false
 
         val request = Request.Builder().url(url).apply {
-            basicAuthConfig?.let {
-                header("Authorization", Credentials.basic(it.username, it.password))
-            }
+            authorizationProvider.authorization()?.let { header("Authorization", it) }
         }.build()
 
         webSocket = client.newWebSocket(request, object : WebSocketListener() {

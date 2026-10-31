@@ -192,7 +192,6 @@ internal fun ProfileScreenContentPreview() {
                         name = "Backend 1",
                         description = "Description 1",
                         isSelected = true,
-                        backendAuthConfig = null,
                         id = 0,
                         mkDocsWebAuthConfig = null,
                         mkDocsWebConfig = null,

@@ -81,10 +81,6 @@ private fun BackendSelectionScreenContentPreview() {
                             port = 443,
                             useSsl = true,
                         ),
-                        backendAuthConfig = AuthConfig(
-                            username = "test",
-                            password = "test",
-                        ),
                         mkDocsWebConfig = MkDocsWebConfig(
                             domain = "mkdocksweb.backend.com",
                             port = 443,

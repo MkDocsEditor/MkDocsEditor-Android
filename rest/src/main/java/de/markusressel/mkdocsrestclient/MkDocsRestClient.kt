@@ -46,12 +46,12 @@ class MkDocsRestClient constructor(
         requestManager.port = port
     }
 
-    override fun getBasicAuthConfig(): BasicAuthConfig? {
-        return requestManager.basicAuthConfig
+    override fun setAuthorizationProvider(provider: AuthorizationProvider) {
+        requestManager.authorizationProvider = provider
     }
 
-    override fun setBasicAuthConfig(basicAuthConfig: BasicAuthConfig?) {
-        requestManager.basicAuthConfig = basicAuthConfig
+    override fun setUnauthorizedListener(listener: (() -> Unit)?) {
+        requestManager.unauthorizedListener = listener
     }
 
     override suspend fun isHostAlive(): Result<String, FuelError> {

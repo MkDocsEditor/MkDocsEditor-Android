@@ -40,6 +40,7 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
+import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.SignInRequiredBanner
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ErrorCard
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
 import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
@@ -89,6 +90,12 @@ internal fun FileBrowserScreenContent(
                             onUiEvent(UiEvent.TopAppBarActionClicked(action))
                         }
                     )
+
+                    if (uiState.loginRequiredBackendId != null) {
+                        SignInRequiredBanner(
+                            onSignInClicked = { onUiEvent(UiEvent.SignInClicked) }
+                        )
+                    }
                 }
 
             },

@@ -19,6 +19,10 @@ extensions.configure<ApplicationExtension> {
 
         versionCode = 1
         versionName = "0.1.0"
+
+        // host of the web client whose setup/invite/reset links open in the app (App Links)
+        manifestPlaceholders["authLinkHost"] = providers.gradleProperty("mkdocs.authLinkHost")
+            .getOrElse("edit.wiki.markusressel.de")
     }
 
     kotlin {
@@ -57,6 +61,11 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.annotation)
     implementation(libs.androidx.browser)
+
+    // Passkeys and saved passwords through any credential provider (Google, Bitwarden, ...)
+    implementation(libs.androidx.credentials)
+    // provider on Android 13 and older
+    implementation(libs.androidx.credentials.play.services.auth)
 
     // Jetpack Compose
     implementation(libs.android.material)
@@ -165,6 +174,8 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation(libs.junit4)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(testFixtures(project(":auth")))
 //    androidTestImplementation("androidx.test:runner:1.5.2")
 //    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 

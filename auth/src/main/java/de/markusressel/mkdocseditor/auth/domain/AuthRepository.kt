@@ -14,7 +14,11 @@ import de.markusressel.mkdocseditor.auth.token.TokenStore
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import timber.log.Timber
 import java.io.IOException
 import java.time.Instant
@@ -103,6 +107,13 @@ class AuthRepository(
      */
     val sessionChanges: Flow<Long> = tokenStore.changes
 
+    private val _loginRequired = MutableStateFlow<Set<Long>>(emptySet())
+
+    /**
+     * Backends whose server answered "unauthenticated" since the last successful sign-in
+     */
+    val loginRequired: StateFlow<Set<Long>> = _loginRequired.asStateFlow()
+
     @Synchronized
     fun api(backend: BackendRef): AuthApi = apis.getOrPut(backend.baseUrl) { apiFactory.create(backend.baseUrl) }
 
@@ -130,6 +141,7 @@ class AuthRepository(
      * Called when the server rejected the session (HTTP 401 `unauthenticated`, websocket close 4001)
      */
     fun onUnauthenticated(backendId: Long) {
+        _loginRequired.update { it + backendId }
         if (tokenStore.get(backendId) != null) {
             Timber.i("Session of backend $backendId was rejected by the server")
             tokenStore.remove(backendId)
@@ -254,6 +266,7 @@ class AuthRepository(
             else -> {
                 val token = response.token
                     ?: throw IOException("the server did not return a bearer token (status ${response.status})")
+                _loginRequired.update { it - backend.id }
                 tokenStore.put(
                     backend.id,
                     AuthSession(

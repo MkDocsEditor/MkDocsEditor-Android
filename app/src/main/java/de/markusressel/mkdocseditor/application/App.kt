@@ -14,6 +14,7 @@ import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.event.EventBusManager
 import de.markusressel.mkdocseditor.event.subscribe
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
+import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.MigrateBackendBasicAuthUseCase
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.domain.ScheduleOfflineCacheUpdateUseCase
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
@@ -49,6 +50,9 @@ class App : Application(), Configuration.Provider {
     @Inject
     internal lateinit var eventBusManager: EventBusManager
 
+    @Inject
+    internal lateinit var migrateBackendBasicAuthUseCase: MigrateBackendBasicAuthUseCase
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
@@ -64,6 +68,8 @@ class App : Application(), Configuration.Provider {
         setupErrorHandlers()
 
         initializeEmojiCompat()
+
+        migrateBackendBasicAuthUseCase()
 
         listenToEvents()
 

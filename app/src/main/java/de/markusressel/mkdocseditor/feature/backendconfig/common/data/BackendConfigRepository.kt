@@ -63,8 +63,6 @@ internal class BackendConfigRepository @Inject constructor(
         isSelected = isSelected,
     ).apply {
         serverConfig.target = this@toBackendConfigEntity.serverConfig?.toBackendServerConfigEntity()
-        authConfig.target =
-            this@toBackendConfigEntity.backendAuthConfig?.toBackendAuthConfigEntity()
         mkDocsWebConfig.target =
             this@toBackendConfigEntity.mkDocsWebConfig?.toMkDocsWebConfigEntity()
         mkDocsWebAuthConfig.target =
@@ -113,6 +111,29 @@ internal class BackendConfigRepository @Inject constructor(
         return backendConfigPersistenceManager.standardOperation().query {
             equal(BackendConfigEntity_.isSelected, true)
         }.subscribe().toFlow().map { it.firstOrNull() }
+    }
+
+    /**
+     * Removes the stored HTTP Basic credentials of the backend API from every backend config,
+     * see [MigrateBackendBasicAuthUseCase].
+     *
+     * @param onRemoved called with the backend config id and the username of the removed credentials
+     */
+    fun removeBackendBasicAuth(onRemoved: (backendId: Long, username: String) -> Unit) {
+        val configBox = backendConfigPersistenceManager.standardOperation()
+        val authBox = backendAuthConfigPersistenceManager.standardOperation()
+        configBox.store.runInTx {
+            val configs = configBox.all
+            configs.forEach { config ->
+                val auth = config.authConfig.target ?: return@forEach
+                onRemoved(config.entityId, auth.username)
+                config.authConfig.target = null
+                configBox.put(config)
+            }
+            // credentials still used for the MkDocs website stay
+            val stillUsed = configs.mapNotNull { it.mkDocsWebAuthConfig.targetId.takeIf { id -> id != 0L } }.toSet()
+            authBox.all.filter { it.entityId !in stillUsed }.forEach { authBox.remove(it) }
+        }
     }
 
     fun delete(config: BackendConfig): Boolean {
