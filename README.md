@@ -74,6 +74,8 @@ The easiest way to install it and get updates is [Obtainium](https://github.com/
 4. Tap **Install**. Obtainium checks for new builds and offers the update.
 
 All builds are signed with the same key, so they update an APK installed from a CI build.
+The app's version name does not change between builds (the release tags are `build-<n>`), so if
+Obtainium reports a version mismatch, turn off its version detection for this app.
 
 ## Client Setup
 
