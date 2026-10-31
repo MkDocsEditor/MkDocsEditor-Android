@@ -4,6 +4,8 @@ import de.markusressel.mkdocseditor.auth.api.AuthApi
 import de.markusressel.mkdocseditor.auth.api.AuthApiException
 import de.markusressel.mkdocseditor.auth.api.AuthApiFactory
 import de.markusressel.mkdocseditor.auth.api.AuthStatus
+import de.markusressel.mkdocseditor.auth.api.ServerInfo
+import de.markusressel.mkdocseditor.auth.link.ConnectPayload
 import de.markusressel.mkdocseditor.auth.api.LinkInfo
 import de.markusressel.mkdocseditor.auth.api.LoginResponse
 import de.markusressel.mkdocseditor.auth.api.PasskeyCeremony
@@ -150,6 +152,16 @@ class AuthRepository(
     }
 
     suspend fun status(backend: BackendRef): AuthStatus = api(backend).status()
+
+    suspend fun serverInfo(backend: BackendRef): ServerInfo = api(backend).serverInfo()
+
+    /**
+     * Signs in with the token of a connect link (device pairing)
+     */
+    suspend fun redeemDeviceLink(backend: BackendRef, payload: ConnectPayload): LoginOutcome = handleLogin(
+        backend,
+        api(backend).redeemDeviceLink(payload.token, payload.username, deviceName),
+    )
 
     suspend fun login(backend: BackendRef, username: String, password: String): LoginOutcome =
         handleLogin(backend, api(backend).login(username.trim(), password, deviceName))

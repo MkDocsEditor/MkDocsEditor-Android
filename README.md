@@ -79,8 +79,20 @@ Obtainium reports a version mismatch, turn off its version detection for this ap
 
 ## Client Setup
 
-Simply enter the server connection details in the settings of the app
-and voila your done! :smile:
+**Scan the QR code on the web client's account page.** Sign in on the web client, open your
+account page and choose **Connect the Android app**. Scan the QR code with the phone's camera
+(or open the link on the phone). The app adds the server, signs you in and opens your
+documents. The code works once and for 5 minutes.
+
+Without the web client at hand, open the app and enter the **Server address**: the address of
+the web client (like `edit.wiki.example.com`) or of the backend. The app finds the backend,
+the server's name and the wiki on its own; name, description and a login for the published
+wiki are under **Advanced**. Then sign in with a passkey or your password; password managers
+like Bitwarden fill in and save the login. Invite, setup and reset links from the web client
+open in the app, too.
+
+For the links to open the app directly (Android App Links), the web client's host must serve
+`/.well-known/assetlinks.json` for the app, see `docs/auth.md` of the backend.
 
 # Developer Instructions
 

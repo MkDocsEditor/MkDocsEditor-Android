@@ -34,7 +34,7 @@
     <string name="auth_disabled_hint">This backend runs without authentication.</string>
     <string name="auth_setup_required_hint">This backend has no accounts yet. Open the setup link from the backend log (or run \"mkdocsrest setup-link\") and paste it below.</string>
     <string name="auth_second_factor_setup_hint">This backend requires a second factor. Set up an authenticator app or a passkey in your account before you continue.</string>
-    <string name="auth_have_a_link">Got an invite, setup or reset link?</string>
+    <string name="auth_have_a_link">Got a connect, invite, setup or reset link?</string>
     <string name="auth_link_input_label">Link or token</string>
     <string name="auth_open_link">Open link</string>
     <string name="auth_session_ended_title">You are signed out</string>
@@ -158,4 +158,36 @@
     <string name="account_confirm">Confirm</string>
     <string name="account_cancel">Cancel</string>
     <string name="account_signed_out">Signed out.</string>
+    <!-- onboarding: add a server -->
+    <string name="onboarding_title">Add a server</string>
+    <string name="onboarding_qr_title">Fastest: scan the QR code</string>
+    <string name="onboarding_qr_hint">Sign in on the web client, open your account page and choose "Connect the Android app". Scan the QR code with your camera or tap the link on this phone. The app sets everything up and signs you in.</string>
+    <string name="onboarding_manual_title">Or enter the address</string>
+    <string name="onboarding_address">Server address</string>
+    <string name="onboarding_address_hint">The address of the web client or of the backend. A connect or invite link works too.</string>
+    <string name="onboarding_advanced">Advanced</string>
+    <string name="onboarding_name">Name</string>
+    <string name="onboarding_name_hint">Leave empty to use the server\'s name</string>
+    <string name="onboarding_description">Description</string>
+    <string name="onboarding_wiki_auth_hint">Only if the published wiki itself asks for a username and password (HTTP basic auth):</string>
+    <string name="onboarding_wiki_username">Wiki username</string>
+    <string name="onboarding_wiki_password">Wiki password</string>
+    <string name="onboarding_error_address">That is not a valid address.</string>
+    <string name="onboarding_error_unreachable">The server cannot be reached. Check the address and your connection.</string>
+    <string name="onboarding_error_not_mkdocseditor">No MkDocsEditor web client or backend answers at this address. Enter the address of the web client or the backend.</string>
+    <string name="onboarding_setup_title">%1$s has no admin yet</string>
+    <string name="onboarding_setup_hint">The server printed a setup link when it started (also available with "mkdocsrest setup-link"). Paste it here to create the first admin account.</string>
+    <string name="onboarding_other_server">Use another server</string>
+
+    <!-- connect links (device pairing) -->
+    <string name="connect_title">Connect this device</string>
+    <string name="connect_confirm">Sign in as %1$s on this device?</string>
+    <string name="connect_button">Connect</string>
+    <string name="connect_sign_in_manually">Sign in manually</string>
+    <string name="connect_retry">Try again</string>
+    <string name="connect_done">Connected to %1$s as %2$s</string>
+    <string name="connect_error_invalid">This connect link cannot be read. Create a new one on the web client\'s account page.</string>
+    <string name="connect_error_update_app">This connect link needs a newer version of the app. Update the app and open the link again.</string>
+    <string name="connect_error_expired">This connect link expired or was already used. Each link works once, for 5 minutes. Create a new one on the web client\'s account page, or sign in manually.</string>
+    <string name="connect_error_unreachable">The server cannot be reached. Check your connection and try again.</string>
 </resources>

@@ -16,6 +16,8 @@ import de.markusressel.mkdocseditor.auth.token.AndroidKeystoreKey
 import de.markusressel.mkdocseditor.auth.token.EncryptedTokenStore
 import de.markusressel.mkdocseditor.auth.token.SharedPreferencesKeyValueStore
 import de.markusressel.mkdocseditor.auth.token.TokenStore
+import de.markusressel.mkdocseditor.auth.discovery.ServerDiscoverer
+import de.markusressel.mkdocseditor.auth.discovery.ServerDiscovery
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
@@ -43,16 +45,22 @@ object AuthModule {
         )
     }
 
-    @Provides
-    @Singleton
-    fun provideAuthApiFactory(): AuthApiFactory {
-        val client = OkHttpClient.Builder()
+    /** the HTTP client of the account endpoints and of server discovery */
+    private val authClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
             // Argon2id hashing on the server may queue for a moment
             .readTimeout(30, TimeUnit.SECONDS)
             .build()
-        return AuthApiFactory { baseUrl -> OkHttpAuthApi(baseUrl, client) }
     }
+
+    @Provides
+    @Singleton
+    fun provideAuthApiFactory(): AuthApiFactory = AuthApiFactory { baseUrl -> OkHttpAuthApi(baseUrl, authClient) }
+
+    @Provides
+    @Singleton
+    fun provideServerDiscoverer(apiFactory: AuthApiFactory): ServerDiscoverer = ServerDiscovery(authClient, apiFactory)
 
     @Provides
     @Singleton

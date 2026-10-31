@@ -15,6 +15,16 @@ interface AuthApi {
 
     suspend fun status(): AuthStatus
 
+    /** GET /server-info/; a 404 means a backend from before server info */
+    suspend fun serverInfo(): ServerInfo
+
+    /**
+     * Redeems the token of a connect link (device pairing)
+     *
+     * @param username the username of the link; the server checks that it matches
+     */
+    suspend fun redeemDeviceLink(token: String, username: String?, deviceName: String): LoginResponse
+
     suspend fun login(username: String, password: String, deviceName: String): LoginResponse
 
     /**
@@ -111,6 +121,12 @@ interface AuthApi {
      * @return how many sessions were revoked
      */
     suspend fun revokeOtherSessions(token: String): Int
+
+    /**
+     * Creates a connect link for another device (step-up). The web client does this; the app
+     * only needs it for tests.
+     */
+    suspend fun createDeviceLink(token: String, deviceName: String?): DeviceLinkCreated
 }
 
 /**

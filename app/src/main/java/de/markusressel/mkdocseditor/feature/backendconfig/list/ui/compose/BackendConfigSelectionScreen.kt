@@ -12,6 +12,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import de.markusressel.mkdocseditor.feature.auth.onboarding.ui.compose.ConnectServerScreen
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.BackendConfigEditScreen
 import de.markusressel.mkdocseditor.feature.backendconfig.list.ui.BackendSelectionViewModel
 
@@ -28,7 +29,8 @@ object BackendConfigSelectionScreen : Screen {
             viewModel.events.collect { event ->
                 when (event) {
                     is BackendSelectionViewModel.BackendSelectionEvent.CreateBackend -> {
-                        navigator.push(BackendConfigEditScreen())
+                        // the address is enough, discovery fills in the rest
+                        navigator.push(ConnectServerScreen())
                     }
 
                     is BackendSelectionViewModel.BackendSelectionEvent.EditBackend -> {
@@ -39,6 +41,13 @@ object BackendConfigSelectionScreen : Screen {
                         Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
                     }
                 }
+            }
+        }
+
+        // first run: no server yet, so ask for its address right away
+        LaunchedEffect(uiState.isLoading, uiState.listItems.isEmpty()) {
+            if (!uiState.isLoading && uiState.listItems.isEmpty() && navigator.lastItem == this@BackendConfigSelectionScreen) {
+                navigator.replaceAll(ConnectServerScreen(firstRun = true))
             }
         }
 

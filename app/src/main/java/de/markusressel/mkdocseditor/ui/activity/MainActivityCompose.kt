@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.SlideTransition
 import de.markusressel.mkdocseditor.auth.link.AuthLinkParser
+import de.markusressel.mkdocseditor.auth.link.ConnectLinkParser
+import de.markusressel.mkdocseditor.feature.auth.onboarding.ui.compose.ConnectLinkScreen
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.LocalAuthFlowExit
 import de.markusressel.mkdocseditor.feature.auth.link.ui.compose.AuthLinkScreen
 import androidx.activity.compose.setContent
@@ -53,7 +55,8 @@ private fun AuthLinkFlow(link: String, onExit: () -> Unit) {
     CompositionLocalProvider(LocalAuthFlowExit provides onExit) {
         Surface(modifier = Modifier.fillMaxSize()) {
             key(link) {
-                Navigator(AuthLinkScreen(linkText = link)) { navigator ->
+                val first = if (ConnectLinkParser.isConnectLink(link)) ConnectLinkScreen(link) else AuthLinkScreen(linkText = link)
+                Navigator(first) { navigator ->
                     SlideTransition(navigator)
                 }
             }
@@ -65,7 +68,7 @@ private fun AuthLinkFlow(link: String, onExit: () -> Unit) {
 class MainActivityCompose : AppCompatActivity() {
 
     /**
-     * A setup, invite or reset link this activity was opened with
+     * A setup, invite, reset or connect link this activity was opened with
      */
     private val pendingAuthLink = mutableStateOf<String?>(null)
 
@@ -127,7 +130,7 @@ class MainActivityCompose : AppCompatActivity() {
     private fun handleAuthLink(intent: Intent?) {
         if (intent?.action != Intent.ACTION_VIEW) return
         val data = intent.dataString ?: return
-        if (AuthLinkParser.parse(data) != null) {
+        if (AuthLinkParser.parse(data) != null || ConnectLinkParser.isConnectLink(data)) {
             pendingAuthLink.value = data
         }
         // the link token must not stay in the intent (recents, recreation)

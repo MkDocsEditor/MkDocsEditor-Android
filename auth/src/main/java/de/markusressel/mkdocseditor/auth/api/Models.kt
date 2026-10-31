@@ -16,6 +16,36 @@ data class AuthStatus(
     val legacyBasicAuth: Boolean = false,
 )
 
+/**
+ * GET /server-info/: public facts about an instance for onboarding screens
+ */
+@JsonClass(generateAdapter = true)
+data class ServerInfo(
+    val name: String? = null,
+    val version: String? = null,
+    val protocolVersion: Int? = null,
+    val backendUrl: String? = null,
+    val wikiUrl: String? = null,
+    val webClientUrl: String? = null,
+    val setupRequired: Boolean = false,
+    val authDisabled: Boolean = false,
+    val passkeys: PasskeySupport = PasskeySupport(),
+    val loginMethods: List<String> = emptyList(),
+    val require2FA: Boolean = false,
+)
+
+/**
+ * POST /account/device-links/: a single-use token that connects another device
+ */
+@JsonClass(generateAdapter = true)
+data class DeviceLinkCreated(
+    val token: String,
+    val expiresAt: Instant? = null,
+    val connectUrl: String? = null,
+) {
+    override fun toString() = "DeviceLinkCreated(expiresAt=$expiresAt)"
+}
+
 @JsonClass(generateAdapter = true)
 data class PasskeySupport(
     val enabled: Boolean = false,

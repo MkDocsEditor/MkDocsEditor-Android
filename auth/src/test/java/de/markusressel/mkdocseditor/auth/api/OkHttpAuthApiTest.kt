@@ -211,6 +211,24 @@ class OkHttpAuthApiTest {
     }
 
     @Test
+    fun `server info and device link redeem`() = runTest {
+        respond(200, """{"name": "Wiki", "protocolVersion": 1, "backendUrl": null, "loginMethods": ["password", "device-link"], "future": 1}""")
+        val info = api.serverInfo()
+        assertEquals("Wiki", info.name)
+        assertNull(info.backendUrl)
+        assertEquals(listOf("password", "device-link"), info.loginMethods)
+
+        respond(200, """{"status": "ok", "user": {"id": "u", "username": "markus", "displayName": "Markus", "role": "admin"}, "token": "mds_x"}""")
+        assertEquals("mds_x", api.redeemDeviceLink("mdd_token", "markus", "Pixel 8").token)
+
+        assertEquals("/server-info/", server.takeRequest().url.encodedPath)
+        val redeem = server.takeRequest()
+        assertEquals("/auth/device-link/redeem/", redeem.url.encodedPath)
+        assertEquals("MkDocsEditor-Android", redeem.headers["X-Requested-With"])
+        assertEquals("""{"token":"mdd_token","username":"markus","deviceName":"Pixel 8","sessionType":"bearer"}""", redeem.bodyText())
+    }
+
+    @Test
     fun `base url with a path prefix`() = runTest {
         val prefixed = OkHttpAuthApi(server.url("/api").toString(), OkHttpClient())
         respond(200, "{}")
