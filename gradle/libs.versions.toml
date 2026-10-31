@@ -151,7 +151,7 @@ markusressel-typedpreferences = { group = "com.github.markusressel", name = "Typ
 markusressel-kutepreferences-core = { group = "com.github.markusressel.KutePreferences", name = "core", version.ref = "kutePreferences" }
 markusressel-kutepreferences-ui = { group = "com.github.markusressel.KutePreferences", name = "ui", version.ref = "kutePreferences" }
 
-markusressel-kodeeditor = { group = "com.github.markusressel", name = "KodeEditor", version = "7120cfd3fc" }
+markusressel-kodeeditor = { group = "com.github.markusressel", name = "KodeEditor", version = "1b1d008641" }
 
 mikepenz-aboutlibraries = { module = "com.mikepenz:aboutlibraries", version.ref = "aboutlibrariesVersion" }
 mikepenz-aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutlibrariesVersion" }

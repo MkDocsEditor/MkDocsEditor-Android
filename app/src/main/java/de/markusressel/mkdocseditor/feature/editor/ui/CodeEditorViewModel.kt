@@ -590,6 +590,7 @@ internal class CodeEditorViewModel @Inject constructor(
         when (action) {
             is TopAppBarAction.CodeEditor.TogglePreviewAction -> togglePreviewVisibility()
             is TopAppBarAction.CodeEditor.ShowInBrowserAction -> onOpenInBrowserClicked()
+            is TopAppBarAction.CodeEditor.OnlineUsersAction -> Unit
         }
     }
 
