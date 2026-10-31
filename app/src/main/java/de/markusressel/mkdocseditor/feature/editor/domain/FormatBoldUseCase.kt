@@ -10,7 +10,7 @@ internal class FormatBoldUseCase @Inject constructor(
     operator fun invoke(text: String, selectionStart: Int, selectionEnd: Int): FormatResult {
 
         // check if the current selection is already bold
-        val selectionIsBold = run {
+        val selectionIsBold = selectionStart >= 2 && selectionEnd + 2 <= text.length && run {
             val selectedText =
                 text.safeSubstring((selectionStart - 2), (selectionEnd + 2))
             selectedText.startsWith("**") && selectedText.endsWith("**")
