@@ -40,6 +40,8 @@ import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.Resource.Success
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.automerge.Automerge2DocumentSyncManager
+import de.markusressel.mkdocsrestclient.sync.text.TextSplice
+import de.markusressel.mkdocsrestclient.sync.text.transformIndex
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -288,7 +290,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 // launch coroutine to continuously watch for changes
                 watchTextChanges()
             },
-            onTextChanged = ::onTextChanged,
+            onTextChanged = ::onRemoteTextChanged,
             readOnly = uiState.value.editModeActive.not()
         )
     }
@@ -645,6 +647,24 @@ internal class CodeEditorViewModel @Inject constructor(
                 selection = TextRange(
                     oldSelectionStart.coerceIn(0, newText.length),
                     oldSelectionEnd.coerceIn(0, newText.length),
+                ),
+            )
+        }
+        saveEditorState()
+    }
+
+    /**
+     * Applies remote changes to the editor and moves the selection with them,
+     * so it stays on the same characters.
+     */
+    private fun onRemoteTextChanged(newText: String, splices: List<TextSplice>) {
+        _uiState.update { old ->
+            val selection = old.selection ?: TextRange.Zero
+            old.copy(
+                text = AnnotatedString(newText),
+                selection = TextRange(
+                    transformIndex(selection.start, splices).coerceIn(0, newText.length),
+                    transformIndex(selection.end, splices).coerceIn(0, newText.length),
                 ),
             )
         }
