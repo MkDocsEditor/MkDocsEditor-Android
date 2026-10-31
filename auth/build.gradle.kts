@@ -16,6 +16,9 @@ dependencies {
     ksp(libs.moshi.kotlin.codegen)
 
     implementation(libs.kotlinx.coroutines.core)
+    api(libs.okhttp)
 
     testImplementation(libs.junit4)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
