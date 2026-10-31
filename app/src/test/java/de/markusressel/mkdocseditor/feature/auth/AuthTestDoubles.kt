@@ -1,6 +1,10 @@
 package de.markusressel.mkdocseditor.feature.auth
 
 import android.content.Context
+import de.markusressel.mkdocseditor.feature.auth.passkeyprompt.data.CredentialProviders
+import de.markusressel.mkdocseditor.feature.auth.passkeyprompt.data.PasskeyPromptState
+import de.markusressel.mkdocseditor.feature.auth.passkeyprompt.data.PasskeyPromptStore
+import java.time.Instant
 import de.markusressel.mkdocseditor.feature.auth.common.data.AuthBackends
 import de.markusressel.mkdocseditor.feature.auth.common.data.BackendConfigPlanner
 import de.markusressel.mkdocseditor.feature.auth.common.data.ServerSetup
@@ -68,4 +72,31 @@ object UnusedCredentialClient : CredentialClient {
 
     override suspend fun createPasskey(activityContext: Context, requestJson: String): String? = error("not used")
     override suspend fun savePassword(activityContext: Context, username: String, password: String) = error("not used")
+}
+
+class FakePasskeyPromptStore : PasskeyPromptStore {
+    val states = mutableMapOf<Long, PasskeyPromptState>()
+
+    override fun state(backendId: Long) = states[backendId] ?: PasskeyPromptState()
+    override fun skipped(backendId: Long, at: Instant) {
+        states[backendId] = state(backendId).copy(skippedAt = at)
+    }
+
+    override fun reminderDismissed(backendId: Long, at: Instant) {
+        states[backendId] = state(backendId).copy(reminderDismissedAt = at)
+    }
+
+    override fun registered(backendId: Long, passkeyId: String) {
+        states[backendId] = PasskeyPromptState(registeredHere = state(backendId).registeredHere + passkeyId)
+    }
+}
+
+class FakeCredentialProviders(
+    val installed: MutableSet<String> = mutableSetOf(),
+    var providerSettings: Boolean = true,
+) : CredentialProviders {
+    override fun isInstalled(packageName: String) = packageName in installed
+    override fun canOpenProviderSettings() = providerSettings
+    override fun openProviderSettings(activityContext: Context) = providerSettings
+    override fun openStore(activityContext: Context, url: String) = true
 }

@@ -101,11 +101,11 @@ internal class AuthLinkViewModel @Inject constructor(
 
                 is UiEvent.DoneClicked -> {
                     val config = backendConfig
-                    if (uiState.value.secondFactorSetupRequired && config != null) {
+                    when {
+                        config == null || uiState.value.step != Step.Done -> _events.send(LinkEvent.Close)
                         // the backend wants a second factor before anything else works
-                        _events.send(LinkEvent.OpenAccount(config.id))
-                    } else {
-                        _events.send(LinkEvent.Close)
+                        uiState.value.secondFactorSetupRequired -> _events.send(LinkEvent.OpenAccount(config.id))
+                        else -> _events.send(LinkEvent.SignedIn(config.id))
                     }
                 }
             }
@@ -329,6 +329,9 @@ internal class AuthLinkViewModel @Inject constructor(
 
         data object Close : LinkEvent
         data class OpenAccount(val backendId: Long) : LinkEvent
+
+        /** the account exists and this device is signed in */
+        data class SignedIn(val backendId: Long) : LinkEvent
     }
 
     companion object {

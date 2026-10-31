@@ -16,7 +16,7 @@ import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.popOrExit
 import de.markusressel.mkdocseditor.feature.auth.login.ui.compose.LoginScreen
 import de.markusressel.mkdocseditor.feature.auth.onboarding.ui.ConnectLinkViewModel
 import de.markusressel.mkdocseditor.feature.auth.onboarding.ui.ConnectLinkViewModel.ConnectLinkEvent
-import de.markusressel.mkdocseditor.feature.main.data.rememberMainNavigationRequests
+import de.markusressel.mkdocseditor.feature.auth.passkeyprompt.ui.compose.PasskeySetupScreen
 
 /**
  * Connect to a server with a connect link of the web client (device pairing)
@@ -30,7 +30,6 @@ data class ConnectLinkScreen(
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
         val exit = LocalAuthFlowExit.current
-        val mainNavigation = rememberMainNavigationRequests()
         val viewModel = getViewModel<ConnectLinkViewModel>()
         val uiState by viewModel.uiState.collectAsState()
 
@@ -48,8 +47,7 @@ data class ConnectLinkScreen(
                             context.getString(R.string.connect_done, state.serverName, state.username),
                             Toast.LENGTH_LONG,
                         ).show()
-                        mainNavigation.showFileBrowser()
-                        navigator.popOrExit(exit)
+                        navigator.replace(PasskeySetupScreen(event.backendId))
                     }
 
                     is ConnectLinkEvent.OpenLogin -> navigator.replace(LoginScreen(event.backendId))

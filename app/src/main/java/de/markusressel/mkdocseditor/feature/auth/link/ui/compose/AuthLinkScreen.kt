@@ -16,7 +16,7 @@ import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.LocalAuthFlow
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.findActivity
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.popOrExit
 import de.markusressel.mkdocseditor.feature.auth.link.ui.AuthLinkViewModel
-import de.markusressel.mkdocseditor.feature.main.data.rememberMainNavigationRequests
+import de.markusressel.mkdocseditor.feature.auth.passkeyprompt.ui.compose.PasskeySetupScreen
 import kotlinx.coroutines.launch
 
 /**
@@ -37,7 +37,6 @@ data class AuthLinkScreen(
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
         val exit = LocalAuthFlowExit.current
-        val mainNavigation = rememberMainNavigationRequests()
 
         val viewModel = getViewModel<AuthLinkViewModel>()
         val uiState by viewModel.uiState.collectAsState()
@@ -71,10 +70,8 @@ data class AuthLinkScreen(
                         }
                     }
 
-                    is AuthLinkViewModel.LinkEvent.Close -> {
-                        if (viewModel.uiState.value.step == AuthLinkViewModel.Step.Done) mainNavigation.showFileBrowser()
-                        navigator.popOrExit(exit)
-                    }
+                    is AuthLinkViewModel.LinkEvent.Close -> navigator.popOrExit(exit)
+                    is AuthLinkViewModel.LinkEvent.SignedIn -> navigator.replace(PasskeySetupScreen(event.backendId))
                     is AuthLinkViewModel.LinkEvent.OpenAccount -> navigator.replace(AccountScreen(event.backendId))
                 }
             }

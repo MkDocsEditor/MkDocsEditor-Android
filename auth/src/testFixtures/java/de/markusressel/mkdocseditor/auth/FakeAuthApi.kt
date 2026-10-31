@@ -45,6 +45,8 @@ open class FakeAuthApi : AuthApi {
     var onRedeemDeviceLink: (String, String?) -> LoginResponse = { _, _ -> error("unexpected device link") }
     var linkInfo = LinkInfo(kind = "invite", role = "editor")
     var ceremony = PasskeyCeremony("cer", """{"challenge":"abc"}""")
+    var onBeginAddPasskey: () -> PasskeyCeremony = { ceremony }
+    var onFinishAddPasskey: (String?) -> PasskeyInfo = { name -> PasskeyInfo("new", name ?: "Passkey") }
 
     override suspend fun status(): AuthStatus = status.also { calls += "status" }
 
@@ -141,9 +143,9 @@ open class FakeAuthApi : AuthApi {
 
     override suspend fun regenerateRecoveryCodes(token: String) = List(10) { "new-$it" }.also { calls += "regenerate" }
     override suspend fun passkeys(token: String) = onPasskeys().also { calls += "passkeys" }
-    override suspend fun beginAddPasskey(token: String) = ceremony.also { calls += "beginAddPasskey" }
+    override suspend fun beginAddPasskey(token: String) = onBeginAddPasskey().also { calls += "beginAddPasskey" }
     override suspend fun finishAddPasskey(token: String, ceremonyId: String, credentialJson: String, name: String?) =
-        PasskeyInfo("new", name ?: "Passkey").also { calls += "finishAddPasskey:$name" }
+        onFinishAddPasskey(name).also { calls += "finishAddPasskey:$name" }
 
     override suspend fun renamePasskey(token: String, id: String, name: String) =
         PasskeyInfo(id, name).also { calls += "renamePasskey:$id:$name" }

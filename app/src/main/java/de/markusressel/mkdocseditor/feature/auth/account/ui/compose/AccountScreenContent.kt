@@ -110,6 +110,9 @@ internal fun AccountScreenContent(
             }
 
             val account = uiState.account
+            if (account != null && uiState.showPasskeyReminder) {
+                PasskeyReminderCard(uiState.loading, onUiEvent)
+            }
             if (account != null) {
                 ProfileSection(uiState, account, onUiEvent)
                 SecuritySection(account, onUiEvent)
@@ -142,6 +145,21 @@ private fun SectionCard(title: String, content: @Composable ColumnScope.() -> Un
         ) {
             Text(text = title, style = MaterialTheme.typography.titleMedium)
             content()
+        }
+    }
+}
+
+@Composable
+private fun PasskeyReminderCard(loading: Boolean, onUiEvent: (UiEvent) -> Unit) {
+    SectionCard(title = stringResource(R.string.passkey_setup_title)) {
+        Text(text = stringResource(R.string.passkey_reminder_hint), style = MaterialTheme.typography.bodyMedium)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(enabled = !loading, onClick = { onUiEvent(UiEvent.AddPasskeyClicked) }) {
+                Text(stringResource(R.string.passkey_setup_create))
+            }
+            TextButton(onClick = { onUiEvent(UiEvent.PasskeyReminderDismissed) }) {
+                Text(stringResource(R.string.passkey_reminder_dismiss))
+            }
         }
     }
 }

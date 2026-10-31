@@ -190,4 +190,22 @@
     <string name="connect_error_update_app">This connect link needs a newer version of the app. Update the app and open the link again.</string>
     <string name="connect_error_expired">This connect link expired or was already used. Each link works once, for 5 minutes. Create a new one on the web client\'s account page, or sign in manually.</string>
     <string name="connect_error_unreachable">The server cannot be reached. Check your connection and try again.</string>
+
+    <string name="passkey_setup_title">Sign in with a passkey next time</string>
+    <string name="passkey_setup_hint">A passkey replaces your password and second factor. Your password manager keeps it, and signing in takes one tap.</string>
+    <string name="passkey_setup_bitwarden_installed">Bitwarden is installed. Choose Bitwarden in the next dialog to keep the passkey there.</string>
+    <string name="passkey_setup_bitwarden_enable_hint">If Bitwarden is not offered, turn it on as a passkey provider in the system settings first.</string>
+    <string name="passkey_setup_open_settings">Open passkey provider settings</string>
+    <string name="passkey_setup_bitwarden_missing">We recommend Bitwarden for passkeys. Any other password manager works as well.</string>
+    <string name="passkey_setup_play_store">Bitwarden on Google Play</string>
+    <string name="passkey_setup_fdroid">Bitwarden on F-Droid</string>
+    <string name="passkey_setup_create">Create passkey</string>
+    <string name="passkey_setup_later">Later</string>
+    <string name="passkey_setup_done">Passkey created</string>
+    <string name="passkey_setup_done_with">Passkey created and saved in %1$s</string>
+    <string name="passkey_setup_done_hint">Next time, choose \"Sign in with a passkey\" on the login screen.</string>
+    <string name="passkey_setup_error_reauth">The server wants you to confirm your password first. Create the passkey on the account screen instead.</string>
+    <string name="passkey_setup_settings_missing">The passkey provider settings cannot be opened on this device.</string>
+    <string name="passkey_reminder_hint">You have no passkey for this app yet. A passkey lets you sign in with one tap from your password manager.</string>
+    <string name="passkey_reminder_dismiss">Not now</string>
 </resources>

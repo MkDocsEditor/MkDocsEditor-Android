@@ -99,4 +99,13 @@
 
     </application>
 
+
+    <!-- password managers the passkey suggestion looks for -->
+    <queries>
+        <package android:name="com.x8bit.bitwarden" />
+        <package android:name="com.onepassword.android" />
+        <package android:name="com.dashlane" />
+        <package android:name="proton.android.pass" />
+    </queries>
+
 </manifest>
