@@ -85,7 +85,9 @@ class AutomergeGoInteropTest {
     @Test
     fun `live sync session with automerge-go`() {
         val binary = System.getProperty("automerge.interop.go") ?: return
-        val fixtureDir = File(requireNotNull(javaClass.classLoader?.getResource("automerge-go/go-base.automerge")).toURI()).parentFile
+        val fixtureDir = requireNotNull(
+            File(requireNotNull(javaClass.classLoader?.getResource("automerge-go/go-base.automerge")).toURI()).parentFile
+        )
 
         val process = ProcessBuilder(binary, "serve", fixtureDir.absolutePath)
             .redirectError(ProcessBuilder.Redirect.INHERIT)

@@ -3,23 +3,24 @@ package de.markusressel.mkdocsrestclient.sync.websocket
 interface WebsocketConnectionListener {
 
     /**
-     * Called when the connection status of the websocket changes
-     *
-     * @param connected true, when the websocket is now connected, false otherwise
-     * @param errorCode optional error code if the connection was ended
-     * @param throwable optional exception that occurred
+     * Called when the websocket is open
      */
-    fun onConnectionChanged(
-        connected: Boolean,
-        errorCode: Int? = null,
-        throwable: Throwable? = null
-    )
+    fun onOpen()
 
     /**
      * Called when a new message was received from the websocket connection.
      *
-     * @text the message received
+     * @param text the message received
      */
     fun onMessage(text: String)
 
+    /**
+     * Called when the websocket was closed by the server or failed.
+     * Not called for [WebsocketConnectionHandler.disconnect].
+     *
+     * @param code the websocket close code, or null if the connection failed
+     * @param httpStatus the HTTP status of a failed upgrade, if any
+     * @param throwable the error of a failed connection, if any
+     */
+    fun onClosed(code: Int?, httpStatus: Int? = null, throwable: Throwable? = null)
 }

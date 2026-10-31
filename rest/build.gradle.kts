@@ -42,9 +42,10 @@ dependencies {
 //    androidTestImplementation("androidx.test.espresso:espresso-core:3.1.1-alpha01")
 }
 
-// optional live interop checks against automerge-go, see tools/automerge-go-fixtures
+// optional live checks: against automerge-go (see tools/automerge-go-fixtures)
+// and against a running backend (see LiveBackendSyncTest)
 tasks.withType<Test>().configureEach {
-    listOf("automerge.interop.out", "automerge.interop.go").forEach { name ->
+    listOf("automerge.interop.out", "automerge.interop.go", "mkdocs.backend.url", "mkdocs.backend.users").forEach { name ->
         providers.gradleProperty(name).orNull?.let { systemProperty(name, it) }
     }
 }

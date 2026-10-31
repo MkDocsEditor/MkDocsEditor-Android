@@ -39,10 +39,11 @@ import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.Resource.Success
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
-import de.markusressel.mkdocsrestclient.sync.automerge.Automerge2DocumentSyncManager
+import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeDocumentSyncManager
+import de.markusressel.mkdocsrestclient.sync.automerge.LocalDocumentStore
+import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 import de.markusressel.mkdocsrestclient.sync.text.TextSplice
 import de.markusressel.mkdocsrestclient.sync.text.transformIndex
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -77,6 +78,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private val formatStrikethroughUseCase: FormatStrikethroughUseCase,
     private val formatItalicUseCase: FormatItalicUseCase,
     private val formatBoldUseCase: FormatBoldUseCase,
+    private val localDocumentStore: LocalDocumentStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
@@ -93,19 +95,25 @@ internal class CodeEditorViewModel @Inject constructor(
     private val connectionStatus = MutableStateFlow<ConnectionStatus?>(null)
 
     /**
-     * Indicates whether the edit mode can be activated or not
+     * Indicates whether a local Automerge copy of the document exists (and may be edited)
+     */
+    private val localCopyAvailable = MutableStateFlow(false)
+
+    /**
+     * Indicates whether the edit mode can be activated or not.
+     * Editing works offline as soon as a local copy exists; the edits are synced later.
      */
     val editable = combine(
-        isOfflineModeEnabledFlowUseCase(),
+        localCopyAvailable,
         connectionStatus
-    ) { offlineModeEnabled, connectionStatus ->
-        offlineModeEnabled.not() && (connectionStatus?.connected ?: false)
+    ) { localCopyAvailable, _ ->
+        localCopyAvailable && automergeDocumentSyncManager?.readOnly != true
     }.stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = false)
 
     private val webViewActionChannel = Channel<WebViewAction>(Channel.BUFFERED)
     val webViewActionFlow = webViewActionChannel.receiveAsFlow()
 
-    private var automergeDocumentSyncManaager: Automerge2DocumentSyncManager? = null
+    private var automergeDocumentSyncManager: AutomergeDocumentSyncManager? = null
 
     init {
         launch {
@@ -143,11 +151,10 @@ internal class CodeEditorViewModel @Inject constructor(
                     && editable
                     && offlineModeEnabled.not()
                     && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
-            }.collect {
-                when (it) {
-                    true -> enableEditMode()
-                    else -> disableEditMode()
-                }
+            }.distinctUntilChanged().collect {
+                // only opens the edit mode; losing the connection keeps it, because
+                // edits are kept in the local copy and synced on reconnect
+                if (it) enableEditMode()
             }
         }
 
@@ -187,12 +194,6 @@ internal class CodeEditorViewModel @Inject constructor(
         }
 
         launch {
-            uiState.map { it.editModeActive }.distinctUntilChanged().collectLatest {
-                automergeDocumentSyncManaager?.readOnly = it.not()
-            }
-        }
-
-        launch {
             while (true) {
                 delay(1000 * 5)
                 if (uiState.value.isOfflineModeBannerVisible.not() && uiState.value.webUrl != null) {
@@ -226,22 +227,21 @@ internal class CodeEditorViewModel @Inject constructor(
                 webUrl = documentUrl
             )
         }
-        automergeDocumentSyncManaager?.disconnect(
-            code = 1000,
-            reason = when (documentId) {
-                null -> "Document closed."
-                else -> "Document ID changed."
-            }
-        )
+        automergeDocumentSyncManager?.shutdown()
+        localCopyAvailable.value = false
 
         when (documentId) {
-            null -> automergeDocumentSyncManaager = null
+            null -> automergeDocumentSyncManager = null
             else -> {
                 val currentBackend = requireNotNull(getCurrentBackendConfigUseCase())
                 val serverConfig = requireNotNull(currentBackend.serverConfig)
                 val authConfig = currentBackend.backendAuthConfig
 
-                automergeDocumentSyncManaager = createAutomergeSyncManager(documentId, serverConfig, authConfig)
+                val manager = createAutomergeSyncManager(documentId, serverConfig, authConfig)
+                automergeDocumentSyncManager = manager
+                // show the local copy right away, it may hold edits made offline
+                manager.text?.let { setEditorText(it) }
+                localCopyAvailable.value = manager.hasLocalCopy
 
                 loadDocumentResource(documentId)
             }
@@ -252,8 +252,8 @@ internal class CodeEditorViewModel @Inject constructor(
         documentId: String,
         serverConfig: BackendServerConfig,
         authConfig: AuthConfig?
-    ): Automerge2DocumentSyncManager {
-        return Automerge2DocumentSyncManager(
+    ): AutomergeDocumentSyncManager {
+        return AutomergeDocumentSyncManager(
             hostname = serverConfig.domain,
             port = serverConfig.port,
             ssl = serverConfig.useSsl,
@@ -264,34 +264,46 @@ internal class CodeEditorViewModel @Inject constructor(
                 )
             },
             documentId = documentId,
-            currentText = {
-                uiState.value.text?.toString() ?: ""
-            },
-            onConnectionStatusChanged = { connected, errorCode, throwable ->
-                runOnUiThread {
-                    val status = ConnectionStatus(connected, errorCode, throwable)
-                    connectionStatus.value = status
+            store = localDocumentStore,
+            listener = object : AutomergeDocumentSyncManager.Listener {
+                override fun onConnectionStatusChanged(connected: Boolean, closeCode: Int?, throwable: Throwable?) {
+                    connectionStatus.value = ConnectionStatus(connected, closeCode, throwable)
+                    if (connected) {
+                        _uiState.update { old -> old.copy(loading = false) }
+                    }
+                }
+
+                override fun onTextReplaced(text: String) {
+                    setEditorText(text)
+                    localCopyAvailable.value = true
+                    _uiState.update { old -> old.copy(loading = false) }
+
+                    // keep the old offline cache up to date
+                    updateDocumentContentInCache(
+                        documentId = documentId,
+                        text = text
+                    )
+                }
+
+                override fun onRemoteChange(text: String, splices: List<TextSplice>) {
+                    onRemoteTextChanged(text, splices)
+                }
+
+                override fun onReadOnlyChanged(readOnly: Boolean) {
+                    // re-evaluate editable
+                    connectionStatus.value = connectionStatus.value?.copy()
+                    if (readOnly) disableEditMode()
+                }
+
+                override fun onPeersChanged(peers: List<RemotePeer>) {
+                    _uiState.update { old -> old.copy(remotePeers = peers) }
+                }
+
+                override fun onDocumentDeleted() {
+                    // the local copy (and any unsynced edits) stays available
+                    _uiState.update { old -> old.copy(isDocumentDeletedOnServer = true) }
                 }
             },
-            onInitialText = { initialText ->
-                setEditorText(initialText)
-
-                // when an entity exists and a new text is given update the entity
-                updateDocumentContentInCache(
-                    documentId = documentId,
-                    text = initialText
-                )
-
-                restoreEditorState(
-                    entity = runBlocking { getDocumentUseCase(documentId) }.data,
-                    text = initialText
-                )
-
-                // launch coroutine to continuously watch for changes
-                watchTextChanges()
-            },
-            onTextChanged = ::onRemoteTextChanged,
-            readOnly = uiState.value.editModeActive.not()
         )
     }
 
@@ -423,7 +435,9 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     private fun getCachedContent(): String? {
-        return currentResource.value?.data?.content?.target?.text
+        // prefer the local Automerge copy, it includes edits made offline
+        return automergeDocumentSyncManager?.text
+            ?: currentResource.value?.data?.content?.target?.text
     }
 
     private fun initializeInOfflineMode(cachedContent: String) {
@@ -605,39 +619,37 @@ internal class CodeEditorViewModel @Inject constructor(
         this.documentId.value = documentId
     }
 
-    private fun watchTextChanges() {
-        val syncInterval = preferencesHolder.codeEditorSyncIntervalPreference.persistedValue.value
-
-        launch {
-            try {
-                try {
-                    while (automergeDocumentSyncManaager?.isConnected == true) {
-                        automergeDocumentSyncManaager?.sync()
-                        delay(syncInterval)
-                    }
-                } catch (ex: CancellationException) {
-                    Timber.d { "Stopped watching text changes" }
-                    disconnect("Stopped")
-                } catch (ex: Exception) {
-                    Timber.e(ex)
-                    disconnect(throwable = ex)
-                }
-            } catch (ex: Exception) {
-                Timber.e(ex)
-            }
-        }
-    }
-
     internal fun onUserTextInput(text: AnnotatedString, selection: TextRange) {
+        val oldText = uiState.value.text?.text
         _uiState.update { old ->
             old.copy(
                 text = text,
                 selection = selection,
             )
         }
+        val manager = automergeDocumentSyncManager ?: return
+        if (uiState.value.editModeActive && text.text != oldText) {
+            manager.onLocalTextChanged(text.text)
+        }
+        manager.onLocalSelectionChanged(selection.start, selection.end)
+    }
+
+    /**
+     * Called when the editor screen is no longer visible.
+     * Writes the local copy to disk, so no edit is lost if the app gets killed.
+     */
+    internal fun onStop() {
+        automergeDocumentSyncManager?.persistNow()
+    }
+
+    override fun onCleared() {
+        automergeDocumentSyncManager?.shutdown()
+        super.onCleared()
     }
 
     private fun onTextChanged(newText: String) {
+        automergeDocumentSyncManager?.onLocalTextChanged(newText)
+
         val oldSelectionStart = uiState.value.selection?.start ?: 0
         val oldSelectionEnd = uiState.value.selection?.end ?: 0
 
@@ -678,10 +690,7 @@ internal class CodeEditorViewModel @Inject constructor(
         _uiState.update { old ->
             old.copy(loading = true)
         }
-        if (automergeDocumentSyncManaager?.isConnected == true) {
-            automergeDocumentSyncManaager?.disconnect(1000, reason = "Editor want's to refresh connection")
-        }
-        automergeDocumentSyncManaager?.connect()
+        automergeDocumentSyncManager?.connect()
     }
 
     /**
@@ -691,8 +700,7 @@ internal class CodeEditorViewModel @Inject constructor(
      * @param throwable an (optional) exception that is causing the disconnect
      */
     private fun disconnect(reason: String = "None", throwable: Throwable? = null) {
-        disableEditMode()
-        automergeDocumentSyncManaager?.disconnect(1000, reason)
+        automergeDocumentSyncManager?.disconnect(reason = reason)
         connectionStatus.value = ConnectionStatus(connected = false, throwable = throwable)
     }
 
@@ -737,10 +745,9 @@ internal class CodeEditorViewModel @Inject constructor(
      * Called when the user activates the edit mode
      */
     private fun enableEditMode(): Boolean {
-        // invert state of edit mode
         _uiState.update { old ->
             old.copy(
-                editModeActive = uiState.value.editModeActive.not(),
+                editModeActive = true,
                 fabConfig = old.fabConfig.copy(
                     right = listOf(DisableEditModeFabConfig)
                 ),
@@ -790,11 +797,11 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     fun isCachedContentAvailable(): Boolean {
-        return currentResource.value?.data?.content?.target?.text != null
+        return getCachedContent() != null
     }
 
     private fun onClose() {
-        automergeDocumentSyncManaager?.disconnect(1000, "Closed")
+        automergeDocumentSyncManager?.disconnect(reason = "Closed")
     }
 
     companion object {
@@ -841,6 +848,16 @@ internal class CodeEditorViewModel @Inject constructor(
         val isBottomAppBarVisible: Boolean = false,
 
         val snackbar: SnackbarData? = null,
+
+        /**
+         * Other users in this document, with their resolved cursors and selections
+         */
+        val remotePeers: List<RemotePeer> = emptyList(),
+
+        /**
+         * The document was deleted on the server; the local copy is still shown
+         */
+        val isDocumentDeletedOnServer: Boolean = false,
     )
 
     sealed class UiEvent {
