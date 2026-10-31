@@ -21,6 +21,9 @@ import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHold
 import de.markusressel.mkdocsrestclient.DummyMkDocsRestClient
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
+import de.markusressel.mkdocsrestclient.sync.automerge.FileDocumentStore
+import de.markusressel.mkdocsrestclient.sync.automerge.LocalDocumentStore
+import java.io.File
 import io.objectbox.BoxStore
 import javax.inject.Singleton
 
@@ -76,6 +79,15 @@ class AppModule {
     @Singleton
     fun provideKuteNavigator(): KuteNavigator {
         return DefaultKuteNavigator()
+    }
+
+    /**
+     * Local Automerge copies of documents, so edits survive offline periods and app restarts
+     */
+    @Provides
+    @Singleton
+    fun provideLocalDocumentStore(@ApplicationContext context: Context): LocalDocumentStore {
+        return FileDocumentStore(File(context.filesDir, "automerge"))
     }
 
     @Provides

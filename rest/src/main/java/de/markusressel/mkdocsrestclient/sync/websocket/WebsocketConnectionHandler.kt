@@ -1,145 +1,128 @@
 package de.markusressel.mkdocsrestclient.sync.websocket
 
-import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
-import de.markusressel.mkdocsrestclient.sync.EchoWebSocketListenerBase
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
+import okhttp3.WebSocketListener
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
 /**
- * Simplifies setting up and communicating over a websocket
+ * Simplifies setting up and communicating over a websocket.
+ *
+ * Listener callbacks run on an OkHttp thread. Callbacks of a socket that was replaced
+ * by a newer [connect] or closed with [disconnect] are dropped.
  */
 class WebsocketConnectionHandler(
     /**
-     * The URL at which the server is awaiting a websocket connection
+     * Configuration for HTTP Basic Auth. The header is sent with the upgrade request
+     * right away: the server does not answer with 401, it waits for a ticket instead.
      */
-    val url: String,
-    /**
-     * Configuration for HTTP Basic Auth
-     */
-    val basicAuthConfig: BasicAuthConfig?,
+    private val basicAuthConfig: BasicAuthConfig?,
+    private val client: OkHttpClient = defaultClient,
 ) {
+
+    private var listener: WebsocketConnectionListener? = null
+
+    @Volatile
+    private var webSocket: WebSocket? = null
 
     /**
      * Indicates if the websocket is connected
      */
+    @Volatile
     var isConnected = false
+        private set
 
-    private var listener: WebsocketConnectionListener? = null
-
-    private val client: OkHttpClient = run {
-        OkHttpClient.Builder()
-            .readTimeout(0, TimeUnit.MILLISECONDS)
-            .connectTimeout(3, TimeUnit.SECONDS).let {
-                if (basicAuthConfig != null) {
-                    it.authenticator { route, response ->
-                        val credential = Credentials
-                            .basic(basicAuthConfig.username, basicAuthConfig.password)
-
-                        response.request.newBuilder()
-                            .header("Authorization", credential)
-                            .build()
-                    }
-                } else {
-                    it
-                }
-            }
-            //            .pingInterval(30, TimeUnit.SECONDS)
-            .build()
-    }
-
-    private var webSocket: WebSocket? = null
-
-    /**
-     * Set a listener to react to websocket events
-     *
-     * @param listener the listener to use or null to disable it
-     */
     fun setListener(listener: WebsocketConnectionListener?) {
         this.listener = listener
     }
 
     /**
-     * Connect the websocket.
-     * If the socket is already connected this is a no-op.
+     * Connects to the given URL, replacing any previous connection
      */
-    fun connect() {
-        if (isConnected) {
-            Timber.w("Already connected")
-            return
-        }
+    @Synchronized
+    fun connect(url: String) {
+        webSocket?.close(1000, "Reconnecting")
+        isConnected = false
 
-        val request = Request.Builder().url(url).build()
-        webSocket = client.newWebSocket(request, object : EchoWebSocketListenerBase() {
+        val request = Request.Builder().url(url).apply {
+            basicAuthConfig?.let {
+                header("Authorization", Credentials.basic(it.username, it.password))
+            }
+        }.build()
+
+        webSocket = client.newWebSocket(request, object : WebSocketListener() {
+            private fun isCurrent(socket: WebSocket) = socket === webSocket
 
             override fun onOpen(webSocket: WebSocket, response: Response) {
-                super.onOpen(webSocket, response)
-                onNewConnectionStatus(true)
+                if (!isCurrent(webSocket)) return
+                isConnected = true
+                listener?.onOpen()
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
-                super.onMessage(webSocket, text)
+                if (!isCurrent(webSocket)) return
                 listener?.onMessage(text)
             }
 
+            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                webSocket.close(code, reason)
+            }
+
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                super.onClosed(webSocket, code, reason)
-                onNewConnectionStatus(false)
+                if (!isCurrent(webSocket)) return
+                markClosed()
+                listener?.onClosed(code)
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                super.onFailure(webSocket, t, response)
-                onNewConnectionStatus(false)
-
+                if (!isCurrent(webSocket)) return
                 Timber.e(t, "Websocket error")
-                runOnUiThread {
-                    listener?.onConnectionChanged(isConnected, response?.code, t)
-                }
+                markClosed()
+                listener?.onClosed(code = null, httpStatus = response?.code, throwable = t)
             }
         })
     }
 
-    /**
-     * Notifies listeners of a connection state change
-     */
-    private fun onNewConnectionStatus(connected: Boolean) {
-        if (isConnected != connected) {
-            isConnected = connected
-            listener?.onConnectionChanged(isConnected)
-        }
+    @Synchronized
+    private fun markClosed() {
+        isConnected = false
+        webSocket = null
     }
 
     /**
      * Send a message over the websocket.
      *
-     * @throws IllegalStateException when the websocket is disconnected
+     * @return false if there is no open connection
      */
-    fun send(message: String) {
-        if (!isConnected) {
-            throw IllegalStateException("There is no active connection!")
+    fun send(message: String): Boolean {
+        val socket = webSocket
+        if (!isConnected || socket == null) {
+            return false
         }
-        webSocket?.send(message)
+        return socket.send(message)
     }
 
     /**
-     * Disconnect a websocket
+     * Closes the connection. The listener is not called.
      */
+    @Synchronized
     fun disconnect(code: Int, reason: String) {
         webSocket?.close(code, reason)
         webSocket = null
         isConnected = false
     }
 
-    /**
-     * Shutdown the websocket
-     */
-    fun shutdown() {
-        client.dispatcher.executorService.shutdown()
+    companion object {
+        private val defaultClient: OkHttpClient by lazy {
+            OkHttpClient.Builder()
+                .readTimeout(0, TimeUnit.MILLISECONDS)
+                .connectTimeout(5, TimeUnit.SECONDS)
+                .build()
+        }
     }
-
 }

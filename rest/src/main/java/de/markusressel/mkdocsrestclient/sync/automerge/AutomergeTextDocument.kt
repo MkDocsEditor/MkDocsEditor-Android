@@ -37,6 +37,20 @@ class AutomergeTextDocument private constructor(
     val heads: Array<ChangeHash>
         get() = document.heads
 
+    /**
+     * The heads as hex strings, for persisting them
+     */
+    val headsHex: List<String>
+        get() = document.heads.map { it.toHex() }
+
+    /**
+     * The text of the document at the given heads (hex)
+     */
+    fun textAt(headsHex: List<String>): String {
+        val heads = headsHex.map { RestoredChangeHash(it.hexToBytes()) as ChangeHash }.toTypedArray()
+        return document.text(contentId, heads).orElse("")
+    }
+
     val actorId: ByteArray
         get() = document.actorId
 
@@ -110,7 +124,12 @@ class AutomergeTextDocument private constructor(
      */
     fun makeCursor(index: Int): String {
         val current = text
-        val codePointIndex = current.codePointCount(0, index.coerceIn(0, current.length))
+        val clamped = index.coerceIn(0, current.length)
+        if (clamped == current.length) {
+            // automerge-java cannot create a cursor behind the last character
+            return if (clamped == 0) CURSOR_START else CURSOR_END
+        }
+        val codePointIndex = current.codePointCount(0, clamped)
         return document.makeCursor(contentId, codePointIndex.toLong()).toString()
     }
 
@@ -120,6 +139,10 @@ class AutomergeTextDocument private constructor(
      * @return the position, or null if the cursor cannot be resolved (yet)
      */
     fun lookupCursor(cursor: String): Int? {
+        when (cursor) {
+            CURSOR_START -> return 0
+            CURSOR_END -> return text.length
+        }
         return try {
             val codePointIndex = document.lookupCursorIndex(contentId, Cursor.fromString(cursor)).toInt()
             val current = text
@@ -178,8 +201,22 @@ class AutomergeTextDocument private constructor(
         return result
     }
 
+    /**
+     * automerge-java's ChangeHash has no public constructor
+     */
+    private class RestoredChangeHash(bytes: ByteArray) : ChangeHash(bytes)
+
     companion object {
         const val CONTENT_KEY = "content"
+
+        /**
+         * Cursor strings for the start and the end of the text. Automerge cursors point
+         * at characters, so there is no cursor behind the last character.
+         */
+        const val CURSOR_START = "start"
+        const val CURSOR_END = "end"
+
+        private fun ChangeHash.toHex(): String = bytes.toHex()
 
         /**
          * Loads a document from the output of [save].
@@ -209,4 +246,17 @@ class AutomergeTextDocument private constructor(
             return AutomergeTextDocument(document, content.id)
         }
     }
+}
+
+/**
+ * Lower case hex representation of these bytes
+ */
+fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
+
+/**
+ * Parses a hex string (as created by [toHex])
+ */
+fun String.hexToBytes(): ByteArray {
+    require(length % 2 == 0) { "invalid hex string: $this" }
+    return ByteArray(length / 2) { i -> substring(i * 2, i * 2 + 2).toInt(16).toByte() }
 }
