@@ -7,7 +7,6 @@ import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.websocket.SocketEntityBase
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionHandler
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionListener
-import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import de.markusressel.mkdocsrestclient.toEntity
 import de.markusressel.mkdocsrestclient.toJson
 import org.automerge.AmValue
@@ -15,7 +14,6 @@ import org.automerge.Document
 import org.automerge.ObjectId
 import org.automerge.SyncState
 import timber.log.Timber
-import java.util.LinkedList
 import java.util.UUID
 
 data class SyncMessageWrapper(
@@ -34,7 +32,7 @@ class Automerge2DocumentSyncManager(
     private val documentId: String,
     private val onConnectionStatusChanged: (connected: Boolean, errorCode: Int?, throwable: Throwable?) -> Unit,
     private val onInitialText: (initialText: String) -> Unit,
-    private val onTextChanged: (newText: String, patches: LinkedList<diff_match_patch.Patch>) -> Unit,
+    private val onTextChanged: (newText: String) -> Unit,
     /**
      * A function to get a full copy of the current text on this client.
      * This method is intended for internal use only.
@@ -248,7 +246,7 @@ class Automerge2DocumentSyncManager(
                 // patching has to be done on UI thread so the user can't type while the patch is applied
                 runOnUiThread {
                     val currentTextInDocument = document.text(documentTextObjectId).get()
-                    onTextChanged(currentTextInDocument, LinkedList())
+                    onTextChanged(currentTextInDocument)
                 }
             }
         }

@@ -21,7 +21,6 @@ import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHold
 import de.markusressel.mkdocsrestclient.DummyMkDocsRestClient
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
-import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import io.objectbox.BoxStore
 import javax.inject.Singleton
 
@@ -83,12 +82,6 @@ class AppModule {
     @Singleton
     fun provideKutePreferenceDataProvider(@ApplicationContext context: Context): KutePreferenceDataProvider {
         return DefaultKutePreferenceDataProvider(context)
-    }
-
-    @Provides
-    @Singleton
-    fun provideDiffMatchPatch(): diff_match_patch {
-        return diff_match_patch()
     }
 
     @Provides
