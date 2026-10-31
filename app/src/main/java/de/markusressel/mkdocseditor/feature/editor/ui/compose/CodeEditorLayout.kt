@@ -11,6 +11,7 @@ import de.markusressel.kodeeditor.library.compose.KodeEditorDefaults
 import de.markusressel.kodehighlighter.core.ui.KodeTextFieldDefaults
 import de.markusressel.kodehighlighter.language.markdown.MarkdownRuleBook
 import de.markusressel.kodehighlighter.language.markdown.colorscheme.DarkBackgroundColorSchemeWithSpanStyle
+import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 
 
 @Composable
@@ -19,6 +20,7 @@ internal fun CodeEditorLayout(
     onTextChanged: (TextFieldValue) -> Unit,
     readOnly: Boolean,
     modifier: Modifier = Modifier,
+    remotePeers: List<RemotePeer> = emptyList(),
 ) {
     KodeEditor(
         modifier = modifier,
@@ -39,6 +41,12 @@ internal fun CodeEditorLayout(
             fontFamily = FontFamily.Monospace,
         ),
         enabled = true,
-        readOnly = readOnly
+        readOnly = readOnly,
+        overlay = { textLayoutResult ->
+            RemotePeersOverlay(
+                textLayoutResult = textLayoutResult,
+                remotePeers = remotePeers,
+            )
+        }
     )
 }

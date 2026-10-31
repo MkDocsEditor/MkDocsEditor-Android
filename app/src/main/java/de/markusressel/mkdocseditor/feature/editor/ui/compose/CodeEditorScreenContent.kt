@@ -54,6 +54,8 @@ import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.activity.SnackbarData
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
+import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
+import de.markusressel.mkdocsrestclient.sync.automerge.RemoteSelection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
@@ -94,7 +96,9 @@ internal fun CodeEditorScreenContent(
         topBar = {
             MkDocsEditorTopAppBar(
                 title = uiState.title,
-                actions = listOf(
+                actions = listOfNotNull(
+                    TopAppBarAction.CodeEditor.OnlineUsersAction(uiState.remotePeers)
+                        .takeIf { uiState.remotePeers.isNotEmpty() },
                     TopAppBarAction.CodeEditor.TogglePreviewAction(splitOrientation),
                     TopAppBarAction.CodeEditor.ShowInBrowserAction
                 ),
@@ -192,14 +196,16 @@ internal fun VerticalSplit(
                     modifier = Modifier.fillMaxSize(),
                     text = tfv,
                     onTextChanged = onTextChanged,
-                    readOnly = false
+                    readOnly = false,
+                    remotePeers = uiState.remotePeers,
                 )
             } else {
                 CodeEditorLayout(
                     modifier = Modifier.fillMaxSize(),
                     text = tfv,
                     onTextChanged = onTextChanged,
-                    readOnly = true
+                    readOnly = true,
+                    remotePeers = uiState.remotePeers,
                 )
             }
         }
@@ -245,14 +251,16 @@ internal fun HorizontalSplit(
                     modifier = Modifier.fillMaxSize(),
                     text = tfv,
                     onTextChanged = onTextChanged,
-                    readOnly = false
+                    readOnly = false,
+                    remotePeers = uiState.remotePeers,
                 )
             } else {
                 CodeEditorLayout(
                     modifier = Modifier.fillMaxSize(),
                     text = tfv,
                     onTextChanged = onTextChanged,
-                    readOnly = true
+                    readOnly = true,
+                    remotePeers = uiState.remotePeers,
                 )
             }
         }
@@ -414,7 +422,16 @@ private fun CodeEditorScreenContentOnlinePreview() {
                 fabConfig = FabConfig(
                     right = listOf(EnableEditModeFabConfig)
                 ),
-                isBottomAppBarVisible = true
+                isBottomAppBarVisible = true,
+                remotePeers = listOf(
+                    RemotePeer(
+                        clientId = "1",
+                        username = "alice",
+                        displayName = "Alice",
+                        color = "#E53935",
+                        selections = listOf(RemoteSelection(anchor = 2, head = 7)),
+                    )
+                ),
             ),
             onTextChanged = {},
             onUiEvent = {},
