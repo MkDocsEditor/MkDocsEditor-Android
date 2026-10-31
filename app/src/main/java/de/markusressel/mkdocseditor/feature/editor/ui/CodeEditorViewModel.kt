@@ -39,9 +39,7 @@ import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.Resource.Success
 import de.markusressel.mkdocsrestclient.BasicAuthConfig
-import de.markusressel.mkdocsrestclient.sync.DocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.automerge.Automerge2DocumentSyncManager
-import de.markusressel.mkdocsrestclient.sync.websocket.diff.diff_match_patch
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -57,7 +55,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
-import java.util.LinkedList
 import javax.inject.Inject
 
 @HiltViewModel
@@ -106,7 +103,6 @@ internal class CodeEditorViewModel @Inject constructor(
     private val webViewActionChannel = Channel<WebViewAction>(Channel.BUFFERED)
     val webViewActionFlow = webViewActionChannel.receiveAsFlow()
 
-    //    private var documentSyncManager: DocumentSyncManager? = null
     private var automergeDocumentSyncManaager: Automerge2DocumentSyncManager? = null
 
     init {
@@ -190,7 +186,6 @@ internal class CodeEditorViewModel @Inject constructor(
 
         launch {
             uiState.map { it.editModeActive }.distinctUntilChanged().collectLatest {
-//                documentSyncManager?.readOnly = it.not()
                 automergeDocumentSyncManaager?.readOnly = it.not()
             }
         }
@@ -249,53 +244,6 @@ internal class CodeEditorViewModel @Inject constructor(
                 loadDocumentResource(documentId)
             }
         }
-    }
-
-    private fun createDocumentSyncManager(
-        documentId: String,
-        serverConfig: BackendServerConfig,
-        authConfig: AuthConfig?
-    ): DocumentSyncManager {
-        return DocumentSyncManager(
-            hostname = serverConfig.domain,
-            port = serverConfig.port,
-            ssl = serverConfig.useSsl,
-            basicAuthConfig = authConfig?.let {
-                BasicAuthConfig(
-                    username = authConfig.username,
-                    password = authConfig.password
-                )
-            },
-            documentId = documentId,
-            currentText = {
-                uiState.value.text?.toString() ?: ""
-            },
-            onConnectionStatusChanged = { connected, errorCode, throwable ->
-                runOnUiThread {
-                    val status = ConnectionStatus(connected, errorCode, throwable)
-                    connectionStatus.value = status
-                }
-            },
-            onInitialText = { initialText ->
-                setEditorText(initialText)
-
-                // when an entity exists and a new text is given update the entity
-                updateDocumentContentInCache(
-                    documentId = documentId,
-                    text = initialText
-                )
-
-                restoreEditorState(
-                    entity = runBlocking { getDocumentUseCase(documentId) }.data,
-                    text = initialText
-                )
-
-                // launch coroutine to continuously watch for changes
-                watchTextChanges()
-            },
-            onTextChanged = ::onTextChanged,
-            readOnly = uiState.value.editModeActive.not()
-        )
     }
 
     private fun createAutomergeSyncManager(
@@ -538,7 +486,7 @@ internal class CodeEditorViewModel @Inject constructor(
             selectionEnd
         )
 
-        onTextChanged(newText, LinkedList())
+        onTextChanged(newText)
         setSelection(newSelectionStart, newSelectionEnd)
     }
 
@@ -553,7 +501,7 @@ internal class CodeEditorViewModel @Inject constructor(
             selectionEnd
         )
 
-        onTextChanged(newText, LinkedList())
+        onTextChanged(newText)
         setSelection(newSelectionStart, newSelectionEnd)
     }
 
@@ -568,7 +516,7 @@ internal class CodeEditorViewModel @Inject constructor(
             selectionEnd
         )
 
-        onTextChanged(newText, LinkedList())
+        onTextChanged(newText)
         setSelection(newSelectionStart, newSelectionEnd)
     }
 
@@ -579,7 +527,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
         val (newText, newSelectionStart, newSelectionEnd) = formatCodeBlockUseCase(text, selectionStart, selectionEnd)
 
-        onTextChanged(newText, LinkedList())
+        onTextChanged(newText)
         setSelection(newSelectionStart, newSelectionEnd)
     }
 
@@ -594,7 +542,7 @@ internal class CodeEditorViewModel @Inject constructor(
             selectionEnd
         )
 
-        onTextChanged(newText, LinkedList())
+        onTextChanged(newText)
         setSelection(newSelectionStart, newSelectionEnd)
     }
 
@@ -608,7 +556,7 @@ internal class CodeEditorViewModel @Inject constructor(
             referenceText +
             text.substring(selectionEnd)
 
-        onTextChanged(newText, LinkedList())
+        onTextChanged(newText)
         // move cursor to the end of the inserted text
         setSelection(selectionStart + referenceText.length)
     }
@@ -687,60 +635,21 @@ internal class CodeEditorViewModel @Inject constructor(
         }
     }
 
-    private fun onTextChanged(newText: String, patches: LinkedList<diff_match_patch.Patch>) {
+    private fun onTextChanged(newText: String) {
         val oldSelectionStart = uiState.value.selection?.start ?: 0
         val oldSelectionEnd = uiState.value.selection?.end ?: 0
-
-        // set new cursor position
-        val newSelectionStart = calculateNewSelectionIndex(oldSelectionStart, patches)
-            .coerceIn(0, newText.length)
-        val newSelectionEnd = calculateNewSelectionIndex(oldSelectionEnd, patches)
-            .coerceIn(0, newText.length)
 
         _uiState.update { old ->
             old.copy(
                 text = AnnotatedString(newText),
-                selection = TextRange(newSelectionStart, newSelectionEnd),
+                selection = TextRange(
+                    oldSelectionStart.coerceIn(0, newText.length),
+                    oldSelectionEnd.coerceIn(0, newText.length),
+                ),
             )
         }
         saveEditorState()
     }
-
-    private fun calculateNewSelectionIndex(
-        oldSelection: Int,
-        patches: LinkedList<diff_match_patch.Patch>
-    ): Int {
-        var newSelection = oldSelection
-
-        var currentIndex: Int
-        // calculate how many characters have been inserted before the cursor
-        patches.forEach { patch ->
-            currentIndex = patch.start1
-
-            patch.diffs.forEach { diff ->
-                when (diff.operation) {
-                    diff_match_patch.Operation.INSERT -> {
-                        if (currentIndex < newSelection) {
-                            newSelection += diff.text.length
-                        }
-                    }
-
-                    diff_match_patch.Operation.DELETE -> {
-                        if (currentIndex < newSelection) {
-                            newSelection -= diff.text.length
-                        }
-                    }
-
-                    else -> {
-                        currentIndex += diff.text.length
-                    }
-                }
-            }
-        }
-
-        return newSelection
-    }
-
 
     /**
      * Disconnects from the server (if necessary) and tries to reestablish a connection
