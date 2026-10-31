@@ -45,6 +45,7 @@ internal fun CodeEditorLayout(
         overlay = { textLayoutResult ->
             RemotePeersOverlay(
                 textLayoutResult = textLayoutResult,
+                text = text.text,
                 remotePeers = remotePeers,
             )
         }
