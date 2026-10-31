@@ -21,8 +21,15 @@ extensions.configure<ApplicationExtension> {
         versionName = "0.1.0"
 
         // host of the web client whose setup/invite/reset links open in the app (App Links)
-        manifestPlaceholders["authLinkHost"] = providers.gradleProperty("mkdocs.authLinkHost")
+        val authLinkHost = providers.gradleProperty("mkdocs.authLinkHost")
             .getOrElse("edit.wiki.markusressel.de")
+        manifestPlaceholders["authLinkHost"] = authLinkHost
+        // the account screen links there for admin features
+        resValue("string", "auth_web_client_url", "https://$authLinkHost/")
+    }
+
+    buildFeatures {
+        resValues = true
     }
 
     kotlin {
@@ -66,6 +73,7 @@ dependencies {
     implementation(libs.androidx.credentials)
     // provider on Android 13 and older
     implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.zxing.core)
 
     // Jetpack Compose
     implementation(libs.android.material)

@@ -437,7 +437,10 @@ internal class FileBrowserViewModel @Inject constructor(
             }
 
             is TopAppBarAction.FileBrowser.Profile -> {
-                _events.send(FileBrowserEvent.OpenProfileScreen)
+                // the account screen sends the user to the login when there is no session
+                getCurrentBackendConfigFlowUseCase().first()?.let {
+                    _events.send(FileBrowserEvent.OpenAccount(it.id))
+                }
             }
         }
     }
@@ -813,7 +816,7 @@ internal sealed class FileBrowserEvent {
     data class OpenDocumentEditor(val documentId: String) : FileBrowserEvent()
     data class Toast(val message: String) : FileBrowserEvent()
 
-    data object OpenProfileScreen : FileBrowserEvent()
+    data class OpenAccount(val backendId: Long) : FileBrowserEvent()
     data object OpenResourceSelection : FileBrowserEvent()
     data class OpenLogin(val backendId: Long) : FileBrowserEvent()
 }
