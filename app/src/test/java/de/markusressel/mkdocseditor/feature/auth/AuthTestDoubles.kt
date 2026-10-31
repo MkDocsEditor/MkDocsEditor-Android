@@ -2,6 +2,8 @@ package de.markusressel.mkdocseditor.feature.auth
 
 import android.content.Context
 import de.markusressel.mkdocseditor.feature.auth.common.data.AuthBackends
+import de.markusressel.mkdocseditor.feature.auth.common.data.BackendConfigPlanner
+import de.markusressel.mkdocseditor.feature.auth.common.data.ServerSetup
 import de.markusressel.mkdocseditor.feature.auth.common.data.CredentialClient
 import de.markusressel.mkdocseditor.feature.auth.common.data.ParsedBackendUrl
 import de.markusressel.mkdocseditor.feature.auth.common.data.PickedCredential
@@ -37,6 +39,18 @@ class FakeAuthBackends(vararg initial: BackendConfig) : AuthBackends {
 
     override suspend fun select(config: BackendConfig) {
         selectedId = config.id
+    }
+
+    val connected = mutableListOf<ServerSetup>()
+
+    override suspend fun connect(setup: ServerSetup): BackendConfig {
+        connected += setup
+        val planned = requireNotNull(BackendConfigPlanner.plan(configs, setup))
+        val config = if (planned.id == 0L) planned.copy(id = 100L + configs.size + 1) else planned
+        configs.removeAll { it.id == config.id }
+        configs += config
+        selectedId = config.id
+        return config
     }
 
     override fun usernameHint(id: Long) = hints[id]

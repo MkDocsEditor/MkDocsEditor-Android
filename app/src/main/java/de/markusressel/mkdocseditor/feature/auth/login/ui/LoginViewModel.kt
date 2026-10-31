@@ -10,6 +10,7 @@ import de.markusressel.mkdocseditor.auth.domain.LoginOutcome
 import de.markusressel.mkdocseditor.auth.domain.SecondFactorMethod
 import de.markusressel.mkdocseditor.auth.link.AuthLink
 import de.markusressel.mkdocseditor.auth.link.AuthLinkParser
+import de.markusressel.mkdocseditor.auth.link.ConnectLinkParser
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.auth.common.data.AuthBackends
 import de.markusressel.mkdocseditor.feature.auth.common.data.CredentialClient
@@ -231,7 +232,12 @@ internal class LoginViewModel @Inject constructor(
 
     private suspend fun openLink() {
         val ref = backend ?: return
-        val link = AuthLinkParser.parse(uiState.value.linkInput)
+        val input = uiState.value.linkInput.trim()
+        if (ConnectLinkParser.isConnectLink(input)) {
+            _events.send(LoginEvent.OpenConnectLink(input))
+            return
+        }
+        val link = AuthLinkParser.parse(input)
         if (link == null) {
             showError(UiMessage(R.string.auth_error_link_unreadable))
             return
@@ -316,6 +322,9 @@ internal class LoginViewModel @Inject constructor(
 
         data class SignedIn(val backendId: Long, val secondFactorSetupRequired: Boolean) : LoginEvent
         data class OpenLink(val link: AuthLink, val backendId: Long) : LoginEvent
+        data class OpenConnectLink(val link: String) : LoginEvent {
+            override fun toString() = "OpenConnectLink"
+        }
         data object Close : LoginEvent
     }
 

@@ -35,9 +35,30 @@ class OkHttpAuthApi(
         Types.newParameterizedType(List::class.java, SessionInfo::class.java)
     )
     private val revokedAdapter = moshi.adapter(RevokedResponse::class.java)
+    private val serverInfoAdapter = moshi.adapter(ServerInfo::class.java)
+    private val deviceLinkAdapter = moshi.adapter(DeviceLinkCreated::class.java)
 
     override suspend fun status(): AuthStatus =
         requireNotNull(http.call("GET", "auth/status/", response = statusAdapter))
+
+    override suspend fun serverInfo(): ServerInfo =
+        requireNotNull(http.call("GET", "server-info/", response = serverInfoAdapter))
+
+    override suspend fun redeemDeviceLink(token: String, username: String?, deviceName: String) =
+        loginCall("auth/device-link/redeem/") {
+            put("token", token)
+            put("username", username)
+            put("deviceName", deviceName)
+            put("sessionType", SESSION_TYPE)
+        }
+
+    override suspend fun createDeviceLink(token: String, deviceName: String?): DeviceLinkCreated = requireNotNull(
+        http.call(
+            "POST", "account/device-links/", token = token,
+            body = jsonObject { put("deviceName", deviceName) },
+            response = deviceLinkAdapter,
+        )
+    )
 
     override suspend fun login(username: String, password: String, deviceName: String) = loginCall(
         "auth/login/"

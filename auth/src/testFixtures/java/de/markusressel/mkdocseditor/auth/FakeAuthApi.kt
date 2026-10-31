@@ -8,7 +8,9 @@ import de.markusressel.mkdocseditor.auth.api.LinkInfo
 import de.markusressel.mkdocseditor.auth.api.LoginResponse
 import de.markusressel.mkdocseditor.auth.api.PasskeyCeremony
 import de.markusressel.mkdocseditor.auth.api.PasskeyInfo
+import de.markusressel.mkdocseditor.auth.api.ServerInfo
 import de.markusressel.mkdocseditor.auth.api.SessionInfo
+import de.markusressel.mkdocseditor.auth.api.DeviceLinkCreated
 import de.markusressel.mkdocseditor.auth.api.TotpEnrollment
 import de.markusressel.mkdocseditor.auth.api.WhoAmI
 import de.markusressel.mkdocseditor.auth.token.AuthSession
@@ -39,10 +41,22 @@ open class FakeAuthApi : AuthApi {
     var onDeletePasskey: (String) -> Unit = {}
     var onRevokeSession: (String) -> Unit = {}
     var status = AuthStatus()
+    var onServerInfo: () -> ServerInfo = { ServerInfo(name = "Wiki", loginMethods = listOf("password", "device-link")) }
+    var onRedeemDeviceLink: (String, String?) -> LoginResponse = { _, _ -> error("unexpected device link") }
     var linkInfo = LinkInfo(kind = "invite", role = "editor")
     var ceremony = PasskeyCeremony("cer", """{"challenge":"abc"}""")
 
     override suspend fun status(): AuthStatus = status.also { calls += "status" }
+
+    override suspend fun serverInfo(): ServerInfo = onServerInfo().also { calls += "serverInfo" }
+
+    override suspend fun redeemDeviceLink(token: String, username: String?, deviceName: String): LoginResponse {
+        calls += "redeemDeviceLink:$username:$deviceName"
+        return onRedeemDeviceLink(token, username)
+    }
+
+    override suspend fun createDeviceLink(token: String, deviceName: String?) =
+        DeviceLinkCreated("mdd_" + "a".repeat(43)).also { calls += "createDeviceLink" }
 
     override suspend fun login(username: String, password: String, deviceName: String): LoginResponse {
         calls += "login:$username:$deviceName"

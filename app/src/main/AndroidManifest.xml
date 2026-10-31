@@ -37,8 +37,8 @@
             </intent-filter>
 
             <!--
-                Setup, invite and reset links of the web client (docs/auth.md of the backend):
-                https://<client host>/invite#mdl_…  Verified App Links need
+                Setup, invite, reset and connect links of the web client (docs/auth.md of the
+                backend): https://<client host>/invite#mdl_…, …/connect#<payload>. Verified App Links need
                 https://<client host>/.well-known/assetlinks.json listing this app.
             -->
             <intent-filter android:autoVerify="true">
@@ -52,9 +52,10 @@
                 <data android:path="/setup" />
                 <data android:path="/invite" />
                 <data android:path="/reset" />
+                <data android:path="/connect" />
             </intent-filter>
 
-            <!-- fallback: mkdocseditor://invite#mdl_… -->
+            <!-- fallback: mkdocseditor://invite#mdl_…, mkdocseditor://connect#<payload> -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -65,6 +66,7 @@
                 <data android:host="setup" />
                 <data android:host="invite" />
                 <data android:host="reset" />
+                <data android:host="connect" />
             </intent-filter>
         </activity>
 

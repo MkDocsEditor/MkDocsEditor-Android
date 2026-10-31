@@ -6,7 +6,10 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfigRepository
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.MkDocsWebConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.baseUrl
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.LoginHintStore
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.toBackendConfig
 import java.net.URI
@@ -24,11 +27,17 @@ interface AuthBackends {
     suspend fun selected(): BackendConfig?
 
     /**
-     * Creates and selects a backend config for the given API URL, for a link opened on a fresh install
+     * Creates (or reuses) and selects the backend config for the given API URL, for a link opened on a fresh install
      */
     suspend fun create(url: ParsedBackendUrl): BackendConfig
 
     suspend fun select(config: BackendConfig)
+
+    /**
+     * Finds the backend config for [setup]'s API URL (fills in what it lacks) or creates one,
+     * and selects it. Used by the connect link and the "Server address" onboarding.
+     */
+    suspend fun connect(setup: ServerSetup): BackendConfig
 
     fun usernameHint(id: Long): String?
 
@@ -43,6 +52,13 @@ data class ParsedBackendUrl(
     val port: Int,
     val useSsl: Boolean,
 ) {
+    /** back to a URL, like `https://example.com:443/api/` */
+    fun toUrl(): String {
+        val protocol = if (useSsl) "https" else "http"
+        val path = host.substringAfter('/', "").trim('/')
+        return "$protocol://${host.substringBefore('/')}:$port/" + if (path.isEmpty()) "" else "$path/"
+    }
+
     companion object {
         fun parse(text: String): ParsedBackendUrl? {
             val input = text.trim().let { if ("://" in it) it else "https://$it" }
@@ -68,6 +84,66 @@ data class ParsedBackendUrl(
     }
 }
 
+/**
+ * A server to add, mostly from discovery
+ *
+ * @param backendUrl the API base URL
+ * @param name the user's name for it, else [suggestedName]
+ * @param suggestedName the instance name from /server-info/
+ */
+data class ServerSetup(
+    val backendUrl: String,
+    val suggestedName: String? = null,
+    val name: String? = null,
+    val description: String? = null,
+    val wikiUrl: String? = null,
+    val wikiAuth: AuthConfig? = null,
+) {
+    override fun toString() = "ServerSetup(backendUrl=$backendUrl, name=${name ?: suggestedName}, wikiUrl=$wikiUrl)"
+}
+
+/**
+ * The config change of [AuthBackends.connect], without persistence
+ */
+internal object BackendConfigPlanner {
+
+    /**
+     * @return the config to save: an existing one with the same API URL (keeping what the
+     * user set) or a new one; null when the backend URL cannot be used
+     */
+    fun plan(existing: List<BackendConfig>, setup: ServerSetup): BackendConfig? {
+        val url = ParsedBackendUrl.parse(setup.backendUrl) ?: return null
+        val server = BackendServerConfig(domain = url.host, port = url.port, useSsl = url.useSsl)
+        val wiki = setup.wikiUrl?.let(ParsedBackendUrl::parse)?.let { MkDocsWebConfig(domain = it.host, port = it.port, useSsl = it.useSsl) }
+
+        val match = existing.firstOrNull { it.serverConfig?.baseUrl == server.baseUrl }
+        if (match != null) {
+            return match.copy(
+                name = setup.name?.takeIf { it.isNotBlank() } ?: match.name,
+                description = setup.description?.takeIf { it.isNotBlank() } ?: match.description,
+                mkDocsWebConfig = match.mkDocsWebConfig ?: wiki,
+                mkDocsWebAuthConfig = setup.wikiAuth ?: match.mkDocsWebAuthConfig,
+            )
+        }
+
+        val names = existing.map { it.name }.toSet()
+        val baseName = setup.name?.takeIf { it.isNotBlank() }?.trim()
+            ?: setup.suggestedName?.takeIf { it.isNotBlank() }?.trim()
+            ?: url.host.substringBefore('/')
+        val name = generateSequence(1) { it + 1 }
+            .map { if (it == 1) baseName else "$baseName ($it)" }
+            .first { it !in names }
+        return BackendConfig(
+            name = name,
+            description = setup.description?.trim().orEmpty(),
+            serverConfig = server,
+            mkDocsWebConfig = wiki,
+            mkDocsWebAuthConfig = setup.wikiAuth,
+            isSelected = false,
+        )
+    }
+}
+
 @Singleton
 internal class DefaultAuthBackends @Inject constructor(
     private val repository: BackendConfigRepository,
@@ -80,24 +156,14 @@ internal class DefaultAuthBackends @Inject constructor(
 
     override suspend fun selected(): BackendConfig? = repository.selectedBackendConfig()?.toBackendConfig()
 
-    override suspend fun create(url: ParsedBackendUrl): BackendConfig {
-        val names = all().map { it.name }.toSet()
-        val baseName = url.host.substringBefore('/')
-        val name = generateSequence(1) { it + 1 }
-            .map { if (it == 1) baseName else "$baseName ($it)" }
-            .first { it !in names }
-        val config = BackendConfig(
-            name = name,
-            description = "",
-            serverConfig = BackendServerConfig(domain = url.host, port = url.port, useSsl = url.useSsl),
-            mkDocsWebConfig = null,
-            mkDocsWebAuthConfig = null,
-            isSelected = false,
-        )
+    override suspend fun create(url: ParsedBackendUrl): BackendConfig = connect(ServerSetup(backendUrl = url.toUrl()))
+
+    override suspend fun connect(setup: ServerSetup): BackendConfig {
+        val config = requireNotNull(BackendConfigPlanner.plan(all(), setup)) { "unusable backend url" }
         val id = repository.addOrUpdate(config)
-        val created = requireNotNull(get(id))
-        repository.selectBackendConfig(created)
-        return created
+        val saved = requireNotNull(get(id))
+        repository.selectBackendConfig(saved)
+        return saved
     }
 
     override suspend fun select(config: BackendConfig) = repository.selectBackendConfig(config)

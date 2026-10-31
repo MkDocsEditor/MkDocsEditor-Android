@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,6 +63,12 @@ internal fun MainScreenContent(
                 )
             ) { tabNavigator ->
                 globalTabNavigator = tabNavigator
+
+                LaunchedEffect(uiState.fileBrowserRequest) {
+                    if (uiState.fileBrowserRequest > 0) {
+                        tabNavigator.current = NavItem.FileBrowser.toTab(contentType = contentType)
+                    }
+                }
 
                 Scaffold(
                     bottomBar = {

@@ -122,7 +122,8 @@ internal class BackendSelectionViewModel @Inject constructor(
             )
         ),
 
-        val isLoading: Boolean = false,
+        /** true until the configs were read once */
+        val isLoading: Boolean = true,
         val error: String? = null,
         val listItems: List<BackendConfig> = emptyList(),
         val selectedItem: BackendConfig? = null,

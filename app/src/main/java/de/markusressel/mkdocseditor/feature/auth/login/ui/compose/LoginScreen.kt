@@ -19,6 +19,8 @@ import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.findActivity
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.popOrExit
 import de.markusressel.mkdocseditor.feature.auth.link.ui.compose.AuthLinkScreen
 import de.markusressel.mkdocseditor.feature.auth.login.ui.LoginViewModel
+import de.markusressel.mkdocseditor.feature.auth.onboarding.ui.compose.ConnectLinkScreen
+import de.markusressel.mkdocseditor.feature.main.data.rememberMainNavigationRequests
 import kotlinx.coroutines.launch
 
 /**
@@ -33,6 +35,7 @@ data class LoginScreen(
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
         val exit = LocalAuthFlowExit.current
+        val mainNavigation = rememberMainNavigationRequests()
 
         val viewModel = getViewModel<LoginViewModel>()
         val uiState by viewModel.uiState.collectAsState()
@@ -76,9 +79,12 @@ data class LoginScreen(
                             Toast.makeText(context, R.string.auth_second_factor_setup_hint, Toast.LENGTH_LONG).show()
                             navigator.replace(AccountScreen(backendId))
                         } else {
+                            mainNavigation.showFileBrowser()
                             navigator.popOrExit(exit)
                         }
                     }
+
+                    is LoginViewModel.LoginEvent.OpenConnectLink -> navigator.replace(ConnectLinkScreen(event.link))
 
                     is LoginViewModel.LoginEvent.OpenLink -> {
                         navigator.replace(AuthLinkScreen(linkText = event.link.token, backendId = event.backendId))
