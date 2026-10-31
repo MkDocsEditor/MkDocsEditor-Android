@@ -19,6 +19,9 @@ import de.markusressel.mkdocseditor.feature.auth.common.data.AuthBackends
 import de.markusressel.mkdocseditor.feature.auth.common.data.CredentialClient
 import de.markusressel.mkdocseditor.feature.auth.common.data.UiMessage
 import de.markusressel.mkdocseditor.feature.auth.common.data.toAuthMessage
+import de.markusressel.mkdocseditor.feature.auth.passkeyprompt.data.CredentialProviders
+import de.markusressel.mkdocseditor.feature.auth.passkeyprompt.data.PasskeyPromptPolicy
+import de.markusressel.mkdocseditor.feature.auth.passkeyprompt.data.PasskeyPromptStore
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.toBackendRef
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +29,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import timber.log.Timber
+import java.time.Clock
 import javax.inject.Inject
 
 /**
@@ -38,7 +42,12 @@ internal class AccountViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val backends: AuthBackends,
     internal val credentialClient: CredentialClient,
+    private val passkeyPromptStore: PasskeyPromptStore,
+    private val credentialProviders: CredentialProviders,
 ) : ViewModel() {
+
+    /** for tests */
+    internal var clock: Clock = Clock.systemUTC()
 
     private val _uiState = MutableStateFlow(UiState())
     internal val uiState = _uiState.asStateFlow()
@@ -127,6 +136,11 @@ internal class AccountViewModel @Inject constructor(
 
                 is UiEvent.SignOutClicked -> signOut()
 
+                is UiEvent.PasskeyReminderDismissed -> {
+                    backend?.let { passkeyPromptStore.reminderDismissed(it.id, clock.instant()) }
+                    _uiState.update { it.copy(showPasskeyReminder = false) }
+                }
+
                 is UiEvent.StepUpInput -> updateDialog<Dialog.StepUp> { it.copy(password = event.password, code = event.code) }
                 is UiEvent.StepUpConfirmed -> stepUpWithPassword()
                 is UiEvent.StepUpWithPasskeyClicked -> stepUpWithPasskey()
@@ -150,8 +164,10 @@ internal class AccountViewModel @Inject constructor(
             val account = call { account(it) }
             val passkeys = call { passkeys(it) }
             val sessions = call { sessions(it) }
+            val showReminder = passkeyReminderDue(passkeys)
             _uiState.update {
                 it.copy(
+                    showPasskeyReminder = showReminder,
                     account = account,
                     passkeys = passkeys,
                     sessions = sessions.sortedByDescending { session -> session.current },
@@ -161,6 +177,26 @@ internal class AccountViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    /**
+     * The card after "Later" on the passkey suggestion, at most every few days
+     */
+    private suspend fun passkeyReminderDue(passkeys: List<PasskeyInfo>): Boolean {
+        val ref = backend ?: return false
+        val state = passkeyPromptStore.state(ref.id)
+        if (state.skippedAt == null) return false
+        val passkeysEnabled = try {
+            authRepository.status(ref).passkeys.enabled
+        } catch (e: Exception) {
+            false
+        }
+        return PasskeyPromptPolicy.shouldRemind(
+            state = state,
+            now = clock.instant(),
+            passkeysEnabled = passkeysEnabled,
+            hasUsablePasskey = PasskeyPromptPolicy.hasUsablePasskey(passkeys, state.registeredHere, credentialProviders::isInstalled),
+        )
     }
 
     private suspend fun saveProfile() {
@@ -354,7 +390,8 @@ internal class AccountViewModel @Inject constructor(
             }
 
             PasskeyPurpose.Register -> runLoading {
-                call { finishAddPasskey(it, ceremonyId, json, name = null) }
+                val passkey = call { finishAddPasskey(it, ceremonyId, json, name = null) }
+                backend?.let { passkeyPromptStore.registered(it.id, passkey.id) }
                 showInfo(UiMessage(R.string.account_passkey_added))
                 reload()
             }
@@ -459,6 +496,8 @@ internal class AccountViewModel @Inject constructor(
         val email: String = "",
         val color: String = "",
         val dialog: Dialog? = null,
+        /** suggest a passkey again, after "Later" on the step after sign-in */
+        val showPasskeyReminder: Boolean = false,
         val loading: Boolean = false,
         val error: UiMessage? = null,
         val info: UiMessage? = null,
@@ -492,6 +531,7 @@ internal class AccountViewModel @Inject constructor(
         data class RevokeSessionClicked(val session: SessionInfo) : UiEvent
         data object RevokeOtherSessionsClicked : UiEvent
         data object SignOutClicked : UiEvent
+        data object PasskeyReminderDismissed : UiEvent
         data class StepUpInput(val password: String, val code: String) : UiEvent {
             override fun toString() = "StepUpInput"
         }

@@ -66,6 +66,8 @@ data class UserInfo(
     val role: String,
     val color: String? = null,
     val secondFactorSetupRequired: Boolean = false,
+    /** number of registered passkeys, sent by newer backends */
+    val passkeyCount: Int? = null,
 )
 
 @JsonClass(generateAdapter = true)

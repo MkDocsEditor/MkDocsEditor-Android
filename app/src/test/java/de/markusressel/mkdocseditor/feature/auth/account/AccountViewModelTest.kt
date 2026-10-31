@@ -7,10 +7,13 @@ import de.markusressel.mkdocseditor.auth.api.AccountInfo
 import de.markusressel.mkdocseditor.auth.api.AuthApiException
 import de.markusressel.mkdocseditor.auth.api.AuthErrorCode
 import de.markusressel.mkdocseditor.auth.api.PasskeyInfo
+import de.markusressel.mkdocseditor.auth.api.PasskeySupport
 import de.markusressel.mkdocseditor.auth.api.SessionInfo
 import de.markusressel.mkdocseditor.auth.domain.AuthRepository
 import de.markusressel.mkdocseditor.auth.token.AuthSession
 import de.markusressel.mkdocseditor.feature.auth.FakeAuthBackends
+import de.markusressel.mkdocseditor.feature.auth.FakeCredentialProviders
+import de.markusressel.mkdocseditor.feature.auth.FakePasskeyPromptStore
 import de.markusressel.mkdocseditor.feature.auth.UnusedCredentialClient
 import de.markusressel.mkdocseditor.feature.auth.account.ui.AccountViewModel
 import de.markusressel.mkdocseditor.feature.auth.account.ui.AccountViewModel.AccountEvent
@@ -25,6 +28,10 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
+import java.time.ZoneOffset
 import org.junit.Before
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -38,6 +45,9 @@ class AccountViewModelTest {
     private val api = FakeAuthApi()
     private val store = InMemoryTokenStore()
     private val backends = FakeAuthBackends(backendConfig(1))
+    private val promptStore = FakePasskeyPromptStore()
+    private val providers = FakeCredentialProviders()
+    private val now = Instant.parse("2026-11-01T12:00:00Z")
     private lateinit var viewModel: AccountViewModel
     private val events = mutableListOf<AccountEvent>()
 
@@ -65,7 +75,10 @@ class AccountViewModelTest {
             AuthRepository(store, { api }, deviceName = "Pixel 8"),
             backends,
             UnusedCredentialClient,
+            promptStore,
+            providers,
         )
+        viewModel.clock = Clock.fixed(now, ZoneOffset.UTC)
     }
 
     @After
@@ -319,5 +332,45 @@ class AccountViewModelTest {
         viewModel.onUiEvent(UiEvent.ConfirmTotpClicked)
         assertNull(viewModel.uiState.value.dialog)
         assertEquals(R.string.account_totp_enrollment_expired, viewModel.uiState.value.error?.resId)
+    }
+
+    @Test
+    fun `the passkey reminder shows a few days after Later and goes away on Not now`() = runTest {
+        api.status = api.status.copy(passkeys = PasskeySupport(enabled = true))
+        api.onPasskeys = { emptyList() }
+        promptStore.skipped(1, now - Duration.ofDays(4))
+        start()
+        assertTrue(viewModel.uiState.value.showPasskeyReminder)
+
+        viewModel.onUiEvent(UiEvent.PasskeyReminderDismissed)
+        assertFalse(viewModel.uiState.value.showPasskeyReminder)
+        assertEquals(now, promptStore.state(1).reminderDismissedAt)
+    }
+
+    @Test
+    fun `no passkey reminder without Later, too soon after it, or with a passkey on this device`() = runTest {
+        api.status = api.status.copy(passkeys = PasskeySupport(enabled = true))
+        api.onPasskeys = { emptyList() }
+        start()
+        assertFalse(viewModel.uiState.value.showPasskeyReminder)
+
+        promptStore.skipped(1, now - Duration.ofDays(1))
+        viewModel.onUiEvent(UiEvent.Refresh)
+        assertFalse(viewModel.uiState.value.showPasskeyReminder)
+
+        promptStore.skipped(1, now - Duration.ofDays(4))
+        api.onPasskeys = { listOf(PasskeyInfo("p1", "Phone", provider = "Google Password Manager")) }
+        viewModel.onUiEvent(UiEvent.Refresh)
+        assertFalse(viewModel.uiState.value.showPasskeyReminder)
+    }
+
+    @Test
+    fun `a passkey added on the account screen ends the suggestion`() = runTest {
+        promptStore.skipped(1, now - Duration.ofDays(4))
+        start()
+        viewModel.onUiEvent(UiEvent.AddPasskeyClicked)
+        viewModel.onUiEvent(UiEvent.PasskeyResult("""{"id":"new"}"""))
+        assertEquals(setOf("new"), promptStore.state(1).registeredHere)
+        assertNull(promptStore.state(1).skippedAt)
     }
 }
