@@ -8,7 +8,7 @@ internal class FormatStrikethroughUseCase @Inject constructor(
 ) {
     operator fun invoke(text: String, selectionStart: Int, selectionEnd: Int): FormatResult {
         // check if the current selection is already striked through
-        val selectionIsStrikethrough = run {
+        val selectionIsStrikethrough = selectionStart >= 2 && selectionEnd + 2 <= text.length && run {
             val selectedText =
                 text.substring((selectionStart - 2).coerceAtLeast(0), (selectionEnd + 2).coerceAtMost(text.length))
             selectedText.startsWith("~~") && selectedText.endsWith("~~")

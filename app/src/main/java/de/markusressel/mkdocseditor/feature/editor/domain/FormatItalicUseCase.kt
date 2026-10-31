@@ -9,7 +9,7 @@ internal class FormatItalicUseCase @Inject constructor(
 ) {
     operator fun invoke(text: String, selectionStart: Int, selectionEnd: Int): FormatResult {
         // check if the current selection is already italic
-        val selectionIsItalic = run {
+        val selectionIsItalic = selectionStart >= 1 && selectionEnd + 1 <= text.length && run {
             val selectedText =
                 text.safeSubstring((selectionStart - 1), (selectionEnd + 1))
             selectedText.startsWith("*") && selectedText.endsWith("*")
