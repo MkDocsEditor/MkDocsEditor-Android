@@ -41,3 +41,10 @@ dependencies {
 //    androidTestImplementation("androidx.test:runner:1.1.1-alpha01")
 //    androidTestImplementation("androidx.test.espresso:espresso-core:3.1.1-alpha01")
 }
+
+// optional live interop checks against automerge-go, see tools/automerge-go-fixtures
+tasks.withType<Test>().configureEach {
+    listOf("automerge.interop.out", "automerge.interop.go").forEach { name ->
+        providers.gradleProperty(name).orNull?.let { systemProperty(name, it) }
+    }
+}

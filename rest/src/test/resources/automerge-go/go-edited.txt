@@ -1,0 +1,1 @@
+Hällo Wörld 😀 from Go
