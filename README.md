@@ -60,6 +60,21 @@ where your [MkDocs](https://www.mkdocs.org/) project source files are located.
 Have a look at the documentation on it's [project site](https://github.com/MkDocsEditor/MkDocsEditor-Backend) to learn more
 on how to do this.
 
+## Installation
+
+Every build of `master` is published as a pre-release with the APK on the
+[releases page](https://github.com/MkDocsEditor/MkDocsEditor-Android/releases).
+The easiest way to install it and get updates is [Obtainium](https://github.com/ImranR98/Obtainium):
+
+1. Install Obtainium.
+2. Open [this link](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/MkDocsEditor/MkDocsEditor-Android)
+   on your phone, or in Obtainium tap **Add App** and enter
+   `https://github.com/MkDocsEditor/MkDocsEditor-Android`.
+3. Enable **Include prereleases** (there are no stable releases yet) and add the app.
+4. Tap **Install**. Obtainium checks for new builds and offers the update.
+
+All builds are signed with the same key, so they update an APK installed from a CI build.
+
 ## Client Setup
 
 Simply enter the server connection details in the settings of the app
