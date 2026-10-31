@@ -52,7 +52,7 @@ class LiveAuthTest {
     }
 
     @Test
-    fun `login, account, sessions and logout`() = runBlocking {
+    fun `login, sessions and logout`() = runBlocking {
         val (username, password) = user!!
         val backend = BackendRef(1, baseUrl!!)
         val phoneStore = InMemoryTokenStore()
@@ -65,8 +65,8 @@ class LiveAuthTest {
         val token = assertNotNull(phoneStore.sessions[1]).token
         assertTrue(token.startsWith("mds_"))
 
-        val account = phone.authenticated(backend) { account(it) }
-        assertEquals(username, account.username)
+        val own = phone.authenticated(backend) { sessions(it) }
+        assertEquals("LiveAuthTest phone", own.single { it.current }.deviceName)
 
         // a second device sees both sessions and signs the first one out
         assertIs<LoginOutcome.SignedIn>(tablet.login(backend, username, password))
@@ -76,7 +76,7 @@ class LiveAuthTest {
         assertTrue(tablet.authenticated(backend) { revokeOtherSessions(it) } >= 1)
 
         // the revoked token is rejected and dropped locally
-        val error = assertFailsWith<AuthApiException> { phone.authenticated(backend) { whoAmI(it) } }
+        val error = assertFailsWith<AuthApiException> { phone.authenticated(backend) { sessions(it) } }
         assertTrue(error.isUnauthenticated)
         assertNull(phoneStore.sessions[1])
 
@@ -84,7 +84,7 @@ class LiveAuthTest {
         val tabletToken = assertNotNull(tabletStore.sessions[1]).token
         tablet.signOut(backend)
         assertNull(tabletStore.sessions[1])
-        val afterLogout = assertFailsWith<AuthApiException> { OkHttpAuthApi(baseUrl, http).whoAmI(tabletToken) }
+        val afterLogout = assertFailsWith<AuthApiException> { OkHttpAuthApi(baseUrl, http).sessions(tabletToken) }
         assertEquals(401, afterLogout.status)
     }
 
