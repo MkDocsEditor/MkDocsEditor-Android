@@ -115,6 +115,7 @@
     <string name="account_totp_enable">Set up authenticator app</string>
     <string name="account_totp_disable">Remove authenticator app</string>
     <string name="account_totp_disable_confirm">Remove the authenticator app? You will sign in without a code afterwards.</string>
+    <string name="account_totp_enrollment_expired">The setup expired. Start it again and use the new QR code.</string>
     <string name="account_totp_disabled">Authenticator app removed.</string>
     <string name="account_totp_enroll_title">Set up authenticator app</string>
     <string name="account_totp_enroll_hint">Scan the QR code with your authenticator app or password manager, or open the link in it. Then enter the 6-digit code it shows.</string>

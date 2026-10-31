@@ -128,6 +128,8 @@ data class PasskeyInfo(
     val lastUsedAt: Instant? = null,
     val backedUp: Boolean = false,
     val transports: List<String> = emptyList(),
+    /** the passkey provider from the AAGUID, like "Bitwarden", when the backend knows it */
+    val provider: String? = null,
 )
 
 @JsonClass(generateAdapter = true)
@@ -167,4 +169,5 @@ object AuthErrorCode {
     const val LAST_LOGIN_METHOD = "last-login-method"
     const val SECOND_FACTOR_REQUIRED = "second-factor-required"
     const val RATE_LIMITED = "rate-limited"
+    const val CONFLICT = "conflict"
 }

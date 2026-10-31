@@ -243,8 +243,11 @@ private fun PasskeySection(passkeys: List<PasskeyInfo>, loading: Boolean, onUiEv
                         relativeTime(passkey.createdAt),
                         relativeTime(passkey.lastUsedAt),
                     )
-                    val synced = if (passkey.backedUp) " · " + stringResource(R.string.account_passkey_synced) else ""
-                    Text(text = details + synced, style = MaterialTheme.typography.bodySmall)
+                    val synced = stringResource(R.string.account_passkey_synced).takeIf { passkey.backedUp }
+                    Text(
+                        text = listOfNotNull(passkey.provider, details, synced).joinToString(" · "),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
                 IconButton(onClick = { onUiEvent(UiEvent.RenamePasskeyClicked(passkey)) }) {
                     Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.account_passkey_rename))
@@ -603,7 +606,7 @@ private fun AccountScreenContentPreview() {
                     recoveryCodesLeft = 8,
                     passkeyCount = 1,
                 ),
-                passkeys = listOf(PasskeyInfo(id = "p1", name = "Bitwarden", backedUp = true)),
+                passkeys = listOf(PasskeyInfo(id = "p1", name = "Phone", backedUp = true, provider = "Bitwarden")),
                 sessions = listOf(SessionInfo(id = "s1", deviceName = "Pixel 9", current = true)),
                 displayName = "Markus",
             ),

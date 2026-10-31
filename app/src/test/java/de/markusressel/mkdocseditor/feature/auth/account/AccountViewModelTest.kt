@@ -309,4 +309,15 @@ class AccountViewModelTest {
         assertNull(viewModel.uiState.value.dialog)
         assertEquals(R.string.auth_error_reauth_required, viewModel.uiState.value.error?.resId)
     }
+
+    @Test
+    fun `an expired TOTP enrolment closes the dialog and asks to start again`() = runTest {
+        api.onConfirmTotp = { throw AuthApiException(409, AuthErrorCode.CONFLICT, "no pending enrollment") }
+        start()
+        viewModel.onUiEvent(UiEvent.EnableTotpClicked)
+        viewModel.onUiEvent(UiEvent.TotpCodeChanged("123456"))
+        viewModel.onUiEvent(UiEvent.ConfirmTotpClicked)
+        assertNull(viewModel.uiState.value.dialog)
+        assertEquals(R.string.account_totp_enrollment_expired, viewModel.uiState.value.error?.resId)
+    }
 }
