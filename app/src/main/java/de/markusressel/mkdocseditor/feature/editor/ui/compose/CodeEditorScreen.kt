@@ -13,6 +13,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
+import de.markusressel.mkdocseditor.feature.auth.login.ui.compose.LoginScreen
 import cafe.adriel.voyager.navigator.currentOrThrow
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.dialog.SelectLinkTargetDialog
@@ -35,6 +36,15 @@ internal data class CodeEditorScreen(
 
         LaunchedEffect(documentId) {
             viewModel.setCurrentDocumentId(documentId)
+        }
+
+        LaunchedEffect(viewModel) {
+            viewModel.navigationEvents.collect { request ->
+                when (request) {
+                    is CodeEditorViewModel.NavigationRequest.Login ->
+                        navigator.push(LoginScreen(backendId = request.backendId))
+                }
+            }
         }
 
         // persist the local copy when the app goes to the background

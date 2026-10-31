@@ -28,11 +28,43 @@
         <activity
             android:name=".ui.activity.MainActivityCompose"
             android:exported="true"
+            android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+                Setup, invite and reset links of the web client (docs/auth.md of the backend):
+                https://<client host>/invite#mdl_…  Verified App Links need
+                https://<client host>/.well-known/assetlinks.json listing this app.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https" />
+                <data android:host="${authLinkHost}" />
+                <data android:path="/setup" />
+                <data android:path="/invite" />
+                <data android:path="/reset" />
+            </intent-filter>
+
+            <!-- fallback: mkdocseditor://invite#mdl_… -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="mkdocseditor" />
+                <data android:host="setup" />
+                <data android:host="invite" />
+                <data android:host="reset" />
             </intent-filter>
         </activity>
 

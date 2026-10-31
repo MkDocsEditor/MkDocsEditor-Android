@@ -333,6 +333,7 @@ internal fun CodeEditorSackbar(
     val text = when (snackbar) {
         is SnackbarData.ConnectionFailed -> stringResource(R.string.code_editor_connection_failed)
         is SnackbarData.Disconnected -> stringResource(R.string.code_editor_disconnected)
+        is SnackbarData.SignedOut -> stringResource(R.string.code_editor_signed_out)
     }
 
     val action: @Composable () -> Unit = when (snackbar) {
@@ -352,6 +353,16 @@ internal fun CodeEditorSackbar(
                     onUiEvent(CodeEditorViewModel.UiEvent.SnackbarActionClicked(snackbar))
                 }) {
                     Text(text = stringResource(R.string.connect))
+                }
+            }
+        }
+
+        is SnackbarData.SignedOut -> {
+            {
+                TextButton(onClick = {
+                    onUiEvent(CodeEditorViewModel.UiEvent.SnackbarActionClicked(snackbar))
+                }) {
+                    Text(text = stringResource(R.string.auth_sign_in))
                 }
             }
         }

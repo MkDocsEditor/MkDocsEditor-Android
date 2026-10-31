@@ -4,7 +4,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import androidx.annotation.MainThread
-import de.markusressel.mkdocsrestclient.BasicAuthConfig
+import de.markusressel.mkdocsrestclient.AuthorizationProvider
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.CloseCode
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionHandler
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionListener
@@ -23,7 +23,7 @@ class AutomergeDocumentSyncManager(
     private val hostname: String,
     private val port: Int,
     private val ssl: Boolean,
-    basicAuthConfig: BasicAuthConfig?,
+    authorizationProvider: AuthorizationProvider,
     documentId: String,
     store: LocalDocumentStore,
     private val listener: Listener,
@@ -54,11 +54,13 @@ class AutomergeDocumentSyncManager(
         },
     )
 
-    private val connection = WebsocketConnectionHandler(basicAuthConfig)
+    private val connection = WebsocketConnectionHandler(authorizationProvider)
 
     /** true while the user of this manager wants to be connected */
     private var wantConnection = false
     private var reconnectAttempt = 0
+    /** true after a 4003 close was answered with one reconnect (a changed role, docs/auth.md) */
+    private var forbiddenRetried = false
     private var lastSentAt = 0L
     private var lastReceivedAt = 0L
 
@@ -116,6 +118,7 @@ class AutomergeDocumentSyncManager(
      */
     fun connect() {
         wantConnection = true
+        forbiddenRetried = false
         handler.removeCallbacks(reconnectRunnable)
         connection.connect(websocketUrl)
     }
@@ -232,10 +235,24 @@ class AutomergeDocumentSyncManager(
         listener.onConnectionStatusChanged(false, code ?: httpStatus, throwable)
 
         if (!wantConnection) return
+        if (code == null && (httpStatus == 401 || httpStatus == 403)) {
+            // the upgrade was refused: reconnecting does not help until the user signs in again
+            wantConnection = false
+            return
+        }
         when (code) {
             // not recoverable by reconnecting
-            CloseCode.NORMAL, CloseCode.UNAUTHORIZED, CloseCode.FORBIDDEN,
+            CloseCode.NORMAL, CloseCode.UNAUTHORIZED,
             CloseCode.NOT_FOUND, CloseCode.PROTOCOL_ERROR -> wantConnection = false
+
+            // the role of the account changed: one reconnect applies the new role, a second
+            // 4003 means the actor is really not allowed
+            CloseCode.FORBIDDEN -> if (forbiddenRetried) {
+                wantConnection = false
+            } else {
+                forbiddenRetried = true
+                handler.post(reconnectRunnable)
+            }
 
             // the session already switched to the new document id
             CloseCode.RENAMED -> handler.post(reconnectRunnable)

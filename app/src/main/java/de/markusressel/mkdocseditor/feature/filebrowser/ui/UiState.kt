@@ -63,6 +63,9 @@ internal data class UiState(
     val listItems: List<Any> = emptyList(),
 
     val currentSearchResults: List<SearchResultItem> = emptyList(),
+
+    /** the selected backend, when its server rejected the session; the cached data stays visible */
+    val loginRequiredBackendId: Long? = null,
 )
 
 sealed class FileBrowserFabId {

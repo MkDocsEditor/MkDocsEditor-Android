@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
+import de.markusressel.mkdocseditor.feature.auth.login.ui.compose.LoginScreen
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
 
 data class BackendConfigEditScreen(
@@ -37,6 +38,11 @@ data class BackendConfigEditScreen(
 
                     is BackendConfigEditViewModel.BackendEditEvent.Info -> {
                         Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                    }
+
+                    is BackendConfigEditViewModel.BackendEditEvent.OpenLogin -> {
+                        val login = LoginScreen(backendId = event.backendId)
+                        if (event.replaceScreen) navigator?.replace(login) else navigator?.push(login)
                     }
                 }
             }

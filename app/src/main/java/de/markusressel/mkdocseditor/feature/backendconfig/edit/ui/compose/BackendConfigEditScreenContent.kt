@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.server.MkDocsBackendSection
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.server.MkDocsWebSection
@@ -186,10 +185,7 @@ private fun BackendConfigEditScreenContentPreview() {
                 currentDomain = "domain.com",
                 currentPort = "443",
                 currentUseSsl = true,
-                currentAuthConfig = AuthConfig(
-                    username = "user",
-                    password = "password"
-                )
+                signedInUsername = "markus",
             ),
             onUiEvent = {}
         )

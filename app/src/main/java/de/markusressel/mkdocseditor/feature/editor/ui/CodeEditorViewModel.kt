@@ -11,9 +11,9 @@ import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesign
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.auth.domain.AuthRepository
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.extensions.common.android.launch
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentProjectConfigUseCase
@@ -38,7 +38,8 @@ import de.markusressel.mkdocseditor.ui.activity.SnackbarData
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.Resource.Success
-import de.markusressel.mkdocsrestclient.BasicAuthConfig
+import de.markusressel.mkdocsrestclient.AuthorizationProvider
+import de.markusressel.mkdocsrestclient.sync.automerge.protocol.CloseCode
 import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeDocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.automerge.LocalDocumentStore
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
@@ -67,6 +68,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private val getDocumentUseCase: GetDocumentUseCase,
     private val getCurrentProjectConfigUseCase: GetCurrentProjectConfigUseCase,
     private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
+    private val authRepository: AuthRepository,
     private val preferencesHolder: KutePreferencesHolder,
     private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val getDocumentUrlUseCase: GetDocumentUrlUseCase,
@@ -85,6 +87,12 @@ internal class CodeEditorViewModel @Inject constructor(
     internal val uiState = _uiState.asStateFlow()
 
     internal val events = MutableLiveData<CodeEditorEvent>()
+
+    private val _navigationEvents = Channel<NavigationRequest>(Channel.BUFFERED)
+    internal val navigationEvents = _navigationEvents.receiveAsFlow()
+
+    /** the backend of the open document */
+    private var currentBackendId: Long? = null
 
     //val documentId = savedStateHandle.getStateFlow<String?>("documentId", null)
     val documentId = MutableStateFlow<String?>(null)
@@ -159,10 +167,24 @@ internal class CodeEditorViewModel @Inject constructor(
         }
 
         launch {
+            // sync again as soon as the user signed in again
+            authRepository.sessionChanges.collect { backendId ->
+                if (backendId == currentBackendId && authRepository.isSignedIn(backendId) &&
+                    automergeDocumentSyncManager?.isConnected == false &&
+                    uiState.value.isOfflineModeBannerVisible.not()
+                ) {
+                    reconnectToServer()
+                }
+            }
+        }
+
+        launch {
             connectionStatus.filterNotNull().collectLatest {
+                val backendId = currentBackendId
                 showSnackbar(
                     when {
                         it.connected -> null
+                        backendId != null && it.isAuthenticationFailure -> SnackbarData.SignedOut(backendId)
                         it.errorCode != null -> SnackbarData.ConnectionFailed
                         else -> SnackbarData.Disconnected
                     }
@@ -235,9 +257,9 @@ internal class CodeEditorViewModel @Inject constructor(
             else -> {
                 val currentBackend = requireNotNull(getCurrentBackendConfigUseCase())
                 val serverConfig = requireNotNull(currentBackend.serverConfig)
-                val authConfig = currentBackend.backendAuthConfig
+                currentBackendId = currentBackend.id
 
-                val manager = createAutomergeSyncManager(documentId, serverConfig, authConfig)
+                val manager = createAutomergeSyncManager(documentId, serverConfig, currentBackend.id)
                 automergeDocumentSyncManager = manager
                 // show the local copy right away, it may hold edits made offline
                 manager.text?.let { setEditorText(it) }
@@ -251,23 +273,23 @@ internal class CodeEditorViewModel @Inject constructor(
     private fun createAutomergeSyncManager(
         documentId: String,
         serverConfig: BackendServerConfig,
-        authConfig: AuthConfig?
+        backendId: Long,
     ): AutomergeDocumentSyncManager {
         return AutomergeDocumentSyncManager(
             hostname = serverConfig.domain,
             port = serverConfig.port,
             ssl = serverConfig.useSsl,
-            basicAuthConfig = authConfig?.let {
-                BasicAuthConfig(
-                    username = authConfig.username,
-                    password = authConfig.password
-                )
-            },
+            authorizationProvider = AuthorizationProvider.bearer { authRepository.token(backendId) },
             documentId = documentId,
             store = localDocumentStore,
             listener = object : AutomergeDocumentSyncManager.Listener {
                 override fun onConnectionStatusChanged(connected: Boolean, closeCode: Int?, throwable: Throwable?) {
-                    connectionStatus.value = ConnectionStatus(connected, closeCode, throwable)
+                    val status = ConnectionStatus(connected, closeCode, throwable)
+                    if (status.isAuthenticationFailure) {
+                        // edits stay in the local copy and sync after the next sign-in
+                        authRepository.onUnauthenticated(backendId)
+                    }
+                    connectionStatus.value = status
                     if (connected) {
                         _uiState.update { old -> old.copy(loading = false) }
                     }
@@ -608,6 +630,10 @@ internal class CodeEditorViewModel @Inject constructor(
                 dismissSnackbar()
                 reconnectToServer()
             }
+
+            is SnackbarData.SignedOut -> launch {
+                _navigationEvents.send(NavigationRequest.Login(snackbar.backendId))
+            }
         }
     }
 
@@ -885,7 +911,17 @@ internal class CodeEditorViewModel @Inject constructor(
         val connected: Boolean,
         val errorCode: Int? = null,
         val throwable: Throwable? = null
-    )
+    ) {
+        /**
+         * the server refused the session: HTTP 401 on the upgrade, or close code 4001
+         */
+        val isAuthenticationFailure: Boolean
+            get() = !connected && (errorCode == 401 || errorCode == CloseCode.UNAUTHORIZED)
+    }
+
+    sealed interface NavigationRequest {
+        data class Login(val backendId: Long) : NavigationRequest
+    }
 
     sealed class CodeEditorFabId {
         data object EnableEditMode : CodeEditorFabId()

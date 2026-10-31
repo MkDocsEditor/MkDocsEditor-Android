@@ -1,7 +1,21 @@
 package de.markusressel.mkdocseditor.ui.activity
 
 import android.Manifest
+import android.content.Intent
 import android.os.Bundle
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
+import cafe.adriel.voyager.navigator.Navigator
+import cafe.adriel.voyager.transitions.SlideTransition
+import de.markusressel.mkdocseditor.auth.link.AuthLinkParser
+import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.LocalAuthFlowExit
+import de.markusressel.mkdocseditor.feature.auth.link.ui.compose.AuthLinkScreen
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -30,13 +44,38 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
+/**
+ * The screens of a link opened from outside the app, on top of everything else
+ */
+@Composable
+private fun AuthLinkFlow(link: String, onExit: () -> Unit) {
+    BackHandler(onBack = onExit)
+    CompositionLocalProvider(LocalAuthFlowExit provides onExit) {
+        Surface(modifier = Modifier.fillMaxSize()) {
+            key(link) {
+                Navigator(AuthLinkScreen(linkText = link)) { navigator ->
+                    SlideTransition(navigator)
+                }
+            }
+        }
+    }
+}
+
 @AndroidEntryPoint
 class MainActivityCompose : AppCompatActivity() {
+
+    /**
+     * A setup, invite or reset link this activity was opened with
+     */
+    private val pendingAuthLink = mutableStateOf<String?>(null)
 
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) {
+            handleAuthLink(intent)
+        }
 
         /**
          * Flow of [DevicePosture] that emits every time there's a change in the windowLayoutInfo
@@ -72,8 +111,27 @@ class MainActivityCompose : AppCompatActivity() {
                     windowSize = windowSize.widthSizeClass,
                     devicePosture = devicePosture,
                 )
+
+                pendingAuthLink.value?.let { link ->
+                    AuthLinkFlow(link = link, onExit = { pendingAuthLink.value = null })
+                }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleAuthLink(intent)
+    }
+
+    private fun handleAuthLink(intent: Intent?) {
+        if (intent?.action != Intent.ACTION_VIEW) return
+        val data = intent.dataString ?: return
+        if (AuthLinkParser.parse(data) != null) {
+            pendingAuthLink.value = data
+        }
+        // the link token must not stay in the intent (recents, recreation)
+        intent.data = null
     }
 
     private fun requestPermission() {

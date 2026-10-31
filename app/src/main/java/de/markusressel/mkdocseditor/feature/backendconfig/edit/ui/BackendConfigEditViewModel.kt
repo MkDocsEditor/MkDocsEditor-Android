@@ -4,11 +4,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
+import de.markusressel.mkdocseditor.auth.domain.AuthRepository
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.MkDocsWebConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.toBackendRef
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendAuthConfigsUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.ValidateEditedBackendConfigUseCase
@@ -36,6 +38,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
     private val validateEditedBackendConfigUseCase: ValidateEditedBackendConfigUseCase,
     private val saveBackendConfigUseCase: SaveBackendConfigItemsUseCase,
     private val deleteBackendConfigUseCase: DeleteBackendConfigUseCase,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -66,8 +69,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
             old.copy(
                 name = "",
                 description = "",
-                currentAuthConfig = old.authConfigs.firstOrNull(),
-                authConfigEditMode = old.authConfigs.isEmpty(),
+                authConfigEditMode = false,
                 isDeleteButtonEnabled = false,
             )
         }
@@ -95,12 +97,12 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 currentMkDocsWebPort = data.mkDocsWebConfig?.port?.toString() ?: "",
                 currentMkDocsWebUseSsl = data.mkDocsWebConfig?.useSsl ?: false,
 
-                currentAuthConfig = data.backendAuthConfig,
                 currentMkDocsWebAuthConfig = data.mkDocsWebAuthConfig,
 
                 isDeleteButtonEnabled = true,
             )
         }
+        updateSessionState()
 
         updateSaveButtonEnabled()
     }
@@ -110,7 +112,6 @@ internal class BackendConfigEditViewModel @Inject constructor(
         _uiState.update { old ->
             old.copy(
                 authConfigs = authConfigs,
-                currentAuthConfig = authConfigs.firstOrNull()
             )
         }
     }
@@ -145,16 +146,10 @@ internal class BackendConfigEditViewModel @Inject constructor(
 
                 is UiEvent.MkDocsWebSaveButtonClicked -> addAuthConfigFromCurrentInputs()
 
-                is UiEvent.AuthConfigSelectionChanged -> processAuthConfigSelectionChange(event.authConfig)
-                is UiEvent.AuthConfigAddButtonClicked -> enableAuthConfigEditMode()
-                is UiEvent.AuthConfigAbortButtonClicked -> disableAuthConfigEditMode()
-                is UiEvent.AuthConfigDeleteButtonClicked -> deleteAuthConfig(event.authConfig)
-                is UiEvent.AuthConfigUsernameInputChanged -> processAuthConfigUsernameInput(event.input)
-                is UiEvent.AuthConfigPasswordInputChanged -> processAuthConfigPasswordInput(event.input)
-
                 is UiEvent.SaveClicked -> save()
                 is UiEvent.DeleteClicked -> delete()
-                is UiEvent.AuthConfigSaveButtonClicked -> addAuthConfigFromCurrentInputs()
+                is UiEvent.SignInClicked -> signIn()
+                is UiEvent.SignOutClicked -> signOut()
             }
         }
     }
@@ -231,8 +226,8 @@ internal class BackendConfigEditViewModel @Inject constructor(
         _uiState.update { old ->
             old.copy(
                 authConfigEditMode = true,
-                currentAuthConfigUsername = old.currentAuthConfig?.username ?: "",
-                currentAuthConfigPassword = old.currentAuthConfig?.password ?: "",
+                currentAuthConfigUsername = old.currentMkDocsWebAuthConfig?.username ?: "",
+                currentAuthConfigPassword = old.currentMkDocsWebAuthConfig?.password ?: "",
                 authConfigSaveButtonEnabled = validateAuthConfig(
                     old.currentAuthConfigUsername,
                     old.currentAuthConfigPassword
@@ -262,7 +257,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
         _uiState.update { old ->
             old.copy(
                 authConfigs = newAuthConfigs,
-                currentAuthConfig = newAuthConfigs.find { it.id == newConfigId },
+                currentMkDocsWebAuthConfig = newAuthConfigs.find { it.id == newConfigId },
                 authConfigEditMode = false,
                 currentAuthConfigUsername = "",
                 currentAuthConfigPassword = "",
@@ -311,12 +306,16 @@ internal class BackendConfigEditViewModel @Inject constructor(
                     description = uiState.value.description,
                     isSelected = false,
                     serverConfig = serverConfig,
-                    backendAuthConfig = uiState.value.currentAuthConfig,
                     mkDocsWebConfig = mkDocsWebConfig,
                     mkDocsWebAuthConfig = uiState.value.currentMkDocsWebAuthConfig,
                 )
-                saveBackendConfigUseCase(config)
-                _events.send(BackendEditEvent.CloseScreen)
+                val id = saveBackendConfigUseCase(config)
+                val saved = config.copy(id = id)
+                if (needsSignIn(saved)) {
+                    _events.send(BackendEditEvent.OpenLogin(id, replaceScreen = true))
+                } else {
+                    _events.send(BackendEditEvent.CloseScreen)
+                }
             } catch (e: Exception) {
                 Timber.e(e) { "Failed to save backend config" }
                 showError("Failed to save backend config")
@@ -333,7 +332,6 @@ internal class BackendConfigEditViewModel @Inject constructor(
                     domain = currentDomain,
                     port = currentPort,
                     currentUseSsl = currentUseSsl,
-                    authConfig = currentAuthConfig,
                 )
 
                 else -> validateEditedBackendConfigUseCase(
@@ -341,17 +339,9 @@ internal class BackendConfigEditViewModel @Inject constructor(
                     description = description,
                     domain = currentDomain,
                     port = currentPort,
-                    authConfig = currentAuthConfig
                 )
             }
         }
-    }
-
-    private suspend fun processAuthConfigSelectionChange(authConfig: AuthConfig?) {
-        _uiState.update { old ->
-            old.copy(currentAuthConfig = authConfig)
-        }
-        updateSaveButtonEnabled()
     }
 
     private suspend fun processMkDocsWebAuthConfigSelectionChange(authConfig: AuthConfig?) {
@@ -396,6 +386,40 @@ internal class BackendConfigEditViewModel @Inject constructor(
         updateSaveButtonEnabled()
     }
 
+    private fun updateSessionState() {
+        val id = uiState.value.currentBackendConfig?.id ?: return
+        _uiState.update { old ->
+            old.copy(signedInUsername = authRepository.session(id)?.username?.ifBlank { "?" })
+        }
+    }
+
+    /**
+     * A new backend needs a sign-in unless its server runs without authentication
+     */
+    private suspend fun needsSignIn(config: BackendConfig): Boolean {
+        val backend = config.toBackendRef() ?: return false
+        if (authRepository.isSignedIn(backend.id)) return false
+        return try {
+            !authRepository.status(backend).authDisabled
+        } catch (e: Exception) {
+            // unreachable or an old backend: the login screen explains it
+            Timber.w(e) { "Could not read the auth status" }
+            true
+        }
+    }
+
+    private suspend fun signIn() {
+        val id = uiState.value.currentBackendConfig?.id ?: return
+        _events.send(BackendEditEvent.OpenLogin(id, replaceScreen = false))
+    }
+
+    private suspend fun signOut() {
+        val backend = uiState.value.currentBackendConfig?.toBackendRef() ?: return
+        authRepository.signOut(backend)
+        updateSessionState()
+        showInfo("Signed out")
+    }
+
     private suspend fun showError(s: String) {
         _events.send(BackendEditEvent.Error(s))
     }
@@ -404,12 +428,8 @@ internal class BackendConfigEditViewModel @Inject constructor(
     internal sealed class UiEvent {
         data object SaveClicked : UiEvent()
         data object DeleteClicked : UiEvent()
-        data class AuthConfigSelectionChanged(val authConfig: AuthConfig?) : UiEvent()
-        data object AuthConfigAddButtonClicked : UiEvent()
-        data object AuthConfigAbortButtonClicked : UiEvent()
-        data class AuthConfigDeleteButtonClicked(val authConfig: AuthConfig) : UiEvent()
-        data class AuthConfigUsernameInputChanged(val input: String) : UiEvent()
-        data class AuthConfigPasswordInputChanged(val input: String) : UiEvent()
+        data object SignInClicked : UiEvent()
+        data object SignOutClicked : UiEvent()
 
         data class NameChanged(val text: String) : UiEvent()
         data class DescriptionChanged(val text: String) : UiEvent()
@@ -429,8 +449,6 @@ internal class BackendConfigEditViewModel @Inject constructor(
         data class MkDocsWebAuthConfigUsernameInputChanged(val input: String) : UiEvent()
         data class MkDocsWebAuthConfigPasswordInputChanged(val input: String) : UiEvent()
         data object MkDocsWebSaveButtonClicked : UiEvent()
-
-        data object AuthConfigSaveButtonClicked : UiEvent()
     }
 
     internal data class UiState(
@@ -448,7 +466,9 @@ internal class BackendConfigEditViewModel @Inject constructor(
         val currentDomain: String = "",
         val currentPort: String = "",
         val currentUseSsl: Boolean = false,
-        val currentAuthConfig: AuthConfig? = null,
+
+        /** the user of the stored session, null when signed out */
+        val signedInUsername: String? = null,
 
         val currentMkDocsWebDomain: String = "",
         val currentMkDocsWebPort: String = "",
@@ -468,5 +488,10 @@ internal class BackendConfigEditViewModel @Inject constructor(
         data object CloseScreen : BackendEditEvent()
         data class Error(val message: String) : BackendEditEvent()
         data class Info(val message: String) : BackendEditEvent()
+
+        /**
+         * @param replaceScreen true to replace this screen with the login (after saving)
+         */
+        data class OpenLogin(val backendId: Long, val replaceScreen: Boolean) : BackendEditEvent()
     }
 }

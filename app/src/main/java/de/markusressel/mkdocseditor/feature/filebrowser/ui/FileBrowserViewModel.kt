@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.commons.core.filterByExpectedType
+import de.markusressel.mkdocseditor.auth.domain.AuthRepository
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
@@ -15,6 +16,7 @@ import de.markusressel.mkdocseditor.event.EventBusManager
 import de.markusressel.mkdocseditor.event.subscribe
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.extensions.common.delayUntil
+import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigFlowUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.filebrowser.data.DocumentData
 import de.markusressel.mkdocseditor.feature.filebrowser.data.ROOT_SECTION
@@ -53,6 +55,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -87,6 +90,8 @@ internal class FileBrowserViewModel @Inject constructor(
     private val findParentSectionOfResourceUseCase: FindParentSectionOfResourceUseCase,
     private val shareFileUseCase: ShareFileUseCase,
     private val eventBusManager: EventBusManager,
+    private val authRepository: AuthRepository,
+    private val getCurrentBackendConfigFlowUseCase: GetCurrentBackendConfigFlowUseCase,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -162,6 +167,28 @@ internal class FileBrowserViewModel @Inject constructor(
             } catch (ex: Exception) {
                 Timber.e(ex)
                 setError(message = ex.localizedMessage ?: ex.javaClass.name)
+            }
+        }
+
+        launch {
+            combine(
+                getCurrentBackendConfigFlowUseCase(),
+                authRepository.loginRequired,
+            ) { config, loginRequired ->
+                config?.id?.takeIf { it in loginRequired }
+            }.distinctUntilChanged().collect { backendId ->
+                _uiState.update { old -> old.copy(loginRequiredBackendId = backendId) }
+            }
+        }
+
+        launch {
+            // reload after signing in again
+            authRepository.sessionChanges.collect { backendId ->
+                val current = getCurrentBackendConfigFlowUseCase().first()
+                if (current?.id == backendId && authRepository.isSignedIn(backendId)) {
+                    applyCurrentBackendConfigUseCase()
+                    reload()
+                }
             }
         }
 
@@ -247,6 +274,9 @@ internal class FileBrowserViewModel @Inject constructor(
             when (event) {
                 is UiEvent.DismissError -> clearError()
                 is UiEvent.Refresh -> reload()
+                is UiEvent.SignInClicked -> uiState.value.loginRequiredBackendId?.let {
+                    _events.send(FileBrowserEvent.OpenLogin(it))
+                }
                 is UiEvent.DocumentClicked -> onDocumentClicked(event.item)
                 is UiEvent.DocumentLongClicked -> onDocumentLongClicked(event.item)
                 is UiEvent.ResourceClicked -> onResourceClicked(event.item)
@@ -774,6 +804,8 @@ internal sealed class UiEvent {
     data class TopAppBarActionClicked(val action: TopAppBarAction.FileBrowser) : UiEvent()
 
     data object DismissDialog : UiEvent()
+
+    data object SignInClicked : UiEvent()
 }
 
 internal sealed class FileBrowserEvent {
@@ -783,4 +815,5 @@ internal sealed class FileBrowserEvent {
 
     data object OpenProfileScreen : FileBrowserEvent()
     data object OpenResourceSelection : FileBrowserEvent()
+    data class OpenLogin(val backendId: Long) : FileBrowserEvent()
 }

@@ -13,8 +13,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel
-import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.auth.AuthConfigSection
-import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.auth.AuthConfigUiEvent
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
@@ -69,55 +67,14 @@ internal fun MkDocsBackendSection(
             }
         }
 
-        AuthConfigSection(
-            modifier = Modifier.fillMaxWidth(),
-            editMode = uiState.authConfigEditMode,
-            authConfigs = uiState.authConfigs,
-            authConfig = uiState.currentAuthConfig,
-            saveButtonEnabled = uiState.authConfigSaveButtonEnabled,
-            currentAuthConfigUsername = uiState.currentAuthConfigUsername,
-            currentAuthConfigPassword = uiState.currentAuthConfigPassword,
-            onUiEvent = { event ->
-                onUiEvent(
-                    when (event) {
-                        is AuthConfigUiEvent.SelectionChanged -> {
-                            BackendConfigEditViewModel.UiEvent.AuthConfigSelectionChanged(
-                                event.authConfig
-                            )
-                        }
-
-                        is AuthConfigUiEvent.AddButtonClicked -> {
-                            BackendConfigEditViewModel.UiEvent.AuthConfigAddButtonClicked
-                        }
-
-                        is AuthConfigUiEvent.AbortButtonClicked ->
-                            BackendConfigEditViewModel.UiEvent.AuthConfigAbortButtonClicked
-
-                        is AuthConfigUiEvent.DeleteButtonClicked -> {
-                            BackendConfigEditViewModel.UiEvent.AuthConfigDeleteButtonClicked(
-                                event.authConfig
-                            )
-                        }
-
-                        is AuthConfigUiEvent.PasswordInputChanged -> {
-                            BackendConfigEditViewModel.UiEvent.AuthConfigPasswordInputChanged(
-                                event.password
-                            )
-                        }
-
-                        is AuthConfigUiEvent.UsernameInputChanged -> {
-                            BackendConfigEditViewModel.UiEvent.AuthConfigUsernameInputChanged(
-                                event.username
-                            )
-                        }
-
-                        is AuthConfigUiEvent.SaveButtonClicked -> {
-                            BackendConfigEditViewModel.UiEvent.AuthConfigSaveButtonClicked
-                        }
-                    }
-                )
-            }
-        )
+        if (uiState.currentBackendConfig != null) {
+            BackendAccountCard(
+                modifier = modifier,
+                signedInUsername = uiState.signedInUsername,
+                onSignInClicked = { onUiEvent(BackendConfigEditViewModel.UiEvent.SignInClicked) },
+                onSignOutClicked = { onUiEvent(BackendConfigEditViewModel.UiEvent.SignOutClicked) },
+            )
+        }
     }
 }
 

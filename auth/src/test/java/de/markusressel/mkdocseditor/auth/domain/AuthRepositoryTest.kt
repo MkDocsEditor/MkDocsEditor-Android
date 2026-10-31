@@ -175,4 +175,13 @@ class AuthRepositoryTest {
         assertEquals(listOf(7L, 7L), changes)
         job.cancel()
     }
+
+    @Test
+    fun `login required until the next sign in`() = runTest {
+        repository.onUnauthenticated(7)
+        assertEquals(setOf(7L), repository.loginRequired.value)
+        api.onLogin = { _, _ -> okResponse() }
+        repository.login(backend, "markus", "pw")
+        assertTrue(repository.loginRequired.value.isEmpty())
+    }
 }

@@ -90,9 +90,9 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
 
     override fun setPort(port: Int) {}
 
-    override fun getBasicAuthConfig(): BasicAuthConfig? = null
+    override fun setAuthorizationProvider(provider: AuthorizationProvider) {}
 
-    override fun setBasicAuthConfig(basicAuthConfig: BasicAuthConfig?) {}
+    override fun setUnauthorizedListener(listener: (() -> Unit)?) {}
 
     override suspend fun isHostAlive(): Result<String, FuelError> {
         return Result.success("")

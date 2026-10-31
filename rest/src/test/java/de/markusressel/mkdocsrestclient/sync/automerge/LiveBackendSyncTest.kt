@@ -1,6 +1,5 @@
 package de.markusressel.mkdocsrestclient.sync.automerge
 
-import de.markusressel.mkdocsrestclient.BasicAuthConfig
 import de.markusressel.mkdocsrestclient.sync.text.TextSplice
 import de.markusressel.mkdocsrestclient.sync.text.applySplices
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionHandler
@@ -30,7 +29,15 @@ class LiveBackendSyncTest {
     private val baseUrl = System.getProperty("mkdocs.backend.url")
     private val users = System.getProperty("mkdocs.backend.users")?.split(",")?.map {
         val (user, password) = it.split(":", limit = 2)
-        BasicAuthConfig(user, password)
+        TestUser(user, password)
+    }
+
+    /**
+     * A user of the test backend. Authenticates with HTTP Basic, which the backend accepts
+     * with `server.auth.legacyBasicAuth: true`.
+     */
+    private data class TestUser(val username: String, val password: String) {
+        val authorization: String = Credentials.basic(username, password)
     }
 
     private val http = OkHttpClient.Builder().readTimeout(0, TimeUnit.MILLISECONDS).build()
@@ -39,7 +46,7 @@ class LiveBackendSyncTest {
      * A session connected over a real websocket. All session calls run on one thread.
      */
     private inner class LiveClient(
-        val auth: BasicAuthConfig,
+        val auth: TestUser,
         documentId: String,
         store: LocalDocumentStore,
     ) : DocumentSyncSession.Listener {
@@ -50,7 +57,7 @@ class LiveBackendSyncTest {
         var closeCode: Int? = null
 
         val session = run(executor) { DocumentSyncSession(documentId, store, this) }
-        private val connection = WebsocketConnectionHandler(auth, http)
+        private val connection = WebsocketConnectionHandler({ auth.authorization }, http)
 
         init {
             editorText = session.text
@@ -121,10 +128,10 @@ class LiveBackendSyncTest {
     private fun <T> run(executor: java.util.concurrent.ExecutorService, block: () -> T): T =
         executor.submit<T> { block() }.get(10, TimeUnit.SECONDS)
 
-    private fun get(path: String, auth: BasicAuthConfig): String {
+    private fun get(path: String, auth: TestUser): String {
         val request = Request.Builder()
             .url(baseUrl!!.trimEnd('/') + path)
-            .header("Authorization", Credentials.basic(auth.username, auth.password))
+            .header("Authorization", auth.authorization)
             .build()
         return http.newCall(request).execute().use { response ->
             check(response.isSuccessful) { "GET $path: ${response.code}" }
@@ -132,7 +139,7 @@ class LiveBackendSyncTest {
         }
     }
 
-    private fun firstDocumentId(auth: BasicAuthConfig): String {
+    private fun firstDocumentId(auth: TestUser): String {
         val tree = get("/section/", auth)
         return requireNotNull(Regex("\"type\":\\s*\"document\",\\s*\"id\":\\s*\"([^\"]+)\"").find(tree)) {
             "no document in the root section"

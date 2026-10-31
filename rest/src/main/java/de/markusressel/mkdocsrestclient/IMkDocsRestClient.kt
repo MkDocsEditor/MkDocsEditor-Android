@@ -37,14 +37,14 @@ interface IMkDocsRestClient : MkDocsApi, SectionApi, DocumentApi, ResourceApi {
     fun setPort(port: Int)
 
     /**
-     * Set the BasicAuthConfig for this client
+     * Set what this client sends as Authorization header
      */
-    fun getBasicAuthConfig(): BasicAuthConfig?
+    fun setAuthorizationProvider(provider: AuthorizationProvider)
 
     /**
-     * Set the BasicAuthConfig for this client
+     * Set a listener that is called whenever the server answers 401 (the session is not valid)
      */
-    fun setBasicAuthConfig(basicAuthConfig: BasicAuthConfig?)
+    fun setUnauthorizedListener(listener: (() -> Unit)?)
 
     /**
      * Check if the server is alive and reachable
