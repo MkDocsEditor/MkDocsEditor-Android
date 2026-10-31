@@ -46,6 +46,7 @@ extensions.configure<ApplicationAndroidComponentsExtension> {
 
 dependencies {
     implementation(project(":data"))
+    implementation(project(":auth"))
 
     // Kotlin Coroutines
     implementation(libs.kotlinx.coroutines.core)
