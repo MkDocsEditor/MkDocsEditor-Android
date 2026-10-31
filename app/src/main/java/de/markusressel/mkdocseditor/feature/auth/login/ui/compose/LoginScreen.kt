@@ -13,6 +13,7 @@ import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.auth.account.ui.compose.AccountScreen
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.LocalAuthFlowExit
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.findActivity
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.popOrExit
@@ -73,8 +74,10 @@ data class LoginScreen(
                     is LoginViewModel.LoginEvent.SignedIn -> {
                         if (event.secondFactorSetupRequired) {
                             Toast.makeText(context, R.string.auth_second_factor_setup_hint, Toast.LENGTH_LONG).show()
+                            navigator.replace(AccountScreen(backendId))
+                        } else {
+                            navigator.popOrExit(exit)
                         }
-                        navigator.popOrExit(exit)
                     }
 
                     is LoginViewModel.LoginEvent.OpenLink -> {

@@ -14,6 +14,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.extensions.common.android.textResource
+import de.markusressel.mkdocseditor.feature.auth.account.ui.compose.AccountScreen
 import de.markusressel.mkdocseditor.feature.auth.login.ui.compose.LoginScreen
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreen
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.DialogState
@@ -27,7 +28,6 @@ import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.EditDo
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.EditResourceDialog
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.EditSectionDialog
 import de.markusressel.mkdocseditor.feature.filepicker.ui.compose.FilePickerScreen
-import de.markusressel.mkdocseditor.feature.profile.ui.compose.ProfileScreen
 import de.markusressel.mkdocseditor.feature.search.ui.compose.SearchScreen
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.runBlocking
@@ -65,8 +65,8 @@ object FileBrowserScreen : Screen {
                         navigator.push(CodeEditorScreen(documentId = event.documentId))
                     }
 
-                    is FileBrowserEvent.OpenProfileScreen -> {
-                        navigator.push(ProfileScreen)
+                    is FileBrowserEvent.OpenAccount -> {
+                        navigator.push(AccountScreen(backendId = event.backendId))
                     }
 
                     is FileBrowserEvent.OpenLogin -> {

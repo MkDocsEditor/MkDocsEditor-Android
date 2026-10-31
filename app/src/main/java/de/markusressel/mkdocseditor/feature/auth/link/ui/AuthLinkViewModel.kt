@@ -99,7 +99,15 @@ internal class AuthLinkViewModel @Inject constructor(
                     _uiState.update { it.copy(loading = false, error = event.error.toAuthMessage()) }
                 }
 
-                is UiEvent.DoneClicked -> _events.send(LinkEvent.Close)
+                is UiEvent.DoneClicked -> {
+                    val config = backendConfig
+                    if (uiState.value.secondFactorSetupRequired && config != null) {
+                        // the backend wants a second factor before anything else works
+                        _events.send(LinkEvent.OpenAccount(config.id))
+                    } else {
+                        _events.send(LinkEvent.Close)
+                    }
+                }
             }
         }
     }
@@ -320,6 +328,7 @@ internal class AuthLinkViewModel @Inject constructor(
         }
 
         data object Close : LinkEvent
+        data class OpenAccount(val backendId: Long) : LinkEvent
     }
 
     companion object {

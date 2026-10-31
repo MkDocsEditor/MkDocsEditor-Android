@@ -11,6 +11,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import de.markusressel.mkdocseditor.feature.auth.account.ui.compose.AccountScreen
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.LocalAuthFlowExit
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.findActivity
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.popOrExit
@@ -69,6 +70,7 @@ data class AuthLinkScreen(
                     }
 
                     is AuthLinkViewModel.LinkEvent.Close -> navigator.popOrExit(exit)
+                    is AuthLinkViewModel.LinkEvent.OpenAccount -> navigator.replace(AccountScreen(event.backendId))
                 }
             }
         }

@@ -199,4 +199,24 @@ class AuthLinkViewModelTest {
         start("https://example.com/nothing", backendId = null)
         assertEquals(Step.Invalid, viewModel.uiState.value.step)
     }
+
+    @Test
+    fun `done opens the account screen when the backend wants a second factor`() = runTest {
+        api.onRedeem = { _, username, _ -> okResponse(username = username!!, secondFactorSetupRequired = true) }
+        start("https://edit.example.com/invite#$token", backendId = 1, backendConfig(1))
+        fillAccount()
+        viewModel.onUiEvent(UiEvent.SubmitPasswordClicked)
+        viewModel.onUiEvent(UiEvent.DoneClicked)
+        assertEquals(LinkEvent.OpenAccount(1), events.last())
+    }
+
+    @Test
+    fun `done closes the flow otherwise`() = runTest {
+        api.onRedeem = { _, username, _ -> okResponse(username = username!!) }
+        start("https://edit.example.com/invite#$token", backendId = 1, backendConfig(1))
+        fillAccount()
+        viewModel.onUiEvent(UiEvent.SubmitPasswordClicked)
+        viewModel.onUiEvent(UiEvent.DoneClicked)
+        assertEquals(LinkEvent.Close, events.last())
+    }
 }
