@@ -221,7 +221,15 @@ internal class AccountViewModel @Inject constructor(
             return
         }
         runLoading(onError = { error -> updateDialog<Dialog.TotpEnroll> { it.copy(error = error) } }) {
-            val codes = call { confirmTotp(it, dialog.code) }
+            val codes = try {
+                call { confirmTotp(it, dialog.code) }
+            } catch (e: AuthApiException) {
+                if (e.code != AuthErrorCode.CONFLICT) throw e
+                // the pending secret expired (10 minutes) or was replaced: start over
+                dismissDialog()
+                showError(UiMessage(R.string.account_totp_enrollment_expired))
+                return@runLoading
+            }
             showDialog(Dialog.RecoveryCodes(codes))
             reload()
         }

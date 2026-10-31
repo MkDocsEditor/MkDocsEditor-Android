@@ -32,7 +32,7 @@ dependencies {
 
 // optional live check against a running backend (see LiveAuthTest)
 tasks.withType<Test>().configureEach {
-    listOf("mkdocs.backend.url", "mkdocs.backend.users").forEach { name ->
+    listOf("mkdocs.backend.url", "mkdocs.backend.users", "mkdocs.backend.passkeyOrigin", "mkdocs.backend.admin").forEach { name ->
         providers.gradleProperty(name).orNull?.let { systemProperty(name, it) }
     }
 }

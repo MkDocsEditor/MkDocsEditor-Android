@@ -197,6 +197,20 @@ class OkHttpAuthApiTest {
     }
 
     @Test
+    fun `passkeys with the provider, unused ones without lastUsedAt`() = runTest {
+        respond(
+            200,
+            """[{"id": "p1", "name": "Phone", "createdAt": "2026-10-31T20:00:00Z", "lastUsedAt": null, "backedUp": true,
+                "transports": ["internal", "hybrid"], "provider": "Bitwarden"}, {"id": "p2", "name": "Key"}]"""
+        )
+        val (phone, key) = api.passkeys("mds_t")
+        assertEquals("Bitwarden", phone.provider)
+        assertNull(phone.lastUsedAt)
+        assertTrue(phone.backedUp)
+        assertNull(key.provider)
+    }
+
+    @Test
     fun `base url with a path prefix`() = runTest {
         val prefixed = OkHttpAuthApi(server.url("/api").toString(), OkHttpClient())
         respond(200, "{}")
