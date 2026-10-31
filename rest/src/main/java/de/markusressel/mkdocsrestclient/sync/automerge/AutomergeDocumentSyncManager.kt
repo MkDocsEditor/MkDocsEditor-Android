@@ -59,6 +59,8 @@ class AutomergeDocumentSyncManager(
     /** true while the user of this manager wants to be connected */
     private var wantConnection = false
     private var reconnectAttempt = 0
+    /** true after a 4003 close was answered with one reconnect (a changed role, docs/auth.md) */
+    private var forbiddenRetried = false
     private var lastSentAt = 0L
     private var lastReceivedAt = 0L
 
@@ -116,6 +118,7 @@ class AutomergeDocumentSyncManager(
      */
     fun connect() {
         wantConnection = true
+        forbiddenRetried = false
         handler.removeCallbacks(reconnectRunnable)
         connection.connect(websocketUrl)
     }
@@ -239,8 +242,17 @@ class AutomergeDocumentSyncManager(
         }
         when (code) {
             // not recoverable by reconnecting
-            CloseCode.NORMAL, CloseCode.UNAUTHORIZED, CloseCode.FORBIDDEN,
+            CloseCode.NORMAL, CloseCode.UNAUTHORIZED,
             CloseCode.NOT_FOUND, CloseCode.PROTOCOL_ERROR -> wantConnection = false
+
+            // the role of the account changed: one reconnect applies the new role, a second
+            // 4003 means the actor is really not allowed
+            CloseCode.FORBIDDEN -> if (forbiddenRetried) {
+                wantConnection = false
+            } else {
+                forbiddenRetried = true
+                handler.post(reconnectRunnable)
+            }
 
             // the session already switched to the new document id
             CloseCode.RENAMED -> handler.post(reconnectRunnable)
