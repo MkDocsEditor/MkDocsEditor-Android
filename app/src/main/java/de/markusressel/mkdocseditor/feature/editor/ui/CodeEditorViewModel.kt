@@ -373,7 +373,10 @@ internal class CodeEditorViewModel @Inject constructor(
             }
         }
         _uiState.update { old ->
-            old.copy(documentId = documentId)
+            old.copy(
+                documentId = documentId,
+                loading = documentId != null && !isOfflineModeEnabledFlowUseCase().value,
+            )
         }
         if (documentId != null) launch { loadWikiTree(documentId) }
         automergeDocumentSyncManager?.shutdown()
@@ -431,10 +434,10 @@ internal class CodeEditorViewModel @Inject constructor(
                     if (connected) logOpenStep("connected")
                     connectionStatus.value = status
                     updateOfflineBanner()
-                    if (connected) {
-                        _uiState.update { old -> old.copy(loading = false) }
-                        if (documentLoadFailed) reloadAfterServerIsBack()
-                    }
+                    // without a local copy the text is still on its way. A failed connection
+                    // ends the loading too: it keeps retrying, and the snackbar says so.
+                    _uiState.update { old -> old.copy(loading = connected && !localCopyAvailable.value) }
+                    if (connected && documentLoadFailed) reloadAfterServerIsBack()
                 }
 
                 override fun onTextReplaced(text: String) {
@@ -1125,7 +1128,7 @@ internal class CodeEditorViewModel @Inject constructor(
      */
     private fun reconnectToServer() {
         _uiState.update { old ->
-            old.copy(loading = true)
+            old.copy(loading = automergeDocumentSyncManager != null)
         }
         automergeDocumentSyncManager?.connect()
     }
@@ -1139,6 +1142,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private fun disconnect(reason: String = "None", throwable: Throwable? = null) {
         automergeDocumentSyncManager?.disconnect(reason = reason)
         connectionStatus.value = ConnectionStatus(connected = false, throwable = throwable)
+        _uiState.update { old -> old.copy(loading = false) }
     }
 
     private fun updateDocumentContentInCache(documentId: String, text: String) =

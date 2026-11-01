@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
@@ -199,9 +200,21 @@ internal fun CodeEditorScreenContent(
                     )
                 }
             }
+
+            // on top of the text, so the text does not move when it goes away
+            if (uiState.loading) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                        .testTag(LOADING_INDICATOR_TAG),
+                )
+            }
         }
     }
 }
+
+internal const val LOADING_INDICATOR_TAG = "editor-loading"
 
 @Composable
 internal fun VerticalSplit(
