@@ -42,9 +42,9 @@ printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode --ignore-garbage > "$ke
   --out "$signed_apk" \
   "$unsigned_apk"
 
-# The start of the line depends on the version of apksigner ("Signer #1", "Signer (minSdkVersion=...").
+# The start of the line depends on the version of apksigner ("Signer #1", "V3.0 Signer:").
 certs=$("$apksigner" verify --print-certs "$signed_apk" 2>/dev/null)
-digest=$(printf '%s\n' "$certs" | sed -n 's/^Signer.* certificate SHA-256 digest: //p' | head -n 1)
+digest=$(printf '%s\n' "$certs" | sed -n 's/^.*certificate SHA-256 digest: //p' | head -n 1)
 fingerprint=$(printf '%s' "$digest" | tr '[:lower:]' '[:upper:]' | sed 's/../&:/g; s/:$//')
 
 if [[ -z "$fingerprint" ]]; then
