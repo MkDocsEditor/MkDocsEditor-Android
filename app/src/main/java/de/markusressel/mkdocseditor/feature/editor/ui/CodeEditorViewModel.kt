@@ -33,28 +33,23 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import dagger.hilt.android.lifecycle.HiltViewModel
-import de.markusressel.commons.android.core.runOnUiThread
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.auth.domain.AuthRepository
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
-import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentProjectConfigUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatAction
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatEdit
 import de.markusressel.mkdocseditor.feature.editor.domain.MarkdownFormatting
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
-import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.Error
 import de.markusressel.mkdocseditor.feature.editor.domain.PreviewFileCache
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.preview.PreviewResourceLoader
 import de.markusressel.mkdocseditor.event.BusEvent
@@ -112,10 +107,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 internal class CodeEditorViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
     private val dataRepository: DataRepository,
     private val getDocumentUseCase: GetDocumentUseCase,
-    private val getCurrentProjectConfigUseCase: GetCurrentProjectConfigUseCase,
     private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
     private val authRepository: AuthRepository,
     private val preferencesHolder: KutePreferencesHolder,
@@ -136,8 +129,6 @@ internal class CodeEditorViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(UiState())
     internal val uiState = _uiState.asStateFlow()
 
-    internal val events = MutableLiveData<CodeEditorEvent>()
-
     private val _navigationEvents = Channel<NavigationRequest>(Channel.BUFFERED)
     internal val navigationEvents = _navigationEvents.receiveAsFlow()
 
@@ -147,7 +138,6 @@ internal class CodeEditorViewModel @Inject constructor(
     /** the document could not be loaded from the server, until the server is back */
     private var documentLoadFailed = false
 
-    //val documentId = savedStateHandle.getStateFlow<String?>("documentId", null)
     val documentId = MutableStateFlow<String?>(null)
 
     private val currentResource: MutableStateFlow<Resource<DocumentEntity?>?> =
@@ -227,9 +217,6 @@ internal class CodeEditorViewModel @Inject constructor(
     private var editorFlushJob: Job? = null
 
     private var editorFocused = false
-
-    /** when the open document started loading, for [logOpenStep] */
-    private var openStartedAt = 0L
 
     // structural equality (the default): an unchanged field does not recompose
     private val _editorField = mutableStateOf(EditorField())
@@ -328,25 +315,9 @@ internal class CodeEditorViewModel @Inject constructor(
                     }
                 }
             }
-        }
-
-        events.observeForever { event ->
-            when (event) {
-                is Error -> _uiState.update { old ->
-                    old.copy(loading = false)
-                }
-
-                else -> {}
-            }
-        }
-    }
-
-    private fun logOpenStep(step: String) {
-        Timber.d { "Opening document: $step after ${SystemClock.elapsedRealtime() - openStartedAt} ms" }
-    }
+        }    }
 
     private suspend fun initializeEditorWithDocument(documentId: String?) {
-        openStartedAt = SystemClock.elapsedRealtime()
         if (documentId != null && automergeDocumentSyncManager?.documentId == documentId) {
             // the open document moved: the manager already follows its new id
             _uiState.update { old -> old.copy(documentId = documentId) }
@@ -404,7 +375,6 @@ internal class CodeEditorViewModel @Inject constructor(
                 val manager = withContext(Dispatchers.IO) {
                     createAutomergeSyncManager(documentId, serverConfig, currentBackend.id)
                 }
-                logOpenStep("sync manager created")
                 automergeDocumentSyncManager = manager
                 // show the local copy right away, it may hold edits made offline
                 bindEditorTo(manager)
@@ -434,7 +404,6 @@ internal class CodeEditorViewModel @Inject constructor(
                         // edits stay in the local copy and sync after the next sign-in
                         authRepository.onUnauthenticated(backendId)
                     }
-                    if (connected) logOpenStep("connected")
                     connectionStatus.value = status
                     updateOfflineBanner()
                     // without a local copy the text is still on its way. A failed connection
@@ -444,7 +413,6 @@ internal class CodeEditorViewModel @Inject constructor(
                 }
 
                 override fun onTextReplaced(text: String) {
-                    logOpenStep("text received")
                     editorBinding.onDocumentChanged()
                     syncEditorState()
                     localCopyAvailable.value = true
@@ -592,7 +560,6 @@ internal class CodeEditorViewModel @Inject constructor(
         val resource = getDocumentUseCase(documentId) { cached ->
             if (connect) showCachedDocument(cached)
         }
-        logOpenStep("item tree loaded")
         currentResource.value = resource
         when (resource) {
             is Success -> {
@@ -648,38 +615,6 @@ internal class CodeEditorViewModel @Inject constructor(
             connectionStatus = connectionStatus.value,
         )
         _uiState.update { old -> old.copy(isOfflineModeBannerVisible = visible) }
-    }
-
-    /**
-     * Restores the editor state from persistence
-     *
-     * @param text the new text to use, or null to keep the current text
-     */
-    private fun restoreEditorState(
-        entity: DocumentEntity? = null,
-        text: String? = null
-    ) {
-        val content = entity?.content?.target
-        if (content != null) {
-            if (text != null) {
-                setEditorText(text)
-            } else {
-                // restore values from cache
-                setEditorText(content.text, content.selection)
-            }
-
-//            val absolutePosition = computeAbsolutePosition(PointF(content.panX, content.panY))
-//            codeEditorLayout.codeEditorView.moveTo(
-//                content.zoomLevel,
-//                absolutePosition.x,
-//                absolutePosition.y,
-//                animate = false
-//            )
-        } else {
-            if (text != null) {
-                setEditorText(text)
-            }
-        }
     }
 
     /**
@@ -868,7 +803,6 @@ internal class CodeEditorViewModel @Inject constructor(
                 }
                 is UiEvent.PanelUploadClicked -> showDialog(DialogState.ResourcePicker(selectedText(), imagesOnly = false, startOnUpload = true))
 
-                is UiEvent.BackPressed -> onClose()
                 is UiEvent.SnackbarActionClicked -> onSnackbarAction(event.snackbar)
             }
         }
@@ -1165,28 +1099,10 @@ internal class CodeEditorViewModel @Inject constructor(
 
 
     private fun saveEditorState() = launch {
-        // TODO: this will probably cause problems when deleting all characters in a document
-
-//            val positioningPercentage = getCurrentPositionPercentage()
-//
-//        if (positioningPercentage.x.isNaN() || positioningPercentage.y.isNaN()) {
-//            // don't save the state if it is incomplete
-//            return
-//        }
-//
-//        viewModel.saveEditorState(
-//            selection = codeEditorLayout.codeEditorView.codeEditText.selectionStart,
-//            panX = positioningPercentage.x,
-//            panY = positioningPercentage.y
-//        )
-
         dataRepository.saveEditorState(
             documentId = documentId.value!!,
             text = uiState.value.text?.toString(),
             selection = uiState.value.selection?.start ?: 0,
-            zoomLevel = uiState.value.currentZoom,
-            panX = uiState.value.panX,
-            panY = uiState.value.panY
         )
     }
 
@@ -1233,27 +1149,12 @@ internal class CodeEditorViewModel @Inject constructor(
     private fun dismissCurrentDialog() = showDialog(null)
 
     /**
-     * Called when the user wants to connect to the server
-     */
-    fun onConnectClicked() {
-        reconnectToServer()
-    }
-
-    /**
      * Called when the user wants to reconnect to the server
      * after a previous connection (attempt) has failed
      */
     private fun onRetryClicked() {
         dismissSnackbar()
         reconnectToServer()
-    }
-
-    fun isCachedContentAvailable(): Boolean {
-        return getCachedContent() != null
-    }
-
-    private fun onClose() {
-        automergeDocumentSyncManager?.disconnect(reason = "Closed")
     }
 
     companion object {
@@ -1287,8 +1188,6 @@ internal class CodeEditorViewModel @Inject constructor(
     data class UiState(
         val currentDialogState: DialogState? = null,
 
-        val showInBrowserActionVisible: Boolean = true,
-
         val fabConfig: FabConfig<CodeEditorFabId> = FabConfig(),
 
         val loading: Boolean = false,
@@ -1309,9 +1208,6 @@ internal class CodeEditorViewModel @Inject constructor(
 
         val text: AnnotatedString? = null,
         val selection: TextRange? = null,
-        val currentZoom: Float = 1F,
-        val panX: Float = 0F,
-        val panY: Float = 0F,
 
         val isOfflineModeBannerVisible: Boolean = false,
         val isPreviewVisible: Boolean = false,
@@ -1368,7 +1264,6 @@ internal class CodeEditorViewModel @Inject constructor(
          */
         data class InsertMarkdownAfterSelection(val markdown: String) : UiEvent()
 
-        data object BackPressed : UiEvent()
     }
 
     data class ConnectionStatus(

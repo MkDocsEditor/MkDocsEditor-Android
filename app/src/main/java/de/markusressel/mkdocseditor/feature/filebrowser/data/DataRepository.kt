@@ -443,9 +443,9 @@ class DataRepository @Inject constructor(
         documentId: String,
         text: String?,
         selection: Int,
-        zoomLevel: Float,
-        panX: Float,
-        panY: Float
+        zoomLevel: Float = 1F,
+        panX: Float = 0F,
+        panY: Float = 0F,
     ) {
         documentContentPersistenceManager.insertOrUpdate(
             documentId = documentId,
