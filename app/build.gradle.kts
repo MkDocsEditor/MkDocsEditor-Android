@@ -76,8 +76,6 @@ dependencies {
 
     // Passkeys and saved passwords through any credential provider (Google, Bitwarden, ...)
     implementation(libs.androidx.credentials)
-    // provider on Android 13 and older
-    implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.zxing.core)
 
     // Jetpack Compose
@@ -99,9 +97,6 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.activity.compose)
 
-    // Emoji
-    implementation(libs.androidx.emoji)
-    implementation(libs.androidx.emoji.bundled)
     implementation(libs.androidx.documentfile)
 
     compileOnly(libs.javax.annotation)

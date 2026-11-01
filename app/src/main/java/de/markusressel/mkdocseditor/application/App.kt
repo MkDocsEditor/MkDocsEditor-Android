@@ -1,8 +1,6 @@
 package de.markusressel.mkdocseditor.application
 
 import android.app.Application
-import androidx.emoji.bundled.BundledEmojiCompatConfig
-import androidx.emoji.text.EmojiCompat
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.github.ajalt.timberkt.Timber
@@ -67,8 +65,6 @@ class App : Application(), Configuration.Provider {
 
         setupErrorHandlers()
 
-        initializeEmojiCompat()
-
         migrateBackendBasicAuthUseCase()
 
         listenToEvents()
@@ -117,11 +113,6 @@ class App : Application(), Configuration.Provider {
             Timber.plant(Timber.DebugTree())
             Timber.plant(FileTree(this))
         }
-    }
-
-    private fun initializeEmojiCompat() {
-        val config = BundledEmojiCompatConfig(this)
-        EmojiCompat.init(config)
     }
 
 }

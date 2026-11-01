@@ -5,9 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 import android.provider.Settings
-import androidx.annotation.RequiresApi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -42,11 +40,9 @@ internal class AndroidCredentialProviders @Inject constructor(
     }
 
     override fun canOpenProviderSettings(): Boolean =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE &&
-            providerSettingsIntent().resolveActivity(context.packageManager) != null
+        providerSettingsIntent().resolveActivity(context.packageManager) != null
 
     override fun openProviderSettings(activityContext: Context): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return false
         return try {
             activityContext.startActivity(providerSettingsIntent())
             true
@@ -64,7 +60,6 @@ internal class AndroidCredentialProviders @Inject constructor(
         false
     }
 
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     private fun providerSettingsIntent(): Intent =
         Intent(Settings.ACTION_CREDENTIAL_PROVIDER).setData(Uri.parse("package:${context.packageName}"))
 }

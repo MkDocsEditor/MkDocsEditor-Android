@@ -62,6 +62,8 @@ on how to do this.
 
 ## Installation
 
+The app needs Android 16 or newer on a 64-bit device.
+
 Every build of `master` is published as a pre-release with the APK on the
 [releases page](https://github.com/MkDocsEditor/MkDocsEditor-Android/releases).
 The easiest way to install it and get updates is [Obtainium](https://github.com/ImranR98/Obtainium):

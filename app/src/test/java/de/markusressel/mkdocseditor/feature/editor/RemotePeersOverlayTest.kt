@@ -32,7 +32,7 @@ import kotlin.test.assertTrue
  * belong to the new text, and must never be drawn on the layout of the old text.
  */
 @RunWith(AndroidJUnit4::class)
-@Config(application = Application::class, sdk = [35])
+@Config(application = Application::class, sdk = [36])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class RemotePeersOverlayTest {
 

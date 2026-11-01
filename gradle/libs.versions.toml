@@ -21,8 +21,6 @@ commonsVersion = "master-SNAPSHOT"
 composeShimmer = "1.5.0"
 credentials = "1.6.0"
 dexter = "6.2.3"
-emojiBundled = "1.2.0"
-emoji = "1.2.0"
 fragmentKtx = "1.9.1"
 fuelVersion = "2.3.1"
 hilt = "2.60.1"
@@ -61,7 +59,6 @@ documentfileVersion = "1.1.0"
 
 [libraries]
 androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
-androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
 zxing-core = { group = "com.google.zxing", name = "core", version = "3.5.4" }
 android-desugarJdkLibs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "androidDesugarJdkLibs" }
 android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "androidGradlePlugin" }
@@ -95,8 +92,6 @@ androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "u
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidxCore" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "androidxDatastore" }
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfileVersion" }
-androidx-emoji-bundled = { module = "androidx.emoji:emoji-bundled", version.ref = "emojiBundled" }
-androidx-emoji = { module = "androidx.emoji:emoji", version.ref = "emoji" }
 androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragmentKtx" }
 androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 androidx-lifecycle-common-java8 = { module = "androidx.lifecycle:lifecycle-common-java8", version.ref = "lifecycleCommonJava8" }

@@ -25,7 +25,7 @@ import kotlin.test.assertEquals
 
 @RunWith(AndroidJUnit4::class)
 // a phone sized screen, so the lists show all entries
-@Config(application = Application::class, sdk = [35], qualifiers = "w411dp-h891dp")
+@Config(application = Application::class, sdk = [36], qualifiers = "w411dp-h891dp")
 class PickerDialogsTest {
 
     @get:Rule

@@ -25,7 +25,7 @@ import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 
 @RunWith(AndroidJUnit4::class)
-@Config(application = Application::class, sdk = [35], qualifiers = "w411dp-h891dp")
+@Config(application = Application::class, sdk = [36], qualifiers = "w411dp-h891dp")
 class PageReferencesDialogTest {
 
     @get:Rule
