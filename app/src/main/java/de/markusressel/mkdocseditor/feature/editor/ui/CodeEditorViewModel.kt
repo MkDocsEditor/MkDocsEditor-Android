@@ -144,6 +144,9 @@ internal class CodeEditorViewModel @Inject constructor(
     /** the backend of the open document */
     private var currentBackendId: Long? = null
 
+    /** the document could not be loaded from the server, until the server is back */
+    private var documentLoadFailed = false
+
     //val documentId = savedStateHandle.getStateFlow<String?>("documentId", null)
     val documentId = MutableStateFlow<String?>(null)
 
@@ -284,7 +287,7 @@ internal class CodeEditorViewModel @Inject constructor(
             authRepository.sessionChanges.collect { backendId ->
                 if (backendId == currentBackendId && authRepository.isSignedIn(backendId) &&
                     automergeDocumentSyncManager?.isConnected == false &&
-                    uiState.value.isOfflineModeBannerVisible.not()
+                    isOfflineModeEnabledFlowUseCase().value.not()
                 ) {
                     reconnectToServer()
                 }
@@ -307,11 +310,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
         launch {
             isOfflineModeEnabledFlowUseCase().collect { enabled ->
-                _uiState.update { old ->
-                    old.copy(
-                        isOfflineModeBannerVisible = enabled,
-                    )
-                }
+                updateOfflineBanner()
 
                 when {
                     enabled -> disconnect("Offline mode activated")
@@ -371,6 +370,8 @@ internal class CodeEditorViewModel @Inject constructor(
         if (documentId != null) launch { loadWikiTree(documentId) }
         automergeDocumentSyncManager?.shutdown()
         localCopyAvailable.value = false
+        documentLoadFailed = false
+        updateOfflineBanner()
 
         when (documentId) {
             null -> {
@@ -379,8 +380,13 @@ internal class CodeEditorViewModel @Inject constructor(
             }
 
             else -> {
-                val currentBackend = requireNotNull(getCurrentBackendConfigUseCase())
-                val serverConfig = requireNotNull(currentBackend.serverConfig)
+                val currentBackend = getCurrentBackendConfigUseCase()
+                val serverConfig = currentBackend?.serverConfig
+                if (serverConfig == null) {
+                    // Android restored the editor, but the backend is gone (removed by the user)
+                    _navigationEvents.send(NavigationRequest.Close)
+                    return
+                }
                 currentBackendId = currentBackend.id
 
                 val manager = createAutomergeSyncManager(documentId, serverConfig, currentBackend.id)
@@ -414,8 +420,10 @@ internal class CodeEditorViewModel @Inject constructor(
                         authRepository.onUnauthenticated(backendId)
                     }
                     connectionStatus.value = status
+                    updateOfflineBanner()
                     if (connected) {
                         _uiState.update { old -> old.copy(loading = false) }
+                        if (documentLoadFailed) reloadAfterServerIsBack()
                     }
                 }
 
@@ -578,13 +586,40 @@ internal class CodeEditorViewModel @Inject constructor(
             is Resource.Error -> {
                 Timber.e(resource.error) { "Error loading document resource" }
                 updateTitle(resource.data?.name ?: "")
-                showOfflineVersionIfPossible()
+                documentLoadFailed = true
+                updateOfflineBanner()
+                // a local copy is shown and editable already, and its edits sync later
+                if (!localCopyAvailable.value) showOfflineVersionIfPossible()
+                // keeps trying, and ends the offline state as soon as the server answers
+                if (connect) reconnectToServer()
             }
 
             else -> {
                 Timber.d { "$resource" }
             }
         }
+    }
+
+    /**
+     * The document could not be loaded when it was opened. Catches up on what is missing, the
+     * sync manager already brought the text up to date.
+     */
+    private fun reloadAfterServerIsBack() {
+        val documentId = documentId.value ?: return
+        documentLoadFailed = false
+        launch {
+            loadWikiTree(documentId)
+            loadDocumentResource(documentId, connect = false)
+        }
+    }
+
+    private fun updateOfflineBanner() {
+        val visible = isOfflineBannerVisible(
+            offlineModeEnabled = isOfflineModeEnabledFlowUseCase().value,
+            documentLoadFailed = documentLoadFailed,
+            connectionStatus = connectionStatus.value,
+        )
+        _uiState.update { old -> old.copy(isOfflineModeBannerVisible = visible) }
     }
 
     /**
@@ -749,7 +784,6 @@ internal class CodeEditorViewModel @Inject constructor(
         _uiState.update { old ->
             old.copy(
                 title = currentResource.value?.data?.name ?: "",
-                isOfflineModeBannerVisible = true,
                 isBottomAppBarVisible = false,
             )
         }
@@ -1345,6 +1379,21 @@ internal class CodeEditorViewModel @Inject constructor(
         /** the links and files of the page, and the pages that link to it */
         data class PageReferencesPanel(val data: PageReferences = PageReferences()) : DialogState
     }
+}
+
+/**
+ * "Offline" means the offline mode of the settings, or that the server does not answer: the
+ * document could not be loaded, and the connection is not back yet. A server that answers and
+ * refuses the session is not offline, the user has to sign in again.
+ */
+internal fun isOfflineBannerVisible(
+    offlineModeEnabled: Boolean,
+    documentLoadFailed: Boolean,
+    connectionStatus: CodeEditorViewModel.ConnectionStatus?,
+): Boolean {
+    if (offlineModeEnabled) return true
+    if (!documentLoadFailed || connectionStatus?.connected == true) return false
+    return connectionStatus?.isAuthenticationFailure != true
 }
 
 /**
