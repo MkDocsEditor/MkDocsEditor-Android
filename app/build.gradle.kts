@@ -32,6 +32,11 @@ extensions.configure<ApplicationExtension> {
         resValues = true
     }
 
+    // Compose UI tests run on the JVM with Robolectric
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+
     kotlin {
         compilerOptions {
             freeCompilerArgs.addAll(
@@ -184,6 +189,11 @@ dependencies {
     testImplementation(libs.junit4)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(testFixtures(project(":auth")))
+    // Compose UI tests on the JVM
+    testImplementation(libs.robolectric)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 //    androidTestImplementation("androidx.test:runner:1.5.2")
 //    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 
