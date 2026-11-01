@@ -100,8 +100,6 @@
     <string name="not_connected">Not connected</string>
     <string name="error">☠ Error</string>
     <string name="exception_raised">☠ Exception raised</string>
-    <string name="retry">Retry</string>
-    <string name="connect">Connect</string>
     <string name="sync_error">Synchronization error :(</string>
 
     <string name="search">Search</string>
