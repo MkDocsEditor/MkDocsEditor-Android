@@ -70,12 +70,14 @@ internal fun CodeEditorBottomBar(
             sides = WindowInsetsSides.Left + WindowInsetsSides.Right + WindowInsetsSides.Top
         )
     ) {
+        // the buttons change the text, so they only show in the edit mode
         Row(
             modifier = Modifier
                 .weight(1f)
                 .horizontalScroll(rememberScrollState()),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (!uiState.editModeActive) return@Row
             ToolbarButton(Icons.Default.FormatBold, R.string.format_bold) { format(FormatAction.Bold) }
             ToolbarButton(Icons.Default.FormatItalic, R.string.format_italic) { format(FormatAction.Italic) }
             ToolbarButton(Icons.Default.FormatStrikethrough, R.string.format_strikethrough) { format(FormatAction.Strikethrough) }

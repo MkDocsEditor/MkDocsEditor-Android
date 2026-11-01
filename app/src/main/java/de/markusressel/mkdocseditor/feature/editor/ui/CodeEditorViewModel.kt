@@ -228,6 +228,8 @@ internal class CodeEditorViewModel @Inject constructor(
                 _uiState.update { old ->
                     old.copy(
                         isBottomAppBarVisible = editable,
+                        // the toggle that opens the edit mode, once editing is possible
+                        fabConfig = old.fabConfig.copy(right = editModeFabs(editable, old.editModeActive)),
                     )
                 }
             }
@@ -1095,12 +1097,10 @@ internal class CodeEditorViewModel @Inject constructor(
             old.copy(
                 editModeActive = false,
                 fabConfig = old.fabConfig.copy(
-                    right = when (editable.value) {
-                        true -> listOf(EnableEditModeFabConfig)
-                        else -> listOf()
-                    }
+                    right = editModeFabs(editable.value, editModeActive = false)
                 ),
-                isBottomAppBarVisible = false,
+                // the bar holds the toggle back into the edit mode
+                isBottomAppBarVisible = editable.value,
             )
         }
     }
@@ -1143,6 +1143,13 @@ internal class CodeEditorViewModel @Inject constructor(
 
         private const val THUMBNAIL_SIZE_PX = 128
         private const val THUMBNAIL_CACHE_SIZE = 200
+
+        /** the toggle between reading and editing; there is none while editing is impossible */
+        internal fun editModeFabs(editable: Boolean, editModeActive: Boolean): List<FabConfig.Fab<CodeEditorFabId>> = when {
+            editModeActive -> listOf(DisableEditModeFabConfig)
+            editable -> listOf(EnableEditModeFabConfig)
+            else -> emptyList()
+        }
 
         internal val EnableEditModeFabConfig = FabConfig.Fab<CodeEditorFabId>(
             id = CodeEditorFabId.EnableEditMode,
