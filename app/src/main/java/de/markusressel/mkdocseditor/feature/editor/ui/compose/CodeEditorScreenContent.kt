@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -56,6 +57,7 @@ import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
+import de.markusressel.mkdocseditor.feature.editor.ui.ConnectionIndicator
 import de.markusressel.mkdocseditor.feature.editor.ui.EditorField
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel.Companion.EnableEditModeFabConfig
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
@@ -66,6 +68,8 @@ import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 import de.markusressel.mkdocsrestclient.sync.automerge.RemoteSelection
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.preview.MarkdownPreview
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.preview.PreviewResourceLoader
+
+internal const val CONNECTION_ACTION_TAG = "connection-action"
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -110,6 +114,7 @@ internal fun CodeEditorScreenContent(
                     MkDocsEditorTopAppBar(
                         title = uiState.title,
                         actions = listOfNotNull(
+                            uiState.connectionIndicator?.let { TopAppBarAction.CodeEditor.ConnectionAction(it) },
                             TopAppBarAction.CodeEditor.OnlineUsersAction(uiState.remotePeers)
                                 .takeIf { uiState.remotePeers.isNotEmpty() },
                             TopAppBarAction.CodeEditor.PageReferencesAction,
@@ -356,6 +361,36 @@ internal fun TogglePreviewAction(
     }
 }
 
+/** small on purpose: not being connected is no problem, edits sync later */
+@Composable
+internal fun ConnectionAction(
+    modifier: Modifier,
+    indicator: ConnectionIndicator,
+    onClick: () -> Unit,
+) {
+    IconButton(
+        modifier = modifier.testTag(CONNECTION_ACTION_TAG),
+        onClick = onClick,
+    ) {
+        Image(
+            modifier = Modifier.size(18.dp),
+            asset = when (indicator) {
+                ConnectionIndicator.Connected -> MaterialDesignIconic.Icon.gmi_cloud_done
+                ConnectionIndicator.NotConnected,
+                ConnectionIndicator.OfflineMode -> MaterialDesignIconic.Icon.gmi_cloud_off
+            },
+            contentDescription = stringResource(
+                when (indicator) {
+                    ConnectionIndicator.Connected -> R.string.connection_connected
+                    ConnectionIndicator.NotConnected,
+                    ConnectionIndicator.OfflineMode -> R.string.connection_not_connected
+                }
+            ),
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant),
+        )
+    }
+}
+
 @Composable
 internal fun PageReferencesAction(
     modifier: Modifier,
@@ -395,34 +430,12 @@ internal fun CodeEditorSackbar(
     onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
 ) {
     val text = when (snackbar) {
-        is SnackbarData.ConnectionFailed -> stringResource(R.string.code_editor_connection_failed)
-        is SnackbarData.Disconnected -> stringResource(R.string.code_editor_disconnected)
         is SnackbarData.SignedOut -> stringResource(R.string.code_editor_signed_out)
         is SnackbarData.Message -> snackbar.text
     }
 
     val action: (@Composable () -> Unit)? = when (snackbar) {
         is SnackbarData.Message -> null
-
-        is SnackbarData.ConnectionFailed -> {
-            {
-                TextButton(onClick = {
-                    onUiEvent(CodeEditorViewModel.UiEvent.SnackbarActionClicked(snackbar))
-                }) {
-                    Text(text = stringResource(R.string.retry))
-                }
-            }
-        }
-
-        is SnackbarData.Disconnected -> {
-            {
-                TextButton(onClick = {
-                    onUiEvent(CodeEditorViewModel.UiEvent.SnackbarActionClicked(snackbar))
-                }) {
-                    Text(text = stringResource(R.string.connect))
-                }
-            }
-        }
 
         is SnackbarData.SignedOut -> {
             {
@@ -446,7 +459,6 @@ internal fun CodeEditorSackbar(
 /** what the user has to know about the open document */
 @Composable
 private fun EditorBanners(uiState: CodeEditorViewModel.UiState) {
-    if (uiState.isOfflineModeBannerVisible) EditorBanner(stringResource(R.string.offline))
     if (uiState.isNoOfflineVersionVisible) EditorBanner(stringResource(R.string.no_offline_version))
     if (uiState.isDocumentDeletedOnServer) EditorBanner(stringResource(R.string.document_deleted_on_server))
 }
@@ -474,8 +486,7 @@ private fun CodeEditorScreenContentOfflinePreview() {
     MkDocsEditorTheme {
         CodeEditorScreenContent(
             uiState = CodeEditorViewModel.UiState(
-                isOfflineModeBannerVisible = true,
-                snackbar = SnackbarData.ConnectionFailed,
+                connectionIndicator = ConnectionIndicator.NotConnected,
                 fabConfig = FabConfig(
                     right = listOf(EnableEditModeFabConfig)
                 ),
@@ -494,7 +505,7 @@ private fun CodeEditorScreenContentOnlinePreview() {
     MkDocsEditorTheme {
         CodeEditorScreenContent(
             uiState = CodeEditorViewModel.UiState(
-                isOfflineModeBannerVisible = false,
+                connectionIndicator = ConnectionIndicator.Connected,
                 fabConfig = FabConfig(
                     right = listOf(EnableEditModeFabConfig)
                 ),

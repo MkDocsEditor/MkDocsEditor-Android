@@ -4,13 +4,16 @@ import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.Navigator
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
+import de.markusressel.mkdocseditor.feature.editor.ui.ConnectionIndicator
 import de.markusressel.mkdocseditor.feature.editor.ui.EditorField
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.CONNECTION_ACTION_TAG
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreenContent
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.LOADING_INDICATOR_TAG
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
@@ -65,15 +68,20 @@ class EditorScreenStateTest {
     @Test
     fun `a page without an offline version says so`() {
         show(CodeEditorViewModel.UiState(isNoOfflineVersionVisible = true))
-        composeRule.onNodeWithText("Not available offline", substring = true, ignoreCase = true).assertDoesNotExist()
-        composeRule.onNodeWithText("no offline version available", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("not on this device yet", substring = true).assertIsDisplayed()
     }
 
     @Test
     fun `no notice without a reason`() {
         show(CodeEditorViewModel.UiState())
         composeRule.onNodeWithText("deleted on the server", substring = true).assertDoesNotExist()
-        composeRule.onNodeWithText("no offline version available", substring = true).assertDoesNotExist()
-        composeRule.onNodeWithText("Offline").assertDoesNotExist()
+        composeRule.onNodeWithText("not on this device yet", substring = true).assertDoesNotExist()
+        composeRule.onNodeWithTag(CONNECTION_ACTION_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the connection is a small icon, not a message`() {
+        show(CodeEditorViewModel.UiState(connectionIndicator = ConnectionIndicator.NotConnected))
+        composeRule.onNodeWithContentDescription("Not connected").assertIsDisplayed()
     }
 }

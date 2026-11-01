@@ -10,12 +10,16 @@ import de.markusressel.mkdocsrestclient.sync.automerge.protocol.CloseCode
 import de.markusressel.mkdocsrestclient.sync.text.TextSplice
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -24,6 +28,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 /** how long opening a document waits for the redirect lookups of the local copies */
 private const val REDIRECT_TIMEOUT_MS = 5_000L
+private const val NOT_CONNECTED_DELAY_MS = 2_000L
 
 /** what the database knows about a document */
 internal data class CachedDocument(val name: String, val text: String?)
@@ -48,20 +53,8 @@ internal data class ConnectionStatus(
         get() = !connected && (errorCode == 401 || errorCode == CloseCode.UNAUTHORIZED)
 }
 
-/**
- * "Offline" means the offline mode of the settings, or that the server does not answer: the
- * document could not be loaded, and the connection is not back yet. A server that answers and
- * refuses the session is not offline, the user has to sign in again.
- */
-internal fun isOfflineBannerVisible(
-    offlineModeEnabled: Boolean,
-    documentLoadFailed: Boolean,
-    connectionStatus: ConnectionStatus?,
-): Boolean {
-    if (offlineModeEnabled) return true
-    if (!documentLoadFailed || connectionStatus?.connected == true) return false
-    return connectionStatus?.isAuthenticationFailure != true
-}
+/** what the small icon of the editor shows */
+enum class ConnectionIndicator { Connected, NotConnected, OfflineMode }
 
 /**
  * What a [DocumentSession] needs from the rest of the app
@@ -137,7 +130,6 @@ internal class DocumentSession(
         val documentId: String? = null,
         val title: String = "",
         val loading: Boolean = false,
-        val offlineBannerVisible: Boolean = false,
         val deletedOnServer: Boolean = false,
         /** there is neither a connection nor a text to show */
         val noOfflineVersion: Boolean = false,
@@ -156,6 +148,25 @@ internal class DocumentSession(
      * Indicates whether a local Automerge copy of the document exists (and may be edited)
      */
     private val localCopyAvailable = MutableStateFlow(false)
+
+    /**
+     * Not being connected is normal, edits sync later. So the icon does not change for the moment
+     * it takes to connect, or for a short interruption.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val connectionIndicator: StateFlow<ConnectionIndicator?> = combine(
+        _connectionStatus,
+        environment.offlineMode,
+    ) { status, offlineMode ->
+        when {
+            status?.connected == true -> ConnectionIndicator.Connected
+            offlineMode -> ConnectionIndicator.OfflineMode
+            else -> ConnectionIndicator.NotConnected
+        }
+    }.distinctUntilChanged().mapLatest { indicator ->
+        if (indicator == ConnectionIndicator.NotConnected) delay(NOT_CONNECTED_DELAY_MS)
+        indicator
+    }.stateIn(scope, SharingStarted.Eagerly, initialValue = null)
 
     private val readOnly = MutableStateFlow(false)
 
@@ -201,7 +212,6 @@ internal class DocumentSession(
 
         scope.launch {
             environment.offlineMode.collect { enabled ->
-                updateOfflineBanner()
 
                 when {
                     enabled -> disconnect("Offline mode activated")
@@ -261,7 +271,6 @@ internal class DocumentSession(
         localCopyAvailable.value = false
         readOnly.value = false
         documentLoadFailed = false
-        updateOfflineBanner()
 
         if (documentId == null) return
 
@@ -293,9 +302,8 @@ internal class DocumentSession(
                 environment.onUnauthenticated(backendId)
             }
             _connectionStatus.value = status
-            updateOfflineBanner()
             // without a local copy the text is still on its way. A failed connection
-            // ends the loading too: it keeps retrying, and the snackbar says so.
+            // ends the loading too: it keeps retrying, and the icon says so.
             _state.update { old -> old.copy(loading = connected && !localCopyAvailable.value) }
             if (connected && documentLoadFailed) reloadAfterServerIsBack()
         }
@@ -353,7 +361,6 @@ internal class DocumentSession(
                 Timber.e(result.error) { "Error loading document resource" }
                 val connected = syncedDocument?.isConnected == true
                 documentLoadFailed = !connected
-                updateOfflineBanner()
                 // a local copy is shown and editable already, and its edits sync later. The
                 // connection keeps trying, and ends the offline state as soon as the server answers
                 if (!localCopyAvailable.value && !connected) showOfflineVersionIfPossible()
@@ -399,15 +406,6 @@ internal class DocumentSession(
 
     private fun updateTitle(title: String) {
         _state.update { old -> old.copy(title = title) }
-    }
-
-    private fun updateOfflineBanner() {
-        val visible = isOfflineBannerVisible(
-            offlineModeEnabled = environment.offlineMode.value,
-            documentLoadFailed = documentLoadFailed,
-            connectionStatus = _connectionStatus.value,
-        )
-        _state.update { old -> old.copy(offlineBannerVisible = visible) }
     }
 
     /**

@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.common.ui.compose.topbar
 
+import de.markusressel.mkdocseditor.feature.editor.ui.ConnectionIndicator
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.SplitOrientation
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 
@@ -9,6 +10,7 @@ sealed interface TopAppBarAction {
         data class TogglePreviewAction(val orientation: SplitOrientation) : CodeEditor
         data class OnlineUsersAction(val remotePeers: List<RemotePeer>) : CodeEditor
         data object PageReferencesAction : CodeEditor
+        data class ConnectionAction(val indicator: ConnectionIndicator) : CodeEditor
     }
 
     sealed interface FileBrowser : TopAppBarAction {

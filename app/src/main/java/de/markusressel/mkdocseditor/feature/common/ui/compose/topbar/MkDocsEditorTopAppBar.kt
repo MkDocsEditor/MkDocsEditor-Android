@@ -16,6 +16,7 @@ import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.extensions.common.android.isComposePreview
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.OnlineUsersAction
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.ConnectionAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.PageReferencesAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.ShowInBrowserAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.TogglePreviewAction
@@ -86,6 +87,14 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
                             onClick = { onActionClicked(action) }
                         )
                     }
+                    is TopAppBarAction.CodeEditor.ConnectionAction -> {
+                        ConnectionAction(
+                            modifier = Modifier.align(Alignment.CenterVertically),
+                            indicator = action.indicator,
+                            onClick = { onActionClicked(action) }
+                        )
+                    }
+
                     is TopAppBarAction.CodeEditor.PageReferencesAction -> {
                         PageReferencesAction(
                             modifier = Modifier.align(Alignment.CenterVertically),

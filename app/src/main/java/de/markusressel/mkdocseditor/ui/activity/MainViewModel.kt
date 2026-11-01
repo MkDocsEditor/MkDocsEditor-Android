@@ -17,8 +17,6 @@ import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 sealed class SnackbarData {
-    data object ConnectionFailed : SnackbarData()
-    data object Disconnected : SnackbarData()
 
     /** the server rejected the session; local edits are kept */
     data class SignedOut(val backendId: Long) : SnackbarData()

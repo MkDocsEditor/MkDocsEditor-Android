@@ -19,6 +19,8 @@ import kotlinx.coroutines.test.runTest
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlin.test.assertNull
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -230,7 +232,6 @@ class DocumentSessionTest {
         f.open()
         assertEquals(0, f.document.connects)
         assertFalse(f.state.loading)
-        assertTrue(f.state.offlineBannerVisible)
         assertEquals("cached text", f.fieldText)
         assertEquals(1, f.host.offlineVersions)
     }
@@ -240,14 +241,12 @@ class DocumentSessionTest {
         f.environment.cached = CachedDocument("Title", "cached text")
         f.environment.loadAnswer = CompletableDeferred(DocumentLoad(f.environment.cached, IOException("no server")))
         f.open()
-        assertTrue(f.state.offlineBannerVisible)
         assertEquals(1, f.host.offlineVersions)
         assertEquals(1, f.environment.loadCount)
 
         f.environment.loadAnswer = null
         f.document.connected()
 
-        assertFalse(f.state.offlineBannerVisible)
         assertEquals(2, f.environment.loadCount, "catches up on what is missing")
         assertEquals(1, f.document.connects, "the connection stays")
     }
@@ -283,7 +282,6 @@ class DocumentSessionTest {
 
         answer.complete(DocumentLoad(null, IOException("hiccup")))
 
-        assertFalse(f.state.offlineBannerVisible)
         assertEquals(0, f.host.offlineVersions)
     }
 
@@ -363,11 +361,35 @@ class DocumentSessionTest {
 
         f.environment.offlineMode.value = true
         assertEquals(listOf("Offline mode activated"), f.document.disconnects)
-        assertTrue(f.state.offlineBannerVisible)
 
         f.environment.offlineMode.value = false
         assertEquals(connects + 1, f.document.connects)
-        assertFalse(f.state.offlineBannerVisible)
+    }
+
+    @Test
+    fun `the icon follows the connection, but ignores a short interruption`() = test { f ->
+        assertNull(f.session.connectionIndicator.value)
+        f.open()
+        advanceTimeBy(1_000)
+        assertNull(f.session.connectionIndicator.value, "still connecting")
+        advanceTimeBy(2_000)
+        assertEquals(ConnectionIndicator.NotConnected, f.session.connectionIndicator.value)
+
+        f.document.connected()
+        assertEquals(ConnectionIndicator.Connected, f.session.connectionIndicator.value)
+
+        f.document.listener.onConnectionStatusChanged(false)
+        advanceTimeBy(1_000)
+        f.document.connected()
+        advanceTimeBy(5_000)
+        assertEquals(ConnectionIndicator.Connected, f.session.connectionIndicator.value)
+    }
+
+    @Test
+    fun `the icon tells the offline mode apart`() = test { f ->
+        f.environment.offlineMode.value = true
+        f.open()
+        assertEquals(ConnectionIndicator.OfflineMode, f.session.connectionIndicator.value)
     }
 
     @Test

@@ -69,7 +69,12 @@
     <string name="format_horizontal_rule">Horizontal rule</string>
 
     <string name="no_offline_version_title">Not available offline</string>
-    <string name="no_offline_version">Sorry, there is no offline version available. Try to connect to the server and re-open this file to get an updated offline version.</string>
+    <string name="no_offline_version">This page is not on this device yet. It opens as soon as there is a connection.</string>
+    <string name="connection_connected">Connected</string>
+    <string name="connection_not_connected">Not connected</string>
+    <string name="connection_connected_info">Connected. Changes sync right away.</string>
+    <string name="connection_not_connected_info">Not connected. Your changes stay on this device and sync later. Changes by others may be missing until then.</string>
+    <string name="connection_offline_mode_info">Offline mode is on. Your changes stay on this device and sync after you turn it off. Changes by others may be missing until then.</string>
 
     <string name="error_and_no_offline_version">There was an error connecting to the server and there is
     no offline version available for read-only mode: %1$s</string>
@@ -87,10 +92,7 @@
     <string name="code_editor_edit_mode">Edit Mode</string>
     <string name="code_editor_enable_edit_mode">Edit</string>
     <string name="code_editor_disable_edit_mode">Read-Only</string>
-    <string name="code_editor_connection_failed">Connection failed</string>
-    <string name="code_editor_disconnected">Disconnected</string>
 
-    <string name="offline">Offline</string>
     <string name="document_deleted_on_server">This page was deleted on the server. Your copy stays on this device.</string>
 
     <string name="connected">📡 Connected</string>

@@ -135,7 +135,6 @@ internal class CodeEditorViewModel @Inject constructor(
                         documentId = state.documentId,
                         title = state.title,
                         loading = state.loading,
-                        isOfflineModeBannerVisible = state.offlineBannerVisible,
                         isDocumentDeletedOnServer = state.deletedOnServer,
                         isNoOfflineVersionVisible = state.noOfflineVersion,
                     )
@@ -185,14 +184,16 @@ internal class CodeEditorViewModel @Inject constructor(
         launch {
             session.connectionStatus.filterNotNull().collectLatest {
                 val backendId = session.backendId
-                showSnackbar(
-                    when {
-                        it.connected -> null
-                        backendId != null && it.isAuthenticationFailure -> SnackbarData.SignedOut(backendId)
-                        it.errorCode != null -> SnackbarData.ConnectionFailed
-                        else -> SnackbarData.Disconnected
-                    }
-                )
+                when {
+                    backendId != null && it.isAuthenticationFailure -> showSnackbar(SnackbarData.SignedOut(backendId))
+                    uiState.value.snackbar is SnackbarData.SignedOut -> dismissSnackbar()
+                }
+            }
+        }
+
+        launch {
+            session.connectionIndicator.collect { indicator ->
+                _uiState.update { old -> old.copy(connectionIndicator = indicator) }
             }
         }
     }
@@ -355,8 +356,23 @@ internal class CodeEditorViewModel @Inject constructor(
             is TopAppBarAction.CodeEditor.TogglePreviewAction -> togglePreviewVisibility()
             is TopAppBarAction.CodeEditor.ShowInBrowserAction -> onOpenInBrowserClicked()
             is TopAppBarAction.CodeEditor.OnlineUsersAction -> Unit
+            is TopAppBarAction.CodeEditor.ConnectionAction -> onConnectionIconClicked(action.indicator)
             is TopAppBarAction.CodeEditor.PageReferencesAction -> showPageReferences()
         }
+    }
+
+    /** says what the state means, and does not wait for the next try to connect */
+    private fun onConnectionIconClicked(indicator: ConnectionIndicator) {
+        showMessage(
+            context.getString(
+                when (indicator) {
+                    ConnectionIndicator.Connected -> R.string.connection_connected_info
+                    ConnectionIndicator.NotConnected -> R.string.connection_not_connected_info
+                    ConnectionIndicator.OfflineMode -> R.string.connection_offline_mode_info
+                }
+            )
+        )
+        if (indicator == ConnectionIndicator.NotConnected) session.reconnect()
     }
 
     /** opens the references panel and loads its data */
@@ -414,13 +430,6 @@ internal class CodeEditorViewModel @Inject constructor(
 
     private fun onSnackbarAction(snackbar: SnackbarData) {
         when (snackbar) {
-            SnackbarData.ConnectionFailed -> onRetryClicked()
-
-            SnackbarData.Disconnected -> {
-                dismissSnackbar()
-                session.reconnect()
-            }
-
             is SnackbarData.SignedOut -> launch {
                 _navigationEvents.send(NavigationRequest.Login(snackbar.backendId))
             }
@@ -519,15 +528,6 @@ internal class CodeEditorViewModel @Inject constructor(
 
     private fun dismissCurrentDialog() = showDialog(null)
 
-    /**
-     * Called when the user wants to reconnect to the server
-     * after a previous connection (attempt) has failed
-     */
-    private fun onRetryClicked() {
-        dismissSnackbar()
-        session.reconnect()
-    }
-
     companion object {
         private const val SAVE_DELAY_MS = 2_000L
 
@@ -574,7 +574,10 @@ internal class CodeEditorViewModel @Inject constructor(
         val editModeActive: Boolean = true,
 
 
-        val isOfflineModeBannerVisible: Boolean = false,
+        /**
+         * Whether the document is connected, null until that is known
+         */
+        val connectionIndicator: ConnectionIndicator? = null,
         val isPreviewVisible: Boolean = false,
         val isBottomAppBarVisible: Boolean = false,
 
