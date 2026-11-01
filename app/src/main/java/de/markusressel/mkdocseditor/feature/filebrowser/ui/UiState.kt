@@ -44,17 +44,26 @@ sealed interface DialogState {
         val error: MoveOutcome.Failed? = null,
     ) : DialogState
 
-    /** the documents that link to an item; [backlinks] is null while loading */
+    /**
+     * The documents that link to an item; [backlinks] is null while loading
+     *
+     * @param unsupported the backend is too old to know backlinks
+     */
     data class Backlinks(
         val item: WikiItem,
         val backlinks: List<BacklinkModel>? = null,
         val error: String? = null,
+        val unsupported: Boolean = false,
     ) : DialogState
 
-    /** @param usedBy how many references to the item exist, null while unknown */
+    /**
+     * @param usedBy how many references to the item exist, null while unknown
+     * @param usedByUnavailable the count could not be loaded (older backend, no connection)
+     */
     data class DeleteConfirmation(
         val item: WikiItem,
         val usedBy: Int? = null,
+        val usedByUnavailable: Boolean = false,
     ) : DialogState
 }
 

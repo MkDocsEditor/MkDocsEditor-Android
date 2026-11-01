@@ -64,6 +64,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.job
 import org.mobilenativefoundation.store.store5.StoreReadResponse
+import com.github.kittinunf.fuel.core.FuelError
+import de.markusressel.mkdocsrestclient.IMkDocsRestClient
+import de.markusressel.mkdocsrestclient.reference.isUnsupportedEndpoint
 import org.mobilenativefoundation.store.store5.impl.extensions.fresh
 import org.mobilenativefoundation.store.store5.impl.extensions.get
 import java.util.Stack
@@ -83,6 +86,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private val moveItemUseCase: MoveItemUseCase,
     private val getBacklinksUseCase: GetBacklinksUseCase,
     private val dataRepository: DataRepository,
+    private val restClient: IMkDocsRestClient,
     private val deleteDocumentUseCase: DeleteDocumentUseCase,
     private val deleteResourceUseCase: DeleteResourceUseCase,
     private val deleteSectionUseCase: DeleteSectionUseCase,
@@ -404,21 +408,26 @@ internal class FileBrowserViewModel @Inject constructor(
                     onSuccess = { list -> updateBacklinksDialog(item) { it.copy(backlinks = list) } },
                     onFailure = { ex ->
                         Timber.e(ex)
-                        updateBacklinksDialog(item) { it.copy(error = ex.localizedMessage ?: ex.javaClass.name) }
+                        updateBacklinksDialog(item) {
+                            if ((ex as? FuelError)?.isUnsupportedEndpoint() == true) {
+                                it.copy(unsupported = true)
+                            } else {
+                                it.copy(error = ex.localizedMessage ?: ex.javaClass.name)
+                            }
+                        }
                     },
                 )
             }
             ItemAction.Delete -> {
                 showDialog(DialogState.DeleteConfirmation(item))
-                getBacklinksUseCase(item).getOrNull()?.let { list ->
-                    // references from inside a section are deleted with it
-                    val count = list.count { !it.internal }
-                    _uiState.update { old ->
-                        val dialog = old.currentDialogState
-                        if (dialog is DialogState.DeleteConfirmation && dialog.item.id == item.id) {
-                            old.copy(currentDialogState = dialog.copy(usedBy = count))
-                        } else old
-                    }
+                val list = getBacklinksUseCase(item).getOrNull()
+                // references from inside a section are deleted with it
+                val count = list?.count { !it.internal }
+                _uiState.update { old ->
+                    val dialog = old.currentDialogState
+                    if (dialog is DialogState.DeleteConfirmation && dialog.item.id == item.id) {
+                        old.copy(currentDialogState = dialog.copy(usedBy = count, usedByUnavailable = list == null))
+                    } else old
                 }
             }
         }
@@ -461,7 +470,28 @@ internal class FileBrowserViewModel @Inject constructor(
             is MoveOutcome.Done -> updateMoveDialog {
                 it.copy(working = false, preview = MovePreview(parentId, name, outcome.result))
             }
-            is MoveOutcome.Failed -> updateMoveDialog { it.copy(working = false, error = outcome) }
+            is MoveOutcome.Failed -> if (outcome.reason == MoveOutcome.Failed.UNSUPPORTED && dialog.renameOnly && name != null) {
+                // an older backend without POST /move/: rename the old way, without a preview
+                renameWithoutPreview(dialog.item, name)
+            } else {
+                updateMoveDialog { it.copy(working = false, error = outcome) }
+            }
+        }
+    }
+
+    /** renames with the PUT endpoints of older backends */
+    private suspend fun renameWithoutPreview(item: WikiItem, name: String) {
+        val result = when (item) {
+            is WikiItem.Document -> restClient.renameDocument(item.id, name).component2()
+            is WikiItem.Section -> restClient.renameSection(item.id, name).component2()
+            is WikiItem.Resource -> restClient.renameResource(item.id, name).component2()
+        }
+        if (result == null) {
+            dismissCurrentDialog()
+            _events.send(FileBrowserEvent.Toast("Renamed. This server does not update links to it."))
+            reload()
+        } else {
+            updateMoveDialog { it.copy(working = false, error = MoveItemUseCase.failure(result)) }
         }
     }
 

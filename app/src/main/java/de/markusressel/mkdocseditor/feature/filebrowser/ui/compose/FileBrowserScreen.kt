@@ -161,6 +161,7 @@ object FileBrowserScreen : Screen {
                 }
                 val usedBy = dialogState.usedBy
                 val usedByText = when {
+                    dialogState.usedByUnavailable -> null
                     usedBy == null -> stringResource(R.string.delete_used_by_loading)
                     usedBy == 0 -> stringResource(R.string.delete_used_by_none)
                     else -> pluralStringResource(R.plurals.delete_used_by_count, usedBy, usedBy)
@@ -170,8 +171,10 @@ object FileBrowserScreen : Screen {
                     title = stringResource(title),
                     message = buildAnnotatedString {
                         append(text)
-                        append("\n\n")
-                        append(usedByText)
+                        if (usedByText != null) {
+                            append("\n\n")
+                            append(usedByText)
+                        }
                     },
                     onConfirmClicked = { viewModel.onUiEvent(UiEvent.DeleteConfirmed(dialogState.item)) },
                     onDismissRequest = { viewModel.onUiEvent(UiEvent.DismissDialog) },
