@@ -1,9 +1,10 @@
 package de.markusressel.mkdocseditor.feature.search
 
 import android.app.Application
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -50,9 +51,9 @@ class SearchScreenContentTest {
                 ),
             )
         )
-        val input = composeRule.onNodeWithTag("search-input", useUnmergedTree = true).getBoundsInRoot()
+        val input = composeRule.onNode(hasSetTextAction()).getBoundsInRoot()
         assertTrue(input.bottom - input.top < 120.dp, "input field is ${input.bottom - input.top} high")
-        composeRule.onNodeWithText("Results: 2").assertExists()
+        composeRule.onNodeWithText("Results: 2").assertIsDisplayed()
         composeRule.onNodeWithText("guide").performClick()
         assertEquals(SearchViewModel.UiEvent.SearchResultClicked(SearchResultItem.Section("s-guide", "guide")), events.last())
     }
@@ -60,7 +61,7 @@ class SearchScreenContentTest {
     @Test
     fun `typing changes the search`() {
         show(SearchViewModel.UiState())
-        composeRule.onNodeWithTag("search-input").performTextInput("Kü")
+        composeRule.onNode(hasSetTextAction()).performTextInput("Kü")
         assertEquals(SearchViewModel.UiEvent.SearchInputChanged("Kü"), events.last())
     }
 }
