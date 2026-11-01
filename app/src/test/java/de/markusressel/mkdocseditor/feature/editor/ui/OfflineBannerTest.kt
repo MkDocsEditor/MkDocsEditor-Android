@@ -1,6 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
-import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel.ConnectionStatus
+import de.markusressel.mkdocseditor.feature.editor.ui.ConnectionStatus
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

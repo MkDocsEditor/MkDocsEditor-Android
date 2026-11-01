@@ -1,7 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
 import android.net.Uri
-import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import de.markusressel.mkdocseditor.feature.editor.domain.TextPositions
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferences
 import de.markusressel.mkdocsrestclient.reference.ReferenceModel
@@ -15,11 +14,7 @@ import com.github.ajalt.timberkt.Timber
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.auth.domain.AuthRepository
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.extensions.common.android.launch
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
-import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.domain.EditorFiles
 import de.markusressel.mkdocseditor.feature.editor.domain.EditorResources
@@ -31,7 +26,6 @@ import de.markusressel.mkdocseditor.feature.editor.domain.PreviewLinks
 import de.markusressel.mkdocseditor.feature.editor.domain.PageReferencesLoader
 import de.markusressel.mkdocseditor.feature.editor.domain.UploadFilesUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.withFixedReference
-import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
 import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.event.EventBusManager
@@ -40,53 +34,34 @@ import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DownloadR
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ShareFileUseCase
 import android.content.Context
 import android.os.SystemClock
-import org.mobilenativefoundation.store.store5.impl.extensions.get
 import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
-import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.ui.activity.SnackbarData
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.util.Resource
-import de.markusressel.mkdocseditor.util.Resource.Success
-import de.markusressel.mkdocsrestclient.AuthorizationProvider
-import de.markusressel.mkdocsrestclient.sync.automerge.protocol.CloseCode
-import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeDocumentSyncManager
-import de.markusressel.mkdocsrestclient.sync.automerge.LocalCopyRedirects
-import de.markusressel.mkdocsrestclient.sync.automerge.LocalDocumentStore
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
-import de.markusressel.mkdocsrestclient.sync.text.TextSplice
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.Job
 import javax.inject.Inject
 
 @HiltViewModel
 internal class CodeEditorViewModel @Inject constructor(
     private val dataRepository: DataRepository,
-    private val getDocumentUseCase: GetDocumentUseCase,
-    private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
-    private val authRepository: AuthRepository,
+    sessionEnvironment: AndroidDocumentSessionEnvironment,
     private val preferencesHolder: KutePreferencesHolder,
-    private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val openDocumentInBrowserUseCase: OpenDocumentInBrowserUseCase,
-    private val restClient: IMkDocsRestClient,
     private val uploadFilesUseCase: UploadFilesUseCase,
     private val pageReferencesLoader: PageReferencesLoader,
     private val editorFiles: EditorFiles,
-    private val localDocumentStore: LocalDocumentStore,
-    private val localCopyRedirects: LocalCopyRedirects,
     private val downloadResourceUseCase: DownloadResourceUseCase,
     private val shareFileUseCase: ShareFileUseCase,
     private val externalLinkOpener: ExternalLinkOpener,
@@ -101,35 +76,6 @@ internal class CodeEditorViewModel @Inject constructor(
 
     private val _navigationEvents = Channel<NavigationRequest>(Channel.BUFFERED)
     internal val navigationEvents = _navigationEvents.receiveAsFlow()
-
-    /** the backend of the open document */
-    private var currentBackendId: Long? = null
-
-    /** the document could not be loaded from the server, until the server is back */
-    private var documentLoadFailed = false
-
-    val documentId = MutableStateFlow<String?>(null)
-
-    private val currentResource: MutableStateFlow<Resource<DocumentEntity?>?> =
-        MutableStateFlow(null)
-
-    private val connectionStatus = MutableStateFlow<ConnectionStatus?>(null)
-
-    /**
-     * Indicates whether a local Automerge copy of the document exists (and may be edited)
-     */
-    private val localCopyAvailable = MutableStateFlow(false)
-
-    /**
-     * Indicates whether the edit mode can be activated or not.
-     * Editing works offline as soon as a local copy exists; the edits are synced later.
-     */
-    val editable = combine(
-        localCopyAvailable,
-        connectionStatus
-    ) { localCopyAvailable, _ ->
-        localCopyAvailable && automergeDocumentSyncManager?.readOnly != true
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = false)
 
     /** the wiki tree, for the link and image pickers */
     internal val pickerTree = wikiTreeHolder.tree
@@ -146,8 +92,6 @@ internal class CodeEditorViewModel @Inject constructor(
     /** loads the images of the preview */
     val previewResourceLoader = editorResources.previewResourceLoader { wikiTreeHolder.tree.value }
 
-    private var automergeDocumentSyncManager: AutomergeDocumentSyncManager? = null
-
     private val editorText = EditorTextController(
         scope = viewModelScope,
         now = SystemClock::elapsedRealtime,
@@ -159,16 +103,49 @@ internal class CodeEditorViewModel @Inject constructor(
     /** what the text field shows, see [EditorTextController.field] */
     internal val editorField: State<EditorField> = editorText.field
 
+    private val session: DocumentSession = DocumentSession(
+        scope = viewModelScope,
+        text = editorText,
+        environment = sessionEnvironment,
+        host = object : DocumentSession.Host {
+            override suspend fun loadWikiTree(documentId: String) = this@CodeEditorViewModel.loadWikiTree(documentId)
+
+            override suspend fun onBackendGone() {
+                _navigationEvents.send(NavigationRequest.Close)
+            }
+
+            override fun onOfflineVersionShown() {
+                disableEditMode()
+                _uiState.update { old -> old.copy(isBottomAppBarVisible = false) }
+            }
+
+            override fun onReadOnly() = disableEditMode()
+
+            override fun onRemoteChange() {
+                saveEditorState()
+            }
+        },
+    )
+
     init {
         launch {
-            documentId.collect { documentId ->
-                initializeEditorWithDocument(documentId)
+            session.state.collect { state ->
+                _uiState.update { old ->
+                    old.copy(
+                        documentId = state.documentId,
+                        title = state.title,
+                        loading = state.loading,
+                        isOfflineModeBannerVisible = state.offlineBannerVisible,
+                        isDocumentDeletedOnServer = state.deletedOnServer,
+                    )
+                }
             }
         }
 
+        session.start()
 
         launch {
-            editable.collect { editable ->
+            session.editable.collect { editable ->
                 if (editable.not()) {
                     // automatically disable edit mode, if (for whatever reason)
                     // editing is currently not possible
@@ -189,9 +166,9 @@ internal class CodeEditorViewModel @Inject constructor(
 
         launch {
             combine(
-                connectionStatus,
-                editable,
-                isOfflineModeEnabledFlowUseCase()
+                session.connectionStatus,
+                session.editable,
+                sessionEnvironment.offlineMode,
             ) { status, editable, offlineModeEnabled ->
                 (status?.connected ?: false)
                     && editable
@@ -205,20 +182,8 @@ internal class CodeEditorViewModel @Inject constructor(
         }
 
         launch {
-            // sync again as soon as the user signed in again
-            authRepository.sessionChanges.collect { backendId ->
-                if (backendId == currentBackendId && authRepository.isSignedIn(backendId) &&
-                    automergeDocumentSyncManager?.isConnected == false &&
-                    isOfflineModeEnabledFlowUseCase().value.not()
-                ) {
-                    reconnectToServer()
-                }
-            }
-        }
-
-        launch {
-            connectionStatus.filterNotNull().collectLatest {
-                val backendId = currentBackendId
+            session.connectionStatus.filterNotNull().collectLatest {
+                val backendId = session.backendId
                 showSnackbar(
                     when {
                         it.connected -> null
@@ -229,159 +194,6 @@ internal class CodeEditorViewModel @Inject constructor(
                 )
             }
         }
-
-        launch {
-            isOfflineModeEnabledFlowUseCase().collect { enabled ->
-                updateOfflineBanner()
-
-                when {
-                    enabled -> disconnect("Offline mode activated")
-                    else -> {
-                        if (preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value.not()) {
-                            connectionStatus.value = ConnectionStatus(
-                                connected = connectionStatus.value?.connected ?: false
-                            )
-                        } else {
-                            reconnectToServer()
-                        }
-                    }
-                }
-            }
-        }    }
-
-    private suspend fun initializeEditorWithDocument(documentId: String?) {
-        if (documentId != null && automergeDocumentSyncManager?.documentId == documentId) {
-            // the open document moved: the manager already follows its new id
-            _uiState.update { old -> old.copy(documentId = documentId) }
-            launch { loadWikiTree(documentId) }
-            loadDocumentResource(documentId, connect = false)
-            return
-        }
-        if (documentId != null && !isOfflineModeEnabledFlowUseCase().value) {
-            if (withContext(Dispatchers.IO) { !localDocumentStore.contains(documentId) }) {
-                // a copy held under an old id of this document (moved while the app was
-                // offline) must be re-keyed before the copy is loaded, or its edits would not
-                // show up
-                val currentId = withTimeoutOrNull(REDIRECT_TIMEOUT_MS) {
-                    withContext(Dispatchers.IO) { localCopyRedirects.beforeOpening(documentId) }
-                }
-                if (currentId != null && currentId != documentId) {
-                    this.documentId.value = currentId
-                    return
-                }
-            } else {
-                // the copy is here; other moved copies are re-keyed meanwhile (sessions merge
-                // what lands under their id, see DocumentSyncSession.persist)
-                launch(Dispatchers.IO) { localCopyRedirects.followAll() }
-            }
-        }
-        _uiState.update { old ->
-            old.copy(
-                documentId = documentId,
-                loading = documentId != null && !isOfflineModeEnabledFlowUseCase().value,
-            )
-        }
-        if (documentId != null) launch { loadWikiTree(documentId) }
-        automergeDocumentSyncManager?.shutdown()
-        // nothing may reach the old document while the next one loads
-        automergeDocumentSyncManager = null
-        editorText.unbind()
-        localCopyAvailable.value = false
-        documentLoadFailed = false
-        updateOfflineBanner()
-
-        when (documentId) {
-            null -> {}
-
-            else -> {
-                val currentBackend = getCurrentBackendConfigUseCase()
-                val serverConfig = currentBackend?.serverConfig
-                if (serverConfig == null) {
-                    // Android restored the editor, but the backend is gone (removed by the user)
-                    _navigationEvents.send(NavigationRequest.Close)
-                    return
-                }
-                currentBackendId = currentBackend.id
-
-                // reads and parses the local copy, which takes long for a big document
-                val manager = withContext(Dispatchers.IO) {
-                    createAutomergeSyncManager(documentId, serverConfig, currentBackend.id)
-                }
-                automergeDocumentSyncManager = manager
-                // show the local copy right away, it may hold edits made offline
-                editorText.bind(manager)
-                localCopyAvailable.value = manager.hasLocalCopy
-
-                loadDocumentResource(documentId)
-            }
-        }
-    }
-
-    private fun createAutomergeSyncManager(
-        documentId: String,
-        serverConfig: BackendServerConfig,
-        backendId: Long,
-    ): AutomergeDocumentSyncManager {
-        return AutomergeDocumentSyncManager(
-            hostname = serverConfig.domain,
-            port = serverConfig.port,
-            ssl = serverConfig.useSsl,
-            authorizationProvider = AuthorizationProvider.bearer { authRepository.token(backendId) },
-            documentId = documentId,
-            store = localDocumentStore,
-            listener = object : AutomergeDocumentSyncManager.Listener {
-                override fun onConnectionStatusChanged(connected: Boolean, closeCode: Int?, throwable: Throwable?) {
-                    val status = ConnectionStatus(connected, closeCode, throwable)
-                    if (status.isAuthenticationFailure) {
-                        // edits stay in the local copy and sync after the next sign-in
-                        authRepository.onUnauthenticated(backendId)
-                    }
-                    connectionStatus.value = status
-                    updateOfflineBanner()
-                    // without a local copy the text is still on its way. A failed connection
-                    // ends the loading too: it keeps retrying, and the snackbar says so.
-                    _uiState.update { old -> old.copy(loading = connected && !localCopyAvailable.value) }
-                    if (connected && documentLoadFailed) reloadAfterServerIsBack()
-                }
-
-                override fun onTextReplaced(text: String) {
-                    editorText.onDocumentChanged()
-                    localCopyAvailable.value = true
-                    _uiState.update { old -> old.copy(loading = false) }
-
-                    // keep the old offline cache up to date
-                    updateDocumentContentInCache(
-                        documentId = automergeDocumentSyncManager?.documentId ?: documentId,
-                        text = text
-                    )
-                }
-
-                override fun onRemoteChange(text: String, splices: List<TextSplice>) {
-                    editorText.onDocumentChanged(splices)
-                    saveEditorState()
-                }
-
-                override fun onReadOnlyChanged(readOnly: Boolean) {
-                    // re-evaluate editable
-                    connectionStatus.value = connectionStatus.value?.copy()
-                    if (readOnly) disableEditMode()
-                }
-
-                override fun onPeersChanged(peers: List<RemotePeer>) {
-                    editorText.onPeersChanged(peers)
-                }
-
-                override fun onDocumentRenamed(oldDocumentId: String, newDocumentId: String) {
-                    // the copy moved with the document; follow it without reconnecting the editor
-                    this@CodeEditorViewModel.documentId.value = newDocumentId
-                }
-
-                override fun onDocumentDeleted() {
-                    // the local copy (and any unsynced edits) stays available
-                    _uiState.update { old -> old.copy(isDocumentDeletedOnServer = true) }
-                }
-            },
-        )
     }
 
     /** loads the wiki tree, so the preview can resolve links relative to the folder of the document */
@@ -406,7 +218,7 @@ internal class CodeEditorViewModel @Inject constructor(
      * the file browser, resources in another app, everything else in the browser
      */
     private suspend fun onPreviewLinkClicked(href: String) {
-        when (val target = PreviewLinks.resolve(wikiTreeHolder.tree.value, documentId.value, href)) {
+        when (val target = PreviewLinks.resolve(wikiTreeHolder.tree.value, session.documentId.value, href)) {
             is PreviewLinkTarget.External -> if (!externalLinkOpener.open(target.href)) {
                 showMessage(context.getString(R.string.preview_link_not_found, href))
             }
@@ -440,74 +252,6 @@ internal class CodeEditorViewModel @Inject constructor(
         }
     }
 
-    /**
-     * @param connect false when the sync manager is connected already (after a move)
-     */
-    private suspend fun loadDocumentResource(documentId: String, connect: Boolean = true) {
-        val offlineMode = isOfflineModeEnabledFlowUseCase().value
-        // the text comes through the connection, it does not wait for the item tree
-        if (connect && !offlineMode) reconnectToServer()
-
-        val resource = getDocumentUseCase(documentId) { cached ->
-            if (connect) showCachedDocument(cached)
-        }
-        currentResource.value = resource
-        when (resource) {
-            is Success -> {
-                updateTitle(resource.data?.name ?: "")
-
-                if (connect && offlineMode) showOfflineVersionIfPossible()
-            }
-
-            is Resource.Error -> {
-                Timber.e(resource.error) { "Error loading document resource" }
-                updateTitle(resource.data?.name ?: "")
-                val connected = automergeDocumentSyncManager?.isConnected == true
-                documentLoadFailed = !connected
-                updateOfflineBanner()
-                // a local copy is shown and editable already, and its edits sync later. The
-                // connection keeps trying, and ends the offline state as soon as the server answers
-                if (!localCopyAvailable.value && !connected) showOfflineVersionIfPossible()
-            }
-
-            else -> {
-                Timber.d { "$resource" }
-            }
-        }
-    }
-
-    /**
-     * Shows the text of the offline cache until the server sends the document. It cannot be
-     * edited: without a local copy the edit mode stays off. The text of a local copy wins.
-     */
-    private fun showCachedDocument(cached: DocumentEntity?) {
-        cached ?: return
-        updateTitle(cached.name)
-        cached.content.target?.text?.let { editorText.showDetachedText(it) }
-    }
-
-    /**
-     * The document could not be loaded when it was opened. Catches up on what is missing, the
-     * sync manager already brought the text up to date.
-     */
-    private fun reloadAfterServerIsBack() {
-        val documentId = documentId.value ?: return
-        documentLoadFailed = false
-        launch {
-            loadWikiTree(documentId)
-            loadDocumentResource(documentId, connect = false)
-        }
-    }
-
-    private fun updateOfflineBanner() {
-        val visible = isOfflineBannerVisible(
-            offlineModeEnabled = isOfflineModeEnabledFlowUseCase().value,
-            documentLoadFailed = documentLoadFailed,
-            connectionStatus = connectionStatus.value,
-        )
-        _uiState.update { old -> old.copy(isOfflineModeBannerVisible = visible) }
-    }
-
     private fun publishEditorText() {
         val text = editorText.text
         _uiState.update { old ->
@@ -523,42 +267,6 @@ internal class CodeEditorViewModel @Inject constructor(
      * The field took the value with this id, see [EditorTextController.onValueShown]
      */
     internal fun onEditorValueShown(id: Long) = editorText.onValueShown(id)
-
-    private fun updateTitle(title: String) {
-        _uiState.update { old ->
-            old.copy(title = title)
-        }
-    }
-
-    private fun showOfflineVersionIfPossible() {
-        val cachedContent = getCachedContent()
-        if (cachedContent != null) {
-            initializeInOfflineMode(cachedContent)
-        } else {
-            showNoOfflineVersionAvailableDialog()
-        }
-    }
-
-    private fun getCachedContent(): String? {
-        // prefer the local Automerge copy, it includes edits made offline
-        return automergeDocumentSyncManager?.text
-            ?: currentResource.value?.data?.content?.target?.text
-    }
-
-    private fun initializeInOfflineMode(cachedContent: String) {
-        disableEditMode()
-        editorText.showDetachedText(cachedContent)
-        _uiState.update { old ->
-            old.copy(
-                title = currentResource.value?.data?.name ?: "",
-                isBottomAppBarVisible = false,
-            )
-        }
-    }
-
-    private fun showNoOfflineVersionAvailableDialog() {
-
-    }
 
     private fun showSnackbar(snackbar: SnackbarData?) {
         _uiState.update { old ->
@@ -615,7 +323,7 @@ internal class CodeEditorViewModel @Inject constructor(
      * the plain Markdown of [fallback] is inserted instead.
      */
     private fun showPicker(dialog: DialogState, fallback: FormatAction?) {
-        val documentId = documentId.value
+        val documentId = session.documentId.value
         if (wikiTreeHolder.tree.value?.documentById(documentId ?: "") != null) {
             showDialog(dialog)
         } else if (fallback != null) {
@@ -626,7 +334,7 @@ internal class CodeEditorViewModel @Inject constructor(
     /** uploads files into a section, then inserts the Markdown for them */
     private suspend fun uploadFiles(sectionId: String, uris: List<Uri>, altText: String) {
         val tree = wikiTreeHolder.tree.value ?: return
-        val document = tree.documentById(documentId.value ?: return) ?: return
+        val document = tree.documentById(session.documentId.value ?: return) ?: return
         val section = tree.section(sectionId) ?: return
         _uiState.update { old -> old.copy(uploading = true) }
         val result = try {
@@ -644,7 +352,7 @@ internal class CodeEditorViewModel @Inject constructor(
             editorText.insertSnippets(result.snippets)
         }
         // show the new files in the tree (pickers, preview)
-        documentId.value?.let { refreshWikiTree(it) }
+        session.documentId.value?.let { refreshWikiTree(it) }
     }
 
     private suspend fun onTopAppBarActionClicked(action: TopAppBarAction.CodeEditor) {
@@ -658,7 +366,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
     /** opens the references panel and loads its data */
     private suspend fun showPageReferences() {
-        val documentId = documentId.value ?: return
+        val documentId = session.documentId.value ?: return
         if (wikiTreeHolder.tree.value?.documentById(documentId) == null) {
             showMessage(context.getString(R.string.page_references_offline))
             return
@@ -715,7 +423,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
             SnackbarData.Disconnected -> {
                 dismissSnackbar()
-                reconnectToServer()
+                session.reconnect()
             }
 
             is SnackbarData.SignedOut -> launch {
@@ -732,7 +440,7 @@ internal class CodeEditorViewModel @Inject constructor(
      * Sets the current document id for this CodeEditor instance
      */
     fun setCurrentDocumentId(documentId: String?) {
-        this.documentId.value = documentId
+        session.setDocument(documentId)
     }
 
     /**
@@ -742,7 +450,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
     internal fun onUserTextInput(value: TextFieldValue) {
         editorText.onFieldChanged(value)
-        automergeDocumentSyncManager?.onLocalSelectionChanged(editorText.selection.start, editorText.selection.end)
+        session.onLocalSelectionChanged(editorText.selection.start, editorText.selection.end)
     }
 
     /**
@@ -750,52 +458,24 @@ internal class CodeEditorViewModel @Inject constructor(
      * Writes the local copy to disk, so no edit is lost if the app gets killed.
      */
     internal fun onStop() {
-        automergeDocumentSyncManager?.persistNow()
+        session.persist()
     }
 
     override fun onCleared() {
-        automergeDocumentSyncManager?.shutdown()
+        session.close()
         super.onCleared()
     }
 
-    /**
-     * Disconnects from the server (if necessary) and tries to reestablish a connection
-     */
-    private fun reconnectToServer() {
-        _uiState.update { old ->
-            old.copy(loading = automergeDocumentSyncManager != null)
-        }
-        automergeDocumentSyncManager?.connect()
-    }
-
-    /**
-     * Disconnect from the server
-     *
-     * @param reason a textual description of the reasoning behind the disconnect
-     * @param throwable an (optional) exception that is causing the disconnect
-     */
-    private fun disconnect(reason: String = "None", throwable: Throwable? = null) {
-        automergeDocumentSyncManager?.disconnect(reason = reason)
-        connectionStatus.value = ConnectionStatus(connected = false, throwable = throwable)
-        _uiState.update { old -> old.copy(loading = false) }
-    }
-
-    private fun updateDocumentContentInCache(documentId: String, text: String) =
-        launch {
-            dataRepository.updateDocumentContentInCache(documentId, text)
-        }
-
-
-    private fun saveEditorState() = launch {
+    private fun saveEditorState(): Job = launch {
         dataRepository.saveEditorState(
-            documentId = documentId.value!!,
+            documentId = session.documentId.value!!,
             text = uiState.value.text?.toString(),
             selection = uiState.value.selection?.start ?: 0,
         )
     }
 
     private suspend fun onOpenInBrowserClicked(): Boolean {
-        val documentId = documentId.value ?: return false
+        val documentId = session.documentId.value ?: return false
         return openDocumentInBrowserUseCase(documentId)
     }
 
@@ -820,10 +500,10 @@ internal class CodeEditorViewModel @Inject constructor(
             old.copy(
                 editModeActive = false,
                 fabConfig = old.fabConfig.copy(
-                    right = editModeFabs(editable.value, editModeActive = false)
+                    right = editModeFabs(session.editable.value, editModeActive = false)
                 ),
                 // the bar holds the toggle back into the edit mode
-                isBottomAppBarVisible = editable.value,
+                isBottomAppBarVisible = session.editable.value,
             )
         }
     }
@@ -842,13 +522,10 @@ internal class CodeEditorViewModel @Inject constructor(
      */
     private fun onRetryClicked() {
         dismissSnackbar()
-        reconnectToServer()
+        session.reconnect()
     }
 
     companion object {
-        /** how long opening a document waits for the redirect lookups of the local copies */
-        private const val REDIRECT_TIMEOUT_MS = 5_000L
-
         /** the toggle between reading and editing; there is none while editing is impossible */
         internal fun editModeFabs(editable: Boolean, editModeActive: Boolean): List<FabConfig.Fab<CodeEditorFabId>> = when {
             editModeActive -> listOf(DisableEditModeFabConfig)
@@ -951,18 +628,6 @@ internal class CodeEditorViewModel @Inject constructor(
 
     }
 
-    data class ConnectionStatus(
-        val connected: Boolean,
-        val errorCode: Int? = null,
-        val throwable: Throwable? = null
-    ) {
-        /**
-         * the server refused the session: HTTP 401 on the upgrade, or close code 4001
-         */
-        val isAuthenticationFailure: Boolean
-            get() = !connected && (errorCode == 401 || errorCode == CloseCode.UNAUTHORIZED)
-    }
-
     sealed interface NavigationRequest {
         data class Login(val backendId: Long) : NavigationRequest
         data class OpenDocument(val documentId: String) : NavigationRequest
@@ -988,19 +653,4 @@ internal class CodeEditorViewModel @Inject constructor(
         /** the links and files of the page, and the pages that link to it */
         data class PageReferencesPanel(val data: PageReferences = PageReferences()) : DialogState
     }
-}
-
-/**
- * "Offline" means the offline mode of the settings, or that the server does not answer: the
- * document could not be loaded, and the connection is not back yet. A server that answers and
- * refuses the session is not offline, the user has to sign in again.
- */
-internal fun isOfflineBannerVisible(
-    offlineModeEnabled: Boolean,
-    documentLoadFailed: Boolean,
-    connectionStatus: CodeEditorViewModel.ConnectionStatus?,
-): Boolean {
-    if (offlineModeEnabled) return true
-    if (!documentLoadFailed || connectionStatus?.connected == true) return false
-    return connectionStatus?.isAuthenticationFailure != true
 }
