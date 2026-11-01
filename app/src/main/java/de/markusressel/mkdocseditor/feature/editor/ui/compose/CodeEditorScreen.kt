@@ -75,12 +75,10 @@ internal data class CodeEditorScreen(
         CodeEditorScreenContent(
             modifier = Modifier,
             uiState = uiState,
-            onTextChanged = {
-                viewModel.onUserTextInput(
-                    it.annotatedString,
-                    it.selection
-                )
-            },
+            editorField = viewModel.editorField.value,
+            onTextChanged = viewModel::onUserTextInput,
+            onValueShown = viewModel::onEditorValueShown,
+            onFocusChanged = viewModel::onEditorFocusChanged,
             onUiEvent = viewModel::onUiEvent,
             previewResourceLoader = viewModel.previewResourceLoader,
         )

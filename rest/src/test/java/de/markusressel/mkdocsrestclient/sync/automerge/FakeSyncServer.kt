@@ -11,6 +11,7 @@ import de.markusressel.mkdocsrestclient.sync.automerge.protocol.PresenceMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.PresenceSnapshotMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.SyncRequestMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.UserInfo
+import de.markusressel.mkdocsrestclient.sync.text.TextDiff
 import org.automerge.Document
 import org.automerge.ObjectId
 import org.automerge.ObjectType
@@ -243,4 +244,15 @@ class InMemoryDocumentStore : LocalDocumentStore {
     override fun move(fromDocumentId: String, toDocumentId: String) {
         documents.remove(fromDocumentId)?.let { documents[toDocumentId] = it }
     }
+}
+
+/**
+ * Edits the local copy to the given text at its current state
+ *
+ * @return false if the document refused the edit
+ */
+fun DocumentSyncSession.onLocalTextChanged(newText: String): Boolean {
+    val base = text ?: return false
+    val version = version ?: return false
+    return applyLocalEdit(version, base, TextDiff.diff(base, newText)) != null
 }

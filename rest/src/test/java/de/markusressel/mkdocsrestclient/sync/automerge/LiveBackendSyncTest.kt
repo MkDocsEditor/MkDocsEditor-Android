@@ -248,6 +248,47 @@ class LiveBackendSyncTest {
      * move rewrote. Then the same with the redirect lookup the app runs before opening a
      * document (`GET /moved/{id}/`).
      */
+    /**
+     * Edits made on an older state of the document, as an editor does that has not shown a
+     * remote change yet: their Automerge changes are concurrent to changes the client already has.
+     */
+    @Test
+    fun `edits on an older state merge on a live backend`() {
+        if (baseUrl == null || users == null) return
+        val (alice, bob) = users
+        val name = "concurrent-${System.currentTimeMillis().toString(36)}"
+        val documentId = idOf(send("POST", "/document/", alice, """{"parent":"root","name":"$name"}"""))
+        val a = LiveClient(alice, documentId, InMemoryDocumentStore())
+        val b = LiveClient(bob, documentId, InMemoryDocumentStore())
+        try {
+            a.connect()
+            b.connect()
+            a.type("start\n")
+            b.waitFor("b got the text") { b.session.text == "start\n" }
+
+            var version = a.read { version!! }
+            var baseText = a.read { text!! }
+            b.type("remote start\n")
+            a.waitFor("a got the remote change") { a.session.text == "remote start\n" }
+
+            // a is still on the old state and types there, also several times in a row
+            "abc".forEach { c ->
+                val edit = TextSplice(baseText.length, 0, c.toString())
+                version = a.read { applyLocalEdit(version, baseText, listOf(edit))!! }
+                baseText = edit.applyTo(baseText)
+                a.read { flushSync() }
+            }
+
+            val expected = "remote start\nabc"
+            a.waitFor("a merged") { a.session.text == expected }
+            b.waitFor("b merged") { b.session.text == expected }
+            a.waitFor("the server has it") { get("/document/$documentId/content/", alice) == expected }
+        } finally {
+            a.close()
+            b.close()
+        }
+    }
+
     @Test
     fun `offline edits survive a move on the server`() {
         if (baseUrl == null || users == null) return

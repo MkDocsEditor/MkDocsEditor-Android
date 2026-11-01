@@ -24,3 +24,21 @@ fun transformIndex(index: Int, splices: List<TextSplice>): Int {
     }
     return result
 }
+
+/**
+ * The opposite of [transformIndex]: moves a position in the text after the splices back to the
+ * text before them. A position inside inserted text moves to the start of that text.
+ */
+fun untransformIndex(index: Int, splices: List<TextSplice>): Int {
+    var result = index
+    for (splice in splices.asReversed()) {
+        result = when {
+            result <= splice.index -> result
+            result >= splice.index + splice.insert.length ->
+                result - splice.insert.length + splice.deleteCount
+
+            else -> splice.index
+        }
+    }
+    return result
+}

@@ -6,6 +6,7 @@ import android.os.SystemClock
 import androidx.annotation.MainThread
 import de.markusressel.mkdocsrestclient.AuthorizationProvider
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.CloseCode
+import de.markusressel.mkdocsrestclient.sync.text.TextSplice
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionHandler
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionListener
 import timber.log.Timber
@@ -27,7 +28,7 @@ class AutomergeDocumentSyncManager(
     documentId: String,
     store: LocalDocumentStore,
     private val listener: Listener,
-) {
+) : EditableTextDocument {
 
     interface Listener : DocumentSyncSession.Listener {
         /**
@@ -67,8 +68,11 @@ class AutomergeDocumentSyncManager(
     val documentId: String
         get() = session.documentId
 
-    val text: String?
+    override val text: String?
         get() = session.text
+
+    override val version: DocumentVersion?
+        get() = session.version
 
     val hasLocalCopy: Boolean
         get() = session.hasLocalCopy
@@ -137,16 +141,22 @@ class AutomergeDocumentSyncManager(
     }
 
     /**
-     * Applies an editor text to the local copy. Works offline; changes are sent batched.
-     *
-     * @return false if the text was not applied (no local copy yet, or read-only)
+     * Applies an edit of the editor to the local copy. Works offline; changes are sent batched.
      */
-    fun onLocalTextChanged(newText: String): Boolean {
-        val applied = session.onLocalTextChanged(newText)
-        if (applied && !handler.hasCallbacks(syncRunnable)) {
+    override fun applyLocalEdit(
+        base: DocumentVersion,
+        baseText: String,
+        splices: List<TextSplice>,
+    ): DocumentVersion? {
+        val applied = session.applyLocalEdit(base, baseText, splices)
+        if (applied != null && !handler.hasCallbacks(syncRunnable)) {
             handler.postDelayed(syncRunnable, SYNC_BATCH_DELAY_MS)
         }
         return applied
+    }
+
+    override fun splicesSince(version: DocumentVersion, text: String): List<TextSplice> {
+        return session.splicesSince(version, text)
     }
 
     /**

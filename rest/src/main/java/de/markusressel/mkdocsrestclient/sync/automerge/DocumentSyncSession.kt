@@ -66,7 +66,7 @@ class DocumentSyncSession(
     private val listener: Listener,
     private val clientName: String = "MkDocsEditor-Android",
     private val random: SecureRandom = SecureRandom(),
-) {
+) : EditableTextDocument {
 
     interface Listener {
         /**
@@ -149,8 +149,11 @@ class DocumentSyncSession(
     /**
      * The current text of the local copy, or null if there is none yet
      */
-    val text: String?
+    override val text: String?
         get() = local?.document?.text
+
+    override val version: DocumentVersion?
+        get() = local?.document?.version
 
     /**
      * true when a local copy exists, so the document can be shown and edited offline
@@ -244,22 +247,31 @@ class DocumentSyncSession(
     }
 
     /**
-     * Applies a new editor text to the local copy as splices. Works offline too.
+     * Applies an edit of the editor to the local copy. Works offline too.
      * Call [flushSync] afterwards (throttled) to send the changes.
      *
-     * @return false if the text could not be applied (no local copy, or read-only)
+     * @return see [EditableTextDocument.applyLocalEdit], null when there is no local copy or
+     * the document is read-only
      */
-    fun onLocalTextChanged(newText: String): Boolean {
-        val current = local ?: return false
+    override fun applyLocalEdit(
+        base: DocumentVersion,
+        baseText: String,
+        splices: List<TextSplice>,
+    ): DocumentVersion? {
+        val current = local ?: return null
         if (readOnly) {
-            return false
+            return null
         }
-        val splices = current.document.applyLocalText(newText)
+        val applied = current.document.applySplicesAt(base, baseText, splices)
         if (splices.isNotEmpty()) {
             markDirty()
             resolvePeers()
         }
-        return true
+        return applied
+    }
+
+    override fun splicesSince(version: DocumentVersion, text: String): List<TextSplice> {
+        return local?.document?.splicesSince(version, text).orEmpty()
     }
 
     /**

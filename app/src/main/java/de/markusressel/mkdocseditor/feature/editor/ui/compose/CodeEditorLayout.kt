@@ -5,8 +5,10 @@ import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -17,17 +19,21 @@ import de.markusressel.kodehighlighter.core.ui.KodeTextFieldDefaults
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.EditorColorScheme
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.EditorPalette
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.MkDocsMarkdownRuleBook
-import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
+import de.markusressel.mkdocseditor.feature.editor.ui.EditorField
 
 
 @Composable
 internal fun CodeEditorLayout(
-    text: TextFieldValue,
+    field: EditorField,
     onTextChanged: (TextFieldValue) -> Unit,
+    onValueShown: (Long) -> Unit,
     readOnly: Boolean,
+    onFocusChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
-    remotePeers: List<RemotePeer> = emptyList(),
 ) {
+    // the text field takes its value in this composition, nothing can come between the two
+    SideEffect { onValueShown(field.id) }
+
     val palette = rememberEditorPalette()
     val colorScheme = remember(palette) { EditorColorScheme(palette) }
     val ruleBook = remember { MkDocsMarkdownRuleBook() }
@@ -39,8 +45,8 @@ internal fun CodeEditorLayout(
         )
     ) {
         KodeEditor(
-            modifier = modifier,
-            text = text,
+            modifier = modifier.onFocusChanged { onFocusChanged(it.hasFocus) },
+            text = field.value,
             languageRuleBook = ruleBook,
             colorScheme = colorScheme,
             onValueChange = onTextChanged,
@@ -61,8 +67,8 @@ internal fun CodeEditorLayout(
             overlay = { textLayoutResult ->
                 RemotePeersOverlay(
                     textLayoutResult = textLayoutResult,
-                    text = text.text,
-                    remotePeers = remotePeers,
+                    text = field.value.text,
+                    remotePeers = field.remotePeers,
                     background = palette.background,
                 )
             }

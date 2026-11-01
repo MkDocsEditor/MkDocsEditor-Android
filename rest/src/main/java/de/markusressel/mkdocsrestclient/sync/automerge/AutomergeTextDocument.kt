@@ -12,6 +12,7 @@ import org.automerge.Patch
 import org.automerge.PatchAction
 import org.automerge.PatchLog
 import org.automerge.SyncState
+import org.automerge.Transaction
 
 /**
  * An Automerge document holding the text of one markdown file in the
@@ -42,6 +43,65 @@ class AutomergeTextDocument private constructor(
      */
     val headsHex: List<String>
         get() = document.heads.map { it.toHex() }
+
+    /** The current state of the document */
+    val version: DocumentVersion
+        get() = DocumentVersion(headsHex)
+
+    /**
+     * Applies an edit made on the text of an earlier state in one change. The change has that
+     * state as its parent, so it is concurrent to everything that happened since, and Automerge
+     * merges them the same way on all copies.
+     *
+     * @param splices the edit, relative to [baseText], the text of [base]
+     * @return the state of the change: [baseText] with the edit
+     * @throws IllegalArgumentException if this document has no state [base]
+     */
+    fun applySplicesAt(base: DocumentVersion, baseText: String, splices: List<TextSplice>): DocumentVersion {
+        if (splices.isEmpty()) {
+            return base
+        }
+        if (base == version) {
+            applyLocalSplices(baseText, splices)
+            return version
+        }
+        val heads = base.toHeads(baseText)
+        val patchLog = PatchLog()
+        try {
+            val hash = document.startTransactionAt(patchLog, heads).use { tx ->
+                spliceAll(tx, baseText, splices)
+                tx.commit()
+            }
+            return DocumentVersion(listOf(hash.orElseThrow().bytes.toHex()))
+        } finally {
+            patchLog.free()
+        }
+    }
+
+    /**
+     * The changes from the text of an earlier state to the current text.
+     *
+     * @param baseText the text of [base]
+     * @throws IllegalArgumentException if this document has no state [base]
+     */
+    fun splicesSince(base: DocumentVersion, baseText: String): List<TextSplice> {
+        return patchesToSplices(baseText, document.diff(base.toHeads(baseText), document.heads))
+    }
+
+    /**
+     * The heads of a state that should have this text. Heads of another copy (a new epoch) are
+     * not always an error for Automerge, they can just give some other text.
+     */
+    private fun DocumentVersion.toHeads(expectedText: String): Array<ChangeHash> {
+        val heads = headsHex.map { RestoredChangeHash(it.hexToBytes()) as ChangeHash }.toTypedArray()
+        val text = try {
+            document.text(contentId, heads).orElse(null)
+        } catch (e: RuntimeException) {
+            null
+        }
+        require(text == expectedText) { "Unknown document state $this" }
+        return heads
+    }
 
     /**
      * The text of the document at the given heads (hex)
@@ -78,14 +138,18 @@ class AutomergeTextDocument private constructor(
             return
         }
         document.startTransaction().use { tx ->
-            var current = oldText
-            splices.forEach { splice ->
-                val start = current.codePointCount(0, splice.index)
-                val deleteCount = current.codePointCount(splice.index, splice.index + splice.deleteCount)
-                tx.spliceText(contentId, start.toLong(), deleteCount.toLong(), splice.insert)
-                current = splice.applyTo(current)
-            }
+            spliceAll(tx, oldText, splices)
             tx.commit()
+        }
+    }
+
+    private fun spliceAll(tx: Transaction, oldText: String, splices: List<TextSplice>) {
+        var current = oldText
+        splices.forEach { splice ->
+            val start = current.codePointCount(0, splice.index)
+            val deleteCount = current.codePointCount(splice.index, splice.index + splice.deleteCount)
+            tx.spliceText(contentId, start.toLong(), deleteCount.toLong(), splice.insert)
+            current = splice.applyTo(current)
         }
     }
 
