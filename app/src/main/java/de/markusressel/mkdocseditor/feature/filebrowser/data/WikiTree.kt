@@ -51,6 +51,10 @@ class WikiTree(val root: SectionData) {
 
     fun section(id: String): SectionData? = sectionsById[id]
 
+    fun documentById(id: String): DocumentData? = documentParents[id]?.documents?.firstOrNull { it.id == id }
+
+    fun resourceById(id: String): ResourceData? = resourceParents[id]?.resources?.firstOrNull { it.id == id }
+
     fun parentOfSection(id: String): SectionData? = parents[id]
 
     fun parentOfDocument(id: String): SectionData? = documentParents[id]
@@ -139,6 +143,36 @@ class WikiTree(val root: SectionData) {
 
     /** a document path in [section] that no item has, for links that only need the folder */
     private fun documentPathIn(section: SectionData) = pathOf(section) + "/"
+
+    /** a search hit and the names of the folders above it */
+    data class SearchHit(val item: WikiItem, val folders: List<String>)
+
+    /**
+     * Finds items whose name contains every word of [query] (case and accent insensitive):
+     * documents first, then folders, then files, each by name (as the web client does)
+     */
+    fun search(query: String, limit: Int = 50): List<SearchHit> {
+        val words = normalize(query).split(Regex("\\s+")).filter { it.isNotEmpty() }
+        if (words.isEmpty()) return emptyList()
+        val rank = { item: WikiItem ->
+            when (item) {
+                is WikiItem.Document -> 0
+                is WikiItem.Section -> 1
+                is WikiItem.Resource -> 2
+            }
+        }
+        return allItems()
+            .filter { item -> normalize(item.name).let { name -> words.all { name.contains(it) } } }
+            .sortedWith(compareBy<WikiItem>(rank).thenBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+            .take(limit)
+            .map { item ->
+                val parent = parentOf(item)
+                SearchHit(item, parent?.let { ancestorsAndSelf(it).drop(1).map { s -> s.name } } ?: emptyList())
+            }
+    }
+
+    private fun normalize(text: String): String =
+        java.text.Normalizer.normalize(text.lowercase(), java.text.Normalizer.Form.NFD).replace(Regex("[\\u0300-\\u036f]"), "")
 
     /** all items of the tree, depth first */
     fun allItems(): List<WikiItem> {

@@ -3,4 +3,7 @@
     <files-path
         name="resources"
         path="resources/" />
+    <cache-path
+        name="camera"
+        path="camera/" />
 </paths>

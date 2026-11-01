@@ -1,5 +1,26 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
+import android.content.ContentResolver
+import android.net.Uri
+import android.provider.OpenableColumns
+import android.util.LruCache
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.core.content.FileProvider
+import de.markusressel.mkdocseditor.feature.editor.domain.PickerMarkdown
+import de.markusressel.mkdocseditor.feature.editor.domain.decodeThumbnail
+import de.markusressel.mkdocseditor.feature.editor.domain.shrinkImage
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.DocumentTextLoader
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PhotoUriFactory
+import de.markusressel.mkdocseditor.feature.filebrowser.data.LinkPaths
+import de.markusressel.mkdocseditor.feature.filebrowser.data.ResourceKind
+import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.tree.ThumbnailLoader
+import de.markusressel.mkdocsrestclient.IMkDocsRestClient
+import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeTextDocument
+import org.mobilenativefoundation.store.store5.impl.extensions.fresh
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
 import androidx.lifecycle.MutableLiveData
@@ -41,9 +62,6 @@ import android.webkit.WebResourceResponse
 import androidx.core.net.toUri
 import org.mobilenativefoundation.store.store5.impl.extensions.get
 import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
-import de.markusressel.mkdocseditor.feature.filebrowser.data.ResourceData
-import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.FindParentSectionOfDocumentUseCase
-import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.FindSectionUseCase
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.ui.activity.SnackbarData
@@ -88,8 +106,8 @@ internal class CodeEditorViewModel @Inject constructor(
     private val preferencesHolder: KutePreferencesHolder,
     private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val openDocumentInBrowserUseCase: OpenDocumentInBrowserUseCase,
-    private val findParentSectionOfDocumentUseCase: FindParentSectionOfDocumentUseCase,
-    private val findSectionUseCase: FindSectionUseCase,
+    private val restClient: IMkDocsRestClient,
+    private val contentResolver: ContentResolver,
     private val localDocumentStore: LocalDocumentStore,
     private val localCopyRedirects: LocalCopyRedirects,
     private val previewFileCache: PreviewFileCache,
@@ -137,6 +155,34 @@ internal class CodeEditorViewModel @Inject constructor(
 
     /** the wiki tree, for links and images in the preview */
     private val wikiTree = MutableStateFlow<WikiTree?>(null)
+
+    /** the wiki tree, for the link and image pickers */
+    internal val pickerTree = wikiTree.asStateFlow()
+
+    /** the text of other documents, for their headings in the link picker */
+    internal val documentTextLoader = DocumentTextLoader { documentId ->
+        withContext(Dispatchers.IO) {
+            restClient.getDocumentContent(documentId).fold(success = { it }, failure = { null })
+                ?: localDocumentStore.load(documentId)?.let { AutomergeTextDocument.load(it.documentState).text }
+        }
+    }
+
+    private val thumbnails = object : LruCache<String, ImageBitmap>(THUMBNAIL_CACHE_SIZE) {}
+
+    /** small images of resources for the pickers */
+    internal val thumbnailLoader = ThumbnailLoader { resource ->
+        val key = "${resource.id}@${resource.modtime.time}"
+        thumbnails.get(key) ?: withContext(Dispatchers.IO) {
+            previewFileCache.get(resource)?.let { decodeThumbnail(it, THUMBNAIL_SIZE_PX) }
+        }?.also { thumbnails.put(key, it) }
+    }
+
+    /** content URIs for photos taken from the image picker */
+    internal val photoUriFactory = PhotoUriFactory {
+        val directory = File(context.cacheDir, "camera").apply { mkdirs() }
+        val name = "photo-" + SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ENGLISH).format(Date()) + ".jpg"
+        FileProvider.getUriForFile(context, context.getString(R.string.authorities_fileprovider_id), File(directory, name))
+    }
 
     /**
      * Loads the images of the preview: wiki paths are resolved in the tree, the files come
@@ -384,6 +430,26 @@ internal class CodeEditorViewModel @Inject constructor(
             return
         }
         val tree = WikiTree(root)
+        if (tree.documentById(documentId) == null) {
+            // the cached tree is older than the document (new or moved)
+            refreshWikiTree(documentId)
+            return
+        }
+        showWikiTree(tree, documentId)
+    }
+
+    /** loads the wiki tree from the server, after uploads and moves */
+    private suspend fun refreshWikiTree(documentId: String) {
+        val root = try {
+            dataRepository.sectionStore.fresh(ROOT_SECTION_ID)
+        } catch (ex: Exception) {
+            Timber.w(ex) { "Could not refresh the wiki tree" }
+            return
+        }
+        showWikiTree(WikiTree(root), documentId)
+    }
+
+    private fun showWikiTree(tree: WikiTree, documentId: String) {
         wikiTree.value = tree
         val section = tree.parentOfDocument(documentId)
         _uiState.update { old ->
@@ -618,14 +684,15 @@ internal class CodeEditorViewModel @Inject constructor(
                 }
 
                 is UiEvent.FormatClicked -> applyFormat(event.action)
-                is UiEvent.InsertLinkClicked -> applyFormat(FormatAction.Link)
-                is UiEvent.InsertImageClicked -> applyFormat(FormatAction.Image)
-
-                is UiEvent.InsertFileReferenceClicked -> showResourceSelectionDialog()
-                is UiEvent.ResourceSelected -> {
+                is UiEvent.InsertLinkClicked -> showPicker(DialogState.LinkPicker(selectedText()), FormatAction.Link)
+                is UiEvent.InsertImageClicked -> showPicker(DialogState.ResourcePicker(selectedText(), imagesOnly = true), FormatAction.Image)
+                is UiEvent.InsertFileReferenceClicked -> showPicker(DialogState.ResourcePicker(selectedText(), imagesOnly = false), null)
+                is UiEvent.InsertMarkdown -> {
                     dismissCurrentDialog()
-                    insertFileReference(uiState.value.selection, event.resource)
+                    insertAtSelection(event.markdown)
                 }
+
+                is UiEvent.UploadFiles -> uploadFiles(event.sectionId, event.uris, event.altText)
 
                 is UiEvent.PreviewLinkClicked -> onPreviewLinkClicked(event.href)
 
@@ -647,28 +714,101 @@ internal class CodeEditorViewModel @Inject constructor(
         setSelection(edit.selectionStart, edit.selectionEnd)
     }
 
-    private fun insertFileReference(selection: TextRange?, resource: ResourceData) {
-        val text = uiState.value.text?.toString() ?: ""
-        val selectionStart = selection?.start ?: 0
-        val selectionEnd = selection?.end ?: selectionStart
-
-        val referenceText = "![${resource.name}](./${resource.name})"
-        val newText = text.substring(0, selectionStart) +
-            referenceText +
-            text.substring(selectionEnd)
-
-        onTextChanged(newText)
-        // move cursor to the end of the inserted text
-        setSelection(selectionStart + referenceText.length)
+    /** the selected text, which the pickers use as link text */
+    private fun selectedText(): String {
+        val text = uiState.value.text?.toString() ?: return ""
+        val selection = uiState.value.selection ?: return ""
+        return text.substring(selection.min.coerceIn(0, text.length), selection.max.coerceIn(0, text.length))
     }
 
-    private suspend fun showResourceSelectionDialog() {
-        val documentId = requireNotNull(documentId.value)
-        val parentSectionId = requireNotNull(findParentSectionOfDocumentUseCase(documentId)).id
-        val parentSection = findSectionUseCase(parentSectionId)
-        showDialog(
-            DialogState.SelectLinkTarget(items = parentSection.resources)
-        )
+    /**
+     * Opens a picker. Without the wiki tree (not loaded yet, or no connection and no cache)
+     * the plain Markdown of [fallback] is inserted instead.
+     */
+    private fun showPicker(dialog: DialogState, fallback: FormatAction?) {
+        val documentId = documentId.value
+        if (wikiTree.value?.documentById(documentId ?: "") != null) {
+            showDialog(dialog)
+        } else if (fallback != null) {
+            applyFormat(fallback)
+        }
+    }
+
+    /** replaces the selection with Markdown from a picker */
+    private fun insertAtSelection(markdown: String) {
+        val text = uiState.value.text?.toString() ?: ""
+        val selectionStart = uiState.value.selection?.start ?: text.length
+        val selectionEnd = uiState.value.selection?.end ?: selectionStart
+        applyEdit(MarkdownFormatting.replaceSelection(text, selectionStart, selectionEnd, markdown))
+    }
+
+    /**
+     * Uploads files into a section under unique, safe names (large photos are scaled down),
+     * then inserts the Markdown for them, relative to this document
+     */
+    private suspend fun uploadFiles(sectionId: String, uris: List<Uri>, altText: String) {
+        val tree = wikiTree.value ?: return
+        val document = tree.documentById(documentId.value ?: return) ?: return
+        val section = tree.section(sectionId) ?: return
+        val fromPath = tree.pathOf(WikiItem.Document(document))
+        _uiState.update { old -> old.copy(uploading = true) }
+        val created = mutableListOf<String>()
+        try {
+            uris.forEach { uri ->
+                val (displayName, bytes) = withContext(Dispatchers.IO) { readUpload(uri) }
+                val name = PickerMarkdown.uniqueName(
+                    section.resources.map { it.name } + created,
+                    PickerMarkdown.sanitizeFileName(displayName),
+                )
+                val content = withContext(Dispatchers.Default) { shrinkImage(name, bytes) }
+                restClient.uploadResource(sectionId, name, content).get()
+                created += name
+                deleteIfPhoto(uri)
+            }
+        } catch (ex: Exception) {
+            Timber.e(ex) { "Upload failed" }
+            showMessage(context.getString(R.string.upload_failed, ex.message ?: ex.javaClass.simpleName))
+        } finally {
+            _uiState.update { old -> old.copy(uploading = false) }
+        }
+        if (created.isEmpty()) return
+
+        val sectionPath = tree.pathOf(section)
+        val snippets = created.map { name ->
+            val path = if (sectionPath.isEmpty()) name else "$sectionPath/$name"
+            val image = ResourceKind.ofName(name) == ResourceKind.IMAGE
+            val label = PickerMarkdown.escapeLinkText(
+                altText.trim().takeIf { created.size == 1 && it.isNotEmpty() }
+                    ?: if (image) name.replace(Regex("\\.[^.]+$"), "") else name
+            )
+            val destination = LinkPaths.linkPath(fromPath, LinkPaths.Target(LinkPaths.TargetType.RESOURCE, path))
+            (if (image) "!" else "") + "[$label]($destination)"
+        }
+        dismissCurrentDialog()
+        if (snippets.size == 1) {
+            insertAtSelection(snippets.single())
+        } else {
+            val text = uiState.value.text?.toString() ?: ""
+            applyEdit(MarkdownFormatting.insertSnippets(text, uiState.value.selection?.max ?: text.length, snippets))
+        }
+        // show the new files in the tree (pickers, preview)
+        documentId.value?.let { refreshWikiTree(it) }
+    }
+
+    /** photos taken for an upload are not needed after it */
+    private fun deleteIfPhoto(uri: Uri) {
+        if (uri.authority != context.getString(R.string.authorities_fileprovider_id)) return
+        val name = uri.lastPathSegment?.substringAfterLast('/') ?: return
+        File(File(context.cacheDir, "camera"), name).takeIf { it.isFile }?.delete()
+    }
+
+    /** the name and content of a file chosen for an upload */
+    private fun readUpload(uri: Uri): Pair<String, ByteArray> {
+        val name = contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) cursor.getString(0) else null
+        } ?: uri.lastPathSegment?.substringAfterLast('/') ?: "file"
+        val bytes = requireNotNull(contentResolver.openInputStream(uri)) { "Could not read $uri" }.use { it.readBytes() }
+        return name to bytes
     }
 
     private suspend fun onTopAppBarActionClicked(action: TopAppBarAction.CodeEditor) {
@@ -900,6 +1040,9 @@ internal class CodeEditorViewModel @Inject constructor(
         /** how long opening a document waits for the redirect lookups of the local copies */
         private const val REDIRECT_TIMEOUT_MS = 5_000L
 
+        private const val THUMBNAIL_SIZE_PX = 128
+        private const val THUMBNAIL_CACHE_SIZE = 200
+
         internal val EnableEditModeFabConfig = FabConfig.Fab<CodeEditorFabId>(
             id = CodeEditorFabId.EnableEditMode,
             description = R.string.code_editor_enable_edit_mode,
@@ -928,6 +1071,9 @@ internal class CodeEditorViewModel @Inject constructor(
 
         /** the folder of the document below the wiki root (`a/b`), for paths in the preview */
         val previewSectionPath: String = "",
+
+        /** true while files from the image picker are uploaded */
+        val uploading: Boolean = false,
 
         /**
          * Indicates whether the CodeEditor is in "edit" mode or not
@@ -970,7 +1116,11 @@ internal class CodeEditorViewModel @Inject constructor(
         data object InsertImageClicked : UiEvent()
 
         data object InsertFileReferenceClicked : UiEvent()
-        data class ResourceSelected(val resource: ResourceData) : UiEvent()
+
+        /** Markdown from a picker, replaces the selection */
+        data class InsertMarkdown(val markdown: String) : UiEvent()
+
+        data class UploadFiles(val sectionId: String, val uris: List<Uri>, val altText: String) : UiEvent()
 
         data class PreviewLinkClicked(val href: String) : UiEvent()
 
@@ -1002,8 +1152,10 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     sealed interface DialogState {
-        data class SelectLinkTarget(
-            val items: List<ResourceData> = emptyList(),
-        ) : DialogState
+        /** @param selection the selected text, which becomes the link text */
+        data class LinkPicker(val selection: String) : DialogState
+
+        /** @param selection the selected text, which becomes the alt text */
+        data class ResourcePicker(val selection: String, val imagesOnly: Boolean) : DialogState
     }
 }

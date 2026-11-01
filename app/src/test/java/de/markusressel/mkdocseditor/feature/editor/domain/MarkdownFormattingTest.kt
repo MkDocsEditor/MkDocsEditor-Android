@@ -134,4 +134,20 @@ class MarkdownFormattingTest {
         val edit = MarkdownFormatting.apply(FormatAction.Bold, "abc", 3, 0)
         assertEquals("**abc**", edit.text)
     }
+
+    @Test
+    fun `replace the selection with a picked link`() {
+        assertEquals(FormatEdit("see [x](a.md) now", 13), MarkdownFormatting.replaceSelection("see it now", 4, 6, "[x](a.md)"))
+        assertEquals(FormatEdit("[x](a.md)", 9), MarkdownFormatting.replaceSelection("", 0, 0, "[x](a.md)"))
+    }
+
+    @Test
+    fun `uploaded files go on lines of their own`() {
+        assertEquals(
+            FormatEdit("text\n![a](a.png)\n![b](b.png)\nmore", 29),
+            MarkdownFormatting.insertSnippets("textmore", 4, listOf("![a](a.png)", "![b](b.png)")),
+        )
+        assertEquals(FormatEdit("![a](a.png)", 11), MarkdownFormatting.insertSnippets("", 0, listOf("![a](a.png)")))
+        assertEquals(FormatEdit("x\n![a](a.png)\n", 13), MarkdownFormatting.insertSnippets("x\n\n", 2, listOf("![a](a.png)")))
+    }
 }
