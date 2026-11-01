@@ -22,6 +22,9 @@ sealed class SnackbarData {
 
     /** the server rejected the session; local edits are kept */
     data class SignedOut(val backendId: Long) : SnackbarData()
+
+    /** a short note without an action */
+    data class Message(val text: String) : SnackbarData()
 }
 
 internal data class UiState(
