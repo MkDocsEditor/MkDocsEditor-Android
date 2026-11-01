@@ -30,7 +30,10 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendSer
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.domain.EditorFiles
+import de.markusressel.mkdocseditor.feature.editor.domain.ExternalLinkOpener
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatAction
+import de.markusressel.mkdocseditor.feature.editor.domain.PreviewLinkTarget
+import de.markusressel.mkdocseditor.feature.editor.domain.PreviewLinks
 import de.markusressel.mkdocseditor.feature.editor.domain.PageReferencesLoader
 import de.markusressel.mkdocseditor.feature.editor.domain.UploadFilesUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.withFixedReference
@@ -47,13 +50,10 @@ import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DownloadResourceUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ShareFileUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.FileBrowserViewModel.Companion.ROOT_SECTION_ID
-import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
 import android.content.Context
 import android.os.SystemClock
-import android.content.Intent
 import android.webkit.MimeTypeMap
 import android.webkit.WebResourceResponse
-import androidx.core.net.toUri
 import org.mobilenativefoundation.store.store5.impl.extensions.get
 import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
@@ -111,7 +111,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private val previewFileCache: PreviewFileCache,
     private val downloadResourceUseCase: DownloadResourceUseCase,
     private val shareFileUseCase: ShareFileUseCase,
-    private val chromeCustomTabManager: ChromeCustomTabManager,
+    private val externalLinkOpener: ExternalLinkOpener,
     private val eventBusManager: EventBusManager,
     private val context: Context,
 ) : ViewModel() {
@@ -485,43 +485,27 @@ internal class CodeEditorViewModel @Inject constructor(
      * the file browser, resources in another app, everything else in the browser
      */
     private suspend fun onPreviewLinkClicked(href: String) {
-        if (WikiTree.isExternal(href)) {
-            openExternalLink(href)
-            return
-        }
-        val documentId = documentId.value ?: return
-        val tree = wikiTree.value ?: return
-        val from = tree.parentOfDocument(documentId) ?: tree.root
-        when (val target = tree.resolve(from, href)) {
-            is WikiItem.Document -> _navigationEvents.send(NavigationRequest.OpenDocument(target.id))
-            is WikiItem.Section -> {
-                eventBusManager.send(BusEvent.CodeEditorBusEvent.GoToSection(target.id))
+        when (val target = PreviewLinks.resolve(wikiTree.value, documentId.value, href)) {
+            is PreviewLinkTarget.External -> if (!externalLinkOpener.open(target.href)) {
+                showMessage(context.getString(R.string.preview_link_not_found, href))
+            }
+
+            is PreviewLinkTarget.Document -> _navigationEvents.send(NavigationRequest.OpenDocument(target.documentId))
+            is PreviewLinkTarget.Section -> {
+                eventBusManager.send(BusEvent.CodeEditorBusEvent.GoToSection(target.sectionId))
                 _navigationEvents.send(NavigationRequest.Close)
             }
 
-            is WikiItem.Resource -> try {
-                val file = downloadResourceUseCase(target.id, target.name)
+            is PreviewLinkTarget.Resource -> try {
+                val file = downloadResourceUseCase(target.resourceId, target.name)
                 shareFileUseCase(file)
             } catch (ex: Exception) {
                 Timber.e(ex)
                 showMessage(context.getString(R.string.preview_resource_failed, target.name))
             }
 
-            null -> showMessage(context.getString(R.string.preview_link_not_found, href))
-        }
-    }
-
-    private fun openExternalLink(href: String) {
-        try {
-            if (href.startsWith("http://") || href.startsWith("https://")) {
-                chromeCustomTabManager.openChromeCustomTab(href)
-            } else {
-                val url = if (href.startsWith("//")) "https:$href" else href
-                context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            }
-        } catch (ex: Exception) {
-            Timber.e(ex)
-            showMessage(context.getString(R.string.preview_link_not_found, href))
+            PreviewLinkTarget.NotFound -> showMessage(context.getString(R.string.preview_link_not_found, href))
+            null -> {}
         }
     }
 

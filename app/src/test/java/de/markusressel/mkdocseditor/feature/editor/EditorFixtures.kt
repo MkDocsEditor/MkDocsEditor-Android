@@ -5,7 +5,7 @@ import de.markusressel.mkdocseditor.feature.filebrowser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.filebrowser.data.SectionData
 import java.util.Date
 
-internal fun documentData(id: String, name: String = "$id.md") =
+internal fun documentData(id: String, name: String = id) =
     DocumentData(0, id, name, 0, Date(0), "", null, false)
 
 internal fun resourceData(id: String, name: String = id) =
