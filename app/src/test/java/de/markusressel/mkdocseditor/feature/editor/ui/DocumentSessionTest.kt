@@ -253,6 +253,28 @@ class DocumentSessionTest {
     }
 
     @Test
+    fun `without a connection and a text it says so, until the text arrives`() = test { f ->
+        f.environment.loadAnswer = CompletableDeferred(DocumentLoad(null, IOException("no server")))
+        f.open()
+        assertTrue(f.state.noOfflineVersion)
+        assertEquals(0, f.host.offlineVersions)
+
+        f.document.connected()
+        f.document.textArrived("server text")
+        assertFalse(f.state.noOfflineVersion)
+    }
+
+    @Test
+    fun `the notices of a document do not carry over to the next one`() = test { f ->
+        f.open("one")
+        f.document.listener.onDocumentDeleted()
+        assertTrue(f.state.deletedOnServer)
+
+        f.session.setDocument("two")
+        assertFalse(f.state.deletedOnServer)
+    }
+
+    @Test
     fun `a failed load with a connection is no offline state`() = test { f ->
         val answer = CompletableDeferred<DocumentLoad>()
         f.environment.loadAnswer = answer

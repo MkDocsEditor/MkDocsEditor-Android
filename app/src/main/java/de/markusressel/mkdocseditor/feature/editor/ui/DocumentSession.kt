@@ -139,6 +139,8 @@ internal class DocumentSession(
         val loading: Boolean = false,
         val offlineBannerVisible: Boolean = false,
         val deletedOnServer: Boolean = false,
+        /** there is neither a connection nor a text to show */
+        val noOfflineVersion: Boolean = false,
     )
 
     private val _state = MutableStateFlow(State())
@@ -247,6 +249,8 @@ internal class DocumentSession(
             old.copy(
                 documentId = documentId,
                 loading = documentId != null && !environment.offlineMode.value,
+                deletedOnServer = false,
+                noOfflineVersion = false,
             )
         }
         if (documentId != null) scope.launch { host.loadWikiTree(documentId) }
@@ -299,7 +303,7 @@ internal class DocumentSession(
         override fun onTextReplaced(text: String) {
             this@DocumentSession.text.onDocumentChanged()
             localCopyAvailable.value = true
-            _state.update { old -> old.copy(loading = false) }
+            _state.update { old -> old.copy(loading = false, noOfflineVersion = false) }
 
             scope.launch {
                 environment.updateContentCache(syncedDocument?.documentId ?: documentId, text)
@@ -384,7 +388,11 @@ internal class DocumentSession(
 
     private fun showOfflineVersionIfPossible() {
         // prefer the local Automerge copy, it includes edits made offline
-        val cachedContent = syncedDocument?.text ?: loadedDocument?.text ?: return
+        val cachedContent = syncedDocument?.text ?: loadedDocument?.text
+        if (cachedContent == null) {
+            _state.update { old -> old.copy(noOfflineVersion = true) }
+            return
+        }
         host.onOfflineVersionShown()
         text.showDetachedText(cachedContent)
     }

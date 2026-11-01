@@ -11,7 +11,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -45,6 +44,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import androidx.compose.ui.platform.LocalConfiguration
@@ -228,9 +228,7 @@ internal fun VerticalSplit(
         Column(
             modifier = Modifier.weight(1f)
         ) {
-            if (uiState.isOfflineModeBannerVisible) {
-                OfflineModeBanner()
-            }
+            EditorBanners(uiState)
 
             if (uiState.editModeActive) {
                 CodeEditorLayout(
@@ -288,9 +286,7 @@ internal fun HorizontalSplit(
         Column(
             modifier = Modifier.weight(1f)
         ) {
-            if (uiState.isOfflineModeBannerVisible) {
-                OfflineModeBanner()
-            }
+            EditorBanners(uiState)
 
             if (uiState.editModeActive) {
                 CodeEditorLayout(
@@ -447,28 +443,29 @@ internal fun CodeEditorSackbar(
     }
 }
 
+/** what the user has to know about the open document */
 @Composable
-internal fun OfflineModeBanner(
-    modifier: Modifier = Modifier,
-) {
-    Row(
+private fun EditorBanners(uiState: CodeEditorViewModel.UiState) {
+    if (uiState.isOfflineModeBannerVisible) EditorBanner(stringResource(R.string.offline))
+    if (uiState.isNoOfflineVersionVisible) EditorBanner(stringResource(R.string.no_offline_version))
+    if (uiState.isDocumentDeletedOnServer) EditorBanner(stringResource(R.string.document_deleted_on_server))
+}
+
+@Composable
+private fun EditorBanner(text: String) {
+    Text(
         modifier = Modifier
             .fillMaxWidth()
-            .height(24.dp)
             .background(
                 when (isSystemInDarkTheme()) {
                     true -> colorResource(R.color.md_deep_orange_800)
                     false -> colorResource(R.color.md_deep_orange_300)
                 }
             )
-            .then(modifier),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = stringResource(R.string.offline)
-        )
-    }
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        text = text,
+        textAlign = TextAlign.Center,
+    )
 }
 
 @CombinedPreview

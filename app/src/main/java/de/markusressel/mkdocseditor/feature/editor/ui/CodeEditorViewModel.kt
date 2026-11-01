@@ -137,6 +137,7 @@ internal class CodeEditorViewModel @Inject constructor(
                         loading = state.loading,
                         isOfflineModeBannerVisible = state.offlineBannerVisible,
                         isDocumentDeletedOnServer = state.deletedOnServer,
+                        isNoOfflineVersionVisible = state.noOfflineVersion,
                     )
                 }
             }
@@ -588,6 +589,11 @@ internal class CodeEditorViewModel @Inject constructor(
          * The document was deleted on the server; the local copy is still shown
          */
         val isDocumentDeletedOnServer: Boolean = false,
+
+        /**
+         * There is no connection and no text to show
+         */
+        val isNoOfflineVersionVisible: Boolean = false,
     )
 
     sealed class UiEvent {
