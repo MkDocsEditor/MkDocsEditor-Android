@@ -1,12 +1,19 @@
 package de.markusressel.mkdocseditor.network
 
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import timber.log.Timber
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filterNotNull
 
 
 @Singleton
@@ -14,6 +21,24 @@ class NetworkManager @Inject constructor(
     private val connectivityManager: ConnectivityManager,
     private val wifiManager: WifiManager,
 ) {
+
+    /**
+     * The network the device uses by default, null if there is none. Emits the current one first.
+     */
+    val defaultNetwork: Flow<Network?> = callbackFlow {
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                trySend(network)
+            }
+
+            override fun onLost(network: Network) {
+                trySend(null)
+            }
+        }
+        trySend(connectivityManager.activeNetwork)
+        connectivityManager.registerDefaultNetworkCallback(callback)
+        awaitClose { connectivityManager.unregisterNetworkCallback(callback) }
+    }
 
     /**
      * Checks if Internet access is connected
@@ -121,3 +146,8 @@ class NetworkManager @Inject constructor(
     }
 
 }
+
+/**
+ * What a network that was there from the start does not count as: only the arrival of a new one
+ */
+internal fun <T : Any> Flow<T?>.newValues(): Flow<T> = distinctUntilChanged().drop(1).filterNotNull()

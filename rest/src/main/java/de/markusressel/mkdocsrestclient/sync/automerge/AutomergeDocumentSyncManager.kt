@@ -123,6 +123,7 @@ class AutomergeDocumentSyncManager(
     override fun connect() {
         wantConnection = true
         forbiddenRetried = false
+        reconnectAttempt = 0
         handler.removeCallbacks(reconnectRunnable)
         connection.connect(websocketUrl)
     }

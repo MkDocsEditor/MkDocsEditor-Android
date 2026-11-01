@@ -67,6 +67,9 @@ internal interface DocumentSessionEnvironment {
     /** whether the editor connects on its own when the offline mode ends */
     val connectsAutomatically: Boolean
 
+    /** the device got a network, after having none or another one */
+    val networkChanges: Flow<Unit>
+
     /** a backend id, whenever its session changes */
     val sessionChanges: Flow<Long>
 
@@ -204,6 +207,17 @@ internal class DocumentSession(
                 if (backendId == this@DocumentSession.backendId && environment.isSignedIn(backendId) &&
                     syncedDocument?.isConnected == false &&
                     environment.offlineMode.value.not()
+                ) {
+                    reconnect()
+                }
+            }
+        }
+
+        scope.launch {
+            // no need to wait for the next try, which can be up to 30 seconds away
+            environment.networkChanges.collect {
+                if (syncedDocument?.isConnected == false && environment.offlineMode.value.not() &&
+                    _connectionStatus.value?.isAuthenticationFailure != true
                 ) {
                     reconnect()
                 }

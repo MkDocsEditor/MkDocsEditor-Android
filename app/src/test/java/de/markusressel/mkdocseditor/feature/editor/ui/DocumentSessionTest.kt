@@ -77,6 +77,7 @@ class DocumentSessionTest {
         override val ioDispatcher = UnconfinedTestDispatcher(scope.testScheduler)
         override val offlineMode = MutableStateFlow(false)
         override var connectsAutomatically = false
+        override val networkChanges = MutableSharedFlow<Unit>()
         override val sessionChanges = MutableSharedFlow<Long>()
 
         var signedIn = true
@@ -383,6 +384,43 @@ class DocumentSessionTest {
         f.document.connected()
         advanceTimeBy(5_000)
         assertEquals(ConnectionIndicator.Connected, f.session.connectionIndicator.value)
+    }
+
+    @Test
+    fun `a new network reconnects right away`() = test { f ->
+        f.open()
+        val connects = f.document.connects
+
+        f.environment.networkChanges.emit(Unit)
+        assertEquals(connects + 1, f.document.connects)
+    }
+
+    @Test
+    fun `a new network leaves alone what is connected, offline or signed out`() = test { f ->
+        f.open()
+        val document = f.document
+        val connects = document.connects
+
+        document.connected()
+        f.environment.networkChanges.emit(Unit)
+        assertEquals(connects, document.connects, "connected")
+
+        document.isConnected = false
+        document.listener.onConnectionStatusChanged(false, CloseCode.UNAUTHORIZED)
+        f.environment.networkChanges.emit(Unit)
+        assertEquals(connects, document.connects, "signed out")
+
+        document.listener.onConnectionStatusChanged(false)
+        f.environment.offlineMode.value = true
+        f.environment.networkChanges.emit(Unit)
+        assertEquals(connects, document.connects, "offline mode")
+    }
+
+    @Test
+    fun `a new network without a document does nothing`() = test { f ->
+        f.session.start()
+        f.environment.networkChanges.emit(Unit)
+        assertEquals(0, f.environment.documents.size)
     }
 
     @Test
