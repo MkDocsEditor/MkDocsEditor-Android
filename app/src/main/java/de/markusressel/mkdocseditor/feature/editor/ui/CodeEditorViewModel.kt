@@ -228,6 +228,9 @@ internal class CodeEditorViewModel @Inject constructor(
 
     private var editorFocused = false
 
+    /** when the open document started loading, for [logOpenStep] */
+    private var openStartedAt = 0L
+
     // structural equality (the default): an unchanged field does not recompose
     private val _editorField = mutableStateOf(EditorField())
 
@@ -338,7 +341,12 @@ internal class CodeEditorViewModel @Inject constructor(
         }
     }
 
+    private fun logOpenStep(step: String) {
+        Timber.d { "Opening document: $step after ${SystemClock.elapsedRealtime() - openStartedAt} ms" }
+    }
+
     private suspend fun initializeEditorWithDocument(documentId: String?) {
+        openStartedAt = SystemClock.elapsedRealtime()
         if (documentId != null && automergeDocumentSyncManager?.documentId == documentId) {
             // the open document moved: the manager already follows its new id
             _uiState.update { old -> old.copy(documentId = documentId) }
@@ -390,6 +398,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 currentBackendId = currentBackend.id
 
                 val manager = createAutomergeSyncManager(documentId, serverConfig, currentBackend.id)
+                logOpenStep("sync manager created")
                 automergeDocumentSyncManager = manager
                 // show the local copy right away, it may hold edits made offline
                 bindEditorTo(manager)
@@ -419,6 +428,7 @@ internal class CodeEditorViewModel @Inject constructor(
                         // edits stay in the local copy and sync after the next sign-in
                         authRepository.onUnauthenticated(backendId)
                     }
+                    if (connected) logOpenStep("connected")
                     connectionStatus.value = status
                     updateOfflineBanner()
                     if (connected) {
@@ -428,6 +438,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 }
 
                 override fun onTextReplaced(text: String) {
+                    logOpenStep("text received")
                     editorBinding.onDocumentChanged()
                     syncEditorState()
                     localCopyAvailable.value = true
@@ -569,6 +580,7 @@ internal class CodeEditorViewModel @Inject constructor(
      */
     private suspend fun loadDocumentResource(documentId: String, connect: Boolean = true) {
         val resource = getDocumentUseCase(documentId)
+        logOpenStep("item tree loaded")
         currentResource.value = resource
         when (resource) {
             is Success -> {
