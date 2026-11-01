@@ -140,20 +140,62 @@
 
     <string name="create_document">Create Document</string>
     <string name="create_document_hint">New Document</string>
-    <string name="edit_document">Edit document</string>
-    <string name="edit_document_name_hint">Name</string>
     <string name="delete_document_confirmation_title">Delete document?</string>
     <string name="delete_document_confirmation_message">Deleting a document removes it <b>permanently</b> for everyone on this backend.</string>
     <string name="create_section">Create Section</string>
     <string name="create_section_hint">New Section</string>
-    <string name="edit_section">Edit section</string>
-    <string name="edit_section_name_hint">Name</string>
     <string name="delete_section_confirmation_title">Delete section?</string>
     <string name="delete_section_confirmation_message">Deleting a section removes it and all of its contents <b>permanently</b> for everyone on this backend.</string>
 
-    <string name="edit_resource">Edit resource</string>
     <string name="delete_resource_confirmation_title">Delete resource?</string>
     <string name="delete_resource_confirmation_message">Deleting a resource removes it <b>permanently</b> for everyone on this backend.</string>
+
+    <string name="delete_used_by_loading">Checking which pages link here…</string>
+    <string name="delete_used_by_none">No page links here.</string>
+    <plurals name="delete_used_by_count">
+        <item quantity="one">%1$d link from another page will break.</item>
+        <item quantity="other">%1$d links from other pages will break.</item>
+    </plurals>
+
+    <string name="item_action_rename">Rename</string>
+    <string name="item_action_move">Move to…</string>
+    <string name="item_action_used_by">Used by</string>
+    <string name="item_action_delete">Delete</string>
+
+    <string name="move_title">Move %1$s</string>
+    <string name="rename_title">Rename %1$s</string>
+    <string name="move_name_label">Name</string>
+    <string name="move_name_document_hint">Without .md</string>
+    <string name="move_here">Move here</string>
+    <string name="move_to_folder">Move to the folder %1$s</string>
+    <string name="move_preview_button">Preview</string>
+    <string name="move_apply">Apply</string>
+    <string name="move_back">Back</string>
+    <string name="move_loading_tree">Loading folders…</string>
+    <string name="move_preview_from_to">%1$s → %2$s</string>
+    <plurals name="move_preview_moved_items">
+        <item quantity="one">%1$d item moves.</item>
+        <item quantity="other">%1$d items move.</item>
+    </plurals>
+    <string name="move_preview_no_edits">No links need to change.</string>
+    <plurals name="move_preview_documents">
+        <item quantity="one">Links change in %1$d page:</item>
+        <item quantity="other">Links change in %1$d pages:</item>
+    </plurals>
+    <string name="move_preview_config">mkdocs.yml</string>
+    <string name="move_preview_line">Line %1$d</string>
+    <string name="move_error_exists">An item with this name already exists there.</string>
+    <string name="move_error_invalid_name">This name is not allowed. Use a plain file name without "/" or a leading dot.</string>
+    <string name="move_error_blacklisted">The server hides items with this name.</string>
+    <string name="move_error_into_itself">A folder cannot be moved into itself.</string>
+    <string name="move_error_root">The root folder cannot be moved.</string>
+    <string name="move_error_no_change">Nothing would change.</string>
+
+    <string name="backlinks_title">Used by: %1$s</string>
+    <string name="backlinks_none">No page links here.</string>
+    <string name="backlinks_internal">inside</string>
+    <string name="backlinks_line">Line %1$d · %2$s</string>
+    <string name="close">Close</string>
 
     <string name="upload_resource">Upload Resource</string>
 

@@ -23,6 +23,9 @@ import de.markusressel.mkdocseditor.feature.filebrowser.data.ROOT_SECTION
 import de.markusressel.mkdocseditor.feature.filebrowser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.filebrowser.data.SectionBackstackItem
 import de.markusressel.mkdocseditor.feature.filebrowser.data.SectionData
+import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
+import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
+import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ComputePathToSectionUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.CreateNewDocumentUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.CreateNewSectionUseCase
@@ -35,9 +38,9 @@ import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.FindParen
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.FindSectionUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.GetCurrentSectionPathUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.GetSectionItemsUseCase
-import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.RenameDocumentUseCase
-import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.RenameResourceUseCase
-import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.RenameSectionUseCase
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.GetBacklinksUseCase
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.MoveItemUseCase
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.MoveOutcome
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.SectionItem
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ShareFileUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.UploadResourceUseCase
@@ -61,6 +64,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.job
 import org.mobilenativefoundation.store.store5.StoreReadResponse
+import org.mobilenativefoundation.store.store5.impl.extensions.fresh
+import org.mobilenativefoundation.store.store5.impl.extensions.get
 import java.util.Stack
 import javax.inject.Inject
 import kotlin.coroutines.coroutineContext
@@ -75,9 +80,9 @@ internal class FileBrowserViewModel @Inject constructor(
     private val computePathToSectionUseCase: ComputePathToSectionUseCase,
     private val getCurrentSectionPathUseCase: GetCurrentSectionPathUseCase,
     private val createNewDocumentUseCase: CreateNewDocumentUseCase,
-    private val renameDocumentUseCase: RenameDocumentUseCase,
-    private val renameSectionUseCase: RenameSectionUseCase,
-    private val renameResourceUseCase: RenameResourceUseCase,
+    private val moveItemUseCase: MoveItemUseCase,
+    private val getBacklinksUseCase: GetBacklinksUseCase,
+    private val dataRepository: DataRepository,
     private val deleteDocumentUseCase: DeleteDocumentUseCase,
     private val deleteResourceUseCase: DeleteResourceUseCase,
     private val deleteSectionUseCase: DeleteSectionUseCase,
@@ -302,59 +307,27 @@ internal class FileBrowserViewModel @Inject constructor(
                     }
                 }
 
-                is UiEvent.EditDocumentDialogDeleteClicked -> {
-                    dismissCurrentDialog()
-                    showDeleteDocumentConfirmationDialog(event.documentId)
-                }
-
-                is UiEvent.DeleteDocumentDialogConfirmClicked -> {
-                    dismissCurrentDialog()
-                    deleteDocument(event.documentId)
-                }
-
-                is UiEvent.EditDocumentDialogSaveClicked -> {
-                    dismissCurrentDialog()
-                    if (isDocumentNameValid(event.name)) {
-                        renameDocumentUseCase(event.documentId, event.name)
-                        reload()
-                    } else {
-                        setError("Invalid document name")
-                    }
-                }
-
                 is UiEvent.CreateSectionDialogSaveClicked -> {
                     dismissCurrentDialog()
                     createNewSection(event.parentSectionId, event.name)
                 }
 
-                is UiEvent.EditSectionDialogSaveClicked -> {
+                is UiEvent.ItemActionClicked -> onItemActionClicked(event.item, event.action)
+                is UiEvent.MovePreviewRequested -> previewMove(event.parentId, event.name)
+                is UiEvent.MoveBackClicked -> updateMoveDialog { it.copy(preview = null, error = null) }
+                is UiEvent.MoveApplyClicked -> applyMove()
+                is UiEvent.BacklinkClicked -> {
                     dismissCurrentDialog()
-                    renameSection(event.sectionId, event.name)
+                    _events.send(FileBrowserEvent.OpenDocumentEditor(event.documentId))
                 }
 
-                is UiEvent.EditSectionDialogDeleteClicked -> {
+                is UiEvent.DeleteConfirmed -> {
                     dismissCurrentDialog()
-                    showDeleteSectionConfirmationDialog(event.sectionId)
-                }
-
-                is UiEvent.EditResourceDialogSaveClicked -> {
-                    dismissCurrentDialog()
-                    renameResource(event.resourceId, event.name)
-                }
-
-                is UiEvent.EditResourceDialogDeleteClicked -> {
-                    dismissCurrentDialog()
-                    showDeleteResourceConfirmationDialog(event.resourceId)
-                }
-
-                is UiEvent.DeleteSectionDialogConfirmClicked -> {
-                    dismissCurrentDialog()
-                    deleteSection(event.sectionId)
-                }
-
-                is UiEvent.DeleteResourceDialogConfirmClicked -> {
-                    dismissCurrentDialog()
-                    deleteResource(event.resourceId)
+                    when (val item = event.item) {
+                        is WikiItem.Document -> deleteDocument(item.id)
+                        is WikiItem.Section -> deleteSection(item.id)
+                        is WikiItem.Resource -> deleteResource(item.id)
+                    }
                 }
 
                 is UiEvent.DismissDialog -> dismissCurrentDialog()
@@ -364,44 +337,6 @@ internal class FileBrowserViewModel @Inject constructor(
                 is UiEvent.SearchExpandedChanged -> onSearchExpandedChanged(event.isExpanded)
             }
         }
-    }
-
-    private suspend fun renameResource(resourceId: String, name: String) {
-        if (isDocumentNameValid(name)) {
-            try {
-                showLoading(true)
-                renameResourceUseCase(resourceId, name)
-                reload()
-            } catch (ex: Exception) {
-                Timber.e(ex)
-                setError(message = ex.localizedMessage ?: ex.javaClass.name)
-            }
-        }
-    }
-
-
-    private fun showDeleteDocumentConfirmationDialog(documentId: String) {
-        showDialog(
-            DialogState.DeleteDocumentConfirmation(
-                documentId = documentId,
-            )
-        )
-    }
-
-    private fun showDeleteSectionConfirmationDialog(sectionId: String) {
-        showDialog(
-            DialogState.DeleteSectionConfirmation(
-                sectionId = sectionId,
-            )
-        )
-    }
-
-    private fun showDeleteResourceConfirmationDialog(resourceId: String) {
-        showDialog(
-            DialogState.DeleteResourceConfirmation(
-                resourceId = resourceId,
-            )
-        )
     }
 
     private fun setFabConfig(fabConfig: FabConfig<FileBrowserFabId>) {
@@ -445,22 +380,110 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private suspend fun onSectionLongClicked(item: SectionData) {
-        showDialog(
-            DialogState.EditSection(
-                sectionId = item.id,
-                initialSectionName = item.name
-            )
-        )
+    private fun onSectionLongClicked(item: SectionData) = showDialog(DialogState.ItemActions(WikiItem.Section(item)))
+
+    private fun onResourceLongClicked(item: ResourceData) = showDialog(DialogState.ItemActions(WikiItem.Resource(item)))
+
+    private fun onDocumentLongClicked(item: DocumentData) = showDialog(DialogState.ItemActions(WikiItem.Document(item)))
+
+    private suspend fun onItemActionClicked(item: WikiItem, action: ItemAction) {
+        when (action) {
+            ItemAction.Rename -> showDialog(DialogState.Move(item = item, renameOnly = true))
+            ItemAction.Move -> {
+                showDialog(DialogState.Move(item = item, renameOnly = false))
+                val tree = loadTree()
+                if (tree == null) {
+                    updateMoveDialog { it.copy(error = MoveOutcome.Failed(null, null, "Could not load the folders")) }
+                } else {
+                    updateMoveDialog { it.copy(tree = tree) }
+                }
+            }
+            ItemAction.UsedBy -> {
+                showDialog(DialogState.Backlinks(item))
+                getBacklinksUseCase(item).fold(
+                    onSuccess = { list -> updateBacklinksDialog(item) { it.copy(backlinks = list) } },
+                    onFailure = { ex ->
+                        Timber.e(ex)
+                        updateBacklinksDialog(item) { it.copy(error = ex.localizedMessage ?: ex.javaClass.name) }
+                    },
+                )
+            }
+            ItemAction.Delete -> {
+                showDialog(DialogState.DeleteConfirmation(item))
+                getBacklinksUseCase(item).getOrNull()?.let { list ->
+                    // references from inside a section are deleted with it
+                    val count = list.count { !it.internal }
+                    _uiState.update { old ->
+                        val dialog = old.currentDialogState
+                        if (dialog is DialogState.DeleteConfirmation && dialog.item.id == item.id) {
+                            old.copy(currentDialogState = dialog.copy(usedBy = count))
+                        } else old
+                    }
+                }
+            }
+        }
     }
 
-    private suspend fun onResourceLongClicked(item: ResourceData) {
-        showDialog(
-            DialogState.EditResource(
-                resourceId = item.id,
-                initialResourceName = item.name
-            )
-        )
+    /** the whole wiki tree, from the server if possible */
+    private suspend fun loadTree(): WikiTree? {
+        val root = try {
+            dataRepository.sectionStore.fresh(ROOT_SECTION_ID)
+        } catch (ex: Exception) {
+            Timber.w(ex) { "Could not refresh the wiki tree" }
+            try {
+                dataRepository.sectionStore.get(ROOT_SECTION_ID)
+            } catch (ex2: Exception) {
+                Timber.e(ex2)
+                return null
+            }
+        }
+        return WikiTree(root)
+    }
+
+    private fun updateMoveDialog(update: (DialogState.Move) -> DialogState.Move) {
+        _uiState.update { old ->
+            val dialog = old.currentDialogState
+            if (dialog is DialogState.Move) old.copy(currentDialogState = update(dialog)) else old
+        }
+    }
+
+    private fun updateBacklinksDialog(item: WikiItem, update: (DialogState.Backlinks) -> DialogState.Backlinks) {
+        _uiState.update { old ->
+            val dialog = old.currentDialogState
+            if (dialog is DialogState.Backlinks && dialog.item.id == item.id) old.copy(currentDialogState = update(dialog)) else old
+        }
+    }
+
+    private suspend fun previewMove(parentId: String?, name: String?) {
+        val dialog = uiState.value.currentDialogState as? DialogState.Move ?: return
+        updateMoveDialog { it.copy(working = true, error = null) }
+        when (val outcome = moveItemUseCase(dialog.item, parentId, name, dryRun = true)) {
+            is MoveOutcome.Done -> updateMoveDialog {
+                it.copy(working = false, preview = MovePreview(parentId, name, outcome.result))
+            }
+            is MoveOutcome.Failed -> updateMoveDialog { it.copy(working = false, error = outcome) }
+        }
+    }
+
+    private suspend fun applyMove() {
+        val dialog = uiState.value.currentDialogState as? DialogState.Move ?: return
+        val preview = dialog.preview ?: return
+        updateMoveDialog { it.copy(working = true, error = null) }
+        when (val outcome = moveItemUseCase(dialog.item, preview.parentId, preview.name, dryRun = false)) {
+            is MoveOutcome.Done -> {
+                dismissCurrentDialog()
+                _events.send(FileBrowserEvent.Toast(movedMessage(outcome.result.documents.size, outcome.result.newPath)))
+                // the tree and every cached section below the root change
+                loadTree()
+                reload()
+            }
+            is MoveOutcome.Failed -> updateMoveDialog { it.copy(working = false, error = outcome) }
+        }
+    }
+
+    private fun movedMessage(documents: Int, newPath: String): String {
+        val updated = if (documents == 1) "1 page updated" else "$documents pages updated"
+        return "Now at /$newPath ($updated)"
     }
 
     private fun isDocumentNameValid(name: String): Boolean {
@@ -586,19 +609,6 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private suspend fun renameSection(sectionId: String, name: String) {
-        if (isSectionNameValid(name)) {
-            try {
-                showLoading(true)
-                renameSectionUseCase(sectionId, name)
-                reload()
-            } catch (ex: Exception) {
-                Timber.e(ex)
-                setError(message = ex.localizedMessage ?: ex.javaClass.name)
-            }
-        }
-    }
-
     private fun isSectionNameValid(sectionName: String): Boolean {
         val equallyNamedSectionsExist =
             uiState.value.listItems.filterByExpectedType<SectionEntity>().any {
@@ -712,15 +722,6 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private fun onDocumentLongClicked(entity: DocumentData) {
-        showDialog(
-            DialogState.EditDocument(
-                documentId = entity.id,
-                initialDocumentName = entity.name
-            )
-        )
-    }
-
     private suspend fun onDocumentClicked(entity: DocumentData) {
         if (isOfflineModeEnabledFlowUseCase().value && entity.isOfflineAvailable.not()) {
             setError("Document is not available offline")
@@ -786,23 +787,19 @@ internal sealed class UiEvent {
 
     data class CreateDocumentDialogSaveClicked(val sectionId: String, val name: String) : UiEvent()
 
-    data class EditDocumentDialogDeleteClicked(val documentId: String) : UiEvent()
-    data class DeleteDocumentDialogConfirmClicked(val documentId: String) : UiEvent()
-
-    data class EditDocumentDialogSaveClicked(val documentId: String, val name: String) : UiEvent()
     data class CreateSectionDialogSaveClicked(val parentSectionId: String, val name: String) :
         UiEvent()
 
-    data class EditSectionDialogDeleteClicked(val sectionId: String) : UiEvent()
-    data class DeleteSectionDialogConfirmClicked(val sectionId: String) : UiEvent()
+    data class ItemActionClicked(val item: WikiItem, val action: ItemAction) : UiEvent()
 
-    data class EditSectionDialogSaveClicked(val sectionId: String, val name: String) : UiEvent()
+    /** asks for a dry run: [parentId] null renames in place, [name] null keeps the name */
+    data class MovePreviewRequested(val parentId: String?, val name: String?) : UiEvent()
+    data object MoveBackClicked : UiEvent()
+    data object MoveApplyClicked : UiEvent()
 
+    data class BacklinkClicked(val documentId: String) : UiEvent()
 
-    data class EditResourceDialogDeleteClicked(val resourceId: String) : UiEvent()
-    data class EditResourceDialogSaveClicked(val resourceId: String, val name: String) : UiEvent()
-    data class DeleteResourceDialogConfirmClicked(val resourceId: String) : UiEvent()
-
+    data class DeleteConfirmed(val item: WikiItem) : UiEvent()
 
     data class TopAppBarActionClicked(val action: TopAppBarAction.FileBrowser) : UiEvent()
 
@@ -810,6 +807,8 @@ internal sealed class UiEvent {
 
     data object SignInClicked : UiEvent()
 }
+
+internal enum class ItemAction { Rename, Move, UsedBy, Delete }
 
 internal sealed class FileBrowserEvent {
     data object OpenSearch : FileBrowserEvent()

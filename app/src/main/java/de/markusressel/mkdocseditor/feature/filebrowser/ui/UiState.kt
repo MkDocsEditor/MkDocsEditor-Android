@@ -2,9 +2,14 @@ package de.markusressel.mkdocseditor.feature.filebrowser.ui
 
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
+import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.MoveOutcome
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.SectionItem
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
+import de.markusressel.mkdocsrestclient.reference.BacklinkModel
+import de.markusressel.mkdocsrestclient.reference.MoveResultModel
 
 sealed interface DialogState {
     data class CreateDocument(
@@ -12,38 +17,58 @@ sealed interface DialogState {
         val initialDocumentName: String
     ) : DialogState
 
-    data class EditDocument(
-        val documentId: String,
-        val initialDocumentName: String
-    ) : DialogState
-
-    data class DeleteDocumentConfirmation(
-        val documentId: String
-    ) : DialogState
-
     data class CreateSection(
         val parentSectionId: String,
         val initialSectionName: String
     ) : DialogState
 
-    data class EditSection(
-        val sectionId: String,
-        val initialSectionName: String
+    /** what can be done with an item: rename, move, see what links to it, delete */
+    data class ItemActions(val item: WikiItem) : DialogState
+
+    /**
+     * Moving or renaming an item. The user picks a target (or a new name), then sees a preview
+     * of everything the backend would change (a dry run) before applying it.
+     *
+     * @param tree the wiki tree to pick the target folder from, null while it loads
+     * @param renameOnly true to rename in place (no folder picker)
+     * @param preview the dry run, null while picking the target
+     * @param working true while a request runs
+     * @param error the error of the last request
+     */
+    data class Move(
+        val item: WikiItem,
+        val renameOnly: Boolean,
+        val tree: WikiTree? = null,
+        val preview: MovePreview? = null,
+        val working: Boolean = false,
+        val error: MoveOutcome.Failed? = null,
     ) : DialogState
 
-    data class DeleteSectionConfirmation(
-        val sectionId: String
+    /** the documents that link to an item; [backlinks] is null while loading */
+    data class Backlinks(
+        val item: WikiItem,
+        val backlinks: List<BacklinkModel>? = null,
+        val error: String? = null,
     ) : DialogState
 
-    data class EditResource(
-        val resourceId: String,
-        val initialResourceName: String
-    ) : DialogState
-
-    data class DeleteResourceConfirmation(
-        val resourceId: String
+    /** @param usedBy how many references to the item exist, null while unknown */
+    data class DeleteConfirmation(
+        val item: WikiItem,
+        val usedBy: Int? = null,
     ) : DialogState
 }
+
+/**
+ * A dry run of a move
+ *
+ * @param parentId the target section, null to rename in place
+ * @param name the new name, null to keep it
+ */
+data class MovePreview(
+    val parentId: String?,
+    val name: String?,
+    val result: MoveResultModel,
+)
 
 internal data class UiState(
     val currentDialogState: DialogState? = null,

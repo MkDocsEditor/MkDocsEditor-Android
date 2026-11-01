@@ -1,6 +1,7 @@
 package de.markusressel.mkdocsrestclient.reference
 
 import com.squareup.moshi.JsonClass
+import com.squareup.moshi.Moshi
 import java.util.Date
 
 /**
@@ -165,3 +166,35 @@ data class MovedModel(
     val item: ItemRefModel,
     val movedAt: Date,
 )
+
+/**
+ * Details of an error answer
+ *
+ * @param reason for example `exists` or `invalid-name` (docs/references.md section 11)
+ */
+@JsonClass(generateAdapter = true)
+data class ApiErrorDetailsModel(
+    val reason: String? = null,
+    val path: String? = null,
+)
+
+/**
+ * The body of an error answer of the backend: `{"code", "message", "details"}`
+ */
+@JsonClass(generateAdapter = true)
+data class ApiErrorModel(
+    val code: String? = null,
+    val message: String? = null,
+    val details: ApiErrorDetailsModel? = null,
+) {
+    companion object {
+        private val adapter by lazy { Moshi.Builder().build().adapter(ApiErrorModel::class.java) }
+
+        /** the error in a response body, null when the body is not one */
+        fun parse(body: ByteArray): ApiErrorModel? = try {
+            adapter.fromJson(String(body, Charsets.UTF_8))
+        } catch (e: Exception) {
+            null
+        }
+    }
+}

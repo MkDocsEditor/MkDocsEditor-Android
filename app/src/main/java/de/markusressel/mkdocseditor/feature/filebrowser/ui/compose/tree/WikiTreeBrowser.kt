@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.tree
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -39,6 +40,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -72,6 +74,10 @@ fun interface ThumbnailLoader {
  * @param filter further filter for documents and resources, for example images only
  * @param pickSections folders can be picked too (a link to a folder), with a button next to them
  * @param disabledIds items that cannot be picked or opened (a folder cannot move into itself)
+ * @param unpickableIds folders that can be opened but not picked (the current folder of an item
+ * that moves without a new name)
+ * @param pickFolderIcon the icon of the button that picks a folder
+ * @param pickFolderDescription the description of that button, with the folder name as argument
  */
 @Composable
 fun WikiTreeBrowser(
@@ -86,6 +92,9 @@ fun WikiTreeBrowser(
     pickSections: Boolean = false,
     pickCurrentLabel: String = stringResource(R.string.tree_browser_this_folder),
     disabledIds: Set<String> = emptySet(),
+    unpickableIds: Set<String> = emptySet(),
+    pickFolderIcon: ImageVector = Icons.Outlined.Link,
+    @StringRes pickFolderDescription: Int = R.string.tree_browser_pick_folder,
     searchPlaceholder: String = stringResource(R.string.tree_browser_search),
     thumbnailLoader: ThumbnailLoader? = null,
 ) {
@@ -161,7 +170,7 @@ fun WikiTreeBrowser(
                         maxLines = 1,
                     )
                 }
-                if (pickSections && current.id !in disabledIds) {
+                if (pickSections && current.id !in disabledIds && current.id !in unpickableIds) {
                     TextButton(
                         onClick = { onPick(WikiItem.Section(current)) },
                         modifier = Modifier.testTag("browser-pick-current"),
@@ -192,6 +201,9 @@ fun WikiTreeBrowser(
                         subtitle = (item as? WikiItem.Resource)?.resource?.filesize?.let(::formatSize),
                         disabled = item.id in disabledIds,
                         pickSection = pickSections && item is WikiItem.Section,
+                        pickable = item.id !in unpickableIds,
+                        pickFolderIcon = pickFolderIcon,
+                        pickFolderDescription = pickFolderDescription,
                         thumbnailLoader = thumbnailLoader,
                         onClick = { activate(item) },
                         onPickSection = { onPick(item) },
@@ -220,7 +232,7 @@ fun WikiTreeBrowser(
                         thumbnailLoader = thumbnailLoader,
                         onClick = {
                             // a folder found by the search is picked when folders can be picked
-                            if (pickSections && hit.item is WikiItem.Section && hit.item.id !in disabledIds) {
+                            if (pickSections && hit.item is WikiItem.Section && hit.item.id !in disabledIds && hit.item.id !in unpickableIds) {
                                 onPick(hit.item)
                             } else {
                                 activate(hit.item)
@@ -245,6 +257,9 @@ private fun BrowserEntry(
     disabled: Boolean,
     pickSection: Boolean,
     thumbnailLoader: ThumbnailLoader?,
+    pickable: Boolean = true,
+    pickFolderIcon: ImageVector = Icons.Outlined.Link,
+    @StringRes pickFolderDescription: Int = R.string.tree_browser_pick_folder,
     onClick: () -> Unit,
     onPickSection: () -> Unit,
 ) {
@@ -269,8 +284,8 @@ private fun BrowserEntry(
         leadingContent = { ItemIcon(item, thumbnailLoader) },
         trailingContent = if (pickSection) {
             {
-                IconButton(onClick = onPickSection, enabled = !disabled) {
-                    Icon(Icons.Outlined.Link, contentDescription = stringResource(R.string.tree_browser_pick_folder, item.name))
+                IconButton(onClick = onPickSection, enabled = !disabled && pickable, modifier = Modifier.testTag("browser-pick-section")) {
+                    Icon(pickFolderIcon, contentDescription = stringResource(pickFolderDescription, item.name))
                 }
             }
         } else {
