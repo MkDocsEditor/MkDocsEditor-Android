@@ -20,12 +20,30 @@ only reachable from his home network. The file is in the repository `markusresse
 package and fingerprint in `server.auth.webauthn.android`. The web client serves a second copy on
 its own host for App Links (`MKDOCSEDITOR_ASSETLINKS_JSON`).
 
-So whenever the package name or the signing key changes (a release build, a new keystore, Play
-App Signing), all three places need the new entry: the blog's `assetlinks.json`, the backend
-config, and the web client's `MKDOCSEDITOR_ASSETLINKS_JSON`. Never replace `.ci/debug.keystore`
-without that, and tell Markus. Today only the CI debug build exists:
-`de.markusressel.mkdocseditor.debug`, fingerprint
-`74:A7:45:FA:C2:4A:BF:BD:F0:A7:30:83:18:71:FE:A6:DE:24:6C:6B:D2:E3:F8:62:49:24:27:1F:C4:D3:70:48`.
+So whenever the package name or the signing key changes (a new keystore, Play App Signing), all
+three places need the new entry: the blog's `assetlinks.json`, the backend config, and the web
+client's `MKDOCSEDITOR_ASSETLINKS_JSON`. Never replace `.ci/debug.keystore` or the release key
+without that, and tell Markus. There are two packages:
+
+- `de.markusressel.mkdocseditor.debug`, fingerprint
+  `74:A7:45:FA:C2:4A:BF:BD:F0:A7:30:83:18:71:FE:A6:DE:24:6C:6B:D2:E3:F8:62:49:24:27:1F:C4:D3:70:48`.
+- `de.markusressel.mkdocseditor`, fingerprint in the notes of every `release-<n>`; the command is in
+  the README.
+
+## Build variants, signing and publishing
+
+README sections "Installation", "Build variants" and "Release signing" describe them. For changes:
+
+- Debug is what Markus' family has installed, through Obtainium with pre-releases on. It has to keep
+  its package and key and must not need new Obtainium settings.
+- Never sign release with the debug key. `.ci/sign-release.sh` refuses it, and Gradle has no signing
+  config for release on purpose. Missing secrets are not an error: CI stays green and skips the release.
+- In the `Publish` job the debug pre-release comes last, because Obtainium picks the newest release
+  by publish date and an unfiltered debug source also sees `release-<n>`.
+- R8 builds fail silently: release plants no Timber tree, so caught exceptions leave no trace. The
+  missing Automerge keep rule only showed as an empty document. When changing dependencies or keep
+  rules, run an R8 build on an emulator (`-Pmkdocs.releaseAbis=x86_64`, throwaway key) against a local
+  backend, and open and edit a document. For logs, plant the tree temporarily.
 
 The protocol and the account flows are specified in `docs/auth.md` and `docs/sync-protocol.md`
 of MkDocsEditor-Backend.

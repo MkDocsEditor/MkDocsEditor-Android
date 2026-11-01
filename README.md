@@ -64,20 +64,49 @@ on how to do this.
 
 The app needs Android 16 or newer on a 64-bit device.
 
-Every build of `master` is published as a pre-release with the APK on the
-[releases page](https://github.com/MkDocsEditor/MkDocsEditor-Android/releases).
-The easiest way to install it and get updates is [Obtainium](https://github.com/ImranR98/Obtainium):
+Every build of `master` is published twice on the
+[releases page](https://github.com/MkDocsEditor/MkDocsEditor-Android/releases). The two are
+separate apps and can be installed at the same time, with separate data:
 
-1. Install Obtainium.
-2. Open [this link](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/MkDocsEditor/MkDocsEditor-Android)
-   on your phone, or in Obtainium tap **Add App** and enter
-   `https://github.com/MkDocsEditor/MkDocsEditor-Android`.
-3. Enable **Include prereleases** (there are no stable releases yet) and add the app.
-4. Tap **Install**. Obtainium checks for new builds and offers the update.
+| | Production | Debug |
+|---|---|---|
+| Package | `de.markusressel.mkdocseditor` | `de.markusressel.mkdocseditor.debug` |
+| Launcher name | MkDocsEditor | MkDocsEditor Debug |
+| GitHub release | normal release `release-<n>` | pre-release `build-<n>` |
+| Size | about 18 MB, R8, `arm64-v8a` | about 110 MB, no R8, `arm64-v8a` and `x86_64` |
+| Signed with | the release key | `.ci/debug.keystore` |
 
-All builds are signed with the same key, so they update an APK installed from a CI build.
-The app's version name does not change between builds (the release tags are `build-<n>`), so if
-Obtainium reports a version mismatch, turn off its version detection for this app.
+The easiest way to install and update them is [Obtainium](https://github.com/ImranR98/Obtainium).
+Add one app in Obtainium for each package you want. Both use the same address,
+`https://github.com/MkDocsEditor/MkDocsEditor-Android`, and the settings tell them apart:
+
+| Setting in Obtainium | Production | Debug |
+|---|---|---|
+| Include prereleases | **off** | **on** |
+| Filter release titles by regex | empty | `^Build ` (recommended) |
+| Fallback to older releases | on | on |
+| Sort method | Release date | Release date |
+
+Everything else stays at its default. In **Add App**, enter the address, set the switches and tap
+**Add**, then **Install**. Obtainium checks for new builds and offers the update.
+
+An existing debug source keeps working without changes, because the debug build is always
+published last and so is the newest release it can see. The title filter makes that independent of
+the order; without the filter, a failed publish could show a "package ID does not match" error
+until the next build, and nothing gets replaced.
+
+All builds of a package are signed with the same key and get a higher version code from CI, so
+they update each other. The app's version name does not change between builds (the release tags
+carry the number), so if Obtainium reports a version mismatch, turn off its version detection for
+this app.
+
+A device with a debug build older than this change has to update that first. The old one claims a
+fixed FileProvider authority, and Android refuses to install production beside it.
+
+Links: `https://<web client>/…` opens the app whose App Link is verified. If both packages are
+verified, Android opens one without asking (the production app in our test), so the other one needs
+**Open by default** turned off in the Android settings of the first. `mkdocseditor://…` links show
+a chooser when both are installed.
 
 ## Client Setup
 
@@ -110,6 +139,34 @@ backend). Otherwise Bitwarden shows "Passkey not supported for this app".
 
 Building this project should be straight forward. Just check out the repo and let Android Studio
 handle the rest.
+
+## Build variants
+
+- `./gradlew app:assembleDebug`: signed with `.ci/debug.keystore`.
+- `./gradlew app:assembleRelease`: R8 without obfuscation, `arm64-v8a` only, and **not signed**. CI
+  signs it in the `Publish` job on `master`, never with the debug key.
+  `-Pmkdocs.releaseAbis=x86_64` builds it for an emulator; sign that copy with a throwaway key.
+
+The version code is the CI run number and 1 for local builds, so a local build only installs over
+a CI build after uninstalling it, or with `adb install -d` for debug.
+
+Stack traces of a production build carry the real names, but R8 merges classes, so some frames can
+name the wrong class. Each `release-<n>` has its `mapping.txt` for `retrace`.
+
+## Release signing
+
+CI reads the key from the repository secrets `RELEASE_KEYSTORE_BASE64`,
+`RELEASE_KEYSTORE_PASSWORD`, `RELEASE_KEY_ALIAS` and `RELEASE_KEY_PASSWORD`. If one is missing, the
+`Publish` job leaves a notice, skips the release, and publishes the debug build as usual. The same
+happens when the unit tests failed. Never commit the keystore.
+
+The certificate fingerprint is public. It is in the notes of every `release-<n>`, in the job summary,
+and in the APK:
+
+```shell
+gh release download release-<n> --pattern '*.apk'
+$ANDROID_HOME/build-tools/<version>/apksigner verify --print-certs MkDocsEditor-release_*.apk
+```
 
 ## Gradle
 
