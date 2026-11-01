@@ -1,22 +1,55 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.contrastRatio
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.wcagLuminance
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 import kotlin.math.absoluteValue
 
 /**
- * Colors used for peers that don't send a (valid) color of their own
+ * Colors used for peers that don't send a (valid) color of their own.
+ * Mid tones, so they are visible on the light and on the dark editor background.
  */
-private val fallbackPeerColors = listOf(
-    Color(0xFFE53935),
-    Color(0xFF8E24AA),
-    Color(0xFF1E88E5),
-    Color(0xFF00897B),
-    Color(0xFF7CB342),
-    Color(0xFFFB8C00),
-    Color(0xFF6D4C41),
-    Color(0xFF3949AB),
+internal val fallbackPeerColors = listOf(
+    Color(0xFFE5534B),
+    Color(0xFFB467D1),
+    Color(0xFF3D8FE0),
+    Color(0xFF14A08F),
+    Color(0xFF5E9A2E),
+    Color(0xFFC97716),
+    Color(0xFFC4708A),
+    Color(0xFF6F7FE0),
 )
+
+/**
+ * The minimum contrast of a cursor or selection color against the editor background,
+ * the WCAG AA value for graphical objects
+ */
+private const val MIN_PEER_COLOR_CONTRAST = 3.0
+
+/**
+ * This color, lightened on a dark background or darkened on a light one until it has a
+ * contrast of at least 3:1, so the cursor of every user is visible in both themes.
+ */
+internal fun Color.readableOn(background: Color): Color {
+    val opaque = copy(alpha = 1f)
+    if (contrastRatio(opaque, background) >= MIN_PEER_COLOR_CONTRAST) return opaque
+    val target = if (background.wcagLuminance() < 0.18) Color.White else Color.Black
+    var fraction = 0f
+    var result = opaque
+    while (fraction < 1f && contrastRatio(result, background) < MIN_PEER_COLOR_CONTRAST) {
+        fraction += 0.05f
+        result = lerp(opaque, target, fraction.coerceAtMost(1f))
+    }
+    return result
+}
+
+/**
+ * Black or white, whichever is easier to read on the label background [color]
+ */
+internal fun labelTextColorOn(color: Color): Color =
+    if (contrastRatio(Color.Black, color) >= contrastRatio(Color.White, color)) Color.Black else Color.White
 
 /**
  * The color of this peer, parsed from its "#RRGGBB" or "#AARRGGBB" color string.
