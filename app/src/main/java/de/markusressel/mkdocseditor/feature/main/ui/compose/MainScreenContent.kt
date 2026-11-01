@@ -6,6 +6,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -34,6 +39,7 @@ import de.markusressel.mkdocseditor.ui.activity.UiState
 
 val LocalMainScreenOnBack = staticCompositionLocalOf<() -> Unit> { {} }
 
+@OptIn(ExperimentalLayoutApi::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 internal fun MainScreenContent(
@@ -70,9 +76,12 @@ internal fun MainScreenContent(
                     }
                 }
 
+                // the keyboard covers the navigation anyway; without it, screens get all the
+                // room above the keyboard
+                val keyboardVisible = WindowInsets.isImeVisible
                 Scaffold(
                     bottomBar = {
-                        if (navigationType == NavigationLayoutType.BOTTOM_NAVIGATION) {
+                        if (navigationType == NavigationLayoutType.BOTTOM_NAVIGATION && !keyboardVisible) {
                             BottomBar(
                                 selectedNavItem = tabNavigator.current.toNavItem(),
                                 navItems = uiState.bottomBarNavItems,
@@ -86,9 +95,10 @@ internal fun MainScreenContent(
                     }
                 ) { paddingValues ->
                     Box(
-                        modifier = Modifier.padding(
-                            bottom = paddingValues.calculateBottomPadding()
-                        )
+                        modifier = Modifier
+                            .padding(bottom = paddingValues.calculateBottomPadding())
+                            // imePadding() further down only adds what is not covered here yet
+                            .consumeWindowInsets(PaddingValues(bottom = paddingValues.calculateBottomPadding()))
                     ) {
                         Row {
                             // Navigation Rail

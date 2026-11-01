@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.common.ui.compose.topbar
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -39,6 +40,7 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
     onBackClicked: (() -> Unit)? = null,
     actions: List<T> = emptyList(),
     onActionClicked: (T) -> Unit = {},
+    windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
 ) {
     val defaultNavigationAction: () -> Unit = if (isComposePreview().not()) {
         val navigator = LocalNavigator.currentOrThrow
@@ -48,6 +50,7 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
     }
 
     TopAppBar(
+        windowInsets = windowInsets,
         title = { Text(text = title) },
         navigationIcon = {
             if (canGoBack) {

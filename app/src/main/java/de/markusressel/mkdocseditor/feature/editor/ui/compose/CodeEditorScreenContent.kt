@@ -1,29 +1,38 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +51,7 @@ import androidx.compose.ui.text.coerceIn
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
@@ -60,6 +70,7 @@ import de.markusressel.mkdocsrestclient.sync.automerge.RemoteSelection
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.preview.MarkdownPreview
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.preview.PreviewResourceLoader
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun CodeEditorScreenContent(
     modifier: Modifier = Modifier,
@@ -69,6 +80,11 @@ internal fun CodeEditorScreenContent(
     previewResourceLoader: PreviewResourceLoader = PreviewResourceLoader { null },
 ) {
     var splitOrientation by remember { mutableStateOf(SplitOrientation.Vertical) }
+
+    val chrome = remember { EditorChromeState() }
+    val keyboardVisible = WindowInsets.isImeVisible
+    chrome.shortScreen = LocalConfiguration.current.screenHeightDp < SHORT_SCREEN_HEIGHT_DP
+    SideEffect { chrome.keyboardVisible = keyboardVisible }
 
     var tfv: TextFieldValue by remember(uiState.documentId) {
         val text = uiState.text ?: AnnotatedString("")
@@ -92,22 +108,43 @@ internal fun CodeEditorScreenContent(
         derivedStateOf { true }
     }
 
+    val onEditorValueChanged: (TextFieldValue) -> Unit = { value ->
+        if (value.text != tfv.text) chrome.onTextEdited()
+        onTextChanged(value)
+    }
+
     TabContentScaffold(
-        modifier = modifier,
+        // only the editor makes room for the keyboard, in sync with its animation: the
+        // formatting toolbar sits on top of the keyboard, the text fills what is left above
+        modifier = modifier.imePadding(),
         topBar = {
-            MkDocsEditorTopAppBar(
-                title = uiState.title,
-                actions = listOfNotNull(
-                    TopAppBarAction.CodeEditor.OnlineUsersAction(uiState.remotePeers)
-                        .takeIf { uiState.remotePeers.isNotEmpty() },
-                    TopAppBarAction.CodeEditor.PageReferencesAction,
-                    TopAppBarAction.CodeEditor.TogglePreviewAction(splitOrientation),
-                    TopAppBarAction.CodeEditor.ShowInBrowserAction
-                ),
-                onActionClicked = {
-                    onUiEvent(CodeEditorViewModel.UiEvent.TopAppBarActionClicked(it))
+            // the status bar area stays reserved, so the text does not jump under it
+            Column(
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .windowInsetsPadding(TopAppBarDefaults.windowInsets)
+            ) {
+                AnimatedVisibility(
+                    visible = chrome.topBarVisible,
+                    enter = expandVertically(expandFrom = Alignment.Top),
+                    exit = shrinkVertically(shrinkTowards = Alignment.Top),
+                ) {
+                    MkDocsEditorTopAppBar(
+                        title = uiState.title,
+                        actions = listOfNotNull(
+                            TopAppBarAction.CodeEditor.OnlineUsersAction(uiState.remotePeers)
+                                .takeIf { uiState.remotePeers.isNotEmpty() },
+                            TopAppBarAction.CodeEditor.PageReferencesAction,
+                            TopAppBarAction.CodeEditor.TogglePreviewAction(splitOrientation),
+                            TopAppBarAction.CodeEditor.ShowInBrowserAction
+                        ),
+                        onActionClicked = {
+                            onUiEvent(CodeEditorViewModel.UiEvent.TopAppBarActionClicked(it))
+                        },
+                        windowInsets = WindowInsets(0),
+                    )
                 }
-            )
+            }
         },
         bottomBar = {
             AnimatedVisibility(
@@ -116,7 +153,9 @@ internal fun CodeEditorScreenContent(
                 exit = slideOutVertically(targetOffsetY = { it }),
             ) {
                 CodeEditorBottomBar(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(if (keyboardVisible) Modifier.height(COMPACT_TOOLBAR_HEIGHT) else Modifier),
                     uiState = uiState,
                     onUiEvent = onUiEvent,
                 )
@@ -143,6 +182,7 @@ internal fun CodeEditorScreenContent(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
+                .observeDragDown { chrome.onDraggedDown() }
                 .onGloballyPositioned { layoutCoordinates ->
                     val width = layoutCoordinates.size.width
                     val height = layoutCoordinates.size.height
@@ -157,7 +197,7 @@ internal fun CodeEditorScreenContent(
                     VerticalSplit(
                         uiState = uiState,
                         tfv = tfv,
-                        onTextChanged = onTextChanged,
+                        onTextChanged = onEditorValueChanged,
                         onUiEvent = onUiEvent,
                         previewResourceLoader = previewResourceLoader,
                     )
@@ -167,7 +207,7 @@ internal fun CodeEditorScreenContent(
                     HorizontalSplit(
                         uiState = uiState,
                         tfv = tfv,
-                        onTextChanged = onTextChanged,
+                        onTextChanged = onEditorValueChanged,
                         onUiEvent = onUiEvent,
                         previewResourceLoader = previewResourceLoader,
                     )
@@ -288,6 +328,9 @@ internal fun HorizontalSplit(
         }
     }
 }
+
+private val COMPACT_TOOLBAR_HEIGHT = 56.dp
+private const val SHORT_SCREEN_HEIGHT_DP = 480
 
 enum class SplitOrientation {
     Vertical,
