@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.ui.activity
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.extensions.common.android.launch
@@ -46,7 +45,6 @@ internal sealed class UiEvent {}
 
 @HiltViewModel
 internal class MainViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
     private val getInitialTabUseCase: GetInitialTabUseCase,
     private val getCurrentBackendConfigFlowUseCase: GetCurrentBackendConfigFlowUseCase,
     private val mainNavigationRequests: MainNavigationRequests,

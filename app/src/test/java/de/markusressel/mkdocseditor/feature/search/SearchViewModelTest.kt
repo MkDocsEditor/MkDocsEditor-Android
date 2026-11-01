@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.search
 
+import androidx.lifecycle.SavedStateHandle
 import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.event.EventBusManager
 import de.markusressel.mkdocseditor.feature.search.data.RecentSearchStore
@@ -27,7 +28,9 @@ class SearchViewModelTest {
 
     private val eventBus = EventBusManager()
     private val keyValues = InMemoryKeyValues()
-    private val viewModel by lazy { SearchViewModel({ emptyList() }, eventBus, RecentSearchStore(keyValues)) }
+    private val viewModel by lazy {
+        SearchViewModel({ emptyList() }, eventBus, RecentSearchStore(keyValues), SavedStateHandle())
+    }
 
     @BeforeEach
     fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())

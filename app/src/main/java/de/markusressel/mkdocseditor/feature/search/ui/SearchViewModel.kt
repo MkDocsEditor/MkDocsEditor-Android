@@ -1,6 +1,8 @@
 package de.markusressel.mkdocseditor.feature.search.ui
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.serialization.saved
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.event.EventBusManager
@@ -25,6 +27,7 @@ internal class SearchViewModel(
     private val search: suspend (String) -> List<SearchResultItem>,
     private val eventBusManager: EventBusManager,
     private val recentSearchStore: RecentSearchStore,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     @Inject
@@ -32,12 +35,22 @@ internal class SearchViewModel(
         searchUseCase: SearchUseCase,
         eventBusManager: EventBusManager,
         recentSearchStore: RecentSearchStore,
-    ) : this(searchUseCase::invoke, eventBusManager, recentSearchStore)
+        savedStateHandle: SavedStateHandle,
+    ) : this(searchUseCase::invoke, eventBusManager, recentSearchStore, savedStateHandle)
 
     private val _events = Channel<UiAction>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
-    private val _uiState = MutableStateFlow(UiState(recentSearches = recentSearchStore.load()))
+    private var savedSearchFilter by savedStateHandle.saved { "" }
+
+    private val _uiState = MutableStateFlow(
+        UiState(
+            recentSearches = recentSearchStore.load(),
+            currentSearchFilter = savedSearchFilter,
+            // a restored search shows its results, not the recent searches
+            inputChanged = savedSearchFilter.isNotEmpty(),
+        )
+    )
     val uiState = _uiState.asStateFlow()
 
     init {
@@ -129,6 +142,7 @@ internal class SearchViewModel(
      */
     private fun setSearch(text: String): Boolean {
         return if (uiState.value.currentSearchFilter != text) {
+            savedSearchFilter = text
             _uiState.update { old ->
                 old.copy(
                     currentSearchFilter = text,

@@ -34,6 +34,7 @@ robolectric = "4.16"
 kotlin = "2.4.21"
 kotlinCoroutinesCore = "1.11.0"
 kotlinCoroutinesAndroid = "1.11.0"
+kotlinxSerialization = "1.11.0"
 ksp = "2.3.13"
 kutePreferences = "a7bcad2bae"
 lifecycleCommonJava8 = "2.10.0"
@@ -137,6 +138,7 @@ kotlin-stdlib-jdk8 = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinCoroutinesCore" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinCoroutinesAndroid" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinCoroutinesCore" }
+kotlinx-serialization-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
 
 ksp-gradle-plugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
 

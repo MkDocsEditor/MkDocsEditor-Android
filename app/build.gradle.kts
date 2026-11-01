@@ -9,6 +9,7 @@ plugins {
     id("mkdocseditor.android.hilt")
     id("com.mikepenz.aboutlibraries.plugin.android")
     id("com.google.devtools.ksp")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 extensions.configure<ApplicationExtension> {
@@ -76,6 +77,9 @@ dependencies {
     // Kotlin Coroutines
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
+
+    // Saved state of the ViewModels
+    implementation(libs.kotlinx.serialization.core)
 
     implementation(libs.kotlin.stdlib.jdk8)
 
