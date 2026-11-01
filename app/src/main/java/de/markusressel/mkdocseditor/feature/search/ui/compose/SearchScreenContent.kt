@@ -14,6 +14,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBar
+import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
@@ -72,22 +74,26 @@ internal fun SearchScreenContent(
         }
     }
 
+    // The input field gets its own modifier: with the old SearchBar overload a fillMaxSize
+    // modifier let the input field take the whole screen, which hid the results
     SearchBar(
-        modifier = Modifier
-            .fillMaxSize()
-            .focusRequester(focusRequester),
-        query = uiState.currentSearchFilter,
-        onQueryChange = { onUiEvent(UiEvent.SearchInputChanged(it)) },
-        onSearch = { onUiEvent(UiEvent.SearchRequested(it)) },
-        active = true,
-        onActiveChange = { searchActive ->
-            onUiEvent(
-                UiEvent.SearchExpandedChanged(
-                    searchActive
-                )
+        modifier = Modifier.fillMaxWidth(),
+        inputField = {
+            SearchBarDefaults.InputField(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester)
+                    .testTag("search-input"),
+                query = uiState.currentSearchFilter,
+                onQueryChange = { onUiEvent(UiEvent.SearchInputChanged(it)) },
+                onSearch = { onUiEvent(UiEvent.SearchRequested(it)) },
+                expanded = true,
+                onExpandedChange = { searchActive -> onUiEvent(UiEvent.SearchExpandedChanged(searchActive)) },
+                leadingIcon = leadingIcon,
             )
         },
-        leadingIcon = leadingIcon.takeIf { true },
+        expanded = true,
+        onExpandedChange = { searchActive -> onUiEvent(UiEvent.SearchExpandedChanged(searchActive)) },
     ) {
         LoadingOverlay(
             modifier = Modifier.fillMaxSize(),
