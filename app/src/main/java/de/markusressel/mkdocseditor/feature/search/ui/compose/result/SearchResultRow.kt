@@ -2,6 +2,7 @@ package de.markusressel.mkdocseditor.feature.search.ui.compose.result
 
 import android.text.format.DateUtils
 import android.text.format.Formatter
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,14 +23,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.IIcon
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.rememberEditorPalette
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.feature.search.domain.toSearchRegex
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
@@ -39,7 +42,6 @@ import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 import java.util.Date
 
 private const val EXCERPT_LIMIT = 2
-private const val HEADING_LENGTH_LIMIT = 24
 
 /**
  * A search result: what it is and its name, where it is, and for pages the lines that match
@@ -141,36 +143,48 @@ internal fun SearchResultRow(
                 }
             }
 
-            excerpts.take(EXCERPT_LIMIT).forEach { excerpt ->
-                Text(
-                    modifier = Modifier.padding(top = 2.dp),
-                    text = excerptText(excerpt),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+            excerpts.take(EXCERPT_LIMIT).forEach { excerpt -> Excerpt(excerpt) }
         }
     }
 }
 
+/**
+ * The heading as a label, and below it the line of the page, styled like code in the editor
+ * so it reads as a quote from the page
+ */
 @Composable
-private fun excerptText(excerpt: SearchResultItem.Document.ExcerptData): AnnotatedString {
-    val headingStyle = SpanStyle(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
+private fun Excerpt(excerpt: SearchResultItem.Document.ExcerptData) {
+    val palette = rememberEditorPalette()
     val highlightedText = highlighted(excerpt.text, excerpt.matches)
-    return buildAnnotatedString {
+    Column(
+        modifier = Modifier.padding(top = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
         excerpt.heading?.let { heading ->
-            withStyle(headingStyle) {
-                append(
-                    if (heading.length > HEADING_LENGTH_LIMIT) heading.take(HEADING_LENGTH_LIMIT).trimEnd() + "…" else heading
-                )
-            }
-            append(" · ")
+            Text(
+                text = heading,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
-        if (excerpt.truncatedStart) append("…")
-        append(highlightedText)
-        if (excerpt.truncatedEnd) append("…")
+        Text(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(palette.codeBackground, RoundedCornerShape(4.dp))
+                .padding(horizontal = 6.dp, vertical = 4.dp),
+            text = buildAnnotatedString {
+                if (excerpt.truncatedStart) append("…")
+                append(highlightedText)
+                if (excerpt.truncatedEnd) append("…")
+            },
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+            color = palette.text,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

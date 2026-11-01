@@ -81,7 +81,8 @@ class SearchScreenContentTest {
         composeRule.onNodeWithText("Versicherungen").assertIsDisplayed()
         composeRule.onNodeWithText("Wissen › Haushalt").assertIsDisplayed()
         composeRule.onNodeWithText("3 matches").assertIsDisplayed()
-        composeRule.onNodeWithText("Beiträge · Die Haftpflicht").assertIsDisplayed()
+        composeRule.onNodeWithText("Beiträge").assertIsDisplayed()
+        composeRule.onNodeWithText("Die Haftpflicht").assertIsDisplayed()
         composeRule.onNodeWithText("second line").assertIsDisplayed()
         composeRule.onNodeWithText("third line").assertDoesNotExist()
     }
