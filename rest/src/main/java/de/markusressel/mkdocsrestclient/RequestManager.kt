@@ -236,12 +236,13 @@ class RequestManager(
         url: String,
         method: Method,
         jsonData: K,
+        timeout: Int = DEFAULT_TIMEOUT,
     ): Result<T, FuelError> {
         return withContext(Dispatchers.IO) {
             val json = jsonData.toJson()
             val deserializer: Deserializable<T> = deserializer()
             val request =
-                createRequest(url = url, method = method)
+                createRequest(url = url, method = method, timeout = timeout)
                     .body(json)
                     .header(HEADER_CONTENT_TYPE_JSON)
             @Suppress("UNCHECKED_CAST")

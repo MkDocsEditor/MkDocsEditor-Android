@@ -23,7 +23,9 @@ import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHold
 import de.markusressel.mkdocsrestclient.DummyMkDocsRestClient
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import de.markusressel.mkdocsrestclient.MkDocsRestClient
+import de.markusressel.mkdocsrestclient.reference.ItemType
 import de.markusressel.mkdocsrestclient.sync.automerge.FileDocumentStore
+import de.markusressel.mkdocsrestclient.sync.automerge.LocalCopyRedirects
 import de.markusressel.mkdocsrestclient.sync.automerge.LocalDocumentStore
 import java.io.File
 import io.objectbox.BoxStore
@@ -90,6 +92,29 @@ class AppModule {
     @Singleton
     fun provideLocalDocumentStore(@ApplicationContext context: Context): LocalDocumentStore {
         return FileDocumentStore(File(context.filesDir, "automerge"))
+    }
+
+    /**
+     * Re-keys local copies of documents that moved on the server
+     */
+    @Provides
+    @Singleton
+    fun provideLocalCopyRedirects(store: LocalDocumentStore, restClient: IMkDocsRestClient): LocalCopyRedirects {
+        return LocalCopyRedirects(store) { oldId ->
+            restClient.getMoved(oldId).fold(
+                success = { moved ->
+                    if (moved.item.type == ItemType.DOCUMENT) {
+                        LocalCopyRedirects.Lookup.Moved(moved.item.id)
+                    } else {
+                        LocalCopyRedirects.Lookup.NotMoved
+                    }
+                },
+                failure = { error ->
+                    // 404: the id is current, or the document is gone (its copy stays)
+                    if (error.response.statusCode == 404) LocalCopyRedirects.Lookup.NotMoved else LocalCopyRedirects.Lookup.Unknown
+                },
+            )
+        }
     }
 
     @Provides

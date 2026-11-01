@@ -8,6 +8,12 @@ import de.markusressel.mkdocsrestclient.document.DocumentModel
 import de.markusressel.mkdocsrestclient.mkdocs.MkDocsConfigModel
 import de.markusressel.mkdocsrestclient.mkdocs.MkDocsConfigThemeModel
 import de.markusressel.mkdocsrestclient.mkdocs.MkDocsConfigThemePalette
+import de.markusressel.mkdocsrestclient.reference.BacklinksModel
+import de.markusressel.mkdocsrestclient.reference.DocumentReferencesModel
+import de.markusressel.mkdocsrestclient.reference.LinkResultModel
+import de.markusressel.mkdocsrestclient.reference.MoveRequestModel
+import de.markusressel.mkdocsrestclient.reference.MoveResultModel
+import de.markusressel.mkdocsrestclient.reference.MovedModel
 import de.markusressel.mkdocsrestclient.resource.ResourceModel
 import de.markusressel.mkdocsrestclient.section.SectionModel
 import java.util.Date
@@ -242,6 +248,21 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
 
     override fun enableLogging() {}
     override fun disableLogging() {}
+
+    override suspend fun getDocumentReferences(documentId: String): Result<DocumentReferencesModel, FuelError> =
+        Result.error(FuelError.wrap(UnsupportedOperationException("not in the demo")))
+
+    override suspend fun getBacklinks(type: String, id: String): Result<BacklinksModel, FuelError> =
+        Result.error(FuelError.wrap(UnsupportedOperationException("not in the demo")))
+
+    override suspend fun getLink(fromDocumentId: String, toId: String, anchor: String?): Result<LinkResultModel, FuelError> =
+        Result.error(FuelError.wrap(UnsupportedOperationException("not in the demo")))
+
+    override suspend fun move(request: MoveRequestModel): Result<MoveResultModel, FuelError> =
+        Result.error(FuelError.wrap(UnsupportedOperationException("not in the demo")))
+
+    override suspend fun getMoved(oldId: String): Result<MovedModel, FuelError> =
+        Result.error(FuelError.wrap(UnsupportedOperationException("not in the demo")))
 
     override suspend fun getMkDocsConfig(): Result<MkDocsConfigModel, FuelError> {
         return Result.success(

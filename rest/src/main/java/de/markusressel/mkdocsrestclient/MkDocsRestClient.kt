@@ -7,6 +7,8 @@ import de.markusressel.mkdocsrestclient.document.DocumentApi
 import de.markusressel.mkdocsrestclient.document.DocumentApiImpl
 import de.markusressel.mkdocsrestclient.mkdocs.MkDocsApi
 import de.markusressel.mkdocsrestclient.mkdocs.MkDocsApiImpl
+import de.markusressel.mkdocsrestclient.reference.ReferenceApi
+import de.markusressel.mkdocsrestclient.reference.ReferenceApiImpl
 import de.markusressel.mkdocsrestclient.resource.ResourceApi
 import de.markusressel.mkdocsrestclient.resource.ResourceApiImpl
 import de.markusressel.mkdocsrestclient.section.SectionApi
@@ -23,12 +25,14 @@ class MkDocsRestClient constructor(
     mkDocsApi: MkDocsApi = MkDocsApiImpl(requestManager),
     sectionApi: SectionApi = SectionApiImpl(requestManager),
     documentApi: DocumentApi = DocumentApiImpl(requestManager),
-    resourceApi: ResourceApi = ResourceApiImpl(requestManager)
+    resourceApi: ResourceApi = ResourceApiImpl(requestManager),
+    referenceApi: ReferenceApi = ReferenceApiImpl(requestManager),
 ) : IMkDocsRestClient,
     MkDocsApi by mkDocsApi,
     SectionApi by sectionApi,
     DocumentApi by documentApi,
-    ResourceApi by resourceApi {
+    ResourceApi by resourceApi,
+    ReferenceApi by referenceApi {
 
     override fun setHostname(hostname: String) {
         requestManager.hostname = hostname
