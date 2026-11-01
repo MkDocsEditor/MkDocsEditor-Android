@@ -10,9 +10,7 @@ import dagger.assisted.AssistedInject
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
-import de.markusressel.mkdocsrestclient.ErrorResult
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
-import de.markusressel.mkdocsrestclient.deserializer
 
 
 @HiltWorker
@@ -45,30 +43,17 @@ internal class OfflineSyncWorker @AssistedInject constructor(
 
         Timber.d { "Running background worker for updating offline cache of ${documentIds.size} documents..." }
         // use random order to evenly distribute probability of caching a document
-        documentIds.toSet().shuffled().forEach { documentId ->
-            restClient.getDocumentContent(documentId).fold(success = { text ->
-                try {
-                    documentContentPersistenceManager.insertOrUpdate(
-                        documentId = documentId,
-                        text = text
-                    )
-                    Timber.d { "Offline cache sync finished successfully for documentId: $documentId" }
-                } catch (e: Exception) {
-                    Timber.e(e) { "Offline cache sync error for documentId: $documentId (rescheduling)" }
-                }
-            }, failure = {
-                try {
-                    val errorResult = deserializer<ErrorResult>().deserialize(it.response)
-                    Timber.e { "Offline cache sync error for documentId: $documentId: ${errorResult.message} (rescheduling)" }
-                } catch (e: Exception) {
-                    Timber.e(e)
-                    Timber.e(it) { "Offline cache sync error for documentId: $documentId (rescheduling)" }
-                }
-            })
+        val completed = cacheDocuments(
+            documentIds = documentIds.toSet().shuffled(),
+            getContent = restClient::getDocumentContent,
+            store = { documentId, text ->
+                documentContentPersistenceManager.insertOrUpdate(documentId = documentId, text = text)
+            },
+        )
+        if (completed) {
+            Timber.d { "Offline cache sync job complete." }
+            preferencesHolder.lastOfflineCacheUpdate.updateToNow()
         }
-
-        Timber.d { "Offline cache sync job complete." }
-        preferencesHolder.lastOfflineCacheUpdate.updateToNow()
         return Result.success()
     }
 

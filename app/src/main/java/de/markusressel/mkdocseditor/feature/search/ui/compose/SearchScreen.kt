@@ -8,19 +8,9 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import de.markusressel.mkdocseditor.event.BusEvent
-import de.markusressel.mkdocseditor.event.EventBusManager
 import de.markusressel.mkdocseditor.feature.search.ui.SearchViewModel
-import javax.inject.Inject
 
-abstract class HiltScreen : Screen {
-
-    @field:Inject
-    internal lateinit var eventBusManager: EventBusManager
-
-}
-
-object SearchScreen : HiltScreen() {
+object SearchScreen : Screen {
 
     @Composable
     override fun Content() {
@@ -33,21 +23,6 @@ object SearchScreen : HiltScreen() {
                 when (event) {
                     is SearchViewModel.UiAction.NavigateBack -> {
                         navigator.pop()
-                    }
-
-                    is SearchViewModel.UiAction.NavigateToDocument -> {
-                        navigator.pop()
-                        eventBusManager.send(BusEvent.CodeEditorBusEvent.GoToDocument(event.documentId))
-                    }
-
-                    is SearchViewModel.UiAction.NavigateToResource -> {
-                        navigator.pop()
-                        eventBusManager.send(BusEvent.CodeEditorBusEvent.GoToResource(event.resourceId))
-                    }
-
-                    is SearchViewModel.UiAction.NavigateToSection -> {
-                        navigator.pop()
-                        eventBusManager.send(BusEvent.CodeEditorBusEvent.GoToSection(event.sectionId))
                     }
                 }
             }

@@ -1,8 +1,9 @@
 package de.markusressel.mkdocseditor.feature.search.ui
 
-import androidx.core.text.trimmedLength
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import de.markusressel.mkdocseditor.event.BusEvent
+import de.markusressel.mkdocseditor.event.EventBusManager
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.feature.search.domain.SearchUseCase
@@ -19,9 +20,16 @@ import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
 @HiltViewModel
-internal class SearchViewModel @Inject constructor(
-    private val searchUseCase: SearchUseCase
+internal class SearchViewModel(
+    private val search: suspend (String) -> List<SearchResultItem>,
+    private val eventBusManager: EventBusManager,
 ) : ViewModel() {
+
+    @Inject
+    constructor(
+        searchUseCase: SearchUseCase,
+        eventBusManager: EventBusManager,
+    ) : this(searchUseCase::invoke, eventBusManager)
 
     private val _events = Channel<UiAction>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
@@ -39,9 +47,7 @@ internal class SearchViewModel @Inject constructor(
                 }
             }.debounce(300).collectLatest { currentSearchFilter ->
                 val searchResults = when {
-                    currentSearchFilter.isSearchable() -> searchUseCase(
-                        currentSearchFilter
-                    )
+                    currentSearchFilter.isSearchable() -> search(currentSearchFilter)
 
                     else -> emptyList()
                 }
@@ -68,19 +74,14 @@ internal class SearchViewModel @Inject constructor(
     }
 
     private suspend fun onSearchResultClicked(searchResultItem: SearchResultItem) {
-        when (searchResultItem) {
-            is SearchResultItem.Section -> {
-                _events.send(UiAction.NavigateToSection(searchResultItem.sectionId))
+        _events.send(UiAction.NavigateBack)
+        eventBusManager.send(
+            when (searchResultItem) {
+                is SearchResultItem.Section -> BusEvent.CodeEditorBusEvent.GoToSection(searchResultItem.sectionId)
+                is SearchResultItem.Document -> BusEvent.CodeEditorBusEvent.GoToDocument(searchResultItem.documentId)
+                is SearchResultItem.Resource -> BusEvent.CodeEditorBusEvent.GoToResource(searchResultItem.resourceId)
             }
-
-            is SearchResultItem.Document -> {
-                _events.send(UiAction.NavigateToDocument(searchResultItem.documentId))
-            }
-
-            is SearchResultItem.Resource -> {
-                _events.send(UiAction.NavigateToResource(searchResultItem.resourceId))
-            }
-        }
+        )
     }
 
     private fun onSearchResultLongClicked(searchResultItem: SearchResultItem) {
@@ -142,9 +143,6 @@ internal class SearchViewModel @Inject constructor(
 
     sealed class UiAction {
         data object NavigateBack : UiAction()
-        data class NavigateToSection(val sectionId: String) : UiAction()
-        data class NavigateToDocument(val documentId: String) : UiAction()
-        data class NavigateToResource(val resourceId: String) : UiAction()
     }
 
     sealed class UiEvent {
@@ -159,6 +157,6 @@ internal class SearchViewModel @Inject constructor(
     companion object {
         const val MIN_SEARCH_LENGTH = 2
 
-        private fun String.isSearchable() = trimmedLength() >= MIN_SEARCH_LENGTH
+        private fun String.isSearchable() = trim().length >= MIN_SEARCH_LENGTH
     }
 }
