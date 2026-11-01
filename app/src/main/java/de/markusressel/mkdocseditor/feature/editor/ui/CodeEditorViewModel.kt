@@ -4,9 +4,7 @@ import android.net.Uri
 import de.markusressel.mkdocseditor.feature.editor.domain.TextPositions
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferences
 import de.markusressel.mkdocsrestclient.reference.ReferenceModel
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.runtime.State
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -96,7 +94,7 @@ internal class CodeEditorViewModel @Inject constructor(
         scope = viewModelScope,
         now = SystemClock::elapsedRealtime,
         editModeActive = { uiState.value.editModeActive },
-        onChanged = ::publishEditorText,
+        onChanged = ::publishPeers,
         onEdited = { saveEditorState() },
     )
 
@@ -252,15 +250,9 @@ internal class CodeEditorViewModel @Inject constructor(
         }
     }
 
-    private fun publishEditorText() {
-        val text = editorText.text
-        _uiState.update { old ->
-            old.copy(
-                text = if (old.text?.text == text) old.text else AnnotatedString(text),
-                selection = editorText.selection,
-                remotePeers = editorText.peers,
-            )
-        }
+    /** the text stays out of [uiState]: a new state for every keystroke recomposes the whole screen */
+    private fun publishPeers() {
+        _uiState.update { old -> old.copy(remotePeers = editorText.peers) }
     }
 
     /**
@@ -286,7 +278,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 }
 
                 is UiEvent.FormatClicked -> editorText.applyFormat(event.action)
-                is UiEvent.InsertLinkClicked -> showPicker(DialogState.LinkPicker(editorText.selectedText), FormatAction.Link)
+                is UiEvent.InsertLinkClicked -> showPicker(DialogState.LinkPicker(editorText.selectedText, editorText.text), FormatAction.Link)
                 is UiEvent.InsertImageClicked -> showPicker(DialogState.ResourcePicker(editorText.selectedText, imagesOnly = true), FormatAction.Image)
                 is UiEvent.InsertFileReferenceClicked -> showPicker(DialogState.ResourcePicker(editorText.selectedText, imagesOnly = false), null)
                 is UiEvent.InsertMarkdown -> {
@@ -469,8 +461,8 @@ internal class CodeEditorViewModel @Inject constructor(
     private fun saveEditorState(): Job = launch {
         dataRepository.saveEditorState(
             documentId = session.documentId.value!!,
-            text = uiState.value.text?.toString(),
-            selection = uiState.value.selection?.start ?: 0,
+            text = editorText.text,
+            selection = editorText.selection.start,
         )
     }
 
@@ -568,8 +560,6 @@ internal class CodeEditorViewModel @Inject constructor(
          */
         val editModeActive: Boolean = true,
 
-        val text: AnnotatedString? = null,
-        val selection: TextRange? = null,
 
         val isOfflineModeBannerVisible: Boolean = false,
         val isPreviewVisible: Boolean = false,
@@ -641,8 +631,11 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     sealed interface DialogState {
-        /** @param selection the selected text, which becomes the link text */
-        data class LinkPicker(val selection: String) : DialogState
+        /**
+         * @param selection the selected text, which becomes the link text
+         * @param documentText the text of the document when the picker opened, for its headings
+         */
+        data class LinkPicker(val selection: String, val documentText: String) : DialogState
 
         /**
          * @param selection the selected text, which becomes the alt text

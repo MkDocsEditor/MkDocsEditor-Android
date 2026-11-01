@@ -34,7 +34,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,10 +44,6 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.coerceIn
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
@@ -482,7 +477,6 @@ private fun CodeEditorScreenContentOfflinePreview() {
     MkDocsEditorTheme {
         CodeEditorScreenContent(
             uiState = CodeEditorViewModel.UiState(
-                text = buildAnnotatedString { append("# Hallo Welt!") },
                 isOfflineModeBannerVisible = true,
                 snackbar = SnackbarData.ConnectionFailed,
                 fabConfig = FabConfig(
@@ -503,7 +497,6 @@ private fun CodeEditorScreenContentOnlinePreview() {
     MkDocsEditorTheme {
         CodeEditorScreenContent(
             uiState = CodeEditorViewModel.UiState(
-                text = buildAnnotatedString { append("# Hallo Welt!") },
                 isOfflineModeBannerVisible = false,
                 fabConfig = FabConfig(
                     right = listOf(EnableEditModeFabConfig)
