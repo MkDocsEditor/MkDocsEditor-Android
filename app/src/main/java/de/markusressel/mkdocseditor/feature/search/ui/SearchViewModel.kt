@@ -5,6 +5,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.event.EventBusManager
 import de.markusressel.mkdocseditor.extensions.common.android.launch
+import de.markusressel.mkdocseditor.feature.search.data.RecentSearchStore
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.feature.search.domain.SearchUseCase
 import kotlinx.coroutines.channels.Channel
@@ -23,18 +24,20 @@ import javax.inject.Inject
 internal class SearchViewModel(
     private val search: suspend (String) -> List<SearchResultItem>,
     private val eventBusManager: EventBusManager,
+    private val recentSearchStore: RecentSearchStore,
 ) : ViewModel() {
 
     @Inject
     constructor(
         searchUseCase: SearchUseCase,
         eventBusManager: EventBusManager,
-    ) : this(searchUseCase::invoke, eventBusManager)
+        recentSearchStore: RecentSearchStore,
+    ) : this(searchUseCase::invoke, eventBusManager, recentSearchStore)
 
     private val _events = Channel<UiAction>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
-    private val _uiState = MutableStateFlow(UiState())
+    private val _uiState = MutableStateFlow(UiState(recentSearches = recentSearchStore.load()))
     val uiState = _uiState.asStateFlow()
 
     init {
@@ -43,7 +46,7 @@ internal class SearchViewModel(
                 it.currentSearchFilter
             }.distinctUntilChanged().onEach {
                 _uiState.update { old ->
-                    old.copy(isLoading = true)
+                    old.copy(isLoading = it.isSearchable())
                 }
             }.debounce(300).collectLatest { currentSearchFilter ->
                 val searchResults = when {
@@ -67,6 +70,7 @@ internal class SearchViewModel(
                 is UiEvent.SearchInputChanged -> setSearch(event.searchFilter)
                 is UiEvent.SearchExpandedChanged -> onSearchExpandedChanged(event.isSearchExpanded)
                 is UiEvent.SearchRequested -> onSearchRequested(event.searchFilter)
+                is UiEvent.RecentSearchClicked -> onSearchRequested(event.term)
                 is UiEvent.SearchResultClicked -> onSearchResultClicked(event.searchResultItem)
                 is UiEvent.SearchResultLongClicked -> onSearchResultLongClicked(event.searchResultItem)
             }
@@ -74,6 +78,7 @@ internal class SearchViewModel(
     }
 
     private suspend fun onSearchResultClicked(searchResultItem: SearchResultItem) {
+        rememberSearch(uiState.value.currentSearchFilter)
         when (searchResultItem) {
             is SearchResultItem.Section -> {
                 _events.send(UiAction.NavigateBack)
@@ -127,6 +132,7 @@ internal class SearchViewModel(
             _uiState.update { old ->
                 old.copy(
                     currentSearchFilter = text,
+                    inputChanged = true,
                 )
             }
             true
@@ -140,13 +146,25 @@ internal class SearchViewModel(
 
     private fun onSearchRequested(query: String) {
         setSearch(query)
+        rememberSearch(query)
+    }
+
+    /** a search counts when it was submitted or led somewhere, not for every typed character */
+    private fun rememberSearch(term: String) {
+        if (!term.isSearchable()) return
+        val terms = recentSearchStore.remember(term)
+        _uiState.update { old -> old.copy(recentSearches = terms) }
     }
 
     data class UiState(
         val isLoading: Boolean = false,
         val currentSearchFilter: String = "",
         val currentSearchResults: List<SearchResultItem> = emptyList(),
+        val recentSearches: List<String> = emptyList(),
+        /** true once the input was changed, the recent searches are only offered before that */
+        val inputChanged: Boolean = false,
     ) {
+        val showRecentSearches: Boolean get() = !inputChanged && recentSearches.isNotEmpty()
         val isInputTooShort: Boolean get() = !currentSearchFilter.isSearchable()
     }
 
@@ -158,6 +176,7 @@ internal class SearchViewModel(
     sealed class UiEvent {
         data class SearchInputChanged(val searchFilter: String) : UiEvent()
         data class SearchRequested(val searchFilter: String) : UiEvent()
+        data class RecentSearchClicked(val term: String) : UiEvent()
         data class SearchExpandedChanged(val isSearchExpanded: Boolean) : UiEvent()
 
         data class SearchResultClicked(val searchResultItem: SearchResultItem) : UiEvent()

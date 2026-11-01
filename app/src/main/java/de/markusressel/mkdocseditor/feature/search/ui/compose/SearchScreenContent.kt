@@ -101,27 +101,39 @@ internal fun SearchScreenContent(
             Column {
                 Text(
                     modifier = Modifier.padding(8.dp),
-                    text = if (uiState.isInputTooShort) {
-                        stringResource(R.string.search_input_too_short, SearchViewModel.MIN_SEARCH_LENGTH)
-                    } else {
-                        stringResource(
+                    text = when {
+                        uiState.showRecentSearches -> stringResource(R.string.search_recent_header)
+                        uiState.isInputTooShort -> stringResource(
+                            R.string.search_input_too_short,
+                            SearchViewModel.MIN_SEARCH_LENGTH
+                        )
+
+                        else -> stringResource(
                             R.string.search_result_count_header,
                             uiState.currentSearchResults.size
                         )
                     }
                 )
 
-                SearchResultList(
-                    modifier = Modifier.fillMaxWidth(),
-                    searchTerm = uiState.currentSearchFilter,
-                    items = uiState.currentSearchResults,
-                    onItemClicked = {
-                        onUiEvent(UiEvent.SearchResultClicked(it))
-                    },
-                    onItemLongClicked = {
-                        onUiEvent(UiEvent.SearchResultLongClicked(it))
-                    },
-                )
+                if (uiState.showRecentSearches) {
+                    RecentSearchList(
+                        modifier = Modifier.fillMaxWidth(),
+                        terms = uiState.recentSearches,
+                        onTermClicked = { onUiEvent(UiEvent.RecentSearchClicked(it)) },
+                    )
+                } else {
+                    SearchResultList(
+                        modifier = Modifier.fillMaxWidth(),
+                        searchTerm = uiState.currentSearchFilter,
+                        items = uiState.currentSearchResults,
+                        onItemClicked = {
+                            onUiEvent(UiEvent.SearchResultClicked(it))
+                        },
+                        onItemLongClicked = {
+                            onUiEvent(UiEvent.SearchResultLongClicked(it))
+                        },
+                    )
+                }
             }
         }
     }

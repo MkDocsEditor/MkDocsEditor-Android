@@ -107,6 +107,21 @@ class SearchScreenContentTest {
     }
 
     @Test
+    fun `an untouched input shows the recent searches, tapping one searches for it`() {
+        show(SearchViewModel.UiState(recentSearches = listOf("haftpflicht", "rezept")))
+        composeRule.onNodeWithText("Recent searches").assertIsDisplayed()
+        composeRule.onNodeWithText("rezept").performClick()
+        assertEquals(SearchViewModel.UiEvent.RecentSearchClicked("rezept"), events.last())
+    }
+
+    @Test
+    fun `without recent searches an empty input asks for more`() {
+        show(SearchViewModel.UiState())
+        composeRule.onNodeWithText("Type at least 2 characters to search").assertIsDisplayed()
+        composeRule.onNodeWithText("Recent searches").assertDoesNotExist()
+    }
+
+    @Test
     fun `typing changes the search`() {
         show(SearchViewModel.UiState())
         composeRule.onNode(hasSetTextAction()).performTextInput("Kü")
