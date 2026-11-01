@@ -23,7 +23,8 @@ import androidx.compose.ui.window.DialogProperties
 import de.markusressel.mkdocseditor.R
 
 /**
- * A full screen dialog with a title, a close button and tabs, for the pickers
+ * A full screen dialog with a title, a close button and tabs (none when [tabs] is empty), for
+ * the pickers and the move dialog
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,14 +56,16 @@ internal fun PickerScaffold(
             },
         ) { padding ->
             Column(modifier = Modifier.padding(padding)) {
-                TabRow(selectedTabIndex = tabs.indexOfFirst { it.first == selectedTab }.coerceAtLeast(0)) {
-                    tabs.forEach { (id, label) ->
-                        Tab(
-                            selected = id == selectedTab,
-                            onClick = { onTabSelected(id) },
-                            text = { Text(label) },
-                            modifier = Modifier.testTag("tab-$id"),
-                        )
+                if (tabs.isNotEmpty()) {
+                    TabRow(selectedTabIndex = tabs.indexOfFirst { it.first == selectedTab }.coerceAtLeast(0)) {
+                        tabs.forEach { (id, label) ->
+                            Tab(
+                                selected = id == selectedTab,
+                                onClick = { onTabSelected(id) },
+                                text = { Text(label) },
+                                modifier = Modifier.testTag("tab-$id"),
+                            )
+                        }
                     }
                 }
                 content()
