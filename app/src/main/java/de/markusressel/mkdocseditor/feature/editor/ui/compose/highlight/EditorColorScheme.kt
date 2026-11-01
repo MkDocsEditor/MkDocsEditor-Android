@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -16,26 +17,31 @@ class EditorColorScheme(private val palette: EditorPalette) : ColorScheme<SpanSt
     private val styles: Map<LanguageRule, SpanStyle> = with(palette) {
         mapOf(
             MarkdownRules.Heading to SpanStyle(color = heading, fontWeight = FontWeight.Bold),
-            MarkdownRules.ListMarker to SpanStyle(color = heading, fontWeight = FontWeight.Bold),
-            MarkdownRules.HorizontalRule to SpanStyle(color = heading),
-            MarkdownRules.Quote to SpanStyle(color = quote, fontStyle = FontStyle.Italic),
-            MarkdownRules.Italic to SpanStyle(color = emphasis, fontStyle = FontStyle.Italic),
-            MarkdownRules.Bold to SpanStyle(color = emphasis, fontWeight = FontWeight.Bold),
-            MarkdownRules.Strikethrough to SpanStyle(color = quote, textDecoration = TextDecoration.LineThrough),
-            MarkdownRules.Html to SpanStyle(color = html),
-            MarkdownRules.Admonition to SpanStyle(color = meta, fontWeight = FontWeight.Bold),
-            MarkdownRules.TaskBox to SpanStyle(color = meta, fontWeight = FontWeight.Bold),
-            MarkdownRules.FrontMatter to SpanStyle(color = meta),
-            MarkdownRules.Link to SpanStyle(color = link, fontWeight = FontWeight.Normal, fontStyle = FontStyle.Normal),
-            MarkdownRules.Image to SpanStyle(color = image, fontWeight = FontWeight.Normal, fontStyle = FontStyle.Normal),
+            MarkdownRules.ListMarker to SpanStyle(color = keyword, fontWeight = FontWeight.Bold),
+            MarkdownRules.HorizontalRule to SpanStyle(color = comment, fontWeight = FontWeight.Bold),
+            MarkdownRules.Quote to SpanStyle(color = comment, fontStyle = FontStyle.Italic),
+            MarkdownRules.QuoteMarker to SpanStyle(color = keyword, fontWeight = FontWeight.Bold, fontStyle = FontStyle.Normal),
+            MarkdownRules.Italic to SpanStyle(fontStyle = FontStyle.Italic),
+            MarkdownRules.Bold to SpanStyle(fontWeight = FontWeight.Bold),
+            MarkdownRules.Strikethrough to SpanStyle(textDecoration = TextDecoration.LineThrough),
+            MarkdownRules.HtmlTag to SpanStyle(color = tag),
+            MarkdownRules.HtmlAttribute to SpanStyle(color = attribute),
+            MarkdownRules.HtmlAttributeValue to SpanStyle(color = string),
+            MarkdownRules.HtmlComment to SpanStyle(color = comment, fontStyle = FontStyle.Italic),
+            MarkdownRules.Admonition to SpanStyle(color = annotation, fontWeight = FontWeight.Bold),
+            MarkdownRules.TaskBox to SpanStyle(color = keyword, fontWeight = FontWeight.Bold),
+            MarkdownRules.FrontMatter to SpanStyle(color = annotation),
+            MarkdownRules.LinkText to SpanStyle(color = link),
+            MarkdownRules.Url to SpanStyle(color = url, textDecoration = TextDecoration.Underline),
             // code resets everything else, markdown inside code is plain text
-            MarkdownRules.InlineCode to codeStyle(),
-            MarkdownRules.FencedCode to codeStyle(),
+            MarkdownRules.InlineCode to codeStyle(string),
+            MarkdownRules.FencedCode to codeStyle(text),
+            MarkdownRules.FenceLine to SpanStyle(color = comment),
         )
     }
 
-    private fun codeStyle() = SpanStyle(
-        color = palette.code,
+    private fun codeStyle(color: Color) = SpanStyle(
+        color = color,
         background = palette.codeBackground,
         fontWeight = FontWeight.Normal,
         fontStyle = FontStyle.Normal,

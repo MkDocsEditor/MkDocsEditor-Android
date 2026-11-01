@@ -21,17 +21,22 @@ class MkDocsMarkdownRuleBook : LanguageRuleBook {
             MarkdownRules.ListMarker,
             MarkdownRules.HorizontalRule,
             MarkdownRules.Quote,
+            MarkdownRules.QuoteMarker,
             MarkdownRules.Italic,
             MarkdownRules.Bold,
             MarkdownRules.Strikethrough,
-            MarkdownRules.Html,
+            MarkdownRules.HtmlTag,
+            MarkdownRules.HtmlAttribute,
+            MarkdownRules.HtmlAttributeValue,
+            MarkdownRules.HtmlComment,
             MarkdownRules.Admonition,
             MarkdownRules.TaskBox,
             MarkdownRules.FrontMatter,
-            MarkdownRules.Link,
-            MarkdownRules.Image,
+            MarkdownRules.LinkText,
+            MarkdownRules.Url,
             MarkdownRules.InlineCode,
             MarkdownRules.FencedCode,
+            MarkdownRules.FenceLine,
         )
     }
 }
@@ -54,6 +59,9 @@ object MarkdownRules {
 
     val Quote: LanguageRule = RegexRule("(?m)^[ \\t]*>.*$".toRegex())
 
+    /** the `>` of a quote, also nested ones */
+    val QuoteMarker: LanguageRule = InsideRule("(?m)^[ \\t]*(?:>[ \\t]?)+".toRegex(), ">".toRegex())
+
     val Bold: LanguageRule = RegexRule(
         "\\*\\*(?![\\s*])(?:.+?)(?<![\\s*])\\*\\*".toRegex(),
         "(?<![\\w_])__(?![\\s_])(?:.+?)(?<![\\s_])__(?![\\w_])".toRegex(),
@@ -66,10 +74,18 @@ object MarkdownRules {
 
     val Strikethrough: LanguageRule = RegexRule("~~(?!\\s)(?:[^~\\n]+?)(?<!\\s)~~".toRegex())
 
-    val Html: LanguageRule = RegexRule(
-        "<!--[\\s\\S]*?(?:-->|\\z)".toRegex(),
-        "</?[A-Za-z][A-Za-z0-9-]*(?:\\s[^<>\\n]*)?/?>".toRegex(),
-    )
+    private val htmlTag = "</?[A-Za-z][A-Za-z0-9-]*(?:\\s[^<>\\n]*)?/?>".toRegex()
+    private val htmlAttribute = "(?<=\\s)[A-Za-z_:][\\w:.-]*(?=\\s*=|\\s|/?>)".toRegex()
+    private val htmlAttributeValue = "(?<==)\\s*(?:\"[^\"]*\"|'[^']*'|[^\\s\"'=<>`]+)".toRegex()
+
+    /** HTML tags; the attributes inside get their own colors */
+    val HtmlTag: LanguageRule = RegexRule(htmlTag)
+
+    val HtmlAttribute: LanguageRule = InsideRule(htmlTag, htmlAttribute)
+
+    val HtmlAttributeValue: LanguageRule = InsideRule(htmlTag, htmlAttributeValue)
+
+    val HtmlComment: LanguageRule = RegexRule("<!--[\\s\\S]*?(?:-->|\\z)".toRegex())
 
     /** `!!! note "Title"`, `??? tip` and `???+ warning` */
     val Admonition: LanguageRule = RegexRule("(?m)^[ \\t]*(?:!!!|\\?\\?\\?\\+?)[ \\t]+\\S.*$".toRegex())
@@ -80,12 +96,34 @@ object MarkdownRules {
     /** a YAML front matter block at the start of the document */
     val FrontMatter: LanguageRule = RegexRule("\\A---\\r?\\n[\\s\\S]*?\\r?\\n(?:---|\\.\\.\\.)(?=\\r?\\n|\\z)".toRegex())
 
-    val Link: LanguageRule = RegexRule(
-        "(?<!!)\\[[^\\]\\n]*]\\([^)\\n]*\\)".toRegex(),
-        "<(?:https?|mailto):[^>\\s]+>".toRegex(),
-    )
+    private val inlineLink = "(!?\\[[^\\]\\n]*])(\\([^)\\n]*\\))".toRegex()
 
-    val Image: LanguageRule = RegexRule("!\\[[^\\]\\n]*]\\([^)\\n]*\\)".toRegex())
+    /** the text of links and images: `[text]` and `![alt]` */
+    val LinkText: LanguageRule = GroupRule(inlineLink, 1)
+
+    /** link targets `(target)`, autolinks `<https://...>` and bare URLs */
+    val Url: LanguageRule = object : LanguageRule {
+        private val autolink = "<(?:https?|mailto):[^>\\s]+>".toRegex()
+        private val bareUrl = "(?<![(<\\w])https?://[^\\s<>()\\[\\]]+[^\\s<>()\\[\\].,:;!?\"']".toRegex()
+        override fun findMatches(text: CharSequence): List<RuleMatch> =
+            GroupRule(inlineLink, 2).findMatches(text) +
+                RuleHelper.findRegexMatches(text, autolink) +
+                RuleHelper.findRegexMatches(text, bareUrl)
+    }
+
+    /** matches of [inner] inside the matches of [outer] */
+    private class InsideRule(private val outer: Regex, private val inner: Regex) : LanguageRule {
+        override fun findMatches(text: CharSequence): List<RuleMatch> = outer.findAll(text).flatMap { o ->
+            inner.findAll(o.value).map { RuleMatch(o.range.first + it.range.first, o.range.first + it.range.last + 1) }
+        }.toList()
+    }
+
+    /** the given group of every match of [regex] */
+    private class GroupRule(private val regex: Regex, private val group: Int) : LanguageRule {
+        override fun findMatches(text: CharSequence): List<RuleMatch> = regex.findAll(text).mapNotNull { match ->
+            match.groups[group]?.range?.let { RuleMatch(it.first, it.last + 1) }
+        }.toList()
+    }
 
     val InlineCode: LanguageRule = RegexRule("(`+)(?!`)[^\\n]*?(?<!`)\\1(?!`)".toRegex())
 
@@ -96,6 +134,21 @@ object MarkdownRules {
      */
     val FencedCode: LanguageRule = object : LanguageRule {
         override fun findMatches(text: CharSequence): List<RuleMatch> = findFencedCodeBlocks(text)
+    }
+
+    /** the opening and closing lines of fenced code blocks */
+    val FenceLine: LanguageRule = object : LanguageRule {
+        override fun findMatches(text: CharSequence): List<RuleMatch> = findFencedCodeBlocks(text).flatMap { block ->
+            val firstLineEnd = text.indexOf('\n', block.startIndex).let { if (it < 0 || it > block.endIndex) block.endIndex else it }
+            val lastLineStart = text.lastIndexOf('\n', block.endIndex - 1).let { if (it < block.startIndex) block.startIndex else it + 1 }
+            val closed = lastLineStart > block.startIndex && text.subSequence(lastLineStart, block.endIndex).trim().let {
+                it.length >= 3 && (it.all { c -> c == '`' } || it.all { c -> c == '~' })
+            }
+            listOfNotNull(
+                RuleMatch(block.startIndex, firstLineEnd),
+                RuleMatch(lastLineStart, block.endIndex).takeIf { closed },
+            )
+        }
     }
 
     private val openingFence = "^[ \\t]*(`{3,}|~{3,})".toRegex()
@@ -133,6 +186,13 @@ object MarkdownRules {
 
     private fun CharSequence.indexOf(char: Char, startIndex: Int): Int {
         for (i in startIndex until length) {
+            if (this[i] == char) return i
+        }
+        return -1
+    }
+
+    private fun CharSequence.lastIndexOf(char: Char, startIndex: Int): Int {
+        for (i in startIndex.coerceAtMost(length - 1) downTo 0) {
             if (this[i] == char) return i
         }
         return -1

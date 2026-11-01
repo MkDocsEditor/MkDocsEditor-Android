@@ -7,92 +7,119 @@ import kotlin.math.pow
 /**
  * The colors of the markdown editor and of code in the preview.
  *
- * The values are our own, inspired by the IntelliJ themes: Darcula and the New UI "Dark" theme
- * for [Dark], "IntelliJ Light" for [Light]. The web client uses the same palette, so both
- * clients look alike. Every text color has a contrast of at least 4.5:1 (WCAG AA) against
- * [background] and [codeBackground], see `EditorPaletteTest`.
- *
- * Code tokens in the preview reuse the markdown colors:
- * keyword = [heading], string = [code], number = [image], function = [link],
- * attribute and variable = [emphasis], type and tag = [html], comment = [quote].
+ * Inspired by the IntelliJ themes ("IntelliJ Light", and the dark New UI / Darcula look), with
+ * own values tuned for WCAG AA. The web client uses the same palette (`src/plugins/codeColors.ts`
+ * of MkDocsEditor-Web), so both clients look alike; keep them in sync. Every text color has a
+ * contrast of at least 4.5:1 against [background] and [codeBackground], see `EditorPaletteTest`.
  */
 data class EditorPalette(
-    /** the background of the editor and the preview */
+    /** the background of the editor and the preview (the app's surface) */
     val background: Color,
     /** the background of inline code and code blocks */
     val codeBackground: Color,
-    /** plain text */
-    val text: Color,
-    /** headings, list markers, horizontal rules; keywords in code */
-    val heading: Color,
-    /** bold and italic text; attributes and variables in code */
-    val emphasis: Color,
-    /** links; functions in code */
-    val link: Color,
-    /** images; numbers in code */
-    val image: Color,
-    /** inline code and code blocks; strings in code */
-    val code: Color,
-    /** block quotes and strikethrough; comments in code */
-    val quote: Color,
-    /** HTML tags; types and tags in code */
-    val html: Color,
-    /** admonitions, task list boxes, front matter; meta data in code */
-    val meta: Color,
-    /** the line numbers */
-    val lineNumber: Color,
     /** the background of the own text selection */
     val selection: Color,
-    /** the cursor */
-    val cursor: Color,
+    /** the line numbers */
+    val lineNumber: Color,
+
+    /** plain text */
+    val text: Color,
+    /** comments, quotes, horizontal rules and fence lines */
+    val comment: Color,
+    /** keywords; list and quote markers, task boxes */
+    val keyword: Color,
+    /** strings; inline code, attribute values */
+    val string: Color,
+    val number: Color,
+    /** function and method names */
+    val function: Color,
+    /** properties, keys and variables */
+    val property: Color,
+    /** built-in types and constants */
+    val constant: Color,
+    /** annotations, decorators, admonition markers, front matter */
+    val annotation: Color,
+    /** HTML and XML tag names */
+    val tag: Color,
+    /** HTML and XML attribute names */
+    val attribute: Color,
+    /** markdown headings */
+    val heading: Color,
+    /** markdown link text */
+    val link: Color,
+    /** URLs and link targets */
+    val url: Color,
+    /** diff: added and removed lines */
+    val inserted: Color,
+    val deleted: Color,
 ) {
     /** all colors that are used for text, by name */
     val textColors: Map<String, Color>
         get() = mapOf(
+            "lineNumber" to lineNumber,
             "text" to text,
+            "comment" to comment,
+            "keyword" to keyword,
+            "string" to string,
+            "number" to number,
+            "function" to function,
+            "property" to property,
+            "constant" to constant,
+            "annotation" to annotation,
+            "tag" to tag,
+            "attribute" to attribute,
             "heading" to heading,
-            "emphasis" to emphasis,
             "link" to link,
-            "image" to image,
-            "code" to code,
-            "quote" to quote,
-            "html" to html,
-            "meta" to meta,
+            "url" to url,
+            "inserted" to inserted,
+            "deleted" to deleted,
         )
 
     companion object {
-        val Dark = EditorPalette(
-            background = Color(0xFF1A1C18),
-            codeBackground = Color(0xFF24271F),
-            text = Color(0xFFCBCEC5),
-            heading = Color(0xFFE8A06E),
-            emphasis = Color(0xFFD59AD8),
-            link = Color(0xFF6CB2F7),
-            image = Color(0xFF4EC3C9),
-            code = Color(0xFF8BC890),
-            quote = Color(0xFF9AA094),
-            html = Color(0xFFE4C070),
-            meta = Color(0xFFB9BF5E),
-            lineNumber = Color(0xFF878D81),
-            selection = Color(0xFF2E4560),
-            cursor = Color(0xFFE3E3DC),
-        )
-
         val Light = EditorPalette(
             background = Color(0xFFFDFDF5),
-            codeBackground = Color(0xFFEEF0E5),
+            codeBackground = Color(0xFFF2F3EA),
+            selection = Color(0xFFC8DEF9),
+            lineNumber = Color(0xFF6B6F66),
             text = Color(0xFF1A1C18),
-            heading = Color(0xFFA3450C),
-            emphasis = Color(0xFF86218C),
-            link = Color(0xFF1A55C4),
-            image = Color(0xFF00727C),
-            code = Color(0xFF276F2E),
-            quote = Color(0xFF5B6155),
-            html = Color(0xFF7A5A00),
-            meta = Color(0xFF5E6600),
-            lineNumber = Color(0xFF666B60),
-            selection = Color(0xFFCCDDF5),
-            cursor = Color(0xFF1A1C18),
+            comment = Color(0xFF676B62),
+            keyword = Color(0xFF2340A8),
+            string = Color(0xFF1A7A2D),
+            number = Color(0xFF1259C3),
+            function = Color(0xFF00657D),
+            property = Color(0xFF8A1F96),
+            constant = Color(0xFF7B3AB0),
+            annotation = Color(0xFF776500),
+            tag = Color(0xFF2340A8),
+            attribute = Color(0xFF1F5BC8),
+            heading = Color(0xFF2340A8),
+            link = Color(0xFF1D4FC4),
+            url = Color(0xFF1A7A2D),
+            inserted = Color(0xFF1A7A2D),
+            deleted = Color(0xFFB3261E),
+        )
+
+        val Dark = EditorPalette(
+            background = Color(0xFF1A1C18),
+            codeBackground = Color(0xFF252722),
+            selection = Color(0xFF263B57),
+            lineNumber = Color(0xFF8A8F85),
+            text = Color(0xFFE3E3DC),
+            comment = Color(0xFF8F948C),
+            keyword = Color(0xFFD4895A),
+            string = Color(0xFF79B46F),
+            number = Color(0xFF33B0C0),
+            function = Color(0xFF5AA9F0),
+            property = Color(0xFFC98BC6),
+            constant = Color(0xFFB39DDB),
+            annotation = Color(0xFFBDB76A),
+            tag = Color(0xFFD6B974),
+            attribute = Color(0xFFB0BCC8),
+            heading = Color(0xFFE8A36A),
+            link = Color(0xFF6FB2F2),
+            url = Color(0xFF79B46F),
+            inserted = Color(0xFF79B46F),
+            deleted = Color(0xFFEF7F7A),
         )
 
         fun forDarkTheme(dark: Boolean) = if (dark) Dark else Light

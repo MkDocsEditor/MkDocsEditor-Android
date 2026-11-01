@@ -35,12 +35,20 @@ class EditorPaletteTest {
     }
 
     @Test
-    fun `line numbers and selected text meet WCAG AA`() {
+    fun `selected text meets WCAG AA`() {
         palettes.forEach { (name, palette) ->
-            assertTrue(contrastRatio(palette.lineNumber, palette.background) >= 4.5, "$name line numbers")
             assertTrue(contrastRatio(palette.text, palette.selection) >= 4.5, "$name selected text")
-            assertTrue(contrastRatio(palette.cursor, palette.background) >= 4.5, "$name cursor")
         }
+    }
+
+    @Test
+    fun `the palette matches the web client`() {
+        // src/plugins/codeColors.ts of MkDocsEditor-Web; change both together
+        assertEquals("#2340A8", EditorPalette.Light.keyword.toHex())
+        assertEquals("#F2F3EA", EditorPalette.Light.codeBackground.toHex())
+        assertEquals("#D4895A", EditorPalette.Dark.keyword.toHex())
+        assertEquals("#252722", EditorPalette.Dark.codeBackground.toHex())
+        assertEquals("#E8A36A", EditorPalette.Dark.heading.toHex())
     }
 
     @Test
@@ -51,8 +59,8 @@ class EditorPaletteTest {
     @Test
     fun `preview css uses the palette`() {
         val css = previewCodeCss(EditorPalette.Dark)
-        assertTrue(css.contains("background: #24271F"))
+        assertTrue(css.contains("background: #252722"))
         assertTrue(css.contains(".hljs-keyword"))
-        assertTrue(css.contains("#E8A06E"))
+        assertTrue(css.contains("#D4895A"))
     }
 }

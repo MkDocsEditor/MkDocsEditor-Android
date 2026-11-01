@@ -50,7 +50,7 @@ internal fun CodeEditorLayout(
                 lineNumberBackgroundColor = palette.background,
                 textFieldColors = KodeTextFieldDefaults.textFieldColors(
                     textColor = palette.text,
-                    cursorColor = palette.cursor,
+                    cursorColor = MaterialTheme.colorScheme.primary,
                 )
             ),
             textStyle = TextStyle(

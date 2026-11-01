@@ -29,19 +29,24 @@ class MkDocsMarkdownRuleBookTest {
     }
 
     @Test
-    fun `links images and autolinks`() {
-        val text = "[a](b.md) ![img](x.png) <https://example.com>"
-        assertEquals(listOf("[a](b.md)", "<https://example.com>"), MarkdownRules.Link.matched(text))
-        assertEquals(listOf("![img](x.png)"), MarkdownRules.Image.matched(text))
+    fun `links images and urls`() {
+        val text = "[a](b.md) ![img](x.png) <https://example.com> see https://x.org/p."
+        assertEquals(listOf("[a]", "![img]"), MarkdownRules.LinkText.matched(text))
+        assertEquals(
+            listOf("(b.md)", "(x.png)", "<https://example.com>", "https://x.org/p"),
+            MarkdownRules.Url.matched(text),
+        )
     }
 
     @Test
     fun `quotes html admonitions task boxes`() {
         assertEquals(listOf("> quote"), MarkdownRules.Quote.matched("> quote\nnot"))
-        assertEquals(
-            setOf("<b>", "</b>", "<!-- c -->"),
-            MarkdownRules.Html.matched("<b>x</b> <!-- c --> a < b").toSet(),
-        )
+        assertEquals(listOf(">", ">", ">"), MarkdownRules.QuoteMarker.matched("> a\n> > b\nc > d"))
+        val html = "<b>x</b> <!-- c --> a < b <img src=\"a.png\" width=100 hidden>"
+        assertEquals(listOf("<b>", "</b>", "<img src=\"a.png\" width=100 hidden>"), MarkdownRules.HtmlTag.matched(html))
+        assertEquals(listOf("src", "width", "hidden"), MarkdownRules.HtmlAttribute.matched(html))
+        assertEquals(listOf("\"a.png\"", "100"), MarkdownRules.HtmlAttributeValue.matched(html))
+        assertEquals(listOf("<!-- c -->"), MarkdownRules.HtmlComment.matched(html))
         assertEquals(
             listOf("!!! note \"Title\"", "???+ tip"),
             MarkdownRules.Admonition.matched("!!! note \"Title\"\n    body\n???+ tip\n!!!"),
@@ -77,6 +82,14 @@ class MkDocsMarkdownRuleBookTest {
     }
 
     @Test
+    fun `fence lines are the opening and closing lines`() {
+        assertEquals(
+            listOf("```python", "```", "~~~"),
+            MarkdownRules.FenceLine.matched("```python\nx\n```\n~~~\nopen"),
+        )
+    }
+
+    @Test
     fun `an unclosed fence runs to the end`() {
         assertEquals(listOf("```\ncode\nmore"), MarkdownRules.FencedCode.matched("text\n```\ncode\nmore"))
     }
@@ -89,7 +102,7 @@ class MkDocsMarkdownRuleBookTest {
     @Test
     fun `code comes last so it wins over markdown inside it`() {
         val rules = MkDocsMarkdownRuleBook().getRules()
-        assertEquals(MarkdownRules.FencedCode, rules.last())
+        assertEquals(listOf(MarkdownRules.FencedCode, MarkdownRules.FenceLine), rules.takeLast(2))
         assertTrue(rules.indexOf(MarkdownRules.InlineCode) > rules.indexOf(MarkdownRules.Bold))
     }
 
