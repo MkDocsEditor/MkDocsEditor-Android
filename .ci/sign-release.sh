@@ -42,10 +42,14 @@ printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode --ignore-garbage > "$ke
   --out "$signed_apk" \
   "$unsigned_apk"
 
-digest=$("$apksigner" verify --print-certs "$signed_apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+# The start of the line depends on the version of apksigner ("Signer #1", "Signer (minSdkVersion=...").
+certs=$("$apksigner" verify --print-certs "$signed_apk" 2>/dev/null)
+digest=$(printf '%s\n' "$certs" | sed -n 's/^Signer.* certificate SHA-256 digest: //p' | head -n 1)
 fingerprint=$(printf '%s' "$digest" | tr '[:lower:]' '[:upper:]' | sed 's/../&:/g; s/:$//')
 
 if [[ -z "$fingerprint" ]]; then
+  # only public certificate data
+  printf '%s\n' "$certs"
   echo "::error::Could not read the certificate of the signed APK."
   exit 1
 fi
