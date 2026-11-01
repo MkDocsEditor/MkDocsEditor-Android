@@ -24,8 +24,8 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import org.junit.After
-import org.junit.Before
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -41,7 +41,7 @@ class LoginViewModelTest {
     private lateinit var viewModel: LoginViewModel
     private val events = mutableListOf<LoginEvent>()
 
-    @Before
+    @BeforeEach
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         api.status = AuthStatus(passkeys = PasskeySupport(enabled = true, rpId = "example.com"))
@@ -52,7 +52,7 @@ class LoginViewModelTest {
         )
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         Dispatchers.resetMain()
     }

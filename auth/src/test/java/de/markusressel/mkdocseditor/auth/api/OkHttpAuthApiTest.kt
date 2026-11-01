@@ -5,8 +5,8 @@ import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import mockwebserver3.RecordedRequest
 import okhttp3.OkHttpClient
-import org.junit.After
-import org.junit.Before
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,13 +19,13 @@ class OkHttpAuthApiTest {
     private val server = MockWebServer()
     private lateinit var api: OkHttpAuthApi
 
-    @Before
+    @BeforeEach
     fun setUp() {
         server.start()
         api = OkHttpAuthApi(server.url("/").toString(), OkHttpClient())
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         server.close()
     }

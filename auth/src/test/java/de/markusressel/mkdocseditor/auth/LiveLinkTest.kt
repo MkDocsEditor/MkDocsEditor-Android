@@ -13,8 +13,8 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.junit.Assume.assumeTrue
-import org.junit.Before
+import org.junit.jupiter.api.Assumptions.assumeTrue
+import org.junit.jupiter.api.BeforeEach
 import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -43,9 +43,9 @@ class LiveLinkTest {
     private val mapAdapter = Moshi.Builder().build()
         .adapter<Map<String, Any?>>(Types.newParameterizedType(Map::class.java, String::class.java, Any::class.java))
 
-    @Before
+    @BeforeEach
     fun requireBackend() {
-        assumeTrue("set -Pmkdocs.backend.url and -Pmkdocs.backend.admin", baseUrl != null && admin?.size == 2)
+        assumeTrue(baseUrl != null && admin?.size == 2, "set -Pmkdocs.backend.url and -Pmkdocs.backend.admin")
     }
 
     /** POST /admin/invites/, which the app links out to the web client for */

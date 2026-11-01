@@ -190,7 +190,6 @@ dependencies {
     implementation(libs.compose.shimmer)
 
     testImplementation(libs.gson)
-    testImplementation(kotlin("test"))
     testImplementation(libs.junit4)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(testFixtures(project(":auth")))

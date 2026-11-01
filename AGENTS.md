@@ -57,9 +57,13 @@ Features are in `app/.../feature/<name>/`, split into:
 
 ## Testing
 
-JUnit 4, `kotlin.test`, `kotlinx-coroutines-test`, and Robolectric with Compose test rules for UI.
-Tests live in `src/test` of each module, with names in backticks that read as sentences. Prefer fakes
-to mocks. A bug fix comes with a test that fails without it. Sync tests use real Automerge, not stubs.
+JUnit 5 with `kotlin.test` and `kotlinx-coroutines-test`. Tests live in `src/test` of each module, with
+names in backticks that read as sentences. Prefer fakes to mocks. A bug fix comes with a test that
+fails without it. Sync tests use real Automerge, not stubs.
+
+UI and other Robolectric tests stay on JUnit 4 (`@RunWith(AndroidJUnit4::class)`, `org.junit.Test`) and
+run on the vintage engine, because Robolectric and the Compose test rule only exist for JUnit 4. Never
+use `kotlin.test.Test` in such a class: it is a Jupiter test then, and runs without Robolectric.
 
 ## Pull requests
 

@@ -21,8 +21,8 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import org.junit.After
-import org.junit.Before
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import java.io.IOException
 import java.time.Clock
 import java.time.Instant
@@ -46,7 +46,7 @@ class ConnectLinkViewModelTest {
             """{"v":$version,"backendUrl":"https://backend.wiki.example.com","username":"markus","token":"$token","expiresAt":"$expiresAt"}""".toByteArray()
         )
 
-    @Before
+    @BeforeEach
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         api.onServerInfo = { ServerInfo(name = "Markus' Wiki", wikiUrl = "https://wiki.example.com") }
@@ -55,7 +55,7 @@ class ConnectLinkViewModelTest {
         }
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         Dispatchers.resetMain()
     }
