@@ -582,6 +582,10 @@ internal class CodeEditorViewModel @Inject constructor(
      * @param connect false when the sync manager is connected already (after a move)
      */
     private suspend fun loadDocumentResource(documentId: String, connect: Boolean = true) {
+        val offlineMode = isOfflineModeEnabledFlowUseCase().value
+        // the text comes through the connection, it does not wait for the item tree
+        if (connect && !offlineMode) reconnectToServer()
+
         val resource = getDocumentUseCase(documentId)
         logOpenStep("item tree loaded")
         currentResource.value = resource
@@ -589,24 +593,18 @@ internal class CodeEditorViewModel @Inject constructor(
             is Success -> {
                 updateTitle(resource.data?.name ?: "")
 
-                if (!connect) {
-                    // keep the connection
-                } else if (isOfflineModeEnabledFlowUseCase().value) {
-                    showOfflineVersionIfPossible()
-                } else {
-                    reconnectToServer()
-                }
+                if (connect && offlineMode) showOfflineVersionIfPossible()
             }
 
             is Resource.Error -> {
                 Timber.e(resource.error) { "Error loading document resource" }
                 updateTitle(resource.data?.name ?: "")
-                documentLoadFailed = true
+                val connected = automergeDocumentSyncManager?.isConnected == true
+                documentLoadFailed = !connected
                 updateOfflineBanner()
-                // a local copy is shown and editable already, and its edits sync later
-                if (!localCopyAvailable.value) showOfflineVersionIfPossible()
-                // keeps trying, and ends the offline state as soon as the server answers
-                if (connect) reconnectToServer()
+                // a local copy is shown and editable already, and its edits sync later. The
+                // connection keeps trying, and ends the offline state as soon as the server answers
+                if (!localCopyAvailable.value && !connected) showOfflineVersionIfPossible()
             }
 
             else -> {
