@@ -586,7 +586,9 @@ internal class CodeEditorViewModel @Inject constructor(
         // the text comes through the connection, it does not wait for the item tree
         if (connect && !offlineMode) reconnectToServer()
 
-        val resource = getDocumentUseCase(documentId)
+        val resource = getDocumentUseCase(documentId) { cached ->
+            if (connect) showCachedDocument(cached)
+        }
         logOpenStep("item tree loaded")
         currentResource.value = resource
         when (resource) {
@@ -611,6 +613,16 @@ internal class CodeEditorViewModel @Inject constructor(
                 Timber.d { "$resource" }
             }
         }
+    }
+
+    /**
+     * Shows the text of the offline cache until the server sends the document. It cannot be
+     * edited: without a local copy the edit mode stays off. The text of a local copy wins.
+     */
+    private fun showCachedDocument(cached: DocumentEntity?) {
+        cached ?: return
+        updateTitle(cached.name)
+        cached.content.target?.text?.let { setEditorText(it) }
     }
 
     /**
