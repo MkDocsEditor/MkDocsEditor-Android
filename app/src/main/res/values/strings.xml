@@ -190,9 +190,11 @@
     <string name="move_error_into_itself">A folder cannot be moved into itself.</string>
     <string name="move_error_root">The root folder cannot be moved.</string>
     <string name="move_error_no_change">Nothing would change.</string>
+    <string name="move_error_unsupported">This server cannot move items yet. Update MkDocsEditor-Backend to move items and update the links to them.</string>
 
     <string name="backlinks_title">Used by: %1$s</string>
     <string name="backlinks_none">No page links here.</string>
+    <string name="backlinks_unsupported">This server does not know which pages link here. Update MkDocsEditor-Backend to see it.</string>
     <string name="backlinks_internal">inside</string>
     <string name="backlinks_line">Line %1$d · %2$s</string>
     <string name="close">Close</string>
@@ -219,6 +221,7 @@
     <string name="page_references_broken_moved">Line %1$d · broken: moved to %2$s</string>
     <string name="page_references_fix">Fix</string>
     <string name="page_references_offline">Needs a connection to the server.</string>
+    <string name="page_references_unsupported">This server does not index links yet. Update MkDocsEditor-Backend to see them.</string>
     <string name="page_references_edit_mode_needed">Turn on edit mode to fix links.</string>
     <string name="page_references_changed">The text there changed. Reopen the list.</string>
 

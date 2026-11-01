@@ -230,6 +230,7 @@ private fun MoveErrorText(error: MoveOutcome.Failed) {
         "into-itself" -> stringResource(R.string.move_error_into_itself)
         "root" -> stringResource(R.string.move_error_root)
         "no-change" -> stringResource(R.string.move_error_no_change)
+        MoveOutcome.Failed.UNSUPPORTED -> stringResource(R.string.move_error_unsupported)
         else -> error.message
     }
     Text(
@@ -361,6 +362,10 @@ internal fun BacklinksDialog(
                 )
                 val backlinks = state.backlinks
                 when {
+                    state.unsupported -> Text(
+                        text = stringResource(R.string.backlinks_unsupported),
+                        modifier = Modifier.testTag("backlinks-unsupported"),
+                    )
                     state.error != null -> Text(state.error, color = MaterialTheme.colorScheme.error)
                     backlinks == null -> Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(modifier = Modifier.padding(16.dp))

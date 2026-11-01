@@ -128,4 +128,12 @@ class MoveItemUseCaseTest {
         assertNull(failed.reason)
         assertTrue(failed.message.isNotEmpty())
     }
+
+    @Test
+    fun `an older backend without the endpoint is recognised`() {
+        // the default 404 of the web framework has no error code
+        assertEquals(MoveOutcome.Failed.UNSUPPORTED, MoveItemUseCase.failure(fuelError(404, """{"message":"Not Found"}""")).reason)
+        // a 404 of the backend itself (unknown id) has one
+        assertNull(MoveItemUseCase.failure(fuelError(404, """{"code":"not-found","message":"No item with id '1' found"}""")).reason)
+    }
 }

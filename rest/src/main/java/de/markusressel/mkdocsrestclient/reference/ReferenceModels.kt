@@ -1,5 +1,6 @@
 package de.markusressel.mkdocsrestclient.reference
 
+import com.github.kittinunf.fuel.core.FuelError
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import java.util.Date
@@ -202,3 +203,13 @@ data class ApiErrorModel(
         }
     }
 }
+
+/**
+ * True when the server does not have the endpoint at all: an older backend answers 404 (or
+ * 405) with the web framework's default body, which has no error `code`. Errors of the backend
+ * itself, like an unknown id, always carry a `code`.
+ */
+fun FuelError.isUnsupportedEndpoint(): Boolean =
+    response.statusCode in UNSUPPORTED_STATUS && ApiErrorModel.parse(response.data)?.code == null
+
+private val UNSUPPORTED_STATUS = setOf(404, 405)

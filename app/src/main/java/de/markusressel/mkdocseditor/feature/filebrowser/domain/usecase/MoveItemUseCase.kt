@@ -5,6 +5,7 @@ import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import de.markusressel.mkdocsrestclient.reference.ApiErrorModel
 import de.markusressel.mkdocsrestclient.reference.ItemType
+import de.markusressel.mkdocsrestclient.reference.isUnsupportedEndpoint
 import de.markusressel.mkdocsrestclient.reference.MoveRequestModel
 import de.markusressel.mkdocsrestclient.reference.MoveResultModel
 import de.markusressel.mkdocsrestclient.sync.automerge.LocalDocumentStore
@@ -22,9 +23,14 @@ sealed interface MoveOutcome {
 
     /**
      * @param reason `details.reason` of the backend: `exists`, `invalid-name`, `blacklisted`,
-     * `into-itself`, `root`, `no-change`, or null for other errors
+     * `into-itself`, `root`, `no-change`; [UNSUPPORTED] when the backend is too old for
+     * `POST /move/`; null for other errors
      */
-    data class Failed(val status: Int?, val reason: String?, val message: String) : MoveOutcome
+    data class Failed(val status: Int?, val reason: String?, val message: String) : MoveOutcome {
+        companion object {
+            const val UNSUPPORTED = "unsupported"
+        }
+    }
 }
 
 /**
@@ -76,7 +82,7 @@ internal class MoveItemUseCase @Inject constructor(
             val body = ApiErrorModel.parse(error.response.data)
             return MoveOutcome.Failed(
                 status = status,
-                reason = body?.details?.reason?.takeIf { it.isNotEmpty() },
+                reason = if (error.isUnsupportedEndpoint()) MoveOutcome.Failed.UNSUPPORTED else body?.details?.reason?.takeIf { it.isNotEmpty() },
                 message = body?.message?.takeIf { it.isNotEmpty() } ?: error.message ?: error.toString(),
             )
         }

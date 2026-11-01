@@ -21,6 +21,8 @@ import de.markusressel.mkdocseditor.feature.editor.domain.TextPositions
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferences
 import de.markusressel.mkdocsrestclient.reference.ItemType
 import de.markusressel.mkdocsrestclient.reference.ReferenceModel
+import de.markusressel.mkdocsrestclient.reference.isUnsupportedEndpoint
+import com.github.kittinunf.fuel.core.FuelError
 import kotlinx.coroutines.coroutineScope
 import java.io.File
 import java.text.SimpleDateFormat
@@ -859,7 +861,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 success = { result -> updateReferencesPanel { it.copy(references = result.references, referencesError = null) } },
                 failure = { error ->
                     Timber.w(error) { "Could not load the references" }
-                    updateReferencesPanel { it.copy(referencesError = context.getString(R.string.page_references_offline)) }
+                    updateReferencesPanel { it.copy(referencesError = referencesErrorText(error)) }
                 },
             )
         }
@@ -868,11 +870,16 @@ internal class CodeEditorViewModel @Inject constructor(
                 success = { result -> updateReferencesPanel { it.copy(backlinks = result.backlinks, backlinksError = null) } },
                 failure = { error ->
                     Timber.w(error) { "Could not load the backlinks" }
-                    updateReferencesPanel { it.copy(backlinksError = context.getString(R.string.page_references_offline)) }
+                    updateReferencesPanel { it.copy(backlinksError = referencesErrorText(error)) }
                 },
             )
         }
     }
+
+    /** older backends have no reference index; otherwise the server is not reachable */
+    private fun referencesErrorText(error: FuelError): String = context.getString(
+        if (error.isUnsupportedEndpoint()) R.string.page_references_unsupported else R.string.page_references_offline
+    )
 
     private fun updateReferencesPanel(update: (PageReferences) -> PageReferences) {
         _uiState.update { old ->

@@ -200,4 +200,20 @@ class MoveDialogsTest {
         }
         composeRule.onNodeWithTag("backlinks-none").assertExists()
     }
+
+    @Test
+    fun `older backends get an explanation instead of an error`() {
+        moveDialog(DialogState.Move(item = setup, renameOnly = false, tree = tree, error = MoveOutcome.Failed(404, MoveOutcome.Failed.UNSUPPORTED, "Not Found")))
+        composeRule.onNodeWithTag("move-error").assert(hasText("This server cannot move items yet.", substring = true))
+    }
+
+    @Test
+    fun `backlinks on an older backend`() {
+        composeRule.setContent {
+            MkDocsEditorTheme {
+                BacklinksDialog(state = DialogState.Backlinks(setup, unsupported = true), onOpenDocument = {}, onDismissRequest = {})
+            }
+        }
+        composeRule.onNodeWithTag("backlinks-unsupported").assertExists()
+    }
 }
