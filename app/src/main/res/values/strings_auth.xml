@@ -31,6 +31,7 @@
     <string name="auth_use_recovery_code">Use a recovery code</string>
     <string name="auth_use_authenticator_code">Use the authenticator app</string>
     <string name="auth_use_passkey">Use a passkey</string>
+    <string name="auth_passkey_second_factor_hint">Confirm the sign-in with your passkey.</string>
     <string name="auth_disabled_hint">This backend runs without authentication.</string>
     <string name="auth_setup_required_hint">This backend has no accounts yet. Open the setup link from the backend log (or run \"mkdocsrest setup-link\") and paste it below.</string>
     <string name="auth_second_factor_setup_hint">This backend requires a second factor. Set up an authenticator app or a passkey in your account before you continue.</string>

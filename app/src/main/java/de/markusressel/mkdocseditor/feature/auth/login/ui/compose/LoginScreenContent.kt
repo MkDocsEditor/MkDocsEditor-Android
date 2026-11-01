@@ -38,6 +38,7 @@ import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.PasswordField
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.RecoveryCodeField
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.UsernameField
 import de.markusressel.mkdocseditor.feature.auth.login.ui.LoginViewModel
+import de.markusressel.mkdocseditor.feature.auth.login.ui.LoginViewModel.Companion.isPasskeyOnly
 import de.markusressel.mkdocseditor.feature.auth.login.ui.LoginViewModel.UiEvent
 import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
@@ -178,6 +179,21 @@ private fun SecondFactorStep(
         text = stringResource(R.string.auth_second_factor_title),
         style = MaterialTheme.typography.titleMedium,
     )
+
+    if (uiState.methods.isPasskeyOnly()) {
+        Text(stringResource(R.string.auth_passkey_second_factor_hint))
+        Button(
+            modifier = Modifier.fillMaxWidth(),
+            enabled = enabled,
+            onClick = { onUiEvent(UiEvent.PasskeyClicked) },
+        ) {
+            Text(stringResource(R.string.auth_use_passkey))
+        }
+        TextButton(onClick = { onUiEvent(UiEvent.BackToPasswordClicked) }) {
+            Text(stringResource(R.string.auth_start_over))
+        }
+        return
+    }
 
     if (uiState.useRecoveryCode) {
         Text(stringResource(R.string.auth_recovery_code_hint))

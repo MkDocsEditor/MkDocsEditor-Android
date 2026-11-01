@@ -209,6 +209,9 @@ internal class LoginViewModel @Inject constructor(
                         code = "",
                     )
                 }
+                // nothing to type: an account whose only second factor is a passkey confirms
+                // with it right away
+                if (outcome.methods.isPasskeyOnly()) passkeyLogin()
             }
 
             is LoginOutcome.SignedIn -> {
@@ -330,5 +333,10 @@ internal class LoginViewModel @Inject constructor(
 
     companion object {
         const val TOTP_LENGTH = 6
+
+        /** whether the passkey is the only second factor the account has */
+        internal fun Set<SecondFactorMethod>.isPasskeyOnly() =
+            SecondFactorMethod.Passkey in this &&
+                SecondFactorMethod.Totp !in this && SecondFactorMethod.RecoveryCode !in this
     }
 }
