@@ -11,6 +11,23 @@
 
     <string name="code_editor">Code Editor</string>
     <string name="insert_link">Insert Link</string>
+    <string name="format_bold">Bold</string>
+    <string name="format_italic">Italic</string>
+    <string name="format_strikethrough">Strikethrough</string>
+    <string name="format_inline_code">Inline code</string>
+    <string name="format_code_block">Code block</string>
+    <string name="format_heading">Heading</string>
+    <string name="format_heading_level">Heading %1$d</string>
+    <string name="format_bullet_list">Bulleted list</string>
+    <string name="format_numbered_list">Numbered list</string>
+    <string name="format_task_list">Task list</string>
+    <string name="format_quote">Quote</string>
+    <string name="format_link">Link</string>
+    <string name="format_image">Image</string>
+    <string name="format_resource">Insert file</string>
+    <string name="format_table">Table</string>
+    <string name="format_admonition">Admonition</string>
+    <string name="format_horizontal_rule">Horizontal rule</string>
 
     <string name="no_offline_version_title">Not available offline</string>
     <string name="no_offline_version">Sorry, there is no offline version available. Try to connect to the server and re-open this file to get an updated offline version.</string>
