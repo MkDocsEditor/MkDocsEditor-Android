@@ -207,6 +207,19 @@ class LoginViewModelTest {
     }
 
     @Test
+    fun `passkey only accounts open the passkey sheet right after the password`() = runTest {
+        api.onLogin = { _, _ -> secondFactorRequired("passkey") }
+        start()
+        viewModel.onUiEvent(UiEvent.PasswordChanged("pw"))
+        viewModel.onUiEvent(UiEvent.LoginClicked)
+
+        assertEquals(LoginViewModel.Step.SecondFactor, viewModel.uiState.value.step)
+        assertTrue("beginPasskeyLogin:mdc_1" in api.calls)
+        assertEquals(LoginEvent.PickCredential(api.ceremony.publicKey, includePasswords = false), events.last())
+        assertTrue(viewModel.uiState.value.loading)
+    }
+
+    @Test
     fun `a saved password from the provider signs in without a save prompt`() = runTest {
         var usedPassword: String? = null
         api.onLogin = { _, password ->
