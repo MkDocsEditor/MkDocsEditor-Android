@@ -8,6 +8,7 @@ sealed interface TopAppBarAction {
         data object ShowInBrowserAction : CodeEditor
         data class TogglePreviewAction(val orientation: SplitOrientation) : CodeEditor
         data class OnlineUsersAction(val remotePeers: List<RemotePeer>) : CodeEditor
+        data object PageReferencesAction : CodeEditor
     }
 
     sealed interface FileBrowser : TopAppBarAction {

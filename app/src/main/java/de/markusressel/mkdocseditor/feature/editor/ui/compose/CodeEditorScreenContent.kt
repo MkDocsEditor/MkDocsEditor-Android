@@ -42,6 +42,7 @@ import androidx.compose.ui.text.coerceIn
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
+import androidx.compose.ui.platform.testTag
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
@@ -99,6 +100,7 @@ internal fun CodeEditorScreenContent(
                 actions = listOfNotNull(
                     TopAppBarAction.CodeEditor.OnlineUsersAction(uiState.remotePeers)
                         .takeIf { uiState.remotePeers.isNotEmpty() },
+                    TopAppBarAction.CodeEditor.PageReferencesAction,
                     TopAppBarAction.CodeEditor.TogglePreviewAction(splitOrientation),
                     TopAppBarAction.CodeEditor.ShowInBrowserAction
                 ),
@@ -308,6 +310,23 @@ internal fun TogglePreviewAction(
                 SplitOrientation.Vertical -> GoogleMaterial.Icon.gmd_horizontal_split
                 SplitOrientation.Horizontal -> GoogleMaterial.Icon.gmd_vertical_split
             },
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
+        )
+    }
+}
+
+@Composable
+internal fun PageReferencesAction(
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    IconButton(
+        modifier = modifier.testTag("page-references-action"),
+        onClick = onClick
+    ) {
+        Image(
+            asset = MaterialDesignIconic.Icon.gmi_link,
+            contentDescription = stringResource(R.string.page_references_action),
             colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
         )
     }
