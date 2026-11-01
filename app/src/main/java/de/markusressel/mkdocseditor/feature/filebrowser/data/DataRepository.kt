@@ -2,6 +2,8 @@
 
 package de.markusressel.mkdocseditor.feature.filebrowser.data
 
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import com.github.ajalt.timberkt.Timber
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
@@ -432,7 +434,7 @@ class DataRepository @Inject constructor(
             })
     }
 
-    suspend fun updateDocumentContentInCache(documentId: String, text: String) {
+    suspend fun updateDocumentContentInCache(documentId: String, text: String) = withContext(Dispatchers.IO) {
         documentContentPersistenceManager.insertOrUpdate(
             documentId = documentId,
             text = text
@@ -446,7 +448,7 @@ class DataRepository @Inject constructor(
         zoomLevel: Float = 1F,
         panX: Float = 0F,
         panY: Float = 0F,
-    ) {
+    ) = withContext(Dispatchers.IO) {
         documentContentPersistenceManager.insertOrUpdate(
             documentId = documentId,
             text = text,

@@ -72,6 +72,8 @@ internal class CodeEditorViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(UiState())
     internal val uiState = _uiState.asStateFlow()
 
+    private var saveJob: Job? = null
+
     private val _navigationEvents = Channel<NavigationRequest>(Channel.BUFFERED)
     internal val navigationEvents = _navigationEvents.receiveAsFlow()
 
@@ -458,12 +460,20 @@ internal class CodeEditorViewModel @Inject constructor(
         super.onCleared()
     }
 
-    private fun saveEditorState(): Job = launch {
-        dataRepository.saveEditorState(
-            documentId = session.documentId.value!!,
-            text = editorText.text,
-            selection = editorText.selection.start,
-        )
+    /**
+     * Keeps the old offline cache up to date, some time after the last change: it holds the whole
+     * text, and remote changes can come many times a second. A save that is cut off by closing
+     * the editor loses nothing, the local copy is the one that has every edit.
+     */
+    private fun saveEditorState() {
+        val documentId = session.documentId.value ?: return
+        val text = editorText.text
+        val selection = editorText.selection.start
+        saveJob?.cancel()
+        saveJob = launch {
+            delay(SAVE_DELAY_MS)
+            dataRepository.saveEditorState(documentId = documentId, text = text, selection = selection)
+        }
     }
 
     private suspend fun onOpenInBrowserClicked(): Boolean {
@@ -518,6 +528,8 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     companion object {
+        private const val SAVE_DELAY_MS = 2_000L
+
         /** the toggle between reading and editing; there is none while editing is impossible */
         internal fun editModeFabs(editable: Boolean, editModeActive: Boolean): List<FabConfig.Fab<CodeEditorFabId>> = when {
             editModeActive -> listOf(DisableEditModeFabConfig)
