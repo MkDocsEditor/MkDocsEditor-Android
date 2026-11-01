@@ -37,6 +37,8 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                         applicationIdSuffix = ".debug"
                         isMinifyEnabled = false
                         isDebuggable = true
+                        // 64-bit only, x86_64 for emulators
+                        ndk.abiFilters += listOf("arm64-v8a", "x86_64")
                         signingConfig = signingConfigs.getByName("debug").apply {
                             storeFile = File("${projectDir.parent}/.ci/debug.keystore")
                         }
@@ -55,7 +57,10 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                                 "META-INF/DEPENDENCIES",
                                 "META-INF/ASL2.0",
                                 "META-INF/NOTICE",
-                                "META-INF/LICENSE"
+                                "META-INF/LICENSE",
+                                // Automerge's libraries for desktop systems. On Android its
+                                // loader uses the ones in lib/.
+                                "native/**"
                             )
                         )
                         pickFirsts.addAll(

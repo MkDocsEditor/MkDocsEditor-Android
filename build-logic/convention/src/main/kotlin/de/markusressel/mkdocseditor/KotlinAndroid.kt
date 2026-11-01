@@ -13,7 +13,10 @@ import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 const val COMPILE_SDK = 36
-const val TARGET_SDK = 35
+const val TARGET_SDK = 36
+
+// All devices of the family run Android 16 or newer.
+const val MIN_SDK = 36
 
 internal fun Project.configureKotlinAndroid(commonExtension: CommonExtension) {
     commonExtension.apply {
@@ -32,7 +35,7 @@ internal fun Project.configureKotlinAndroid(commonExtension: CommonExtension) {
         }
 
         defaultConfig.apply {
-            minSdk = 29
+            minSdk = MIN_SDK
             buildToolsVersion = "36.0.0"
             testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         }

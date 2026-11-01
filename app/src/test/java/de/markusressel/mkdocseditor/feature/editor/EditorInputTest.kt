@@ -45,7 +45,7 @@ import kotlin.test.assertTrue
  * to it, connected to a real Automerge document with [EditorTextBinding].
  */
 @RunWith(AndroidJUnit4::class)
-@Config(application = Application::class, sdk = [35])
+@Config(application = Application::class, sdk = [36])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class EditorInputTest {
 
