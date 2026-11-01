@@ -11,11 +11,7 @@ import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeTextDocument
 import org.mobilenativefoundation.store.store5.impl.extensions.fresh
 import de.markusressel.mkdocseditor.feature.editor.domain.TextPositions
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferences
-import de.markusressel.mkdocsrestclient.reference.ItemType
 import de.markusressel.mkdocsrestclient.reference.ReferenceModel
-import de.markusressel.mkdocsrestclient.reference.isUnsupportedEndpoint
-import com.github.kittinunf.fuel.core.FuelError
-import kotlinx.coroutines.coroutineScope
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -35,7 +31,9 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurre
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.domain.EditorFiles
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatAction
+import de.markusressel.mkdocseditor.feature.editor.domain.PageReferencesLoader
 import de.markusressel.mkdocseditor.feature.editor.domain.UploadFilesUseCase
+import de.markusressel.mkdocseditor.feature.editor.domain.withFixedReference
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatEdit
 import de.markusressel.mkdocseditor.feature.editor.domain.MarkdownFormatting
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
@@ -106,6 +104,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private val openDocumentInBrowserUseCase: OpenDocumentInBrowserUseCase,
     private val restClient: IMkDocsRestClient,
     private val uploadFilesUseCase: UploadFilesUseCase,
+    private val pageReferencesLoader: PageReferencesLoader,
     private val editorFiles: EditorFiles,
     private val localDocumentStore: LocalDocumentStore,
     private val localCopyRedirects: LocalCopyRedirects,
@@ -881,31 +880,9 @@ internal class CodeEditorViewModel @Inject constructor(
         loadPageReferences(documentId)
     }
 
-    private suspend fun loadPageReferences(documentId: String) = coroutineScope {
-        launch {
-            restClient.getDocumentReferences(documentId).fold(
-                success = { result -> updateReferencesPanel { it.copy(references = result.references, referencesError = null) } },
-                failure = { error ->
-                    Timber.w(error) { "Could not load the references" }
-                    updateReferencesPanel { it.copy(referencesError = referencesErrorText(error)) }
-                },
-            )
-        }
-        launch {
-            restClient.getBacklinks(ItemType.DOCUMENT, documentId).fold(
-                success = { result -> updateReferencesPanel { it.copy(backlinks = result.backlinks, backlinksError = null) } },
-                failure = { error ->
-                    Timber.w(error) { "Could not load the backlinks" }
-                    updateReferencesPanel { it.copy(backlinksError = referencesErrorText(error)) }
-                },
-            )
-        }
+    private suspend fun loadPageReferences(documentId: String) {
+        pageReferencesLoader.load(documentId).collect { update -> updateReferencesPanel(update) }
     }
-
-    /** older backends have no reference index; otherwise the server is not reachable */
-    private fun referencesErrorText(error: FuelError): String = context.getString(
-        if (error.isUnsupportedEndpoint()) R.string.page_references_unsupported else R.string.page_references_offline
-    )
 
     private fun updateReferencesPanel(update: (PageReferences) -> PageReferences) {
         _uiState.update { old ->
@@ -938,12 +915,7 @@ internal class CodeEditorViewModel @Inject constructor(
             return
         }
         applyEdit(MarkdownFormatting.replaceSelection(text, range.first, range.last + 1, suggested))
-        // the backend sees the edit through the sync; show the fixed state right away
-        updateReferencesPanel { data ->
-            data.copy(references = data.references?.map {
-                if (it == reference) it.copy(destination = suggested, status = "ok", target = it.movedTo, reason = null, path = null, movedTo = null, suggestedDestination = null) else it
-            })
-        }
+        updateReferencesPanel { it.withFixedReference(reference, suggested) }
     }
 
     private fun togglePreviewVisibility() {
