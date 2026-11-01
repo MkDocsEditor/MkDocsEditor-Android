@@ -35,19 +35,27 @@ class SearchViewModelTest {
      * Regression: the screen held the event bus in a field nothing injected, so tapping a
      * result crashed the app
      */
-    private suspend fun TestScope.assertClickGoesTo(item: SearchResultItem, expected: BusEvent) {
+    private suspend fun TestScope.assertClickGoesTo(
+        item: SearchResultItem,
+        expected: BusEvent,
+        expectedAction: SearchViewModel.UiAction = SearchViewModel.UiAction.NavigateBack,
+    ) {
         val sent = mutableListOf<BusEvent>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { eventBus.eventBus.toList(sent) }
 
         viewModel.onUiEvent(SearchViewModel.UiEvent.SearchResultClicked(item))
 
         assertEquals(listOf(expected), sent)
-        assertEquals(SearchViewModel.UiAction.NavigateBack, viewModel.events.first())
+        assertEquals(expectedAction, viewModel.events.first())
     }
 
     @Test
-    fun `tapping a page goes to the page`() = runTest {
-        assertClickGoesTo(SearchResultItem.Document("d", "page", emptyList()), BusEvent.CodeEditorBusEvent.GoToDocument("d"))
+    fun `tapping a page opens it and moves the file browser to its folder`() = runTest {
+        assertClickGoesTo(
+            SearchResultItem.Document("d", "page", emptyList()),
+            BusEvent.CodeEditorBusEvent.RevealDocument("d"),
+            SearchViewModel.UiAction.OpenDocument("d"),
+        )
     }
 
     @Test

@@ -138,14 +138,8 @@ internal class FileBrowserViewModel @Inject constructor(
     init {
         eventBusManager.observe<BusEvent.CodeEditorBusEvent>().subscribe(viewModelScope) { event ->
             when (event) {
-                is BusEvent.CodeEditorBusEvent.GoToDocument -> {
-                    val parentSectionId = findParentSectionOfDocumentUseCase(event.documentId)
-                    parentSectionId?.let {
-                        delay(200)
-                        openSection(parentSectionId.id)
-                        delayUntil { uiState.value.isLoading.not() }
-                        _events.send(FileBrowserEvent.OpenDocumentEditor(event.documentId))
-                    }
+                is BusEvent.CodeEditorBusEvent.RevealDocument -> {
+                    findParentSectionOfDocumentUseCase(event.documentId)?.let { openSection(it.id) }
                 }
 
                 is BusEvent.CodeEditorBusEvent.GoToResource -> {

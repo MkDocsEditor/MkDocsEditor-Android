@@ -74,14 +74,23 @@ internal class SearchViewModel(
     }
 
     private suspend fun onSearchResultClicked(searchResultItem: SearchResultItem) {
-        _events.send(UiAction.NavigateBack)
-        eventBusManager.send(
-            when (searchResultItem) {
-                is SearchResultItem.Section -> BusEvent.CodeEditorBusEvent.GoToSection(searchResultItem.sectionId)
-                is SearchResultItem.Document -> BusEvent.CodeEditorBusEvent.GoToDocument(searchResultItem.documentId)
-                is SearchResultItem.Resource -> BusEvent.CodeEditorBusEvent.GoToResource(searchResultItem.resourceId)
+        when (searchResultItem) {
+            is SearchResultItem.Section -> {
+                _events.send(UiAction.NavigateBack)
+                eventBusManager.send(BusEvent.CodeEditorBusEvent.GoToSection(searchResultItem.sectionId))
             }
-        )
+
+            is SearchResultItem.Document -> {
+                // the editor replaces the search, and going back from it shows the folder
+                _events.send(UiAction.OpenDocument(searchResultItem.documentId))
+                eventBusManager.send(BusEvent.CodeEditorBusEvent.RevealDocument(searchResultItem.documentId))
+            }
+
+            is SearchResultItem.Resource -> {
+                _events.send(UiAction.NavigateBack)
+                eventBusManager.send(BusEvent.CodeEditorBusEvent.GoToResource(searchResultItem.resourceId))
+            }
+        }
     }
 
     private fun onSearchResultLongClicked(searchResultItem: SearchResultItem) {
@@ -143,6 +152,7 @@ internal class SearchViewModel(
 
     sealed class UiAction {
         data object NavigateBack : UiAction()
+        data class OpenDocument(val documentId: String) : UiAction()
     }
 
     sealed class UiEvent {

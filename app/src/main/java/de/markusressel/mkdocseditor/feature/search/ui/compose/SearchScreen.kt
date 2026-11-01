@@ -8,6 +8,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreen
 import de.markusressel.mkdocseditor.feature.search.ui.SearchViewModel
 
 object SearchScreen : Screen {
@@ -23,6 +24,10 @@ object SearchScreen : Screen {
                 when (event) {
                     is SearchViewModel.UiAction.NavigateBack -> {
                         navigator.pop()
+                    }
+
+                    is SearchViewModel.UiAction.OpenDocument -> {
+                        navigator.replace(CodeEditorScreen(documentId = event.documentId))
                     }
                 }
             }

@@ -44,7 +44,8 @@ sealed interface BusEvent {
      * CodeEditor specific events
      */
     sealed interface CodeEditorBusEvent : BusEvent {
-        data class GoToDocument(val documentId: String) : CodeEditorBusEvent
+        /** moves the file browser to the folder of the document, without opening it */
+        data class RevealDocument(val documentId: String) : CodeEditorBusEvent
         data class GoToSection(val sectionId: String) : CodeEditorBusEvent
         data class GoToResource(val resourceId: String) : CodeEditorBusEvent
     }
