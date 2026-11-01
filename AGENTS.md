@@ -6,10 +6,13 @@ Notes for AI coding agents working on this repository. Human-oriented docs live 
 
 Passkeys in the app only work when the passkey RP ID domain serves
 `/.well-known/assetlinks.json` with the app's package name and the SHA-256 fingerprint of its
-signing certificate (relation `delegate_permission/common.get_login_creds`). Google's Digital
+signing certificate, with both relations `delegate_permission/common.handle_all_urls` (the only
+one Bitwarden checks) and `delegate_permission/common.get_login_creds` (Google Password
+Manager). Google's Digital
 Asset Links service fetches that file from the internet, so password managers like Bitwarden
 reject the app ("Passkey not supported for this app") when the domain is not publicly
-reachable, even if the phone can open it.
+reachable, even if the phone can open it. Google caches its answer for up to an hour, so a fixed
+file can take that long to be accepted.
 
 Markus' deployment (the family wiki) uses the RP ID `markusressel.de`, because the wiki hosts are
 only reachable from his home network. The file is in the repository `markusressel/blog`
