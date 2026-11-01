@@ -18,12 +18,10 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendSer
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentProjectConfigUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
-import de.markusressel.mkdocseditor.feature.editor.domain.FormatBoldUseCase
-import de.markusressel.mkdocseditor.feature.editor.domain.FormatCodeBlockUseCase
-import de.markusressel.mkdocseditor.feature.editor.domain.FormatItalicUseCase
-import de.markusressel.mkdocseditor.feature.editor.domain.FormatListBulletedUseCase
-import de.markusressel.mkdocseditor.feature.editor.domain.FormatStrikethroughUseCase
+import de.markusressel.mkdocseditor.feature.editor.domain.FormatAction
+import de.markusressel.mkdocseditor.feature.editor.domain.FormatEdit
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUrlUseCase
+import de.markusressel.mkdocseditor.feature.editor.domain.MarkdownFormatting
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.Error
@@ -75,11 +73,6 @@ internal class CodeEditorViewModel @Inject constructor(
     private val openDocumentInBrowserUseCase: OpenDocumentInBrowserUseCase,
     private val findParentSectionOfDocumentUseCase: FindParentSectionOfDocumentUseCase,
     private val findSectionUseCase: FindSectionUseCase,
-    private val formatCodeBlockUseCase: FormatCodeBlockUseCase,
-    private val formatListBulletedUseCase: FormatListBulletedUseCase,
-    private val formatStrikethroughUseCase: FormatStrikethroughUseCase,
-    private val formatItalicUseCase: FormatItalicUseCase,
-    private val formatBoldUseCase: FormatBoldUseCase,
     private val localDocumentStore: LocalDocumentStore,
 ) : ViewModel() {
 
@@ -495,11 +488,9 @@ internal class CodeEditorViewModel @Inject constructor(
                     CodeEditorFabId.DisableEditMode -> disableEditMode()
                 }
 
-                is UiEvent.FormatBoldClicked -> formatBold()
-                is UiEvent.FormatItalicClicked -> formatItalic()
-                is UiEvent.FormatStrikethroughClicked -> formatStrikethrough()
-                is UiEvent.FormatListBulletedClicked -> formatListBulleted()
-                is UiEvent.FormatCodeBlockClicked -> formatCodeBlock()
+                is UiEvent.FormatClicked -> applyFormat(event.action)
+                is UiEvent.InsertLinkClicked -> applyFormat(FormatAction.Link)
+                is UiEvent.InsertImageClicked -> applyFormat(FormatAction.Image)
 
                 is UiEvent.InsertFileReferenceClicked -> showResourceSelectionDialog()
                 is UiEvent.ResourceSelected -> {
@@ -513,75 +504,16 @@ internal class CodeEditorViewModel @Inject constructor(
         }
     }
 
-    private fun formatBold() {
+    private fun applyFormat(action: FormatAction) {
         val text = uiState.value.text?.toString() ?: ""
         val selectionStart = uiState.value.selection?.start ?: 0
         val selectionEnd = uiState.value.selection?.end ?: selectionStart
-
-        val (newText, newSelectionStart, newSelectionEnd) = formatBoldUseCase(
-            text,
-            selectionStart,
-            selectionEnd
-        )
-
-        onTextChanged(newText)
-        setSelection(newSelectionStart, newSelectionEnd)
+        applyEdit(MarkdownFormatting.apply(action, text, selectionStart, selectionEnd))
     }
 
-    private fun formatItalic() {
-        val text = uiState.value.text?.toString() ?: ""
-        val selectionStart = uiState.value.selection?.start ?: 0
-        val selectionEnd = uiState.value.selection?.end ?: selectionStart
-
-        val (newText, newSelectionStart, newSelectionEnd) = formatItalicUseCase(
-            text,
-            selectionStart,
-            selectionEnd
-        )
-
-        onTextChanged(newText)
-        setSelection(newSelectionStart, newSelectionEnd)
-    }
-
-    private fun formatStrikethrough() {
-        val text = uiState.value.text?.toString() ?: ""
-        val selectionStart = uiState.value.selection?.start ?: 0
-        val selectionEnd = uiState.value.selection?.end ?: selectionStart
-
-        val (newText, newSelectionStart, newSelectionEnd) = formatStrikethroughUseCase(
-            text,
-            selectionStart,
-            selectionEnd
-        )
-
-        onTextChanged(newText)
-        setSelection(newSelectionStart, newSelectionEnd)
-    }
-
-    private fun formatCodeBlock() {
-        val text = uiState.value.text?.toString() ?: ""
-        val selectionStart = uiState.value.selection?.start ?: 0
-        val selectionEnd = uiState.value.selection?.end ?: selectionStart
-
-        val (newText, newSelectionStart, newSelectionEnd) = formatCodeBlockUseCase(text, selectionStart, selectionEnd)
-
-        onTextChanged(newText)
-        setSelection(newSelectionStart, newSelectionEnd)
-    }
-
-    private fun formatListBulleted() {
-        val text = uiState.value.text?.toString() ?: ""
-        val selectionStart = uiState.value.selection?.start ?: 0
-        val selectionEnd = uiState.value.selection?.end ?: selectionStart
-
-        val (newText, newSelectionStart, newSelectionEnd) = formatListBulletedUseCase(
-            text,
-            selectionStart,
-            selectionEnd
-        )
-
-        onTextChanged(newText)
-        setSelection(newSelectionStart, newSelectionEnd)
+    private fun applyEdit(edit: FormatEdit) {
+        onTextChanged(edit.text)
+        setSelection(edit.selectionStart, edit.selectionEnd)
     }
 
     private fun insertFileReference(selection: TextRange?, resource: ResourceData) {
@@ -895,11 +827,9 @@ internal class CodeEditorViewModel @Inject constructor(
         data class ExpandableFabItemSelected(val item: FabConfig.Fab<CodeEditorFabId>) : UiEvent()
         data class SnackbarActionClicked(val snackbar: SnackbarData) : UiEvent()
 
-        data object FormatBoldClicked : UiEvent()
-        data object FormatItalicClicked : UiEvent()
-        data object FormatStrikethroughClicked : UiEvent()
-        data object FormatListBulletedClicked : UiEvent()
-        data object FormatCodeBlockClicked : UiEvent()
+        data class FormatClicked(val action: FormatAction) : UiEvent()
+        data object InsertLinkClicked : UiEvent()
+        data object InsertImageClicked : UiEvent()
 
         data object InsertFileReferenceClicked : UiEvent()
         data class ResourceSelected(val resource: ResourceData) : UiEvent()

@@ -60,14 +60,14 @@ class FormatUseCaseTest {
     }
 
     @Test
-    fun `list bullet is inserted at the selection start`() {
-        val result = FormatListBulletedUseCase()("item", 0, 4)
-        assertEquals(Triple("- item", 2, 6), result)
+    fun `list bullet is added to the line`() {
+        val result = MarkdownFormatting.apply(FormatAction.BulletList, "item", 0, 4)
+        assertEquals(FormatEdit("- item", 2, 6), result)
     }
 
     @Test
     fun `code block fences the selection`() {
-        val result = FormatCodeBlockUseCase()("x = 1", 0, 5)
-        assertEquals(Triple("```\nx = 1\n```\n", 4, 9), result)
+        val result = MarkdownFormatting.apply(FormatAction.CodeBlock, "x = 1", 0, 5)
+        assertEquals(FormatEdit("```\nx = 1\n```\n", 4, 9), result)
     }
 }
