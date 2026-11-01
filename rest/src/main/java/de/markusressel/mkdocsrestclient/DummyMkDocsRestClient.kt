@@ -88,18 +88,6 @@ object DemoData {
 
 class DummyMkDocsRestClient : IMkDocsRestClient {
 
-    override fun setHostname(hostname: String) {}
-
-    override fun getHostname(): String = "localhost"
-
-    override fun setUseSSL(enabled: Boolean) {}
-
-    override fun setPort(port: Int) {}
-
-    override fun setAuthorizationProvider(provider: AuthorizationProvider) {}
-
-    override fun setUnauthorizedListener(listener: (() -> Unit)?) {}
-
     override suspend fun isHostAlive(): Result<String, FuelError> {
         return Result.success("")
     }

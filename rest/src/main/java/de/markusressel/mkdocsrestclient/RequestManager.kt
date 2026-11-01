@@ -20,6 +20,7 @@ package de.markusressel.mkdocsrestclient
 
 import com.github.kittinunf.fuel.core.BlobDataPart
 import com.github.kittinunf.fuel.core.Deserializable
+import com.github.kittinunf.fuel.core.FoldableRequestInterceptor
 import com.github.kittinunf.fuel.core.FoldableResponseInterceptor
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.FuelManager
@@ -36,52 +37,28 @@ import com.github.kittinunf.result.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.io.IOException
+
+/**
+ * A request was made while no backend is configured
+ */
+class BackendNotConfiguredException : IOException("No backend is configured")
 
 /**
  * Created by Markus on 08.02.2018.
+ *
+ * @param baseUrl the base URL of the backend (with a trailing slash), or null when none is
+ * configured. It is asked for every request, because Android can restore any screen after
+ * process death: nothing has to run before a request can go to the right host, and there is
+ * no default host a request could go to instead.
+ * @param authorizationProvider supplies the Authorization header of every request
+ * @param unauthorizedListener called (on a network thread) whenever the server answers 401
  */
 class RequestManager(
-    hostname: String = "localhost",
-    port: Int = 8080,
-    ssl: Boolean = true,
-    /**
-     * Supplies the Authorization header of every request
-     */
-    var authorizationProvider: AuthorizationProvider = AuthorizationProvider.NONE,
+    private val baseUrl: () -> String? = { null },
+    private val authorizationProvider: AuthorizationProvider = AuthorizationProvider.NONE,
+    private val unauthorizedListener: () -> Unit = {},
 ) {
-
-    /**
-     * Called (on a network thread) whenever the server answers 401
-     */
-    @Volatile
-    var unauthorizedListener: (() -> Unit)? = null
-
-    /**
-     * The hostname of the server
-     */
-    var hostname: String = hostname
-        set(value) {
-            field = value
-            updateBaseUrl()
-        }
-
-    /**
-     * The port to use
-     */
-    var port: Int = port
-        set(value) {
-            field = value
-            updateBaseUrl()
-        }
-
-    /**
-     * Whether to use https instead of http
-     */
-    var ssl: Boolean = ssl
-        set(value) {
-            field = value
-            updateBaseUrl()
-        }
 
     private val fuelManager = FuelManager()
 
@@ -99,14 +76,22 @@ class RequestManager(
         { next: (Request, Response) -> Response ->
             { req: Request, res: Response ->
                 if (res.statusCode == 401) {
-                    unauthorizedListener?.invoke()
+                    unauthorizedListener()
                 }
                 next(req, res)
             }
         }
 
+    private val notConfiguredInterceptor: FoldableRequestInterceptor =
+        { next: (Request) -> Request ->
+            { req: Request ->
+                if (req.url.host == NOT_CONFIGURED_HOST) throw FuelError.wrap(BackendNotConfiguredException())
+                next(req)
+            }
+        }
+
     init {
-        updateBaseUrl()
+        fuelManager.addRequestInterceptor(notConfiguredInterceptor)
         fuelManager.addResponseInterceptor(unauthorizedInterceptor)
     }
 
@@ -125,18 +110,13 @@ class RequestManager(
     }
 
     /**
-     * Updates the base URL in Fuel client according to configuration parameters
+     * @return the absolute URL of an API path. Fuel cannot build a request without a host, so
+     * without a backend it is a reserved name (RFC 6761), and [notConfiguredInterceptor] fails
+     * the request before it is sent.
      */
-    private fun updateBaseUrl() {
-        val protocol = if (ssl) "https" else "http"
-        val sanitized = hostname.removePrefix("http://").removePrefix("https://")
-        val basePath = "$protocol://${sanitized.substringBefore("/")}:$port/${
-            sanitized.substringAfter(
-                "/",
-                ""
-            )
-        }"
-        fuelManager.basePath = basePath
+    private fun absoluteUrl(path: String): String {
+        val base = baseUrl() ?: "https://$NOT_CONFIGURED_HOST/"
+        return base + path.removePrefix("/")
     }
 
     /**
@@ -152,7 +132,7 @@ class RequestManager(
         method: Method,
         timeout: Int = DEFAULT_TIMEOUT
     ): Request {
-        return getAuthenticatedRequest(fuelManager.request(method, url, urlParameters))
+        return getAuthenticatedRequest(fuelManager.request(method, absoluteUrl(url), urlParameters))
             .timeout(timeout = timeout)
     }
 
@@ -267,7 +247,7 @@ class RequestManager(
     ): UploadRequest {
         return getAuthenticatedRequest(
             fuelManager.upload(
-                url,
+                absoluteUrl(url),
                 method = Method.POST,
                 urlParameters
             )
@@ -303,6 +283,7 @@ class RequestManager(
         val HEADER_CONTENT_TYPE_JSON = "Content-Type" to "application/json"
         val HEADER_REQUESTED_WITH = "X-Requested-With" to "MkDocsEditor-Android"
         const val DEFAULT_TIMEOUT = 3000
+        private const val NOT_CONFIGURED_HOST = "backend-not-configured.invalid"
     }
 
 }

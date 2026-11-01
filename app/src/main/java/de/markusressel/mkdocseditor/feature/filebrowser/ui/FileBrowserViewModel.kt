@@ -90,7 +90,6 @@ internal class FileBrowserViewModel @Inject constructor(
     private val deleteDocumentUseCase: DeleteDocumentUseCase,
     private val deleteResourceUseCase: DeleteResourceUseCase,
     private val deleteSectionUseCase: DeleteSectionUseCase,
-    private val applyCurrentBackendConfigUseCase: ApplyCurrentBackendConfigUseCase,
     private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val uploadResourceUseCase: UploadResourceUseCase,
     private val downloadResourceUseCase: DownloadResourceUseCase,
@@ -171,15 +170,6 @@ internal class FileBrowserViewModel @Inject constructor(
         }
 
         launch {
-            try {
-                applyCurrentBackendConfigUseCase()
-            } catch (ex: Exception) {
-                Timber.e(ex)
-                setError(message = ex.localizedMessage ?: ex.javaClass.name)
-            }
-        }
-
-        launch {
             combine(
                 getCurrentBackendConfigFlowUseCase(),
                 authRepository.loginRequired,
@@ -195,7 +185,6 @@ internal class FileBrowserViewModel @Inject constructor(
             authRepository.sessionChanges.collect { backendId ->
                 val current = getCurrentBackendConfigFlowUseCase().first()
                 if (current?.id == backendId && authRepository.isSignedIn(backendId)) {
-                    applyCurrentBackendConfigUseCase()
                     reload()
                 }
             }

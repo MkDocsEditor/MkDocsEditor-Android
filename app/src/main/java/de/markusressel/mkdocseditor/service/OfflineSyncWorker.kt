@@ -9,7 +9,6 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
-import de.markusressel.mkdocseditor.feature.filebrowser.ui.ApplyCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocsrestclient.ErrorResult
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
@@ -23,7 +22,6 @@ internal class OfflineSyncWorker @AssistedInject constructor(
     private val dataRepository: DataRepository,
     private val restClient: IMkDocsRestClient,
     private val documentContentPersistenceManager: DocumentContentPersistenceManager,
-    private val applyCurrentBackendConfigUseCase: ApplyCurrentBackendConfigUseCase,
     private val preferencesHolder: KutePreferencesHolder,
 ) : CoroutineWorker(appContext, workerParams) {
 
@@ -42,13 +40,6 @@ internal class OfflineSyncWorker @AssistedInject constructor(
         val documentIds = inputData.getStringArray(DOCUMENT_IDS_KEY)
         if (documentIds == null) {
             Timber.wtf { "Missing documentIds parameter!" }
-            return Result.failure()
-        }
-
-        try {
-            applyCurrentBackendConfigUseCase()
-        } catch (ex: Exception) {
-            Timber.e(ex)
             return Result.failure()
         }
 

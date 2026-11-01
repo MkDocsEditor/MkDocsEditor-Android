@@ -20,9 +20,11 @@ import de.markusressel.mkdocseditor.data.persistence.entity.MyObjectBox
 import de.markusressel.mkdocseditor.feature.auth.common.data.AndroidCredentialClient
 import de.markusressel.mkdocseditor.feature.auth.common.data.CredentialClient
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
+import de.markusressel.mkdocseditor.auth.domain.AuthRepository
+import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.BackendManager
+import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.createSelectedBackendRestClient
 import de.markusressel.mkdocsrestclient.DummyMkDocsRestClient
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
-import de.markusressel.mkdocsrestclient.MkDocsRestClient
 import de.markusressel.mkdocsrestclient.reference.ItemType
 import de.markusressel.mkdocsrestclient.sync.automerge.FileDocumentStore
 import de.markusressel.mkdocsrestclient.sync.automerge.LocalCopyRedirects
@@ -125,10 +127,14 @@ class AppModule {
 
     @Provides
     @Singleton
-    fun provideMkDocsRestClient(kutePreferencesHolder: KutePreferencesHolder): IMkDocsRestClient {
+    internal fun provideMkDocsRestClient(
+        kutePreferencesHolder: KutePreferencesHolder,
+        backendManager: BackendManager,
+        authRepository: AuthRepository,
+    ): IMkDocsRestClient {
         return when (kutePreferencesHolder.demoMode.persistedValue.value) {
             true -> DummyMkDocsRestClient()
-            else -> MkDocsRestClient()
+            else -> createSelectedBackendRestClient(backendManager::getSelectedBackend, authRepository)
         }
     }
 
