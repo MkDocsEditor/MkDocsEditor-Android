@@ -58,10 +58,27 @@ class WikiTreeTest {
     }
 
     @Test
-    fun `directory urls point to the index or a document`() {
+    fun `sections resolve to their index document or themselves`() {
         assertEquals("d-guide-index", tree.resolve(root, "guide/")?.id)
-        assertEquals("d-setup", tree.resolve(guide, "setup/")?.id)
+        assertEquals("d-guide-index", tree.resolve(root, "guide")?.id)
         assertEquals(WikiItem.Section(notes), tree.resolve(root, "My%20Notes/"))
+        assertEquals("d-index", tree.resolve(guide, "../")?.id)
+    }
+
+    @Test
+    fun `README is the index without index md`() {
+        val readme = section("s-r", "r", documents = listOf(doc("d-readme", "README"), doc("d-a", "a")))
+        val withIndex = section("s-i", "i", documents = listOf(doc("d-readme2", "README"), doc("d-i", "index")))
+        val t = WikiTree(section("root", "root", subsections = listOf(readme, withIndex)))
+        assertEquals("d-readme", t.resolve(t.root, "r/")?.id)
+        assertEquals("d-i", t.resolve(t.root, "i")?.id)
+        assertEquals("r/README.md", t.relativeLink(t.root, WikiItem.Section(readme)))
+    }
+
+    @Test
+    fun `directory urls of documents are broken`() {
+        assertNull(tree.resolve(guide, "setup/"))
+        assertNull(tree.resolve(guide, "setup"))
     }
 
     @Test
@@ -92,9 +109,10 @@ class WikiTreeTest {
         assertEquals("../My%20Notes/Küche.md", tree.relativeLink(guide, kitchen))
         assertEquals("setup.md", tree.relativeLink(guide, WikiItem.Document(guide.documents[1])))
         assertEquals("../index.md", tree.relativeLink(guide, WikiItem.Document(root.documents.first())))
-        assertEquals("guide/", tree.relativeLink(root, WikiItem.Section(guide)))
-        assertEquals("../", tree.relativeLink(img, WikiItem.Section(guide)))
-        assertEquals("./", tree.relativeLink(guide, WikiItem.Section(guide)))
+        assertEquals("guide/index.md", tree.relativeLink(root, WikiItem.Section(guide)))
+        assertEquals("../index.md", tree.relativeLink(img, WikiItem.Section(guide)))
+        assertEquals("My%20Notes/", tree.relativeLink(root, WikiItem.Section(notes)))
+        assertEquals("./", tree.relativeLink(img, WikiItem.Section(img)))
     }
 
     @Test
@@ -111,6 +129,14 @@ class WikiTreeTest {
                 assertEquals(expected, resolved?.id, "$link from ${from.name}")
             }
         }
+    }
+
+    @Test
+    fun `link paths from a document`() {
+        val setup = WikiItem.Document(guide.documents[1])
+        assertEquals("setup.md", tree.linkPath("guide/setup.md", setup))
+        assertEquals("#install", tree.linkPath("guide/setup.md", setup, "install"))
+        assertEquals("../My%20Notes/Küche.md#a%20b", tree.linkPath("guide/setup.md", WikiItem.Document(notes.documents.first()), "a b"))
     }
 
     @Test

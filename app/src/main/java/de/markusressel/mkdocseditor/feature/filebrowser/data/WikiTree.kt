@@ -1,7 +1,5 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.data
 
-import java.net.URLDecoder
-
 /**
  * An item of the wiki tree that a link can point to
  */
@@ -26,8 +24,8 @@ sealed interface WikiItem {
 }
 
 /**
- * Navigates the wiki tree by paths, the way MkDocs resolves links between files.
- * The web client resolves links the same way (`resolveRelative` in `src/stores/tree.ts`).
+ * Navigates the wiki tree by paths, the way MkDocs resolves links between files. Resolution
+ * and link paths follow `docs/references.md` of the backend (see [LinkPaths]).
  *
  * @param root the root section of the wiki
  */
@@ -91,83 +89,56 @@ class WikiTree(val root: SectionData) {
         }
     }
 
+    private val itemsByPath: Map<String, WikiItem> by lazy {
+        allItems().associateBy { pathOf(it) } + ("" to WikiItem.Section(root))
+    }
+
+    /** the index document of a section: `index.md`, else `README.md` */
+    fun indexOf(section: SectionData): DocumentData? =
+        section.documents.firstOrNull { it.name == "index" } ?: section.documents.firstOrNull { it.name == "README" }
+
+    /** the item with this path below the docs folder (`""` is the root section) */
+    fun itemAt(path: String): WikiItem? = itemsByPath[path]
+
     /**
-     * Resolves a link or image target relative to [from], the folder of the current document.
+     * Resolves a link or image destination written in a document of the folder [from], as
+     * specified in `docs/references.md` of the backend: a section resolves to its index
+     * document, or to itself without one.
      *
-     * @return the target, or null for external links, anchors and targets that don't exist
+     * @return the target, or null for external links, anchors and broken destinations
      */
     fun resolve(from: SectionData, href: String): WikiItem? {
-        if (isExternal(href) || href.startsWith("#")) return null
-        val path = href.split('?', '#').first()
-        if (path.isEmpty()) return null
-        var segments = try {
-            path.split('/').map { URLDecoder.decode(it.replace("+", "%2B"), "UTF-8") }
-        } catch (e: IllegalArgumentException) {
-            return null
+        val path = LinkPaths.resolvePath(documentPathIn(from), href) ?: return null
+        return when (val item = itemsByPath[path]) {
+            is WikiItem.Section -> indexOf(item.section)?.let { WikiItem.Document(it) } ?: item
+            else -> item
         }
-        var current = from
-        if (path.startsWith("/")) {
-            current = root
-            segments = segments.drop(1)
-        }
-        val directoryUrl = segments.lastOrNull() == ""
-        if (directoryUrl) segments = segments.dropLast(1)
-        segments.forEachIndexed { i, segment ->
-            val last = i == segments.lastIndex
-            when (segment) {
-                ".", "" -> return@forEachIndexed
-                ".." -> {
-                    current = parents[current.id] ?: return null
-                    return@forEachIndexed
-                }
-            }
-            if (last && !directoryUrl) {
-                current.documents.firstOrNull { "${it.name}.md" == segment }?.let { return WikiItem.Document(it) }
-                current.resources.firstOrNull { it.name == segment }?.let { return WikiItem.Resource(it) }
-            }
-            val sub = current.subsections.firstOrNull { it.name == segment }
-            if (sub != null) {
-                current = sub
-            } else {
-                // MkDocs directory URLs: `page/` is `page.md`
-                if (last && directoryUrl) {
-                    return current.documents.firstOrNull { it.name == segment }?.let { WikiItem.Document(it) }
-                }
-                return null
-            }
-        }
-        if (directoryUrl) {
-            return current.documents.firstOrNull { it.name == "index" }?.let { WikiItem.Document(it) }
-                ?: WikiItem.Section(current)
-        }
-        return WikiItem.Section(current)
     }
 
     /**
-     * The relative link from a document in [from] to [target], like MkDocs expects it:
-     * `../other/page.md`, `image.png`, `sub/` for a folder. Path segments are URL encoded where
-     * needed (spaces become `%20`).
+     * The link destination from the document at [fromPath] to [target], computed with the
+     * link path algorithm of the backend ([LinkPaths.linkPath])
+     *
+     * @param anchor optional heading id, without `#`
      */
-    fun relativeLink(from: SectionData, target: WikiItem): String {
-        val targetSection = when (target) {
-            is WikiItem.Section -> target.section
-            else -> parentOf(target) ?: root
+    fun linkPath(fromPath: String, target: WikiItem, anchor: String = ""): String {
+        val linkTarget = when (target) {
+            is WikiItem.Section -> LinkPaths.Target(
+                LinkPaths.TargetType.SECTION,
+                pathOf(target),
+                indexOf(target.section)?.let { pathOf(WikiItem.Document(it)) } ?: "",
+            )
+            is WikiItem.Document -> LinkPaths.Target(LinkPaths.TargetType.DOCUMENT, pathOf(target))
+            is WikiItem.Resource -> LinkPaths.Target(LinkPaths.TargetType.RESOURCE, pathOf(target))
         }
-        val fromChain = ancestorsAndSelf(from)
-        val toChain = ancestorsAndSelf(targetSection)
-        var common = 0
-        while (common < fromChain.size && common < toChain.size && fromChain[common].id == toChain[common].id) {
-            common++
-        }
-        val up = List(fromChain.size - common) { ".." }
-        val down = toChain.drop(common).map { encodeSegment(it.name) }
-        val folder = (up + down)
-        return when (target) {
-            is WikiItem.Section -> if (folder.isEmpty()) "./" else folder.joinToString("/") + "/"
-            is WikiItem.Document -> (folder + encodeSegment(target.name + ".md")).joinToString("/")
-            is WikiItem.Resource -> (folder + encodeSegment(target.name)).joinToString("/")
-        }
+        return LinkPaths.linkPath(fromPath, linkTarget, anchor)
     }
+
+    /** the link destination from a document in the folder [from] to [target] */
+    fun relativeLink(from: SectionData, target: WikiItem): String = linkPath(documentPathIn(from), target)
+
+    /** a document path in [section] that no item has, for links that only need the folder */
+    private fun documentPathIn(section: SectionData) = pathOf(section) + "/"
 
     /** all items of the tree, depth first */
     fun allItems(): List<WikiItem> {
@@ -183,28 +154,9 @@ class WikiTree(val root: SectionData) {
     }
 
     companion object {
-        fun isExternal(href: String): Boolean =
-            href.startsWith("//") || "^[a-zA-Z][a-zA-Z0-9+.-]*:".toRegex().containsMatchIn(href)
+        fun isExternal(href: String): Boolean = LinkPaths.isExternal(href)
 
-        /**
-         * Encodes the characters of a path segment that would break a markdown link or change
-         * its meaning: `%`, space, `(`, `)`, `#`, `?`, `<`, `>`. Other characters, umlauts too,
-         * stay readable; MkDocs accepts them as they are.
-         */
-        fun encodeSegment(segment: String): String = buildString {
-            segment.forEach {
-                when (it) {
-                    '%' -> append("%25")
-                    ' ' -> append("%20")
-                    '(' -> append("%28")
-                    ')' -> append("%29")
-                    '#' -> append("%23")
-                    '?' -> append("%3F")
-                    '<' -> append("%3C")
-                    '>' -> append("%3E")
-                    else -> append(it)
-                }
-            }
-        }
+        /** percent-encodes a path segment like the link path algorithm does */
+        fun encodeSegment(segment: String): String = LinkPaths.encode(segment)
     }
 }
