@@ -20,8 +20,7 @@ jobs:
     name: Build APK
     runs-on: ubuntu-latest
     permissions:
-      # for the pre-release of master builds
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -34,24 +33,108 @@ jobs:
           mkdir -p $HOME/.android
           cp ./.ci/debug.keystore $HOME/.android/debug.keystore
 
+      # The release build is not signed here, but it has to get through R8 on every PR.
       - name: Execute APK build
-        run: ./gradlew app:assembleDebug --stacktrace
+        run: ./gradlew app:assembleDebug app:assembleRelease --stacktrace
 
       - uses: actions/upload-artifact@v7
         with:
           name: apk-files
           path: app/build/outputs/apk/**/*.apk
 
-      # Every master build becomes a pre-release with the APK, so Obtainium can install and update
-      # the app (see README). All builds are signed with .ci/debug.keystore, so they update each
-      # other. Only the 5 newest pre-releases are kept.
-      - name: Publish pre-release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-mapping
+          path: app/build/outputs/mapping/release/mapping.txt
+
+      - name: Notify
+        # make sure this step runs, regardless of whether the preceding steps were successful or not
+        if: always()
         env:
-          GH_TOKEN: ${{ github.token }}
+          # "failure", "success" or "cancelled"
+          # see: https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#job-context
+          RUN_RESULT: ${{ job.status }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          MATRIX_HOMESERVER: ${{ secrets.MATRIX_HOMESERVER }}
+          MATRIX_ACCESS_TOKEN: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        run: .ci/notify.sh
+
+  # Every master build becomes two GitHub releases, so Obtainium can install and update both
+  # packages (see README): the production build as a normal release-<n>, the debug build as a
+  # pre-release build-<n>.
+  #
+  # The order matters. Obtainium takes the newest release it may use, by publish date, and a source
+  # with "Include prereleases" also sees release-<n>. So the debug build is always published last,
+  # even when the release failed, and runs do not overlap.
+  PUBLISH:
+    name: Publish
+    needs: [ANDROID_UNIT_TESTS, ANDROID_BUILD_APK]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.ANDROID_BUILD_APK.result == 'success'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: publish
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: apk-files
+          path: apk
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-mapping
+          path: mapping
+
+      # Signed here and not in Gradle, so the key is only present for this one step. Without the
+      # secrets the step only leaves a notice, and no release is published.
+      - name: Sign release APK
+        id: sign
+        env:
+          TESTS_RESULT: ${{ needs.ANDROID_UNIT_TESTS.result }}
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          if [[ "$TESTS_RESULT" != "success" ]]; then
+            echo "::notice title=No release published::The unit tests did not pass."
+            exit 0
+          fi
+          unsigned=$(ls apk/release/*.apk)
+          .ci/sign-release.sh "$unsigned" "$RUNNER_TEMP/$(basename "$unsigned")"
+
+      - name: Publish release
+        if: steps.sign.outputs.signed == 'true'
+        env:
+          APK: ${{ steps.sign.outputs.apk }}
+          FINGERPRINT: ${{ steps.sign.outputs.fingerprint }}
+        run: |
+          tag="release-${{ github.run_number }}"
+          gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$tag" "$APK" mapping/mapping.txt \
+            --latest --target "${{ github.sha }}" \
+            --title "Release ${{ github.run_number }}" \
+            --notes "Production build of ${{ github.sha }}. Certificate SHA-256: $FINGERPRINT"
+          echo "Release certificate SHA-256: \`$FINGERPRINT\`" >> "$GITHUB_STEP_SUMMARY"
+          gh release list --limit 100 --json tagName,isPrerelease \
+            --jq '.[] | select(.isPrerelease | not) | .tagName' \
+            | grep '^release-' | tail -n +6 \
+            | xargs -r -I{} gh release delete {} --yes --cleanup-tag
+
+      # All debug builds are signed with .ci/debug.keystore, so they update each other. Only the 5
+      # newest pre-releases are kept, and the 5 newest releases above.
+      - name: Publish pre-release
+        if: ${{ !cancelled() }}
         run: |
           tag="build-${{ github.run_number }}"
-          gh release create "$tag" app/build/outputs/apk/debug/*.apk \
+          gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$tag" apk/debug/*.apk \
             --prerelease --target "${{ github.sha }}" \
             --title "Build ${{ github.run_number }}" \
             --notes "Debug build of ${{ github.sha }}, signed with .ci/debug.keystore."
@@ -61,11 +144,8 @@ jobs:
             | xargs -r -I{} gh release delete {} --yes --cleanup-tag
 
       - name: Notify
-        # make sure this step runs, regardless of whether the preceding steps were successful or not
-        if: always()
+        if: failure()
         env:
-          # "failure", "success" or "cancelled"
-          # see: https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#job-context
           RUN_RESULT: ${{ job.status }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
