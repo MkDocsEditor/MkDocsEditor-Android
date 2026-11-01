@@ -28,6 +28,12 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 buildTypes {
                     release {
                         isMinifyEnabled = true
+                        isShrinkResources = true
+                        // Not signed here, CI signs the APK (see .github/workflows/build.yml).
+                        // mkdocs.releaseAbis is only for testing an R8 build on an emulator.
+                        ndk.abiFilters += providers.gradleProperty("mkdocs.releaseAbis")
+                            .getOrElse("arm64-v8a")
+                            .split(",")
                         proguardFiles(
                             getDefaultProguardFile("proguard-android-optimize.txt"),
                             "proguard-rules.pro"

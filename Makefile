@@ -12,10 +12,11 @@ buildRelease:
 	./gradlew assembleRelease
 
 install: build
-	adb install ./app/build/outputs/apk/**/*.apk
+	adb install ./app/build/outputs/apk/debug/*.apk
 
+# The release APK is unsigned unless you sign it yourself, see "Build variants" in the README.
 installRelease: buildRelease
-	adb install ./app/build/outputs/apk/**/*.apk
+	adb install ./app/build/outputs/apk/release/*.apk
 
 run: install open
 

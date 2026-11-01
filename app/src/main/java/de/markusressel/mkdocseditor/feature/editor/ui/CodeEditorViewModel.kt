@@ -196,7 +196,7 @@ internal class CodeEditorViewModel @Inject constructor(
     internal val photoUriFactory = PhotoUriFactory {
         val directory = File(context.cacheDir, "camera").apply { mkdirs() }
         val name = "photo-" + SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ENGLISH).format(Date()) + ".jpg"
-        FileProvider.getUriForFile(context, context.getString(R.string.authorities_fileprovider_id), File(directory, name))
+        FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", File(directory, name))
     }
 
     /**
@@ -908,7 +908,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
     /** photos taken for an upload are not needed after it */
     private fun deleteIfPhoto(uri: Uri) {
-        if (uri.authority != context.getString(R.string.authorities_fileprovider_id)) return
+        if (uri.authority != "${context.packageName}.fileprovider") return
         val name = uri.lastPathSegment?.substringAfterLast('/') ?: return
         File(File(context.cacheDir, "camera"), name).takeIf { it.isFile }?.delete()
     }

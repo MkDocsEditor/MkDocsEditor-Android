@@ -3,7 +3,6 @@ package de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
-import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.extensions.common.getMimeType
 import de.markusressel.mkdocseditor.extensions.common.startsWithAny
 import java.nio.file.Path
@@ -19,7 +18,7 @@ class ShareFileUseCase @Inject constructor(
     suspend operator fun invoke(filePath: Path) {
         val contentUri: Uri = FileProvider.getUriForFile(
             context,
-            context.getString(R.string.authorities_fileprovider_id),
+            "${context.packageName}.fileprovider",
             filePath.toFile()
         )
 

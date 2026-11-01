@@ -17,7 +17,8 @@ extensions.configure<ApplicationExtension> {
     defaultConfig {
         applicationId = "de.markusressel.mkdocseditor"
 
-        versionCode = 1
+        // Android only installs an update with a higher version code, so CI uses its run number
+        versionCode = providers.environmentVariable("GITHUB_RUN_NUMBER").orNull?.toInt() ?: 1
         versionName = "0.1.0"
 
         // host of the web client whose setup/invite/reset links open in the app (App Links)
@@ -52,9 +53,17 @@ extensions.configure<ApplicationExtension> {
 extensions.configure<ApplicationAndroidComponentsExtension> {
     onVariants { variant ->
         val appExtension = extensions.getByType<ApplicationExtension>()
+        val versionName = appExtension.defaultConfig.versionName
+        val versionCode = appExtension.defaultConfig.versionCode
         variant.outputs.forEach { output ->
             val outputImpl = output as com.android.build.api.variant.impl.VariantOutputImpl
-            outputImpl.outputFileName.set("MkDocsEditor_v${appExtension.defaultConfig.versionName}_(${appExtension.defaultConfig.versionCode}).apk")
+            outputImpl.outputFileName.set(
+                if (variant.buildType == "release") {
+                    "MkDocsEditor-release_v${versionName}_$versionCode.apk"
+                } else {
+                    "MkDocsEditor_v${versionName}_($versionCode).apk"
+                }
+            )
         }
     }
 }
