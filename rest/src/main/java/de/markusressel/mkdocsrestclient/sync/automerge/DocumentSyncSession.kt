@@ -21,6 +21,7 @@ import de.markusressel.mkdocsrestclient.sync.text.rebaseSplices
 import org.automerge.SyncState
 import java.security.SecureRandom
 import java.util.Base64
+import timber.log.Timber
 
 /**
  * A selection of another user, resolved to UTF-16 positions in the current text
@@ -115,7 +116,11 @@ class DocumentSyncSession(
     var documentId: String = documentId
         private set
 
+    /** the state this session last loaded from or wrote to the store */
+    private var storedState: ByteArray? = null
+
     private var local: LocalCopy? = store.load(documentId)?.let { stored ->
+        storedState = stored.documentState
         LocalCopy(
             document = AutomergeTextDocument.load(stored.documentState, stored.actorId.hexToBytes()),
             actorId = stored.actorId,
@@ -301,16 +306,40 @@ class DocumentSyncSession(
         if (!dirty) {
             return
         }
+        reconcileWithStore(current)
+        val state = current.document.save()
         store.save(
             documentId,
             StoredDocument(
-                documentState = current.document.save(),
+                documentState = state,
                 actorId = current.actorId,
                 epoch = current.epoch,
                 serverHeads = current.serverHeads,
             )
         )
+        storedState = state
         dirty = false
+    }
+
+    /**
+     * Never overwrites a copy that someone else wrote under this id since this session read or
+     * wrote it (a redirect may have re-keyed a copy of a moved document onto it): a copy of
+     * the same lineage is merged into this one, any other copy is kept aside as a backup.
+     */
+    private fun reconcileWithStore(current: LocalCopy) {
+        val stored = store.load(documentId) ?: return
+        val known = storedState
+        if (known != null && stored.documentState.contentEquals(known)) return
+        if (stored.epoch == current.epoch) {
+            try {
+                val splices = current.document.merge(AutomergeTextDocument.load(stored.documentState))
+                if (splices.isNotEmpty()) listener.onRemoteChange(current.document.text, splices)
+                return
+            } catch (e: Exception) {
+                Timber.e(e, "Could not merge the stored copy of $documentId")
+            }
+        }
+        store.keepAside(documentId)
     }
 
     private fun onInitialContent(message: InitialContentMessage) {
@@ -417,10 +446,28 @@ class DocumentSyncSession(
         if (message.documentId != oldId) {
             return
         }
+        val newId = message.newDocumentId
+        // write the copy with all local edits under the old id, then move it in one step
+        local?.let { dirty = true }
         persist()
-        store.move(oldId, message.newDocumentId)
-        documentId = message.newDocumentId
-        listener.onDocumentRenamed(oldId, message.newDocumentId)
+        store.move(oldId, newId)
+        documentId = newId
+        // the store may have merged an older copy of the new id into it
+        val current = local
+        store.load(newId)?.let { stored ->
+            storedState = stored.documentState
+            if (current == null || !stored.documentState.contentEquals(current.document.save())) {
+                local = LocalCopy(
+                    document = AutomergeTextDocument.load(stored.documentState, stored.actorId.hexToBytes()),
+                    actorId = stored.actorId,
+                    epoch = stored.epoch,
+                    serverHeads = stored.serverHeads,
+                )
+                val text = local!!.document.text
+                if (current == null || text != current.document.text) listener.onTextReplaced(text)
+            }
+        }
+        listener.onDocumentRenamed(oldId, newId)
     }
 
     /**

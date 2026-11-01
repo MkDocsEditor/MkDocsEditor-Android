@@ -4,7 +4,13 @@ import de.markusressel.mkdocsrestclient.sync.text.TextSplice
 import de.markusressel.mkdocsrestclient.sync.text.applySplices
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionHandler
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionListener
+import de.markusressel.mkdocsrestclient.reference.MoveResultModel
+import de.markusressel.mkdocsrestclient.reference.MovedModel
+import de.markusressel.mkdocsrestclient.toEntity
+import kotlinx.coroutines.runBlocking
 import okhttp3.Credentials
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -22,7 +28,8 @@ import kotlin.test.assertTrue
  * - `-Pmkdocs.backend.url=http://127.0.0.1:7413`
  * - `-Pmkdocs.backend.users=alice:password,bob:password` (two editors)
  *
- * It edits the first document of the root section, so use a test wiki.
+ * It edits the first document of the root section and creates and moves test documents, so
+ * use a test wiki. The move test needs a backend with `POST /move/` (MkDocsEditor-Backend #49).
  */
 class LiveBackendSyncTest {
 
@@ -77,10 +84,24 @@ class LiveBackendSyncTest {
             })
         }
 
+        private fun wsUrl(documentId: String) =
+            baseUrl!!.replaceFirst("http", "ws").trimEnd('/') + "/document/$documentId/ws/"
+
         fun connect() {
-            val wsUrl = baseUrl!!.replaceFirst("http", "ws").trimEnd('/') + "/document/${session.documentId}/ws/"
-            connection.connect(wsUrl)
+            connection.connect(wsUrl(session.documentId))
             waitFor("${auth.username} syncing") { session.isSyncing }
+        }
+
+        /**
+         * Connects with an old id of a moved document: the server answers `document-renamed`
+         * and closes, the session re-keys its copy, then this connects again with the new id
+         */
+        fun connectFollowingMove(newId: String) {
+            val oldId = session.documentId
+            connection.connect(wsUrl(oldId))
+            waitFor("${auth.username} learns the new id") { session.documentId == newId }
+            waitFor("${auth.username} closed with 4009") { !connected && closeCode == 4009 }
+            connect()
         }
 
         fun disconnect() {
@@ -138,6 +159,22 @@ class LiveBackendSyncTest {
             response.body.string()
         }
     }
+
+    private fun send(method: String, path: String, auth: TestUser, json: String): String {
+        val request = Request.Builder()
+            .url(baseUrl!!.trimEnd('/') + path)
+            .header("Authorization", auth.authorization)
+            .header("X-Requested-With", "MkDocsEditor-Android")
+            .method(method, json.toRequestBody("application/json".toMediaType()))
+            .build()
+        return http.newCall(request).execute().use { response ->
+            val body = response.body.string()
+            check(response.isSuccessful) { "$method $path: ${response.code} $body" }
+            body
+        }
+    }
+
+    private fun idOf(json: String): String = Regex("\"id\":\\s*\"([^\"]+)\"").find(json)!!.groupValues[1]
 
     private fun firstDocumentId(auth: TestUser): String {
         val tree = get("/section/", auth)
@@ -200,6 +237,92 @@ class LiveBackendSyncTest {
 
             alice2.close()
             bob.close()
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
+    /**
+     * The document moves on the server while alice holds it offline with unsynced edits. Her
+     * copy follows the move and the edits reach the moved document, merged with the link the
+     * move rewrote. Then the same with the redirect lookup the app runs before opening a
+     * document (`GET /moved/{id}/`).
+     */
+    @Test
+    fun `offline edits survive a move on the server`() {
+        if (baseUrl == null || users == null) return
+        val (aliceAuth, bobAuth) = users
+        val dir: File = createTempDirectory("live-move").toFile()
+        val suffix = System.currentTimeMillis().toString(36)
+
+        try {
+            val section = idOf(send("POST", "/section/", bobAuth, """{"parent":"root","name":"move-$suffix"}"""))
+            val documentId = idOf(send("POST", "/document/", bobAuth, """{"parent":"$section","name":"page"}"""))
+            val start = "# Page\n\n[home](../index.md)\n"
+
+            // alice writes the start, goes offline and keeps editing
+            val alice = LiveClient(aliceAuth, documentId, FileDocumentStore(File(dir, "alice")))
+            alice.connect()
+            alice.type(start)
+            alice.waitFor("server has the start") { get("/document/$documentId/content/", aliceAuth) == start }
+            alice.disconnect()
+            alice.type(start + "offline by alice\n")
+            alice.read { persist() }
+            alice.close()
+
+            // bob moves the page to the top level, which rewrites its link
+            val moved = send(
+                "POST", "/move/", bobAuth,
+                """{"type":"document","id":"$documentId","parent":"root","name":"moved-$suffix","dryRun":false}""",
+            ).toEntity<MoveResultModel>()
+            val newId = moved.newId
+            assertEquals("moved-$suffix.md", moved.newPath)
+            assertEquals("[home](index.md)", moved.documents.single().edits.single().after)
+            assertEquals(newId, get("/moved/$documentId/", aliceAuth).toEntity<MovedModel>().item.id)
+
+            // alice comes back with the old id
+            val alice2 = LiveClient(aliceAuth, documentId, FileDocumentStore(File(dir, "alice")))
+            assertEquals(start + "offline by alice\n", alice2.editorText)
+            alice2.connectFollowingMove(newId)
+            val expected = "# Page\n\n[home](index.md)\noffline by alice\n"
+            alice2.waitFor("alice2 merged") { alice2.session.text == expected }
+            assertEquals(expected, alice2.editorText)
+            assertEquals(listOf(newId), FileDocumentStore(File(dir, "alice")).ids())
+            alice2.waitFor("server has the offline edit") { get("/document/$newId/content/", aliceAuth) == expected }
+            alice2.close()
+
+            // second round: bob moves it back into the folder while alice is offline again;
+            // the app follows the redirect before it opens the document by its new id
+            val store = FileDocumentStore(File(dir, "alice"))
+            run {
+                val offline = LiveClient(aliceAuth, newId, store)
+                offline.type(expected + "second offline edit\n")
+                offline.read { persist() }
+                offline.close()
+            }
+            val backId = send(
+                "POST", "/move/", bobAuth,
+                """{"type":"document","id":"$newId","parent":"$section","name":"page","dryRun":false}""",
+            ).toEntity<MoveResultModel>().newId
+            val redirects = LocalCopyRedirects(store) { id ->
+                val request = Request.Builder().url(baseUrl.trimEnd('/') + "/moved/$id/")
+                    .header("Authorization", aliceAuth.authorization).build()
+                http.newCall(request).execute().use { response ->
+                    when (response.code) {
+                        200 -> LocalCopyRedirects.Lookup.Moved(response.body.string().toEntity<MovedModel>().item.id)
+                        404 -> LocalCopyRedirects.Lookup.NotMoved
+                        else -> LocalCopyRedirects.Lookup.Unknown
+                    }
+                }
+            }
+            assertEquals(backId, runBlocking { redirects.beforeOpening(backId) })
+            assertEquals(listOf(backId), store.ids())
+            val alice4 = LiveClient(aliceAuth, backId, store)
+            alice4.connect()
+            val expected2 = "# Page\n\n[home](../index.md)\noffline by alice\nsecond offline edit\n"
+            alice4.waitFor("alice4 merged") { alice4.session.text == expected2 }
+            alice4.waitFor("server has the second offline edit") { get("/document/$backId/content/", aliceAuth) == expected2 }
+            alice4.close()
         } finally {
             dir.deleteRecursively()
         }

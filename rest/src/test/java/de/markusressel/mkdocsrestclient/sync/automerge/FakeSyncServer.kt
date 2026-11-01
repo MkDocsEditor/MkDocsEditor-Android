@@ -23,9 +23,15 @@ import java.util.Base64
  */
 class FakeSyncServer(
     initialText: String,
-    val documentId: String = "doc-1",
+    documentId: String = "doc-1",
     var readOnly: Boolean = false,
 ) {
+
+    var documentId: String = documentId
+        private set
+
+    /** ids the document had before [move] */
+    private val oldIds = mutableSetOf<String>()
 
     var document: AutomergeTextDocument = createDocument(initialText)
         private set
@@ -80,6 +86,10 @@ class FakeSyncServer(
             toClients.removeFirstOrNull()?.let { (connection, message) ->
                 if (connection.open) connection.session.onMessage(message)
             }
+            closeAfterDelivery.filter { c -> toClients.none { it.first == c } }.forEach {
+                closeAfterDelivery -= it
+                disconnect(it)
+            }
         }
     }
 
@@ -90,6 +100,26 @@ class FakeSyncServer(
         document.applyLocalText(newText)
         connections.forEach(::sendSync)
     }
+
+    /**
+     * Moves the document to a new id, like the backend does: open connections get
+     * `document-renamed` and are closed, later connections with an old id get it after hello
+     */
+    fun move(newId: String) {
+        oldIds += documentId
+        val oldId = documentId
+        documentId = newId
+        connections.toList().forEach {
+            sendRaw(it, renamed(oldId))
+            closeAfterDelivery += it
+        }
+    }
+
+    private fun renamed(oldId: String) =
+        """{"type":"document-renamed","documentId":"$oldId","newDocumentId":"$documentId"}"""
+
+    /** connections the server closes (4009) once their queued messages are delivered */
+    private val closeAfterDelivery = mutableSetOf<Connection>()
 
     /**
      * Simulates a server that lost its saved state and starts a new lineage from the file
@@ -114,6 +144,11 @@ class FakeSyncServer(
             MessageType.HELLO -> {
                 val hello = moshi.adapter(HelloMessage::class.java).fromJson(message)!!
                 receivedHellos += hello
+                if (hello.documentId in oldIds) {
+                    sendRaw(connection, renamed(hello.documentId))
+                    closeAfterDelivery += connection
+                    return
+                }
                 val owner = boundActors.getOrPut(hello.actorId) { connection.username }
                 check(owner == connection.username) { "actor ${hello.actorId} belongs to $owner" }
                 connection.syncState = SyncState()
@@ -195,6 +230,14 @@ class InMemoryDocumentStore : LocalDocumentStore {
     override fun load(documentId: String) = documents[documentId]
     override fun save(documentId: String, document: StoredDocument) {
         documents[documentId] = document
+    }
+
+    override fun ids() = documents.keys.sorted()
+
+    val backups = mutableListOf<StoredDocument>()
+
+    override fun keepAside(documentId: String) {
+        documents.remove(documentId)?.let { backups += it }
     }
 
     override fun move(fromDocumentId: String, toDocumentId: String) {

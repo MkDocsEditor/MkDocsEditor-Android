@@ -53,10 +53,12 @@ import de.markusressel.mkdocseditor.util.Resource.Success
 import de.markusressel.mkdocsrestclient.AuthorizationProvider
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.CloseCode
 import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeDocumentSyncManager
+import de.markusressel.mkdocsrestclient.sync.automerge.LocalCopyRedirects
 import de.markusressel.mkdocsrestclient.sync.automerge.LocalDocumentStore
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 import de.markusressel.mkdocsrestclient.sync.text.TextSplice
 import de.markusressel.mkdocsrestclient.sync.text.transformIndex
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,6 +73,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 @HiltViewModel
@@ -87,6 +91,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private val findParentSectionOfDocumentUseCase: FindParentSectionOfDocumentUseCase,
     private val findSectionUseCase: FindSectionUseCase,
     private val localDocumentStore: LocalDocumentStore,
+    private val localCopyRedirects: LocalCopyRedirects,
     private val previewFileCache: PreviewFileCache,
     private val downloadResourceUseCase: DownloadResourceUseCase,
     private val shareFileUseCase: ShareFileUseCase,
@@ -253,6 +258,31 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     private suspend fun initializeEditorWithDocument(documentId: String?) {
+        if (documentId != null && automergeDocumentSyncManager?.documentId == documentId) {
+            // the open document moved: the manager already follows its new id
+            _uiState.update { old -> old.copy(documentId = documentId) }
+            launch { loadWikiTree(documentId) }
+            loadDocumentResource(documentId, connect = false)
+            return
+        }
+        if (documentId != null && !isOfflineModeEnabledFlowUseCase().value) {
+            if (withContext(Dispatchers.IO) { localDocumentStore.load(documentId) } == null) {
+                // a copy held under an old id of this document (moved while the app was
+                // offline) must be re-keyed before the copy is loaded, or its edits would not
+                // show up
+                val currentId = withTimeoutOrNull(REDIRECT_TIMEOUT_MS) {
+                    withContext(Dispatchers.IO) { localCopyRedirects.beforeOpening(documentId) }
+                }
+                if (currentId != null && currentId != documentId) {
+                    this.documentId.value = currentId
+                    return
+                }
+            } else {
+                // the copy is here; other moved copies are re-keyed meanwhile (sessions merge
+                // what lands under their id, see DocumentSyncSession.persist)
+                launch(Dispatchers.IO) { localCopyRedirects.followAll() }
+            }
+        }
         _uiState.update { old ->
             old.copy(documentId = documentId)
         }
@@ -310,7 +340,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
                     // keep the old offline cache up to date
                     updateDocumentContentInCache(
-                        documentId = documentId,
+                        documentId = automergeDocumentSyncManager?.documentId ?: documentId,
                         text = text
                     )
                 }
@@ -327,6 +357,11 @@ internal class CodeEditorViewModel @Inject constructor(
 
                 override fun onPeersChanged(peers: List<RemotePeer>) {
                     _uiState.update { old -> old.copy(remotePeers = peers) }
+                }
+
+                override fun onDocumentRenamed(oldDocumentId: String, newDocumentId: String) {
+                    // the copy moved with the document; follow it without reconnecting the editor
+                    this@CodeEditorViewModel.documentId.value = newDocumentId
                 }
 
                 override fun onDocumentDeleted() {
@@ -411,14 +446,19 @@ internal class CodeEditorViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadDocumentResource(documentId: String) {
+    /**
+     * @param connect false when the sync manager is connected already (after a move)
+     */
+    private suspend fun loadDocumentResource(documentId: String, connect: Boolean = true) {
         val resource = getDocumentUseCase(documentId)
         currentResource.value = resource
         when (resource) {
             is Success -> {
                 updateTitle(resource.data?.name ?: "")
 
-                if (isOfflineModeEnabledFlowUseCase().value) {
+                if (!connect) {
+                    // keep the connection
+                } else if (isOfflineModeEnabledFlowUseCase().value) {
                     showOfflineVersionIfPossible()
                 } else {
                     reconnectToServer()
@@ -857,6 +897,9 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     companion object {
+        /** how long opening a document waits for the redirect lookups of the local copies */
+        private const val REDIRECT_TIMEOUT_MS = 5_000L
+
         internal val EnableEditModeFabConfig = FabConfig.Fab<CodeEditorFabId>(
             id = CodeEditorFabId.EnableEditMode,
             description = R.string.code_editor_enable_edit_mode,

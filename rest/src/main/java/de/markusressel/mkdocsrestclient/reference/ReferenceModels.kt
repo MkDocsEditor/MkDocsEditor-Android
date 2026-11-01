@@ -1,0 +1,167 @@
+package de.markusressel.mkdocsrestclient.reference
+
+import com.squareup.moshi.JsonClass
+import java.util.Date
+
+/**
+ * Types of items in the tree, as the backend names them
+ */
+object ItemType {
+    const val SECTION = "section"
+    const val DOCUMENT = "document"
+    const val RESOURCE = "resource"
+}
+
+/**
+ * A reference to an item of the tree (docs/references.md of the backend)
+ *
+ * @param type [ItemType]
+ * @param path path relative to the docs folder, `""` for the root section
+ */
+@JsonClass(generateAdapter = true)
+data class ItemRefModel(
+    val type: String,
+    val id: String,
+    val path: String,
+    val name: String,
+)
+
+/**
+ * A link, image, reference definition or HTML reference in a document
+ *
+ * @param kind `link`, `image`, `definition` or `html`
+ * @param line 1-based
+ * @param column 1-based, in code points, of the first character of the destination
+ * @param status `ok` or `broken`
+ * @param target the resolved item, null when broken
+ * @param reason `not-found` or `outside-docs`, only when broken
+ * @param path the resolved path that does not exist, only when broken
+ */
+@JsonClass(generateAdapter = true)
+data class ReferenceModel(
+    val kind: String,
+    val line: Int,
+    val column: Int,
+    val destination: String,
+    val anchor: String,
+    val status: String,
+    val target: ItemRefModel?,
+    val reason: String? = null,
+    val path: String? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class DocumentReferencesModel(
+    val document: ItemRefModel,
+    val references: List<ReferenceModel>,
+)
+
+/**
+ * A reference to an item from a document
+ *
+ * @param internal section backlinks only: the source document is inside the section
+ */
+@JsonClass(generateAdapter = true)
+data class BacklinkModel(
+    val source: ItemRefModel,
+    val kind: String,
+    val line: Int,
+    val column: Int,
+    val destination: String,
+    val anchor: String,
+    val target: ItemRefModel,
+    val internal: Boolean = false,
+)
+
+@JsonClass(generateAdapter = true)
+data class BacklinksModel(
+    val item: ItemRefModel,
+    val backlinks: List<BacklinkModel>,
+)
+
+@JsonClass(generateAdapter = true)
+data class LinkResultModel(
+    val destination: String,
+    val markdown: String,
+    val target: ItemRefModel,
+)
+
+/**
+ * Request of `POST /move/`
+ *
+ * @param parent id of the target section, null to rename in place
+ * @param name new name (documents without `.md`), null to keep the name
+ */
+@JsonClass(generateAdapter = true)
+data class MoveRequestModel(
+    val type: String,
+    val id: String,
+    val parent: String? = null,
+    val name: String? = null,
+    val dryRun: Boolean,
+    val updateReferences: Boolean = true,
+)
+
+@JsonClass(generateAdapter = true)
+data class MovedItemModel(
+    val type: String,
+    val oldId: String,
+    val newId: String,
+    val oldPath: String,
+    val newPath: String,
+)
+
+/**
+ * @param line 1-based line number in the text before the move
+ */
+@JsonClass(generateAdapter = true)
+data class LineEditModel(
+    val line: Int,
+    val before: String,
+    val after: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class MovedDocumentModel(
+    val documentId: String,
+    val newDocumentId: String,
+    val path: String,
+    val newPath: String,
+    val edits: List<LineEditModel>,
+)
+
+@JsonClass(generateAdapter = true)
+data class ConfigEditModel(
+    val file: String,
+    val line: Int,
+    val before: String,
+    val after: String,
+)
+
+/**
+ * Answer of `POST /move/`: what changed, or what would change in a dry run
+ */
+@JsonClass(generateAdapter = true)
+data class MoveResultModel(
+    val dryRun: Boolean,
+    val type: String,
+    val oldId: String,
+    val newId: String,
+    val oldPath: String,
+    val newPath: String,
+    val moved: List<MovedItemModel>,
+    val documents: List<MovedDocumentModel>,
+    val config: List<ConfigEditModel>,
+    val commit: String? = null,
+)
+
+/**
+ * Answer of `GET /moved/{id}/`: where a moved item is now
+ */
+@JsonClass(generateAdapter = true)
+data class MovedModel(
+    val oldId: String,
+    val type: String,
+    val item: ItemRefModel,
+    val movedAt: Date,
+)

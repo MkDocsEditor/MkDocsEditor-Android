@@ -294,6 +294,159 @@ class DocumentSyncSessionTest {
     }
 
     @Test
+    fun `offline edits follow a move made while the app was offline`() {
+        val server = FakeSyncServer("# Title\n\nSome text.\n")
+
+        // first app process: load the document, go offline, edit, persist, die
+        run {
+            val listener = EditorListener()
+            val session = DocumentSyncSession(server.documentId, FileDocumentStore(tempDir), listener)
+            val connection = server.connect(session)
+            server.pump()
+            server.disconnect(connection)
+            assertTrue(session.onLocalTextChanged("# Title\n\nSome text.\nWritten offline.\n"))
+            session.persist()
+        }
+
+        // meanwhile the document moves on the server, and the move rewrites a link in it
+        server.move("doc-2")
+        server.edit("# Title\n\nSome text, rewritten by the move.\n")
+
+        // second app process: connects with the old id, learns the new one right after hello
+        val store = FileDocumentStore(tempDir)
+        val listener = EditorListener()
+        val session = DocumentSyncSession("doc-1", store, listener)
+        listener.editorText = session.text
+        server.connect(session)
+        server.pump()
+        assertEquals("doc-2", listener.renamedTo)
+        assertEquals("doc-2", session.documentId)
+        assertEquals(listOf("doc-2"), store.ids())
+        assertEquals("# Title\n\nSome text.\nWritten offline.\n", store.load("doc-2")?.let {
+            AutomergeTextDocument.load(it.documentState).text
+        })
+
+        // the app reconnects with the new id and the same epoch: a normal sync merges
+        server.connect(session)
+        server.pump()
+        val expected = "# Title\n\nSome text, rewritten by the move.\nWritten offline.\n"
+        assertEquals("epoch-1", server.receivedHellos.last().epoch)
+        assertEquals("doc-2", server.receivedHellos.last().documentId)
+        assertEquals(expected, server.document.text)
+        assertEquals(expected, session.text)
+        assertEquals(expected, listener.editorText)
+    }
+
+    @Test
+    fun `unsaved edits are kept when the document moves while connected`() {
+        val server = FakeSyncServer("abc")
+        val store = FileDocumentStore(tempDir)
+        val listener = EditorListener()
+        val session = DocumentSyncSession(server.documentId, store, listener)
+        server.connect(session)
+        server.pump()
+        listener.editorText = session.text
+
+        // typed, but neither sent nor persisted yet
+        assertTrue(session.onLocalTextChanged("abc typed"))
+        server.move("doc-2")
+        server.pump()
+
+        assertEquals("doc-2", session.documentId)
+        assertEquals(listOf("doc-2"), store.ids())
+        assertEquals("abc typed", AutomergeTextDocument.load(store.load("doc-2")!!.documentState).text)
+
+        server.connect(session)
+        server.pump()
+        session.flushSync()
+        server.pump()
+        assertEquals("abc typed", server.document.text)
+    }
+
+    @Test
+    fun `a move merges with an older copy stored under the new id`() {
+        val server = FakeSyncServer("abc")
+        val store = FileDocumentStore(tempDir)
+        // an interrupted earlier move left a copy under the new id
+        run {
+            val session = DocumentSyncSession(server.documentId, store, EditorListener())
+            val connection = server.connect(session)
+            server.pump()
+            server.disconnect(connection)
+            assertTrue(session.onLocalTextChanged("abc 1"))
+            session.persist()
+        }
+        store.save("doc-2", store.load("doc-1")!!)
+
+        val listener = EditorListener()
+        val session = DocumentSyncSession("doc-1", store, listener)
+        listener.editorText = session.text
+        assertTrue(session.onLocalTextChanged("abc 1 2"))
+        listener.editorText = "abc 1 2"
+        server.move("doc-2")
+        server.connect(session)
+        server.pump()
+
+        assertEquals(listOf("doc-2"), store.ids())
+        assertEquals("abc 1 2", session.text)
+        assertEquals("abc 1 2", listener.editorText)
+    }
+
+    @Test
+    fun `persisting never overwrites a copy re-keyed onto the open document`() {
+        val server = FakeSyncServer("abc")
+        val store = FileDocumentStore(tempDir)
+        // a copy of the same document with an offline edit, still under another id
+        run {
+            val session = DocumentSyncSession(server.documentId, store, EditorListener())
+            val connection = server.connect(session)
+            server.pump()
+            server.disconnect(connection)
+            assertTrue(session.onLocalTextChanged("offline abc"))
+            session.persist()
+        }
+        store.move("doc-1", "elsewhere")
+        store.save("doc-1", store.load("elsewhere")!!.let { copy ->
+            // the older state, as the open editor loaded it
+            val doc = AutomergeTextDocument.load(server.document.save(), copy.actorId.hexToBytes())
+            StoredDocument(doc.save(), "0e".repeat(16), copy.epoch, copy.serverHeads)
+        })
+
+        // an editor has doc-1 open while a redirect re-keys the other copy onto doc-1
+        val listener = EditorListener()
+        val session = DocumentSyncSession("doc-1", store, listener)
+        listener.editorText = session.text
+        assertTrue(session.onLocalTextChanged("abc typed"))
+        listener.editorText = "abc typed"
+        store.move("elsewhere", "doc-1")
+        session.persist()
+
+        val text = AutomergeTextDocument.load(store.load("doc-1")!!.documentState).text
+        assertEquals("offline abc typed", text)
+        assertEquals(text, session.text)
+        assertEquals(text, listener.editorText)
+        assertTrue(store.backups().isEmpty())
+    }
+
+    @Test
+    fun `persisting keeps a stored copy of another lineage as a backup`() {
+        val server = FakeSyncServer("abc")
+        val store = InMemoryDocumentStore()
+        val session = DocumentSyncSession(server.documentId, store, EditorListener())
+        server.connect(session)
+        server.pump()
+        session.persist()
+
+        val foreign = StoredDocument(FakeSyncServer("other").document.save(), "0f".repeat(16), "epoch-9", emptyList())
+        store.save("doc-1", foreign)
+        assertTrue(session.onLocalTextChanged("abc typed"))
+        session.persist()
+
+        assertEquals(listOf(foreign), store.backups)
+        assertEquals("abc typed", AutomergeTextDocument.load(store.load("doc-1")!!.documentState).text)
+    }
+
+    @Test
     fun `unknown message types are ignored`() {
         val server = FakeSyncServer("abc")
         val session = DocumentSyncSession(server.documentId, InMemoryDocumentStore(), EditorListener())

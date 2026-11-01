@@ -13,5 +13,7 @@ data class DocumentModel(
     val name: String,
     val filesize: Long,
     val modtime: Date,
-    val url: String
+    val url: String,
+    /** path relative to the docs folder (backends with references) */
+    val path: String? = null,
 )
