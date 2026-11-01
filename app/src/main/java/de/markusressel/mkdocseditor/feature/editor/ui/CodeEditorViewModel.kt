@@ -1,18 +1,10 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
-import android.content.ContentResolver
 import android.net.Uri
-import android.provider.OpenableColumns
 import android.util.LruCache
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.core.content.FileProvider
-import de.markusressel.mkdocseditor.feature.editor.domain.PickerMarkdown
 import de.markusressel.mkdocseditor.feature.editor.domain.decodeThumbnail
-import de.markusressel.mkdocseditor.feature.editor.domain.shrinkImage
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.DocumentTextLoader
-import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PhotoUriFactory
-import de.markusressel.mkdocseditor.feature.filebrowser.data.LinkPaths
-import de.markusressel.mkdocseditor.feature.filebrowser.data.ResourceKind
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.tree.ThumbnailLoader
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeTextDocument
@@ -24,10 +16,6 @@ import de.markusressel.mkdocsrestclient.reference.ReferenceModel
 import de.markusressel.mkdocsrestclient.reference.isUnsupportedEndpoint
 import com.github.kittinunf.fuel.core.FuelError
 import kotlinx.coroutines.coroutineScope
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -45,7 +33,9 @@ import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
+import de.markusressel.mkdocseditor.feature.editor.domain.EditorFiles
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatAction
+import de.markusressel.mkdocseditor.feature.editor.domain.UploadFilesUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatEdit
 import de.markusressel.mkdocseditor.feature.editor.domain.MarkdownFormatting
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
@@ -115,7 +105,8 @@ internal class CodeEditorViewModel @Inject constructor(
     private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val openDocumentInBrowserUseCase: OpenDocumentInBrowserUseCase,
     private val restClient: IMkDocsRestClient,
-    private val contentResolver: ContentResolver,
+    private val uploadFilesUseCase: UploadFilesUseCase,
+    private val editorFiles: EditorFiles,
     private val localDocumentStore: LocalDocumentStore,
     private val localCopyRedirects: LocalCopyRedirects,
     private val previewFileCache: PreviewFileCache,
@@ -186,11 +177,7 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     /** content URIs for photos taken from the image picker */
-    internal val photoUriFactory = PhotoUriFactory {
-        val directory = File(context.cacheDir, "camera").apply { mkdirs() }
-        val name = "photo-" + SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ENGLISH).format(Date()) + ".jpg"
-        FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", File(directory, name))
-    }
+    internal val photoUriFactory = editorFiles.photoUriFactory
 
     /**
      * Loads the images of the preview: wiki paths are resolved in the tree, the files come
@@ -849,73 +836,29 @@ internal class CodeEditorViewModel @Inject constructor(
         applyEdit(MarkdownFormatting.replaceSelection(text, selectionStart, selectionEnd, markdown))
     }
 
-    /**
-     * Uploads files into a section under unique, safe names (large photos are scaled down),
-     * then inserts the Markdown for them, relative to this document
-     */
+    /** uploads files into a section, then inserts the Markdown for them */
     private suspend fun uploadFiles(sectionId: String, uris: List<Uri>, altText: String) {
         val tree = wikiTree.value ?: return
         val document = tree.documentById(documentId.value ?: return) ?: return
         val section = tree.section(sectionId) ?: return
-        val fromPath = tree.pathOf(WikiItem.Document(document))
         _uiState.update { old -> old.copy(uploading = true) }
-        val created = mutableListOf<String>()
-        try {
-            uris.forEach { uri ->
-                val (displayName, bytes) = withContext(Dispatchers.IO) { readUpload(uri) }
-                val name = PickerMarkdown.uniqueName(
-                    section.resources.map { it.name } + created,
-                    PickerMarkdown.sanitizeFileName(displayName),
-                )
-                val content = withContext(Dispatchers.Default) { shrinkImage(name, bytes) }
-                restClient.uploadResource(sectionId, name, content).get()
-                created += name
-                deleteIfPhoto(uri)
-            }
-        } catch (ex: Exception) {
-            Timber.e(ex) { "Upload failed" }
-            showMessage(context.getString(R.string.upload_failed, ex.message ?: ex.javaClass.simpleName))
+        val result = try {
+            uploadFilesUseCase(tree, document, section, uris, altText)
         } finally {
             _uiState.update { old -> old.copy(uploading = false) }
         }
-        if (created.isEmpty()) return
+        result.failure?.let { showMessage(context.getString(R.string.upload_failed, it)) }
+        if (result.snippets.isEmpty()) return
 
-        val sectionPath = tree.pathOf(section)
-        val snippets = created.map { name ->
-            val path = if (sectionPath.isEmpty()) name else "$sectionPath/$name"
-            val image = ResourceKind.ofName(name) == ResourceKind.IMAGE
-            val label = PickerMarkdown.escapeLinkText(
-                altText.trim().takeIf { created.size == 1 && it.isNotEmpty() }
-                    ?: if (image) name.replace(Regex("\\.[^.]+$"), "") else name
-            )
-            val destination = LinkPaths.linkPath(fromPath, LinkPaths.Target(LinkPaths.TargetType.RESOURCE, path))
-            (if (image) "!" else "") + "[$label]($destination)"
-        }
         dismissCurrentDialog()
-        if (snippets.size == 1) {
-            insertAtSelection(snippets.single())
+        if (result.snippets.size == 1) {
+            insertAtSelection(result.snippets.single())
         } else {
             val text = uiState.value.text?.toString() ?: ""
-            applyEdit(MarkdownFormatting.insertSnippets(text, uiState.value.selection?.max ?: text.length, snippets))
+            applyEdit(MarkdownFormatting.insertSnippets(text, uiState.value.selection?.max ?: text.length, result.snippets))
         }
         // show the new files in the tree (pickers, preview)
         documentId.value?.let { refreshWikiTree(it) }
-    }
-
-    /** photos taken for an upload are not needed after it */
-    private fun deleteIfPhoto(uri: Uri) {
-        if (uri.authority != "${context.packageName}.fileprovider") return
-        val name = uri.lastPathSegment?.substringAfterLast('/') ?: return
-        File(File(context.cacheDir, "camera"), name).takeIf { it.isFile }?.delete()
-    }
-
-    /** the name and content of a file chosen for an upload */
-    private fun readUpload(uri: Uri): Pair<String, ByteArray> {
-        val name = contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
-            if (cursor.moveToFirst()) cursor.getString(0) else null
-        } ?: uri.lastPathSegment?.substringAfterLast('/') ?: "file"
-        val bytes = requireNotNull(contentResolver.openInputStream(uri)) { "Could not read $uri" }.use { it.readBytes() }
-        return name to bytes
     }
 
     private suspend fun onTopAppBarActionClicked(action: TopAppBarAction.CodeEditor) {
