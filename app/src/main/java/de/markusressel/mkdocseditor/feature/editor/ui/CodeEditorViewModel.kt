@@ -355,7 +355,7 @@ internal class CodeEditorViewModel @Inject constructor(
             return
         }
         if (documentId != null && !isOfflineModeEnabledFlowUseCase().value) {
-            if (withContext(Dispatchers.IO) { localDocumentStore.load(documentId) } == null) {
+            if (withContext(Dispatchers.IO) { !localDocumentStore.contains(documentId) }) {
                 // a copy held under an old id of this document (moved while the app was
                 // offline) must be re-keyed before the copy is loaded, or its edits would not
                 // show up
@@ -380,15 +380,15 @@ internal class CodeEditorViewModel @Inject constructor(
         }
         if (documentId != null) launch { loadWikiTree(documentId) }
         automergeDocumentSyncManager?.shutdown()
+        // nothing may reach the old document while the next one loads
+        automergeDocumentSyncManager = null
+        bindEditorTo(NoDocument)
         localCopyAvailable.value = false
         documentLoadFailed = false
         updateOfflineBanner()
 
         when (documentId) {
-            null -> {
-                automergeDocumentSyncManager = null
-                bindEditorTo(NoDocument)
-            }
+            null -> {}
 
             else -> {
                 val currentBackend = getCurrentBackendConfigUseCase()
@@ -400,7 +400,10 @@ internal class CodeEditorViewModel @Inject constructor(
                 }
                 currentBackendId = currentBackend.id
 
-                val manager = createAutomergeSyncManager(documentId, serverConfig, currentBackend.id)
+                // reads and parses the local copy, which takes long for a big document
+                val manager = withContext(Dispatchers.IO) {
+                    createAutomergeSyncManager(documentId, serverConfig, currentBackend.id)
+                }
                 logOpenStep("sync manager created")
                 automergeDocumentSyncManager = manager
                 // show the local copy right away, it may hold edits made offline

@@ -27,6 +27,10 @@ class StoredDocument(
  */
 interface LocalDocumentStore {
     fun load(documentId: String): StoredDocument?
+
+    /** true when a copy of the document is stored, without reading it */
+    fun contains(documentId: String): Boolean = load(documentId) != null
+
     fun save(documentId: String, document: StoredDocument)
 
     /**
@@ -73,6 +77,8 @@ class FileDocumentStore(
     private val adapter = moshi.adapter(StoredDocumentJson::class.java)
 
     @Synchronized
+    override fun contains(documentId: String): Boolean = fileFor(documentId).exists()
+
     override fun load(documentId: String): StoredDocument? {
         val file = fileFor(documentId)
         if (!file.exists()) {
