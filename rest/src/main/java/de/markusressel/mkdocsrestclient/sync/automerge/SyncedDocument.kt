@@ -6,6 +6,7 @@ package de.markusressel.mkdocsrestclient.sync.automerge
 interface SyncedDocument : EditableTextDocument {
     val documentId: String
     val hasLocalCopy: Boolean
+    val hasUnsyncedChanges: Boolean
     val readOnly: Boolean
     val isConnected: Boolean
 

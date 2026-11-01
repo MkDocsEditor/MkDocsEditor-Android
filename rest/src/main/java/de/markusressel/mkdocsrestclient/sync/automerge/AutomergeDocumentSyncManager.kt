@@ -53,6 +53,7 @@ class AutomergeDocumentSyncManager(
                 // the server closes with 4009, then we reconnect to the new id
             }
         },
+        origin = originOf(hostname, port),
     )
 
     private val connection = WebsocketConnectionHandler(authorizationProvider)
@@ -76,6 +77,9 @@ class AutomergeDocumentSyncManager(
 
     override val hasLocalCopy: Boolean
         get() = session.hasLocalCopy
+
+    override val hasUnsyncedChanges: Boolean
+        get() = session.hasUnsyncedChanges
 
     override val readOnly: Boolean
         get() = session.readOnly
@@ -284,6 +288,9 @@ class AutomergeDocumentSyncManager(
     }
 
     companion object {
+        /** identifies a server in a stored copy */
+        fun originOf(hostname: String, port: Int) = "$hostname:$port"
+
         /** batch keystrokes into one sync message (protocol: 50 to 100 ms) */
         const val SYNC_BATCH_DELAY_MS = 75L
 

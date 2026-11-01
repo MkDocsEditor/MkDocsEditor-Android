@@ -6,6 +6,10 @@ import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
 import java.util.Base64
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import timber.log.Timber
 
 /**
@@ -20,7 +24,17 @@ class StoredDocument(
     val epoch: String,
     /** heads (hex) the server is known to have, see the sync protocol */
     val serverHeads: List<String>,
-)
+    /** heads (hex) of [documentState], so reading them needs no parsing. Null in old copies. */
+    val heads: List<String>? = null,
+    /** the server this copy syncs with, null in old copies that were not written since */
+    val origin: String? = null,
+) {
+    /** true when the copy holds changes the server is not known to have */
+    val hasUnsyncedChanges: Boolean
+        get() = (heads ?: AutomergeTextDocument.load(documentState).headsHex).toSet() != serverHeads.toSet()
+}
+
+private val NO_UNSYNCED_IDS: StateFlow<Set<String>> = MutableStateFlow(emptySet())
 
 /**
  * Persists the local copies of documents.
@@ -32,6 +46,13 @@ interface LocalDocumentStore {
     fun contains(documentId: String): Boolean = load(documentId) != null
 
     fun save(documentId: String, document: StoredDocument)
+
+    /** the ids of the copies with changes the server is not known to have, see [scanUnsynced] */
+    val unsyncedIds: StateFlow<Set<String>>
+        get() = NO_UNSYNCED_IDS
+
+    /** Reads all copies once to fill [unsyncedIds], so this is not called on the main thread */
+    fun scanUnsynced() {}
 
     /**
      * The ids of all stored documents
@@ -72,7 +93,12 @@ class FileDocumentStore(
         val actorId: String,
         val epoch: String,
         val serverHeads: List<String>,
+        val heads: List<String>? = null,
+        val origin: String? = null,
     )
+
+    private val _unsyncedIds = MutableStateFlow<Set<String>>(emptySet())
+    override val unsyncedIds: StateFlow<Set<String>> = _unsyncedIds.asStateFlow()
 
     private val adapter = moshi.adapter(StoredDocumentJson::class.java)
 
@@ -90,7 +116,25 @@ class FileDocumentStore(
             actorId = json.actorId,
             epoch = json.epoch,
             serverHeads = json.serverHeads,
+            heads = json.heads,
+            origin = json.origin,
         )
+    }
+
+    @Synchronized
+    override fun scanUnsynced() {
+        _unsyncedIds.value = ids().filterTo(mutableSetOf()) { id -> load(id)?.let { isUnsynced(id, it) } == true }
+    }
+
+    private fun isUnsynced(documentId: String, document: StoredDocument): Boolean = try {
+        document.hasUnsyncedChanges
+    } catch (e: Exception) {
+        Timber.e(e, "Unreadable local copy of $documentId")
+        false
+    }
+
+    private fun trackUnsynced(documentId: String, unsynced: Boolean) {
+        _unsyncedIds.update { ids -> if (unsynced) ids + documentId else ids - documentId }
     }
 
     @Synchronized
@@ -102,6 +146,8 @@ class FileDocumentStore(
             actorId = document.actorId,
             epoch = document.epoch,
             serverHeads = document.serverHeads,
+            heads = document.heads,
+            origin = document.origin,
         )
         val target = fileFor(documentId)
         val temp = File(directory, target.name + ".tmp")
@@ -110,6 +156,7 @@ class FileDocumentStore(
             temp.delete()
             throw IOException("Could not write $target")
         }
+        trackUnsynced(documentId, isUnsynced(documentId, document))
     }
 
     @Synchronized
@@ -146,6 +193,7 @@ class FileDocumentStore(
         // the new copy is complete on disk before the old one goes
         save(toDocumentId, result)
         fileFor(fromDocumentId).delete()
+        trackUnsynced(fromDocumentId, false)
     }
 
     /**
@@ -166,6 +214,8 @@ class FileDocumentStore(
             actorId = target.actorId,
             epoch = target.epoch,
             serverHeads = target.serverHeads.ifEmpty { other.serverHeads },
+            heads = document.headsHex,
+            origin = target.origin ?: other.origin,
         )
     } catch (e: Exception) {
         Timber.e(e, "Could not merge two local copies")
@@ -181,6 +231,7 @@ class FileDocumentStore(
         if (!file.renameTo(backup)) {
             throw IOException("Could not keep $file aside")
         }
+        trackUnsynced(documentId, false)
         Timber.w("Kept the local copy of $documentId aside as $backup")
     }
 

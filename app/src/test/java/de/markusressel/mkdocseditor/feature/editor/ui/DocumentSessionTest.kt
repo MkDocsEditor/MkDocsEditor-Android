@@ -34,6 +34,7 @@ class DocumentSessionTest {
     ) : SyncedDocument {
         override val version: DocumentVersion? = null
         override val hasLocalCopy: Boolean get() = text != null
+        override var hasUnsyncedChanges = false
         override var readOnly = false
         override var isConnected = false
         var connects = 0
