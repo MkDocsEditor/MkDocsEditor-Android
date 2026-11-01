@@ -18,7 +18,8 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import de.markusressel.mkdocseditor.feature.auth.login.ui.compose.LoginScreen
 import cafe.adriel.voyager.navigator.currentOrThrow
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
-import de.markusressel.mkdocseditor.feature.editor.ui.compose.dialog.SelectLinkTargetDialog
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.LinkPickerDialog
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.ResourcePickerDialog
 
 internal data class CodeEditorScreen(
     private val documentId: String,
@@ -83,22 +84,40 @@ internal data class CodeEditorScreen(
             previewResourceLoader = viewModel.previewResourceLoader,
         )
 
+        val tree by viewModel.pickerTree.collectAsState()
+        val documentId = uiState.documentId
         when (val dialogState = uiState.currentDialogState) {
-            is CodeEditorViewModel.DialogState.SelectLinkTarget -> {
-                SelectLinkTargetDialog(
-                    uiState = dialogState,
-                    onItemSelected = { item ->
-                        viewModel.onUiEvent(
-                            CodeEditorViewModel.UiEvent.ResourceSelected(resource = item)
-                        )
-                    },
-                    onDismissRequest = {
-                        viewModel.onUiEvent(CodeEditorViewModel.UiEvent.DismissDialog)
-                    },
+            is CodeEditorViewModel.DialogState.LinkPicker -> if (tree != null && documentId != null) {
+                LinkPickerDialog(
+                    tree = tree!!,
+                    documentId = documentId,
+                    documentText = uiState.text?.text ?: "",
+                    selection = dialogState.selection,
+                    textLoader = viewModel.documentTextLoader,
+                    thumbnailLoader = viewModel.thumbnailLoader,
+                    onInsert = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.InsertMarkdown(it)) },
+                    onDismiss = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.DismissDialog) },
                 )
             }
 
-            else -> {}
+            is CodeEditorViewModel.DialogState.ResourcePicker -> if (tree != null && documentId != null) {
+                ResourcePickerDialog(
+                    tree = tree!!,
+                    documentId = documentId,
+                    selection = dialogState.selection,
+                    imagesOnly = dialogState.imagesOnly,
+                    uploading = uiState.uploading,
+                    thumbnailLoader = viewModel.thumbnailLoader,
+                    photoUriFactory = viewModel.photoUriFactory,
+                    onInsert = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.InsertMarkdown(it)) },
+                    onUpload = { sectionId, uris, altText ->
+                        viewModel.onUiEvent(CodeEditorViewModel.UiEvent.UploadFiles(sectionId, uris, altText))
+                    },
+                    onDismiss = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.DismissDialog) },
+                )
+            }
+
+            null -> {}
         }
     }
 }

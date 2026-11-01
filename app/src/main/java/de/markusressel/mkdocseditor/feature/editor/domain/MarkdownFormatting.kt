@@ -256,6 +256,27 @@ object MarkdownFormatting {
     }
 
     /**
+     * Replaces the selection (or inserts at the cursor) and puts the cursor after the new text
+     */
+    fun replaceSelection(text: String, start: Int, end: Int, inserted: String): FormatEdit {
+        val s = minOf(start, end).coerceIn(0, text.length)
+        val e = maxOf(start, end).coerceIn(0, text.length)
+        return FormatEdit(text.replaceRange(s, e, inserted), s + inserted.length)
+    }
+
+    /**
+     * Inserts snippets at [at] on lines of their own (like the web client inserts uploaded
+     * files)
+     */
+    fun insertSnippets(text: String, at: Int, snippets: List<String>): FormatEdit {
+        val pos = at.coerceIn(0, text.length)
+        val before = if (pos > 0) text[pos - 1] else '\n'
+        val after = if (pos < text.length) text[pos] else '\n'
+        val inserted = (if (before == '\n') "" else "\n") + snippets.joinToString("\n") + (if (after == '\n') "" else "\n")
+        return FormatEdit(text.replaceRange(pos, pos, inserted), pos + inserted.length)
+    }
+
+    /**
      * Makes a link target safe to put into `(...)`: spaces and parentheses would end it
      */
     fun escapeLinkTarget(target: String): String = buildString {
