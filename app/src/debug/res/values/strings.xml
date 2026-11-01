@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- debug and production can be installed side by side -->
+    <string name="app_name">MkDocsEditor Debug</string>
+</resources>
