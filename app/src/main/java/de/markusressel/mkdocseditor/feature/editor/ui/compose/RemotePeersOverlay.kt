@@ -11,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
@@ -25,12 +24,14 @@ import kotlin.math.roundToInt
  * @param textLayoutResult the current text layout of the editor
  * @param text the current text of the editor, which [remotePeers] were resolved against
  * @param remotePeers the other users in this document
+ * @param background the editor background; peer colors are adjusted to stay visible on it
  */
 @Composable
 internal fun BoxScope.RemotePeersOverlay(
     textLayoutResult: TextLayoutResult,
     text: String,
     remotePeers: List<RemotePeer>,
+    background: Color = MaterialTheme.colorScheme.background,
 ) {
     val textLength = textLayoutResult.layoutInput.text.length
     val laidOutPeers = remember { LaidOutPeers() }
@@ -41,7 +42,7 @@ internal fun BoxScope.RemotePeersOverlay(
     )
 
     peers.forEach { peer ->
-        val color = peer.composeColor
+        val color = peer.composeColor.readableOn(background)
         // indices of the peer can be ahead of the laid out text for a moment
         val selections = peer.selections.map {
             it.copy(
@@ -136,7 +137,7 @@ private fun RemotePeerLabel(
             .background(color = color, shape = RoundedCornerShape(2.dp))
             .padding(horizontal = 2.dp),
         text = name,
-        color = if (color.luminance() > 0.5f) Color.Black else Color.White,
+        color = labelTextColorOn(color),
         style = MaterialTheme.typography.labelSmall,
         maxLines = 1,
     )
