@@ -20,12 +20,26 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurre
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatAction
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatEdit
-import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUrlUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.MarkdownFormatting
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorEvent.Error
-import de.markusressel.mkdocseditor.feature.editor.ui.compose.WebViewAction
+import de.markusressel.mkdocseditor.feature.editor.domain.PreviewFileCache
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.preview.PreviewResourceLoader
+import de.markusressel.mkdocseditor.event.BusEvent
+import de.markusressel.mkdocseditor.event.EventBusManager
+import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
+import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DownloadResourceUseCase
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ShareFileUseCase
+import de.markusressel.mkdocseditor.feature.filebrowser.ui.FileBrowserViewModel.Companion.ROOT_SECTION_ID
+import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
+import android.content.Context
+import android.content.Intent
+import android.webkit.MimeTypeMap
+import android.webkit.WebResourceResponse
+import androidx.core.net.toUri
+import org.mobilenativefoundation.store.store5.impl.extensions.get
 import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.filebrowser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.FindParentSectionOfDocumentUseCase
@@ -69,11 +83,16 @@ internal class CodeEditorViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val preferencesHolder: KutePreferencesHolder,
     private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
-    private val getDocumentUrlUseCase: GetDocumentUrlUseCase,
     private val openDocumentInBrowserUseCase: OpenDocumentInBrowserUseCase,
     private val findParentSectionOfDocumentUseCase: FindParentSectionOfDocumentUseCase,
     private val findSectionUseCase: FindSectionUseCase,
     private val localDocumentStore: LocalDocumentStore,
+    private val previewFileCache: PreviewFileCache,
+    private val downloadResourceUseCase: DownloadResourceUseCase,
+    private val shareFileUseCase: ShareFileUseCase,
+    private val chromeCustomTabManager: ChromeCustomTabManager,
+    private val eventBusManager: EventBusManager,
+    private val context: Context,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
@@ -111,8 +130,22 @@ internal class CodeEditorViewModel @Inject constructor(
         localCopyAvailable && automergeDocumentSyncManager?.readOnly != true
     }.stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = false)
 
-    private val webViewActionChannel = Channel<WebViewAction>(Channel.BUFFERED)
-    val webViewActionFlow = webViewActionChannel.receiveAsFlow()
+    /** the wiki tree, for links and images in the preview */
+    private val wikiTree = MutableStateFlow<WikiTree?>(null)
+
+    /**
+     * Loads the images of the preview: wiki paths are resolved in the tree, the files come
+     * from the server with the session, or from the offline cache
+     */
+    val previewResourceLoader = PreviewResourceLoader { encodedPath ->
+        val tree = wikiTree.value ?: return@PreviewResourceLoader null
+        val resource = (tree.resolve(tree.root, encodedPath) as? WikiItem.Resource)?.resource
+            ?: return@PreviewResourceLoader null
+        val bytes = runBlocking { previewFileCache.get(resource) } ?: return@PreviewResourceLoader null
+        val extension = resource.name.substringAfterLast('.', "").lowercase()
+        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: "application/octet-stream"
+        WebResourceResponse(mimeType, null, bytes.inputStream())
+    }
 
     private var automergeDocumentSyncManager: AutomergeDocumentSyncManager? = null
 
@@ -208,15 +241,6 @@ internal class CodeEditorViewModel @Inject constructor(
             }
         }
 
-        launch {
-            while (true) {
-                delay(1000 * 5)
-                if (uiState.value.isOfflineModeBannerVisible.not() && uiState.value.webUrl != null) {
-                    webViewActionChannel.send(WebViewAction.Refresh)
-                }
-            }
-        }
-
         events.observeForever { event ->
             when (event) {
                 is Error -> _uiState.update { old ->
@@ -229,19 +253,10 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     private suspend fun initializeEditorWithDocument(documentId: String?) {
-        val backendConfig = getCurrentBackendConfigUseCase()
-        val documentUrl = if (documentId != null && backendConfig != null) {
-            val document = requireNotNull(getDocumentUseCase(documentId).data)
-            getDocumentUrlUseCase(backendConfig, document)
-        } else {
-            null
-        }
         _uiState.update { old ->
-            old.copy(
-                documentId = documentId,
-                webUrl = documentUrl
-            )
+            old.copy(documentId = documentId)
         }
+        if (documentId != null) launch { loadWikiTree(documentId) }
         automergeDocumentSyncManager?.shutdown()
         localCopyAvailable.value = false
 
@@ -320,6 +335,80 @@ internal class CodeEditorViewModel @Inject constructor(
                 }
             },
         )
+    }
+
+    /**
+     * Loads the wiki tree (from the offline cache if the server is not reachable), so the
+     * preview can resolve links and images relative to the folder of the document
+     */
+    private suspend fun loadWikiTree(documentId: String) {
+        val root = try {
+            dataRepository.sectionStore.get(ROOT_SECTION_ID)
+        } catch (ex: Exception) {
+            Timber.w(ex) { "Could not load the wiki tree" }
+            return
+        }
+        val tree = WikiTree(root)
+        wikiTree.value = tree
+        val section = tree.parentOfDocument(documentId)
+        _uiState.update { old ->
+            old.copy(previewSectionPath = section?.let { tree.pathOf(it) } ?: "")
+        }
+    }
+
+    /**
+     * Opens the target of a link clicked in the preview: documents in the editor, folders in
+     * the file browser, resources in another app, everything else in the browser
+     */
+    private suspend fun onPreviewLinkClicked(href: String) {
+        if (WikiTree.isExternal(href)) {
+            openExternalLink(href)
+            return
+        }
+        val documentId = documentId.value ?: return
+        val tree = wikiTree.value ?: return
+        val from = tree.parentOfDocument(documentId) ?: tree.root
+        when (val target = tree.resolve(from, href)) {
+            is WikiItem.Document -> _navigationEvents.send(NavigationRequest.OpenDocument(target.id))
+            is WikiItem.Section -> {
+                eventBusManager.send(BusEvent.CodeEditorBusEvent.GoToSection(target.id))
+                _navigationEvents.send(NavigationRequest.Close)
+            }
+
+            is WikiItem.Resource -> try {
+                val file = downloadResourceUseCase(target.id, target.name)
+                shareFileUseCase(file)
+            } catch (ex: Exception) {
+                Timber.e(ex)
+                showMessage(context.getString(R.string.preview_resource_failed, target.name))
+            }
+
+            null -> showMessage(context.getString(R.string.preview_link_not_found, href))
+        }
+    }
+
+    private fun openExternalLink(href: String) {
+        try {
+            if (href.startsWith("http://") || href.startsWith("https://")) {
+                chromeCustomTabManager.openChromeCustomTab(href)
+            } else {
+                val url = if (href.startsWith("//")) "https:$href" else href
+                context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
+        } catch (ex: Exception) {
+            Timber.e(ex)
+            showMessage(context.getString(R.string.preview_link_not_found, href))
+        }
+    }
+
+    /** shows a short message for a few seconds */
+    private fun showMessage(text: String) {
+        val message = SnackbarData.Message(text)
+        showSnackbar(message)
+        launch {
+            delay(4000)
+            if (uiState.value.snackbar == message) showSnackbar(null)
+        }
     }
 
     private suspend fun loadDocumentResource(documentId: String) {
@@ -498,6 +587,8 @@ internal class CodeEditorViewModel @Inject constructor(
                     insertFileReference(uiState.value.selection, event.resource)
                 }
 
+                is UiEvent.PreviewLinkClicked -> onPreviewLinkClicked(event.href)
+
                 is UiEvent.BackPressed -> onClose()
                 is UiEvent.SnackbarActionClicked -> onSnackbarAction(event.snackbar)
             }
@@ -566,6 +657,8 @@ internal class CodeEditorViewModel @Inject constructor(
             is SnackbarData.SignedOut -> launch {
                 _navigationEvents.send(NavigationRequest.Login(snackbar.backendId))
             }
+
+            is SnackbarData.Message -> dismissSnackbar()
         }
     }
 
@@ -789,7 +882,9 @@ internal class CodeEditorViewModel @Inject constructor(
 
         val documentId: String? = null,
         val title: String = "",
-        val webUrl: String? = null,
+
+        /** the folder of the document below the wiki root (`a/b`), for paths in the preview */
+        val previewSectionPath: String = "",
 
         /**
          * Indicates whether the CodeEditor is in "edit" mode or not
@@ -834,6 +929,8 @@ internal class CodeEditorViewModel @Inject constructor(
         data object InsertFileReferenceClicked : UiEvent()
         data class ResourceSelected(val resource: ResourceData) : UiEvent()
 
+        data class PreviewLinkClicked(val href: String) : UiEvent()
+
         data object BackPressed : UiEvent()
     }
 
@@ -851,6 +948,9 @@ internal class CodeEditorViewModel @Inject constructor(
 
     sealed interface NavigationRequest {
         data class Login(val backendId: Long) : NavigationRequest
+        data class OpenDocument(val documentId: String) : NavigationRequest
+        /** leave the editor, e.g. to show a folder in the file browser */
+        data object Close : NavigationRequest
     }
 
     sealed class CodeEditorFabId {

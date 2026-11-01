@@ -11,6 +11,8 @@
 
     <string name="code_editor">Code Editor</string>
     <string name="insert_link">Insert Link</string>
+    <string name="preview_link_not_found">Link target not found: %1$s</string>
+    <string name="preview_resource_failed">Could not open %1$s</string>
     <string name="format_bold">Bold</string>
     <string name="format_italic">Italic</string>
     <string name="format_strikethrough">Strikethrough</string>

@@ -56,8 +56,8 @@ import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 import de.markusressel.mkdocsrestclient.sync.automerge.RemoteSelection
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.preview.MarkdownPreview
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.preview.PreviewResourceLoader
 
 @Composable
 internal fun CodeEditorScreenContent(
@@ -65,7 +65,7 @@ internal fun CodeEditorScreenContent(
     uiState: CodeEditorViewModel.UiState,
     onTextChanged: (TextFieldValue) -> Unit,
     onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
-    webViewActionFlow: Flow<WebViewAction>,
+    previewResourceLoader: PreviewResourceLoader = PreviewResourceLoader { null },
 ) {
     var splitOrientation by remember { mutableStateOf(SplitOrientation.Vertical) }
 
@@ -156,7 +156,8 @@ internal fun CodeEditorScreenContent(
                         uiState = uiState,
                         tfv = tfv,
                         onTextChanged = onTextChanged,
-                        webViewActionFlow = webViewActionFlow
+                        onUiEvent = onUiEvent,
+                        previewResourceLoader = previewResourceLoader,
                     )
                 }
 
@@ -165,7 +166,8 @@ internal fun CodeEditorScreenContent(
                         uiState = uiState,
                         tfv = tfv,
                         onTextChanged = onTextChanged,
-                        webViewActionFlow = webViewActionFlow
+                        onUiEvent = onUiEvent,
+                        previewResourceLoader = previewResourceLoader,
                     )
                 }
             }
@@ -178,7 +180,8 @@ internal fun VerticalSplit(
     uiState: CodeEditorViewModel.UiState,
     tfv: TextFieldValue,
     onTextChanged: (TextFieldValue) -> Unit,
-    webViewActionFlow: Flow<WebViewAction>
+    onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
+    previewResourceLoader: PreviewResourceLoader,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -217,13 +220,13 @@ internal fun VerticalSplit(
             exit = fadeOut() + slideOutVertically { it },
             visible = uiState.isPreviewVisible
         ) {
-            uiState.webUrl?.let {
-                PagePreview(
-                    modifier = Modifier.fillMaxWidth(),
-                    url = it,
-                    actions = webViewActionFlow
-                )
-            }
+            MarkdownPreview(
+                modifier = Modifier.fillMaxWidth(),
+                text = tfv.text,
+                sectionPath = uiState.previewSectionPath,
+                resourceLoader = previewResourceLoader,
+                onLinkClicked = { onUiEvent(CodeEditorViewModel.UiEvent.PreviewLinkClicked(it)) },
+            )
         }
     }
 }
@@ -233,7 +236,8 @@ internal fun HorizontalSplit(
     uiState: CodeEditorViewModel.UiState,
     tfv: TextFieldValue,
     onTextChanged: (TextFieldValue) -> Unit,
-    webViewActionFlow: Flow<WebViewAction>
+    onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
+    previewResourceLoader: PreviewResourceLoader,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -272,13 +276,13 @@ internal fun HorizontalSplit(
             exit = fadeOut() + slideOutHorizontally { it },
             visible = uiState.isPreviewVisible
         ) {
-            uiState.webUrl?.let {
-                PagePreview(
-                    modifier = Modifier.fillMaxHeight(),
-                    url = it,
-                    actions = webViewActionFlow
-                )
-            }
+            MarkdownPreview(
+                modifier = Modifier.fillMaxHeight(),
+                text = tfv.text,
+                sectionPath = uiState.previewSectionPath,
+                resourceLoader = previewResourceLoader,
+                onLinkClicked = { onUiEvent(CodeEditorViewModel.UiEvent.PreviewLinkClicked(it)) },
+            )
         }
     }
 }
@@ -334,9 +338,12 @@ internal fun CodeEditorSackbar(
         is SnackbarData.ConnectionFailed -> stringResource(R.string.code_editor_connection_failed)
         is SnackbarData.Disconnected -> stringResource(R.string.code_editor_disconnected)
         is SnackbarData.SignedOut -> stringResource(R.string.code_editor_signed_out)
+        is SnackbarData.Message -> snackbar.text
     }
 
-    val action: @Composable () -> Unit = when (snackbar) {
+    val action: (@Composable () -> Unit)? = when (snackbar) {
+        is SnackbarData.Message -> null
+
         is SnackbarData.ConnectionFailed -> {
             {
                 TextButton(onClick = {
@@ -415,7 +422,6 @@ private fun CodeEditorScreenContentOfflinePreview() {
             ),
             onTextChanged = {},
             onUiEvent = {},
-            webViewActionFlow = MutableSharedFlow()
         )
     }
 }
@@ -428,7 +434,6 @@ private fun CodeEditorScreenContentOnlinePreview() {
         CodeEditorScreenContent(
             uiState = CodeEditorViewModel.UiState(
                 text = buildAnnotatedString { append("# Hallo Welt!") },
-                webUrl = "https://www.google.com",
                 isOfflineModeBannerVisible = false,
                 fabConfig = FabConfig(
                     right = listOf(EnableEditModeFabConfig)
@@ -446,7 +451,6 @@ private fun CodeEditorScreenContentOnlinePreview() {
             ),
             onTextChanged = {},
             onUiEvent = {},
-            webViewActionFlow = MutableSharedFlow()
         )
     }
 }

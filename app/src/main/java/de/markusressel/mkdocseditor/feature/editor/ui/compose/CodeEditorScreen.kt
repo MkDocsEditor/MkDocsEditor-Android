@@ -11,6 +11,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.core.screen.ScreenKey
+import cafe.adriel.voyager.core.screen.uniqueScreenKey
 import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import de.markusressel.mkdocseditor.feature.auth.login.ui.compose.LoginScreen
@@ -21,6 +23,12 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.dialog.SelectLinkT
 internal data class CodeEditorScreen(
     private val documentId: String,
 ) : Screen {
+
+    /**
+     * Each editor on the stack needs its own key: links in the preview open other documents
+     * on top, and the key scopes the view model
+     */
+    override val key: ScreenKey = uniqueScreenKey
 
     @Composable
     override fun Content() {
@@ -43,6 +51,11 @@ internal data class CodeEditorScreen(
                 when (request) {
                     is CodeEditorViewModel.NavigationRequest.Login ->
                         navigator.push(LoginScreen(backendId = request.backendId))
+
+                    is CodeEditorViewModel.NavigationRequest.OpenDocument ->
+                        navigator.push(CodeEditorScreen(documentId = request.documentId))
+
+                    is CodeEditorViewModel.NavigationRequest.Close -> navigator.pop()
                 }
             }
         }
@@ -67,7 +80,7 @@ internal data class CodeEditorScreen(
                 )
             },
             onUiEvent = viewModel::onUiEvent,
-            webViewActionFlow = viewModel.webViewActionFlow,
+            previewResourceLoader = viewModel.previewResourceLoader,
         )
 
         when (val dialogState = uiState.currentDialogState) {
