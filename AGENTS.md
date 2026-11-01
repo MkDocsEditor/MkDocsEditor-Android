@@ -9,7 +9,8 @@ Jetpack Compose, Hilt, Voyager, ObjectBox and Automerge. Android 16 and newer on
 
 | What | Command |
 |---|---|
-| Unit tests (CI) | `./gradlew testDebugUnitTest` |
+| All tests | `make test` |
+| JUnit tests (CI) | `make unitTests` (`./gradlew testDebugUnitTest`) |
 | One module or test | `./gradlew :rest:testDebugUnitTest --tests '*EditorTextBinding*'` |
 | Debug and release APK (CI) | `./gradlew app:assembleDebug app:assembleRelease` |
 | Install and start debug | `make run` |
