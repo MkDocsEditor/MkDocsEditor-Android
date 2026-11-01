@@ -37,6 +37,8 @@ data class ItemRefModel(
  * @param target the resolved item, null when broken
  * @param reason `not-found` or `outside-docs`, only when broken
  * @param path the resolved path that does not exist, only when broken
+ * @param movedTo only when broken: the item that was at [path] before it moved
+ * @param suggestedDestination only with [movedTo]: the destination that fixes the reference
  */
 @JsonClass(generateAdapter = true)
 data class ReferenceModel(
@@ -49,6 +51,8 @@ data class ReferenceModel(
     val target: ItemRefModel?,
     val reason: String? = null,
     val path: String? = null,
+    val movedTo: ItemRefModel? = null,
+    val suggestedDestination: String? = null,
 )
 
 @JsonClass(generateAdapter = true)

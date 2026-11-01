@@ -17,6 +17,11 @@ import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.tree.Thumbnai
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeTextDocument
 import org.mobilenativefoundation.store.store5.impl.extensions.fresh
+import de.markusressel.mkdocseditor.feature.editor.domain.TextPositions
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferences
+import de.markusressel.mkdocsrestclient.reference.ItemType
+import de.markusressel.mkdocsrestclient.reference.ReferenceModel
+import kotlinx.coroutines.coroutineScope
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -696,6 +701,23 @@ internal class CodeEditorViewModel @Inject constructor(
 
                 is UiEvent.PreviewLinkClicked -> onPreviewLinkClicked(event.href)
 
+                is UiEvent.ReferenceClicked -> {
+                    dismissCurrentDialog()
+                    selectReference(event.reference)
+                }
+                is UiEvent.ReferenceFixClicked -> fixReference(event.reference)
+                is UiEvent.OpenDocumentClicked -> {
+                    dismissCurrentDialog()
+                    _navigationEvents.send(NavigationRequest.OpenDocument(event.documentId))
+                }
+                is UiEvent.InsertMarkdownAfterSelection -> {
+                    dismissCurrentDialog()
+                    val text = uiState.value.text?.toString() ?: ""
+                    val end = uiState.value.selection?.max ?: text.length
+                    applyEdit(MarkdownFormatting.replaceSelection(text, end, end, event.markdown))
+                }
+                is UiEvent.PanelUploadClicked -> showDialog(DialogState.ResourcePicker(selectedText(), imagesOnly = false, startOnUpload = true))
+
                 is UiEvent.BackPressed -> onClose()
                 is UiEvent.SnackbarActionClicked -> onSnackbarAction(event.snackbar)
             }
@@ -816,6 +838,78 @@ internal class CodeEditorViewModel @Inject constructor(
             is TopAppBarAction.CodeEditor.TogglePreviewAction -> togglePreviewVisibility()
             is TopAppBarAction.CodeEditor.ShowInBrowserAction -> onOpenInBrowserClicked()
             is TopAppBarAction.CodeEditor.OnlineUsersAction -> Unit
+            is TopAppBarAction.CodeEditor.PageReferencesAction -> showPageReferences()
+        }
+    }
+
+    /** opens the references panel and loads its data */
+    private suspend fun showPageReferences() {
+        val documentId = documentId.value ?: return
+        if (wikiTree.value?.documentById(documentId) == null) {
+            showMessage(context.getString(R.string.page_references_offline))
+            return
+        }
+        showDialog(DialogState.PageReferencesPanel())
+        loadPageReferences(documentId)
+    }
+
+    private suspend fun loadPageReferences(documentId: String) = coroutineScope {
+        launch {
+            restClient.getDocumentReferences(documentId).fold(
+                success = { result -> updateReferencesPanel { it.copy(references = result.references, referencesError = null) } },
+                failure = { error ->
+                    Timber.w(error) { "Could not load the references" }
+                    updateReferencesPanel { it.copy(referencesError = context.getString(R.string.page_references_offline)) }
+                },
+            )
+        }
+        launch {
+            restClient.getBacklinks(ItemType.DOCUMENT, documentId).fold(
+                success = { result -> updateReferencesPanel { it.copy(backlinks = result.backlinks, backlinksError = null) } },
+                failure = { error ->
+                    Timber.w(error) { "Could not load the backlinks" }
+                    updateReferencesPanel { it.copy(backlinksError = context.getString(R.string.page_references_offline)) }
+                },
+            )
+        }
+    }
+
+    private fun updateReferencesPanel(update: (PageReferences) -> PageReferences) {
+        _uiState.update { old ->
+            val dialog = old.currentDialogState
+            if (dialog is DialogState.PageReferencesPanel) old.copy(currentDialogState = dialog.copy(data = update(dialog.data))) else old
+        }
+    }
+
+    /** selects the destination of a reference in the editor */
+    private fun selectReference(reference: ReferenceModel) {
+        val text = uiState.value.text?.toString() ?: return
+        val range = TextPositions.rangeOf(text, reference.line, reference.column, reference.destination)
+        setSelection(range.first, range.last + 1)
+    }
+
+    /**
+     * Replaces the destination of a broken reference to a moved item with the destination the
+     * backend suggests, when the text there is still the old destination
+     */
+    private suspend fun fixReference(reference: ReferenceModel) {
+        val suggested = reference.suggestedDestination ?: return
+        if (!uiState.value.editModeActive) {
+            showMessage(context.getString(R.string.page_references_edit_mode_needed))
+            return
+        }
+        val text = uiState.value.text?.toString() ?: return
+        val range = TextPositions.rangeOf(text, reference.line, reference.column, reference.destination)
+        if (range.isEmpty()) {
+            showMessage(context.getString(R.string.page_references_changed))
+            return
+        }
+        applyEdit(MarkdownFormatting.replaceSelection(text, range.first, range.last + 1, suggested))
+        // the backend sees the edit through the sync; show the fixed state right away
+        updateReferencesPanel { data ->
+            data.copy(references = data.references?.map {
+                if (it == reference) it.copy(destination = suggested, status = "ok", target = it.movedTo, reason = null, path = null, movedTo = null, suggestedDestination = null) else it
+            })
         }
     }
 
@@ -1124,6 +1218,23 @@ internal class CodeEditorViewModel @Inject constructor(
 
         data class PreviewLinkClicked(val href: String) : UiEvent()
 
+        /** selects a reference of the page in the editor */
+        data class ReferenceClicked(val reference: ReferenceModel) : UiEvent()
+
+        /** replaces a reference to a moved item with the suggested destination */
+        data class ReferenceFixClicked(val reference: ReferenceModel) : UiEvent()
+
+        data class OpenDocumentClicked(val documentId: String) : UiEvent()
+
+        /** the upload button of the references panel */
+        data object PanelUploadClicked : UiEvent()
+
+        /**
+         * Markdown from the references panel, inserted after the selection: the selection may
+         * be a reference the panel selected, which must stay
+         */
+        data class InsertMarkdownAfterSelection(val markdown: String) : UiEvent()
+
         data object BackPressed : UiEvent()
     }
 
@@ -1155,7 +1266,13 @@ internal class CodeEditorViewModel @Inject constructor(
         /** @param selection the selected text, which becomes the link text */
         data class LinkPicker(val selection: String) : DialogState
 
-        /** @param selection the selected text, which becomes the alt text */
-        data class ResourcePicker(val selection: String, val imagesOnly: Boolean) : DialogState
+        /**
+         * @param selection the selected text, which becomes the alt text
+         * @param startOnUpload open the upload tab first
+         */
+        data class ResourcePicker(val selection: String, val imagesOnly: Boolean, val startOnUpload: Boolean = false) : DialogState
+
+        /** the links and files of the page, and the pages that link to it */
+        data class PageReferencesPanel(val data: PageReferences = PageReferences()) : DialogState
     }
 }

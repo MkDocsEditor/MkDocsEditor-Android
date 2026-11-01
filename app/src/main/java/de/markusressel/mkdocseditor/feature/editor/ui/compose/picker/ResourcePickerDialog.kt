@@ -70,12 +70,13 @@ internal fun ResourcePickerDialog(
     onInsert: (String) -> Unit,
     onUpload: (sectionId: String, uris: List<Uri>, altText: String) -> Unit,
     onDismiss: () -> Unit,
+    startOnUpload: Boolean = false,
 ) {
     val document = tree.documentById(documentId) ?: return
     val fromPath = tree.pathOf(WikiItem.Document(document))
     val pageFolder = tree.parentOfDocument(documentId)?.id ?: tree.root.id
 
-    var tab by rememberSaveable { mutableStateOf(TAB_WIKI) }
+    var tab by rememberSaveable { mutableStateOf(if (startOnUpload) TAB_UPLOAD else TAB_WIKI) }
     var altText by rememberSaveable { mutableStateOf(selection) }
     var onlyImages by rememberSaveable { mutableStateOf(imagesOnly) }
     var browseSection by rememberSaveable { mutableStateOf(pageFolder) }

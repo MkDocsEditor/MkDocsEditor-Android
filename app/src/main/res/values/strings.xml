@@ -197,6 +197,31 @@
     <string name="backlinks_line">Line %1$d · %2$s</string>
     <string name="close">Close</string>
 
+    <string name="page_references_action">Links and files of this page</string>
+    <string name="page_references_title">Links and files</string>
+    <string name="page_references_tab_resources">Files</string>
+    <string name="page_references_tab_links">Links</string>
+    <plurals name="page_references_tab_links_broken">
+        <item quantity="one">Links (%1$d broken)</item>
+        <item quantity="other">Links (%1$d broken)</item>
+    </plurals>
+    <string name="page_references_tab_used_by">Used by</string>
+    <string name="page_references_upload">Upload to %1$s</string>
+    <string name="page_references_used_here">Used on this page</string>
+    <string name="page_references_none_used">This page uses no files.</string>
+    <string name="page_references_in_folder">More in this folder</string>
+    <string name="page_references_folder_empty">No other files in this folder.</string>
+    <string name="page_references_no_links">This page has no links or images.</string>
+    <string name="page_references_find">Find %1$s in the page</string>
+    <string name="page_references_target">Line %1$d · %2$s</string>
+    <string name="page_references_broken_missing">Line %1$d · broken: %2$s does not exist</string>
+    <string name="page_references_broken_outside">Line %1$d · broken: points outside the docs folder</string>
+    <string name="page_references_broken_moved">Line %1$d · broken: moved to %2$s</string>
+    <string name="page_references_fix">Fix</string>
+    <string name="page_references_offline">Needs a connection to the server.</string>
+    <string name="page_references_edit_mode_needed">Turn on edit mode to fix links.</string>
+    <string name="page_references_changed">The text there changed. Reopen the list.</string>
+
     <string name="upload_resource">Upload Resource</string>
 
     <string name="hint_new_section">New Section</string>

@@ -19,6 +19,7 @@ import de.markusressel.mkdocseditor.feature.auth.login.ui.compose.LoginScreen
 import cafe.adriel.voyager.navigator.currentOrThrow
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.LinkPickerDialog
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferencesDialog
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.ResourcePickerDialog
 
 internal data class CodeEditorScreen(
@@ -106,6 +107,7 @@ internal data class CodeEditorScreen(
                     documentId = documentId,
                     selection = dialogState.selection,
                     imagesOnly = dialogState.imagesOnly,
+                    startOnUpload = dialogState.startOnUpload,
                     uploading = uiState.uploading,
                     thumbnailLoader = viewModel.thumbnailLoader,
                     photoUriFactory = viewModel.photoUriFactory,
@@ -113,6 +115,21 @@ internal data class CodeEditorScreen(
                     onUpload = { sectionId, uris, altText ->
                         viewModel.onUiEvent(CodeEditorViewModel.UiEvent.UploadFiles(sectionId, uris, altText))
                     },
+                    onDismiss = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.DismissDialog) },
+                )
+            }
+
+            is CodeEditorViewModel.DialogState.PageReferencesPanel -> if (tree != null && documentId != null) {
+                PageReferencesDialog(
+                    tree = tree!!,
+                    documentId = documentId,
+                    state = dialogState.data,
+                    thumbnailLoader = viewModel.thumbnailLoader,
+                    onInsert = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.InsertMarkdownAfterSelection(it)) },
+                    onJump = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.ReferenceClicked(it)) },
+                    onFix = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.ReferenceFixClicked(it)) },
+                    onOpenDocument = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.OpenDocumentClicked(it)) },
+                    onUpload = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.PanelUploadClicked) },
                     onDismiss = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.DismissDialog) },
                 )
             }
