@@ -71,6 +71,8 @@
     <string name="no_offline_version_title">Not available offline</string>
     <string name="no_offline_version">This page is not on this device yet. It opens as soon as there is a connection.</string>
     <string name="connection_connected">Connected</string>
+    <string name="unsynced_changes">Changes not synced yet</string>
+    <string name="connection_unsynced_changes_info">Your latest changes are only on this device so far. They sync as soon as the server can be reached.</string>
     <string name="connection_not_connected">Not connected</string>
     <string name="connection_connected_info">Connected. Changes sync right away.</string>
     <string name="connection_not_connected_info">Not connected. Your changes stay on this device and sync later. Changes by others may be missing until then.</string>

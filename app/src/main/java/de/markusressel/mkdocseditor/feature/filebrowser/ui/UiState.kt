@@ -80,6 +80,7 @@ data class MovePreview(
 )
 
 internal data class UiState(
+    val unsyncedDocumentIds: Set<String> = emptySet(),
     val currentDialogState: DialogState? = null,
 
     val fabConfig: FabConfig<FileBrowserFabId> = CreateItemsFabConfig,

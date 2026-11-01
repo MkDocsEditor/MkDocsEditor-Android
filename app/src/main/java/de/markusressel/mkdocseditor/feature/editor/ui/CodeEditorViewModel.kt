@@ -54,7 +54,7 @@ import javax.inject.Inject
 @HiltViewModel
 internal class CodeEditorViewModel @Inject constructor(
     private val dataRepository: DataRepository,
-    sessionEnvironment: AndroidDocumentSessionEnvironment,
+    private val sessionEnvironment: AndroidDocumentSessionEnvironment,
     private val preferencesHolder: KutePreferencesHolder,
     private val openDocumentInBrowserUseCase: OpenDocumentInBrowserUseCase,
     private val uploadFilesUseCase: UploadFilesUseCase,
@@ -363,16 +363,18 @@ internal class CodeEditorViewModel @Inject constructor(
 
     /** says what the state means, and does not wait for the next try to connect */
     private fun onConnectionIconClicked(indicator: ConnectionIndicator) {
+        val offlineMode = sessionEnvironment.offlineMode.value
         showMessage(
             context.getString(
-                when (indicator) {
-                    ConnectionIndicator.Connected -> R.string.connection_connected_info
-                    ConnectionIndicator.NotConnected -> R.string.connection_not_connected_info
-                    ConnectionIndicator.OfflineMode -> R.string.connection_offline_mode_info
+                when {
+                    offlineMode -> R.string.connection_offline_mode_info
+                    indicator == ConnectionIndicator.Connected -> R.string.connection_connected_info
+                    indicator == ConnectionIndicator.UnsyncedChanges -> R.string.connection_unsynced_changes_info
+                    else -> R.string.connection_not_connected_info
                 }
             )
         )
-        if (indicator == ConnectionIndicator.NotConnected) session.reconnect()
+        if (!offlineMode && session.connectionStatus.value?.connected != true) session.reconnect()
     }
 
     /** opens the references panel and loads its data */

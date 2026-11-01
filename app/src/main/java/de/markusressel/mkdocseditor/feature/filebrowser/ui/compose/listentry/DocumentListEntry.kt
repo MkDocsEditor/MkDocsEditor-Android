@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.listentry
 
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,6 +37,7 @@ internal fun DocumentListEntry(
     onClick: (DocumentData) -> Unit,
     onLongClick: (DocumentData) -> Unit,
     modifier: Modifier = Modifier,
+    hasUnsyncedChanges: Boolean = false,
 ) {
     val context = LocalContext.current
 
@@ -102,6 +104,25 @@ internal fun DocumentListEntry(
                     modifier = Modifier.padding(start = 8.dp),
                     modtime = item.modtime
                 )
+
+                if (hasUnsyncedChanges) {
+                    Row(
+                        modifier = Modifier.padding(start = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Image(
+                            modifier = Modifier.size(12.dp),
+                            asset = MaterialDesignIconic.Icon.gmi_cloud_upload,
+                            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary),
+                        )
+                        Text(
+                            text = stringResource(R.string.unsynced_changes),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
             }
         }
     }

@@ -81,6 +81,7 @@ class DocumentSessionTest {
         override val networkChanges = MutableSharedFlow<Unit>()
         override val sessionChanges = MutableSharedFlow<Long>()
 
+        var onCreated: (FakeDocument) -> Unit = {}
         var signedIn = true
         val unauthenticated = mutableListOf<Long>()
         var backend: BackendConfig? = backendConfig(1)
@@ -106,7 +107,10 @@ class DocumentSessionTest {
             serverConfig: BackendServerConfig,
             backendId: Long,
             listener: AutomergeDocumentSyncManager.Listener,
-        ): SyncedDocument = FakeDocument(documentId, localCopyText, listener).also { documents += it }
+        ): SyncedDocument = FakeDocument(documentId, localCopyText, listener).also {
+            onCreated(it)
+            documents += it
+        }
 
         override fun hasLocalCopy(documentId: String) = localCopyInStore
         override suspend fun followRedirect(documentId: String) = redirects[documentId] ?: documentId
@@ -385,6 +389,36 @@ class DocumentSessionTest {
         f.document.connected()
         advanceTimeBy(5_000)
         assertEquals(ConnectionIndicator.Connected, f.session.connectionIndicator.value)
+    }
+
+    @Test
+    fun `the icon shows changes that stay unsynced, but not a change on its way`() = test { f ->
+        f.open()
+        f.document.connected()
+        assertEquals(ConnectionIndicator.Connected, f.session.connectionIndicator.value)
+
+        f.document.listener.onUnsyncedChangesChanged(true)
+        advanceTimeBy(1_000)
+        f.document.listener.onUnsyncedChangesChanged(false)
+        advanceTimeBy(5_000)
+        assertEquals(ConnectionIndicator.Connected, f.session.connectionIndicator.value)
+
+        f.document.listener.onUnsyncedChangesChanged(true)
+        advanceTimeBy(3_000)
+        assertEquals(ConnectionIndicator.UnsyncedChanges, f.session.connectionIndicator.value)
+    }
+
+    @Test
+    fun `a local copy with unsynced changes shows that when opening, the next document does not`() = test { f ->
+        f.environment.onCreated = { it.hasUnsyncedChanges = true }
+        f.open("one")
+        advanceTimeBy(3_000)
+        assertEquals(ConnectionIndicator.UnsyncedChanges, f.session.connectionIndicator.value)
+
+        f.environment.onCreated = {}
+        f.session.setDocument("two")
+        advanceTimeBy(3_000)
+        assertEquals(ConnectionIndicator.NotConnected, f.session.connectionIndicator.value)
     }
 
     @Test

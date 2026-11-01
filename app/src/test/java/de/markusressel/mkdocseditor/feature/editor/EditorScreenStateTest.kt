@@ -84,4 +84,10 @@ class EditorScreenStateTest {
         show(CodeEditorViewModel.UiState(connectionIndicator = ConnectionIndicator.NotConnected))
         composeRule.onNodeWithContentDescription("Not connected").assertIsDisplayed()
     }
+
+    @Test
+    fun `unsynced changes have their own icon`() {
+        show(CodeEditorViewModel.UiState(connectionIndicator = ConnectionIndicator.UnsyncedChanges))
+        composeRule.onNodeWithContentDescription("Changes not synced yet").assertIsDisplayed()
+    }
 }

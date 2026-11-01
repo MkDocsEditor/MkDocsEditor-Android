@@ -28,7 +28,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 /** how long opening a document waits for the redirect lookups of the local copies */
 private const val REDIRECT_TIMEOUT_MS = 5_000L
-private const val NOT_CONNECTED_DELAY_MS = 2_000L
+private const val INDICATOR_DELAY_MS = 2_000L
 
 /** what the database knows about a document */
 internal data class CachedDocument(val name: String, val text: String?)
@@ -54,7 +54,7 @@ internal data class ConnectionStatus(
 }
 
 /** what the small icon of the editor shows */
-enum class ConnectionIndicator { Connected, NotConnected, OfflineMode }
+enum class ConnectionIndicator { Connected, NotConnected, OfflineMode, UnsyncedChanges }
 
 /**
  * What a [DocumentSession] needs from the rest of the app
@@ -152,22 +152,28 @@ internal class DocumentSession(
      */
     private val localCopyAvailable = MutableStateFlow(false)
 
+    private val unsyncedChanges = MutableStateFlow(false)
+
     /**
      * Not being connected is normal, edits sync later. So the icon does not change for the moment
-     * it takes to connect, or for a short interruption.
+     * it takes to connect or to send an edit, or for a short interruption.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     val connectionIndicator: StateFlow<ConnectionIndicator?> = combine(
         _connectionStatus,
         environment.offlineMode,
-    ) { status, offlineMode ->
+        unsyncedChanges,
+    ) { status, offlineMode, unsyncedChanges ->
         when {
+            unsyncedChanges -> ConnectionIndicator.UnsyncedChanges
             status?.connected == true -> ConnectionIndicator.Connected
             offlineMode -> ConnectionIndicator.OfflineMode
             else -> ConnectionIndicator.NotConnected
         }
     }.distinctUntilChanged().mapLatest { indicator ->
-        if (indicator == ConnectionIndicator.NotConnected) delay(NOT_CONNECTED_DELAY_MS)
+        if (indicator != ConnectionIndicator.Connected && indicator != ConnectionIndicator.OfflineMode) {
+            delay(INDICATOR_DELAY_MS)
+        }
         indicator
     }.stateIn(scope, SharingStarted.Eagerly, initialValue = null)
 
@@ -283,6 +289,7 @@ internal class DocumentSession(
         syncedDocument = null
         text.unbind()
         localCopyAvailable.value = false
+        unsyncedChanges.value = false
         readOnly.value = false
         documentLoadFailed = false
 
@@ -303,6 +310,7 @@ internal class DocumentSession(
         // show the local copy right away, it may hold edits made offline
         text.bind(document)
         localCopyAvailable.value = document.hasLocalCopy
+        unsyncedChanges.value = document.hasUnsyncedChanges
         readOnly.value = document.readOnly
 
         load(documentId, connect = true)
@@ -349,6 +357,10 @@ internal class DocumentSession(
         override fun onDocumentRenamed(oldDocumentId: String, newDocumentId: String) {
             // the copy moved with the document; follow it without reconnecting the editor
             _documentId.value = newDocumentId
+        }
+
+        override fun onUnsyncedChangesChanged(unsynced: Boolean) {
+            unsyncedChanges.value = unsynced
         }
 
         override fun onDocumentDeleted() {

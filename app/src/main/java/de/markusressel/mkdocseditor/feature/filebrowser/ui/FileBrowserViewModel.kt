@@ -66,6 +66,7 @@ import kotlinx.coroutines.job
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 import com.github.kittinunf.fuel.core.FuelError
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
+import de.markusressel.mkdocsrestclient.sync.automerge.LocalDocumentStore
 import de.markusressel.mkdocsrestclient.reference.isUnsupportedEndpoint
 import org.mobilenativefoundation.store.store5.impl.extensions.fresh
 import org.mobilenativefoundation.store.store5.impl.extensions.get
@@ -100,6 +101,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private val eventBusManager: EventBusManager,
     private val authRepository: AuthRepository,
     private val getCurrentBackendConfigFlowUseCase: GetCurrentBackendConfigFlowUseCase,
+    private val localDocumentStore: LocalDocumentStore,
 ) : ViewModel() {
 
     // TODO: use savedState
@@ -136,6 +138,12 @@ internal class FileBrowserViewModel @Inject constructor(
     private var sectionJob: Job? = null
 
     init {
+        launch {
+            localDocumentStore.unsyncedIds.collect { ids ->
+                _uiState.update { old -> old.copy(unsyncedDocumentIds = ids) }
+            }
+        }
+
         eventBusManager.observe<BusEvent.CodeEditorBusEvent>().subscribe(viewModelScope) { event ->
             when (event) {
                 is BusEvent.CodeEditorBusEvent.RevealDocument -> {
