@@ -112,6 +112,11 @@ class DocumentSessionTest {
             documents += it
         }
 
+        var openDocument: String? = null
+        override fun onDocumentOpen(documentId: String?) {
+            openDocument = documentId
+        }
+
         override fun hasLocalCopy(documentId: String) = localCopyInStore
         override suspend fun followRedirect(documentId: String) = redirects[documentId] ?: documentId
         override suspend fun followAllRedirects() {
@@ -493,6 +498,21 @@ class DocumentSessionTest {
         assertFalse(f.state.deletedOnServer)
         f.document.listener.onDocumentDeleted()
         assertTrue(f.state.deletedOnServer)
+    }
+
+    @Test
+    fun `the open document changes after the old one wrote its copy`() = test { f ->
+        f.open("one")
+        assertEquals("one", f.environment.openDocument)
+        val first = f.document
+
+        f.session.setDocument("two")
+        assertTrue(first.shutDown)
+        assertEquals("two", f.environment.openDocument)
+
+        f.session.close()
+        assertTrue(f.document.shutDown)
+        assertNull(f.environment.openDocument)
     }
 
     @Test

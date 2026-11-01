@@ -88,6 +88,9 @@ internal interface DocumentSessionEnvironment {
         listener: AutomergeDocumentSyncManager.Listener,
     ): SyncedDocument
 
+    /** @param documentId the document of this session, null if none */
+    fun onDocumentOpen(documentId: String?)
+
     fun hasLocalCopy(documentId: String): Boolean
 
     /** @return the current id of a document that may have moved */
@@ -253,6 +256,7 @@ internal class DocumentSession(
         if (documentId != null && syncedDocument?.documentId == documentId) {
             // the open document moved: the manager already follows its new id
             _state.update { old -> old.copy(documentId = documentId) }
+            environment.onDocumentOpen(documentId)
             scope.launch { host.loadWikiTree(documentId) }
             load(documentId, connect = false)
             return
@@ -287,6 +291,7 @@ internal class DocumentSession(
         syncedDocument?.shutdown()
         // nothing may reach the old document while the next one loads
         syncedDocument = null
+        environment.onDocumentOpen(documentId)
         text.unbind()
         localCopyAvailable.value = false
         unsyncedChanges.value = false
@@ -459,5 +464,6 @@ internal class DocumentSession(
 
     fun close() {
         syncedDocument?.shutdown()
+        environment.onDocumentOpen(null)
     }
 }

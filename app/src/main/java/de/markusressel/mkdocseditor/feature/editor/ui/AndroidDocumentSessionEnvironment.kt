@@ -5,12 +5,13 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendCon
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
+import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocuments
+import de.markusressel.mkdocseditor.feature.editor.domain.SyncedDocumentFactory
 import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.NetworkManager
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.network.newValues
-import de.markusressel.mkdocsrestclient.AuthorizationProvider
 import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeDocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.automerge.LocalCopyRedirects
 import de.markusressel.mkdocsrestclient.sync.automerge.LocalDocumentStore
@@ -31,6 +32,8 @@ internal class AndroidDocumentSessionEnvironment @Inject constructor(
     private val localDocumentStore: LocalDocumentStore,
     private val localCopyRedirects: LocalCopyRedirects,
     networkManager: NetworkManager,
+    private val syncedDocumentFactory: SyncedDocumentFactory,
+    private val openDocuments: OpenDocuments,
 ) : DocumentSessionEnvironment {
 
     override val ioDispatcher = Dispatchers.IO
@@ -55,15 +58,9 @@ internal class AndroidDocumentSessionEnvironment @Inject constructor(
         serverConfig: BackendServerConfig,
         backendId: Long,
         listener: AutomergeDocumentSyncManager.Listener,
-    ): SyncedDocument = AutomergeDocumentSyncManager(
-        hostname = serverConfig.domain,
-        port = serverConfig.port,
-        ssl = serverConfig.useSsl,
-        authorizationProvider = AuthorizationProvider.bearer { authRepository.token(backendId) },
-        documentId = documentId,
-        store = localDocumentStore,
-        listener = listener,
-    )
+    ): SyncedDocument = syncedDocumentFactory.create(documentId, serverConfig, backendId, listener)
+
+    override fun onDocumentOpen(documentId: String?) = openDocuments.set(this, documentId)
 
     override fun hasLocalCopy(documentId: String) = localDocumentStore.contains(documentId)
 

@@ -150,8 +150,6 @@ class DocumentSyncSession(
 
     private var dirty = false
 
-    private var reportedUnsynced = false
-
     private val peers = linkedMapOf<String, Peer>()
 
     private val actors = mutableMapOf<String, ActorInfo>()
@@ -557,6 +555,8 @@ class DocumentSyncSession(
         listener.onLocalCopyChanged()
         reportUnsynced()
     }
+
+    private var reportedUnsynced = hasUnsyncedChanges
 
     private fun reportUnsynced() {
         val unsynced = hasUnsyncedChanges
