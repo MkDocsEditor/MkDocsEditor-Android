@@ -3,6 +3,7 @@ package de.markusressel.mkdocseditor.feature.filebrowser.ui
 import androidx.core.text.trimmedLength
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.serialization.saved
 import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -58,6 +59,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -66,6 +68,7 @@ import kotlinx.coroutines.job
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 import com.github.kittinunf.fuel.core.FuelError
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
+import de.markusressel.mkdocsrestclient.sync.automerge.LocalDocumentStore
 import de.markusressel.mkdocsrestclient.reference.isUnsupportedEndpoint
 import org.mobilenativefoundation.store.store5.impl.extensions.fresh
 import org.mobilenativefoundation.store.store5.impl.extensions.get
@@ -76,7 +79,7 @@ import kotlin.coroutines.coroutineContext
 
 @HiltViewModel
 internal class FileBrowserViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
+    savedStateHandle: SavedStateHandle,
     private val getSectionItemsUseCase: GetSectionItemsUseCase,
     private val createNewSectionUseCase: CreateNewSectionUseCase,
     private val searchUseCase: SearchUseCase,
@@ -100,9 +103,12 @@ internal class FileBrowserViewModel @Inject constructor(
     private val eventBusManager: EventBusManager,
     private val authRepository: AuthRepository,
     private val getCurrentBackendConfigFlowUseCase: GetCurrentBackendConfigFlowUseCase,
+    private val localDocumentStore: LocalDocumentStore,
 ) : ViewModel() {
 
-    // TODO: use savedState
+    /** the open folder; the path to it can be computed again from the database */
+    private var savedSectionId by savedStateHandle.saved { ROOT_SECTION_ID }
+
     private val _uiState = MutableStateFlow(UiState())
     internal val uiState = _uiState.asStateFlow()
 
@@ -136,16 +142,16 @@ internal class FileBrowserViewModel @Inject constructor(
     private var sectionJob: Job? = null
 
     init {
+        launch {
+            localDocumentStore.unsyncedIds.collect { ids ->
+                _uiState.update { old -> old.copy(unsyncedDocumentIds = ids) }
+            }
+        }
+
         eventBusManager.observe<BusEvent.CodeEditorBusEvent>().subscribe(viewModelScope) { event ->
             when (event) {
-                is BusEvent.CodeEditorBusEvent.GoToDocument -> {
-                    val parentSectionId = findParentSectionOfDocumentUseCase(event.documentId)
-                    parentSectionId?.let {
-                        delay(200)
-                        openSection(parentSectionId.id)
-                        delayUntil { uiState.value.isLoading.not() }
-                        _events.send(FileBrowserEvent.OpenDocumentEditor(event.documentId))
-                    }
+                is BusEvent.CodeEditorBusEvent.RevealDocument -> {
+                    findParentSectionOfDocumentUseCase(event.documentId)?.let { openSection(it.id) }
                 }
 
                 is BusEvent.CodeEditorBusEvent.GoToResource -> {
@@ -191,10 +197,21 @@ internal class FileBrowserViewModel @Inject constructor(
         }
 
         launch {
-            uiState.map { it.isSearchExpanded }.distinctUntilChanged().collect { isSearching ->
+            // only closing the search goes to the top level, the first value is the initial state
+            uiState.map { it.isSearchExpanded }.distinctUntilChanged().drop(1).collect { isSearching ->
                 if (isSearching.not()) {
                     showTopLevel()
                 }
+            }
+        }
+
+        launch {
+            val restored = savedSectionId
+            // the folder may be gone by now
+            if (restored != ROOT_SECTION_ID && computePathToSectionUseCase(restored).isNotEmpty()) {
+                openSection(restored)
+            } else {
+                showTopLevel()
             }
         }
 
@@ -560,6 +577,7 @@ internal class FileBrowserViewModel @Inject constructor(
 
         // set the section id on the ViewModel
         currentSectionId.value = sectionId
+        savedSectionId = sectionId
 
         _uiState.update { old ->
             old.copy(
@@ -601,6 +619,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private suspend fun showTopLevel() {
         backstack.clear()
         currentSectionId.value = ROOT_SECTION_ID
+        savedSectionId = ROOT_SECTION_ID
         _uiState.update { old ->
             old.copy(
                 currentSectionPath = getCurrentSectionPathUseCase(backstack),

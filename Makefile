@@ -1,4 +1,4 @@
-.PHONY: build
+.PHONY: build test unitTests
 
 clean:
 	./gradlew clean
@@ -7,6 +7,12 @@ build:
 	./gradlew assembleDebug
 apk: build
 app: build
+
+# All tests. There are only JUnit tests for now, instrumented tests would go here too.
+test: unitTests
+
+unitTests:
+	./gradlew testDebugUnitTest
 
 buildRelease:
 	./gradlew assembleRelease

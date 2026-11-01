@@ -18,6 +18,7 @@ import de.markusressel.mkdocseditor.network.domain.ScheduleOfflineCacheUpdateUse
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import de.markusressel.mkdocseditor.service.UnsyncedChangesScheduler
 import javax.inject.Inject
 
 /**
@@ -46,6 +47,9 @@ class App : Application(), Configuration.Provider {
     internal lateinit var scheduleOfflineCacheUpdateUseCase: ScheduleOfflineCacheUpdateUseCase
 
     @Inject
+    internal lateinit var unsyncedChangesScheduler: UnsyncedChangesScheduler
+
+    @Inject
     internal lateinit var eventBusManager: EventBusManager
 
     @Inject
@@ -70,6 +74,8 @@ class App : Application(), Configuration.Provider {
         listenToEvents()
 
         initOfflineMode()
+
+        unsyncedChangesScheduler.start(MainScope())
     }
 
     private fun listenToEvents() {

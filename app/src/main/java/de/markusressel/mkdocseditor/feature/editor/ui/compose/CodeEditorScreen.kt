@@ -90,7 +90,7 @@ internal data class CodeEditorScreen(
                 LinkPickerDialog(
                     tree = tree!!,
                     documentId = documentId,
-                    documentText = uiState.text?.text ?: "",
+                    documentText = dialogState.documentText,
                     selection = dialogState.selection,
                     textLoader = viewModel.documentTextLoader,
                     thumbnailLoader = viewModel.thumbnailLoader,

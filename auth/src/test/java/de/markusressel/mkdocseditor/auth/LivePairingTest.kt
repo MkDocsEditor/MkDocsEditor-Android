@@ -13,8 +13,8 @@ import de.markusressel.mkdocseditor.auth.link.ConnectLinkResult
 import de.markusressel.mkdocseditor.auth.link.ConnectPayload
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
-import org.junit.Assume.assumeTrue
-import org.junit.Before
+import org.junit.jupiter.api.Assumptions.assumeTrue
+import org.junit.jupiter.api.BeforeEach
 import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -41,9 +41,9 @@ class LivePairingTest {
 
     private val http = OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS).build()
 
-    @Before
+    @BeforeEach
     fun requireBackend() {
-        assumeTrue("set -Pmkdocs.backend.url and -Pmkdocs.backend.users", baseUrl != null && user?.size == 2)
+        assumeTrue(baseUrl != null && user?.size == 2, "set -Pmkdocs.backend.url and -Pmkdocs.backend.users")
     }
 
     @Test

@@ -69,7 +69,14 @@
     <string name="format_horizontal_rule">Horizontal rule</string>
 
     <string name="no_offline_version_title">Not available offline</string>
-    <string name="no_offline_version">Sorry, there is no offline version available. Try to connect to the server and re-open this file to get an updated offline version.</string>
+    <string name="no_offline_version">This page is not on this device yet. It opens as soon as there is a connection.</string>
+    <string name="connection_connected">Connected</string>
+    <string name="unsynced_changes">Changes not synced yet</string>
+    <string name="connection_unsynced_changes_info">Your latest changes are only on this device so far. They sync as soon as the server can be reached.</string>
+    <string name="connection_not_connected">Not connected</string>
+    <string name="connection_connected_info">Connected. Changes sync right away.</string>
+    <string name="connection_not_connected_info">Not connected. Your changes stay on this device and sync later. Changes by others may be missing until then.</string>
+    <string name="connection_offline_mode_info">Offline mode is on. Your changes stay on this device and sync after you turn it off. Changes by others may be missing until then.</string>
 
     <string name="error_and_no_offline_version">There was an error connecting to the server and there is
     no offline version available for read-only mode: %1$s</string>
@@ -87,22 +94,21 @@
     <string name="code_editor_edit_mode">Edit Mode</string>
     <string name="code_editor_enable_edit_mode">Edit</string>
     <string name="code_editor_disable_edit_mode">Read-Only</string>
-    <string name="code_editor_connection_failed">Connection failed</string>
-    <string name="code_editor_disconnected">Disconnected</string>
 
-    <string name="offline">Offline</string>
+    <string name="document_deleted_on_server">This page was deleted on the server. Your copy stays on this device.</string>
 
     <string name="connected">📡 Connected</string>
     <string name="server_unavailable">☠ Server unavailable</string>
     <string name="not_connected">Not connected</string>
     <string name="error">☠ Error</string>
     <string name="exception_raised">☠ Exception raised</string>
-    <string name="retry">Retry</string>
-    <string name="connect">Connect</string>
     <string name="sync_error">Synchronization error :(</string>
 
     <string name="search">Search</string>
     <string name="search_result_count_header">Results: %1$s</string>
+    <string name="search_location_root">Top level</string>
+    <string name="search_recent_header">Recent searches</string>
+    <string name="search_input_too_short">Type at least %1$d characters to search</string>
 
     <string name="add">Add</string>
     <string name="delete">Delete</string>
@@ -232,9 +238,17 @@
 
     <string name="hint_new_document">New Document</string>
     <string name="error_document_already_exists">Document already exists!</string>
-    <plurals name="additional_search_term_matches_within_document">
-        <item quantity="one">… and %1$s further match</item>
-        <item quantity="other">… and %1$s further matches</item>
+    <plurals name="search_match_count">
+        <item quantity="one">%1$d match</item>
+        <item quantity="other">%1$d matches</item>
+    </plurals>
+    <plurals name="search_section_documents">
+        <item quantity="one">%1$d page</item>
+        <item quantity="other">%1$d pages</item>
+    </plurals>
+    <plurals name="search_section_sections">
+        <item quantity="one">%1$d folder</item>
+        <item quantity="other">%1$d folders</item>
     </plurals>
 
 </resources>

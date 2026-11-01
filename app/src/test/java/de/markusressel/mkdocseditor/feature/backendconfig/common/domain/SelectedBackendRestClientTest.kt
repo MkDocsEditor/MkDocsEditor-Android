@@ -14,9 +14,9 @@ import kotlinx.coroutines.runBlocking
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
@@ -40,12 +40,12 @@ class SelectedBackendRestClientTest {
         deviceName = "test",
     )
 
-    @BeforeTest
+    @Before
     fun startServer() {
         server = TestHttpServer()
     }
 
-    @AfterTest
+    @After
     fun stopServer() {
         server.stop()
     }

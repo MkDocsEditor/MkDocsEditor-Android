@@ -15,9 +15,9 @@ import java.net.InetAddress
 import java.net.ServerSocket
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
@@ -35,12 +35,12 @@ class RequestManagerBackendTest {
 
     private val serverUrl get() = "http://127.0.0.1:${server.port}/"
 
-    @BeforeTest
+    @Before
     fun startServer() {
         server = TestHttpServer()
     }
 
-    @AfterTest
+    @After
     fun stopServer() {
         server.stop()
     }

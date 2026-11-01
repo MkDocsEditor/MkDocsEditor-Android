@@ -26,8 +26,8 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import org.junit.After
-import org.junit.Before
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -47,7 +47,7 @@ class PasskeySetupViewModelTest {
     private lateinit var viewModel: PasskeySetupViewModel
     private val events = mutableListOf<PasskeySetupEvent>()
 
-    @Before
+    @BeforeEach
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         tokens.put(1, AuthSession("mds_token", expiresAt = null, username = "markus"))
@@ -63,7 +63,7 @@ class PasskeySetupViewModelTest {
         viewModel.clock = Clock.fixed(now, ZoneOffset.UTC)
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         Dispatchers.resetMain()
     }

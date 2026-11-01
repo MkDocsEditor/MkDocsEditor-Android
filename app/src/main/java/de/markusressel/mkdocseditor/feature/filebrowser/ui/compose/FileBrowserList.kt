@@ -39,6 +39,7 @@ internal fun FileBrowserList(
     onSectionClicked: (SectionData) -> Unit,
     onSectionLongClicked: (SectionData) -> Unit,
     modifier: Modifier = Modifier,
+    unsyncedDocumentIds: Set<String> = emptySet(),
 ) {
     Column(
         modifier = modifier,
@@ -89,6 +90,7 @@ internal fun FileBrowserList(
                         item = document,
                         onClick = onDocumentClicked,
                         onLongClick = onDocumentLongClicked,
+                        hasUnsyncedChanges = document.id in unsyncedDocumentIds,
                     )
                 }
 

@@ -171,6 +171,7 @@ internal fun FileBrowserScreenContent(
                                         horizontal = 16.dp,
                                     ),
                                 items = uiState.listItems,
+                                unsyncedDocumentIds = uiState.unsyncedDocumentIds,
                                 onDocumentClicked = {
                                     onUiEvent(UiEvent.DocumentClicked(it))
                                 },

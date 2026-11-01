@@ -54,7 +54,8 @@ object BackendConfigSelectionScreen : Screen {
         BackendSelectionScreenContent(
             modifier = Modifier.fillMaxSize(),
             uiState = uiState,
-            onUiEvent = viewModel::onUiEvent
+            onUiEvent = viewModel::onUiEvent,
+            onDevBackendClicked = { navigator.push(ConnectServerScreen(devBackend = true)) },
         )
     }
 }

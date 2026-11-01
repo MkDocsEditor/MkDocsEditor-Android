@@ -7,8 +7,8 @@ import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import mockwebserver3.RecordedRequest
 import okhttp3.OkHttpClient
-import org.junit.After
-import org.junit.Before
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -36,13 +36,13 @@ class ServerDiscoveryTest {
         }
     }
 
-    @Before
+    @BeforeEach
     fun setUp() {
         web.start()
         backend.start()
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         web.close()
         backend.close()

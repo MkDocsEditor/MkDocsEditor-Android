@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferences
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferencesError
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferencesDialog
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTreeTest.Companion.doc
@@ -136,8 +137,8 @@ class PageReferencesDialogTest {
 
     @Test
     fun `errors and empty lists`() {
-        panel(PageReferences(referencesError = "Needs a connection to the server.", backlinks = emptyList()))
-        composeRule.onNodeWithTag("references-error").assertExists()
+        panel(PageReferences(referencesError = PageReferencesError.OFFLINE, backlinks = emptyList()))
+        composeRule.onNodeWithText("Needs a connection to the server.").assertExists()
         composeRule.onNodeWithTag("tab-links").performClick()
         composeRule.onNodeWithTag("references-error").assertExists()
         composeRule.onNodeWithTag("tab-used-by").performClick()

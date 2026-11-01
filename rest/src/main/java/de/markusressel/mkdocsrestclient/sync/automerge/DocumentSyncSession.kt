@@ -66,6 +66,8 @@ class DocumentSyncSession(
     private val listener: Listener,
     private val clientName: String = "MkDocsEditor-Android",
     private val random: SecureRandom = SecureRandom(),
+    /** the server this session talks to, stored with the copy */
+    private val origin: String? = null,
 ) : EditableTextDocument {
 
     interface Listener {
@@ -90,6 +92,11 @@ class DocumentSyncSession(
          * The local copy changed and should be persisted soon (see [persist])
          */
         fun onLocalCopyChanged() {}
+
+        /**
+         * See [hasUnsyncedChanges]
+         */
+        fun onUnsyncedChangesChanged(unsynced: Boolean) {}
 
         fun onDocumentRenamed(oldDocumentId: String, newDocumentId: String) {}
 
@@ -119,8 +126,12 @@ class DocumentSyncSession(
     /** the state this session last loaded from or wrote to the store */
     private var storedState: ByteArray? = null
 
+    /** the server of the copy, when it was written by a session that knows it */
+    private var storedOrigin: String? = null
+
     private var local: LocalCopy? = store.load(documentId)?.let { stored ->
         storedState = stored.documentState
+        storedOrigin = stored.origin
         LocalCopy(
             document = AutomergeTextDocument.load(stored.documentState, stored.actorId.hexToBytes()),
             actorId = stored.actorId,
@@ -160,6 +171,12 @@ class DocumentSyncSession(
      */
     val hasLocalCopy: Boolean
         get() = local != null
+
+    /**
+     * true when the local copy holds changes the server has not confirmed yet
+     */
+    val hasUnsyncedChanges: Boolean
+        get() = local?.let { it.document.headsHex.toSet() != it.serverHeads.toSet() } ?: false
 
     /**
      * true while connected and the initial content was received
@@ -327,10 +344,13 @@ class DocumentSyncSession(
                 actorId = current.actorId,
                 epoch = current.epoch,
                 serverHeads = current.serverHeads,
+                heads = current.document.headsHex,
+                origin = origin ?: storedOrigin,
             )
         )
         storedState = state
         dirty = false
+        reportUnsynced()
     }
 
     /**
@@ -475,6 +495,7 @@ class DocumentSyncSession(
                     epoch = stored.epoch,
                     serverHeads = stored.serverHeads,
                 )
+                reportUnsynced()
                 val text = local!!.document.text
                 if (current == null || text != current.document.text) listener.onTextReplaced(text)
             }
@@ -532,6 +553,17 @@ class DocumentSyncSession(
     private fun markDirty() {
         dirty = true
         listener.onLocalCopyChanged()
+        reportUnsynced()
+    }
+
+    private var reportedUnsynced = hasUnsyncedChanges
+
+    private fun reportUnsynced() {
+        val unsynced = hasUnsyncedChanges
+        if (unsynced != reportedUnsynced) {
+            reportedUnsynced = unsynced
+            listener.onUnsyncedChangesChanged(unsynced)
+        }
     }
 
     private fun newActorId(): String {

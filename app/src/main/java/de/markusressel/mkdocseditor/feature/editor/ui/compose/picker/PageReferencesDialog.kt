@@ -1,5 +1,8 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose.picker
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -29,11 +32,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
@@ -61,9 +62,14 @@ import de.markusressel.mkdocsrestclient.reference.ReferenceModel
 internal data class PageReferences(
     val references: List<ReferenceModel>? = null,
     val backlinks: List<BacklinkModel>? = null,
-    val referencesError: String? = null,
-    val backlinksError: String? = null,
+    val referencesError: PageReferencesError? = null,
+    val backlinksError: PageReferencesError? = null,
 )
+
+internal enum class PageReferencesError(@StringRes val text: Int) {
+    UNSUPPORTED(R.string.page_references_unsupported),
+    OFFLINE(R.string.page_references_offline),
+}
 
 /**
  * What the open page uses and what uses it:
@@ -170,12 +176,12 @@ internal fun PageReferencesDialog(
 /** a loading indicator, an error, an empty text or the [content] */
 private fun <T> LazyListScope.listState(
     list: List<T>?,
-    error: String?,
+    error: PageReferencesError?,
     emptyText: Int,
     content: LazyListScope.(List<T>) -> Unit,
 ) {
     when {
-        error != null -> item { Message(error, isError = true) }
+        error != null -> item { Message(stringResource(error.text), isError = true) }
         list == null -> item {
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(modifier = Modifier.padding(16.dp))
@@ -207,7 +213,7 @@ private fun LazyListScope.resourcesContent(
 
     item { Header(stringResource(R.string.page_references_used_here)) }
     when {
-        state.referencesError != null -> item { Message(state.referencesError, isError = true) }
+        state.referencesError != null -> item { Message(stringResource(state.referencesError.text), isError = true) }
         state.references == null -> item {
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(modifier = Modifier.padding(16.dp))

@@ -25,7 +25,6 @@ dependencies {
 
     testFixturesImplementation(libs.kotlinx.coroutines.core)
 
-    testImplementation(libs.junit4)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.kotlinx.coroutines.test)
 }

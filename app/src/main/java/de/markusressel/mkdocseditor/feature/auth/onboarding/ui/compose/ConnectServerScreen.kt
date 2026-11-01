@@ -20,9 +20,11 @@ import de.markusressel.mkdocseditor.feature.main.data.rememberMainNavigationRequ
  *
  * @param firstRun true when no server exists yet: the screen is the root of the server tab
  * and gives way to the server list once a server is added
+ * @param devBackend true to connect to the dev backend right away (debug builds only)
  */
 data class ConnectServerScreen(
     val firstRun: Boolean = false,
+    val devBackend: Boolean = false,
 ) : Screen {
 
     @Composable
@@ -46,6 +48,10 @@ data class ConnectServerScreen(
                     }
                 }
             }
+        }
+
+        LaunchedEffect(viewModel) {
+            if (devBackend) viewModel.onUiEvent(ConnectServerViewModel.UiEvent.DevBackendClicked)
         }
 
         ConnectServerScreenContent(

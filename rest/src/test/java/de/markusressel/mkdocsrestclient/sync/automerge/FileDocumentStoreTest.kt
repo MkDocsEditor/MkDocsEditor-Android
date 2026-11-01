@@ -34,6 +34,14 @@ class FileDocumentStoreTest {
     }
 
     @Test
+    fun `contains knows a stored document and a missing one`() {
+        val store = FileDocumentStore(createTempDirectory("store").toFile())
+        store.save("a/b c", StoredDocument(byteArrayOf(1, 2, 3), "00ff", "e1", listOf("abcd")))
+        assertEquals(true, store.contains("a/b c"))
+        assertEquals(false, store.contains("missing"))
+    }
+
+    @Test
     fun `moving onto a copy of the same lineage merges both`() {
         val dir = createTempDirectory("store").toFile()
         try {

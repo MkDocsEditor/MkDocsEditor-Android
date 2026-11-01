@@ -4,8 +4,10 @@ import com.android.build.api.dsl.CommonExtension
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.getByType
+import org.gradle.kotlin.dsl.kotlin
 import org.gradle.kotlin.dsl.provideDelegate
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -65,6 +67,17 @@ internal fun Project.configureKotlinAndroid(commonExtension: CommonExtension) {
 
     dependencies {
         add("coreLibraryDesugaring", libs.findLibrary("android.desugarJdkLibs").get())
+
+        add("testImplementation", kotlin("test-junit5"))
+        add("testImplementation", platform(libs.findLibrary("junit-bom").get()))
+        add("testImplementation", libs.findLibrary("junit-jupiter").get())
+        // Robolectric and the Compose test rule only exist for JUnit 4
+        add("testRuntimeOnly", libs.findLibrary("junit-vintage-engine").get())
+        add("testRuntimeOnly", libs.findLibrary("junit-platform-launcher").get())
+    }
+
+    tasks.withType<Test>().configureEach {
+        useJUnitPlatform()
     }
 }
 

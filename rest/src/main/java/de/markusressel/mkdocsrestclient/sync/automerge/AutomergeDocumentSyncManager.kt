@@ -28,7 +28,7 @@ class AutomergeDocumentSyncManager(
     documentId: String,
     store: LocalDocumentStore,
     private val listener: Listener,
-) : EditableTextDocument {
+) : SyncedDocument {
 
     interface Listener : DocumentSyncSession.Listener {
         /**
@@ -53,6 +53,7 @@ class AutomergeDocumentSyncManager(
                 // the server closes with 4009, then we reconnect to the new id
             }
         },
+        origin = originOf(hostname, port),
     )
 
     private val connection = WebsocketConnectionHandler(authorizationProvider)
@@ -65,7 +66,7 @@ class AutomergeDocumentSyncManager(
     private var lastSentAt = 0L
     private var lastReceivedAt = 0L
 
-    val documentId: String
+    override val documentId: String
         get() = session.documentId
 
     override val text: String?
@@ -74,13 +75,16 @@ class AutomergeDocumentSyncManager(
     override val version: DocumentVersion?
         get() = session.version
 
-    val hasLocalCopy: Boolean
+    override val hasLocalCopy: Boolean
         get() = session.hasLocalCopy
 
-    val readOnly: Boolean
+    override val hasUnsyncedChanges: Boolean
+        get() = session.hasUnsyncedChanges
+
+    override val readOnly: Boolean
         get() = session.readOnly
 
-    val isConnected: Boolean
+    override val isConnected: Boolean
         get() = connection.isConnected
 
     val isSyncing: Boolean
@@ -120,14 +124,17 @@ class AutomergeDocumentSyncManager(
     /**
      * Connects (and keeps reconnecting) until [disconnect] is called
      */
-    fun connect() {
+    override fun connect() {
         wantConnection = true
         forbiddenRetried = false
+        reconnectAttempt = 0
         handler.removeCallbacks(reconnectRunnable)
         connection.connect(websocketUrl)
     }
 
-    fun disconnect(code: Int = CloseCode.NORMAL, reason: String) {
+    override fun disconnect(reason: String) = disconnect(CloseCode.NORMAL, reason)
+
+    fun disconnect(code: Int, reason: String) {
         wantConnection = false
         handler.removeCallbacks(reconnectRunnable)
         handler.removeCallbacks(heartbeatRunnable)
@@ -163,7 +170,7 @@ class AutomergeDocumentSyncManager(
      * @param anchor UTF-16 index where the selection started, null if the editor has no focus
      * @param head UTF-16 index of the caret
      */
-    fun onLocalSelectionChanged(anchor: Int?, head: Int?) {
+    override fun onLocalSelectionChanged(anchor: Int?, head: Int?) {
         pendingSelection = anchor to head
         if (!handler.hasCallbacks(presenceRunnable)) {
             handler.postDelayed(presenceRunnable, PRESENCE_THROTTLE_MS)
@@ -173,7 +180,7 @@ class AutomergeDocumentSyncManager(
     /**
      * Writes the local copy to disk now. Call when the app goes to the background.
      */
-    fun persistNow() {
+    override fun persistNow() {
         handler.removeCallbacks(persistRunnable)
         try {
             session.persist()
@@ -185,7 +192,7 @@ class AutomergeDocumentSyncManager(
     /**
      * Disconnects and persists. The manager must not be used afterwards.
      */
-    fun shutdown() {
+    override fun shutdown() {
         disconnect(reason = "Closed")
         handler.removeCallbacksAndMessages(null)
     }
@@ -281,6 +288,9 @@ class AutomergeDocumentSyncManager(
     }
 
     companion object {
+        /** identifies a server in a stored copy */
+        fun originOf(hostname: String, port: Int) = "$hostname:$port"
+
         /** batch keystrokes into one sync message (protocol: 50 to 100 ms) */
         const val SYNC_BATCH_DELAY_MS = 75L
 

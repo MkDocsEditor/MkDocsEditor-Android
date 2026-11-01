@@ -1,7 +1,6 @@
 package de.markusressel.mkdocseditor.feature.filepicker.ui
 
 import android.net.Uri
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.event.BusEvent
@@ -10,7 +9,6 @@ import javax.inject.Inject
 
 @HiltViewModel
 internal class FilePickerViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
     private val eventBusManager: EventBusManager,
 ) : ViewModel() {
 

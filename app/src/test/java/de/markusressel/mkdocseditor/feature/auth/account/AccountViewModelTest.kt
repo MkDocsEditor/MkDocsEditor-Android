@@ -27,12 +27,12 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import org.junit.After
+import org.junit.jupiter.api.AfterEach
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
-import org.junit.Before
+import org.junit.jupiter.api.BeforeEach
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -62,7 +62,7 @@ class AccountViewModelTest {
 
     private fun reauthRequired() = AuthApiException(403, AuthErrorCode.REAUTH_REQUIRED, "reauth required")
 
-    @Before
+    @BeforeEach
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         store.put(1, AuthSession("mds_token", expiresAt = null, username = "markus"))
@@ -81,7 +81,7 @@ class AccountViewModelTest {
         viewModel.clock = Clock.fixed(now, ZoneOffset.UTC)
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         Dispatchers.resetMain()
     }

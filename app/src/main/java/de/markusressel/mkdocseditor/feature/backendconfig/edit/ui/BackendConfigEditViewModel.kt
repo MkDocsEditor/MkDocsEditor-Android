@@ -2,6 +2,7 @@ package de.markusressel.mkdocseditor.feature.backendconfig.edit.ui
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.serialization.saved
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.auth.domain.AuthRepository
@@ -29,7 +30,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 internal class BackendConfigEditViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
+    savedStateHandle: SavedStateHandle,
     private val getBackendConfigUseCase: GetBackendConfigUseCase,
     private val getBackendAuthConfigsUseCase: GetBackendAuthConfigsUseCase,
     private val addAuthConfigUseCase: AddAuthConfigUseCase,
@@ -41,7 +42,9 @@ internal class BackendConfigEditViewModel @Inject constructor(
     private val authRepository: AuthRepository,
 ) : ViewModel() {
 
-    // TODO: use savedState
+    /** null until the user changed something, so a form without changes follows the database */
+    private var draft by savedStateHandle.saved<BackendConfigDraft?> { null }
+
     private val _uiState = MutableStateFlow(UiState())
     internal val uiState = _uiState.asStateFlow()
 
@@ -57,11 +60,24 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 } else {
                     loadBackendConfig(id)
                 }
+                restoreDraft()
             } catch (e: Exception) {
                 Timber.e(e)
                 showError("Failed to load backend config")
             }
         }
+    }
+
+    /** The screen initializes again when it returns, and that must not undo the user's changes */
+    private suspend fun restoreDraft() {
+        val saved = draft ?: return
+        _uiState.update { old -> old.withDraft(saved) }
+        updateSaveButtonEnabled()
+    }
+
+    private suspend fun onFormChanged() {
+        draft = uiState.value.toDraft()
+        updateSaveButtonEnabled()
     }
 
     private fun clearInputs() {
@@ -168,42 +184,42 @@ internal class BackendConfigEditViewModel @Inject constructor(
         _uiState.update { old ->
             old.copy(currentDomain = text)
         }
-        updateSaveButtonEnabled()
+        onFormChanged()
     }
 
     private suspend fun processPortInput(port: String) {
         _uiState.update { old ->
             old.copy(currentPort = port)
         }
-        updateSaveButtonEnabled()
+        onFormChanged()
     }
 
     private suspend fun processUseSslInput(checked: Boolean) {
         _uiState.update { old ->
             old.copy(currentUseSsl = checked)
         }
-        updateSaveButtonEnabled()
+        onFormChanged()
     }
 
     private suspend fun processWebDomainInput(text: String) {
         _uiState.update { old ->
             old.copy(currentMkDocsWebDomain = text)
         }
-        updateSaveButtonEnabled()
+        onFormChanged()
     }
 
     private suspend fun processWebPortInput(port: String) {
         _uiState.update { old ->
             old.copy(currentMkDocsWebPort = port)
         }
-        updateSaveButtonEnabled()
+        onFormChanged()
     }
 
     private suspend fun processWebUseSslInput(checked: Boolean) {
         _uiState.update { old ->
             old.copy(currentMkDocsWebUseSsl = checked)
         }
-        updateSaveButtonEnabled()
+        onFormChanged()
     }
 
     private suspend fun deleteAuthConfig(authConfig: AuthConfig) {
@@ -263,13 +279,14 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 currentAuthConfigPassword = "",
             )
         }
+        onFormChanged()
     }
 
     private suspend fun processDescriptionInput(text: String) {
         _uiState.update { old ->
             old.copy(description = text)
         }
-        updateSaveButtonEnabled()
+        onFormChanged()
     }
 
     private suspend fun updateSaveButtonEnabled() {
@@ -348,7 +365,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
         _uiState.update { old ->
             old.copy(currentMkDocsWebAuthConfig = authConfig)
         }
-        updateSaveButtonEnabled()
+        onFormChanged()
     }
 
     private fun processAuthConfigUsernameInput(input: String) {
@@ -383,7 +400,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
         _uiState.update { old ->
             old.copy(name = text)
         }
-        updateSaveButtonEnabled()
+        onFormChanged()
     }
 
     private fun updateSessionState() {

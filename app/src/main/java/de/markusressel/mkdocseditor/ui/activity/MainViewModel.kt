@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.ui.activity
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.extensions.common.android.launch
@@ -17,8 +16,6 @@ import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 sealed class SnackbarData {
-    data object ConnectionFailed : SnackbarData()
-    data object Disconnected : SnackbarData()
 
     /** the server rejected the session; local edits are kept */
     data class SignedOut(val backendId: Long) : SnackbarData()
@@ -48,7 +45,6 @@ internal sealed class UiEvent {}
 
 @HiltViewModel
 internal class MainViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
     private val getInitialTabUseCase: GetInitialTabUseCase,
     private val getCurrentBackendConfigFlowUseCase: GetCurrentBackendConfigFlowUseCase,
     private val mainNavigationRequests: MainNavigationRequests,

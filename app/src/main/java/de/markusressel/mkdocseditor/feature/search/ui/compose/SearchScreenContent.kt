@@ -24,7 +24,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import de.markusressel.mkdocseditor.R
@@ -102,28 +101,39 @@ internal fun SearchScreenContent(
             Column {
                 Text(
                     modifier = Modifier.padding(8.dp),
-                    text = stringResource(
-                        R.string.search_result_count_header,
-                        uiState.currentSearchResults.size
-                    )
+                    text = when {
+                        uiState.showRecentSearches -> stringResource(R.string.search_recent_header)
+                        uiState.isInputTooShort -> stringResource(
+                            R.string.search_input_too_short,
+                            SearchViewModel.MIN_SEARCH_LENGTH
+                        )
+
+                        else -> stringResource(
+                            R.string.search_result_count_header,
+                            uiState.currentSearchResults.size
+                        )
+                    }
                 )
 
-                SearchResultList(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            vertical = 16.dp,
-                            horizontal = 16.dp,
-                        ),
-                    searchTerm = uiState.currentSearchFilter,
-                    items = uiState.currentSearchResults,
-                    onItemClicked = {
-                        onUiEvent(UiEvent.SearchResultClicked(it))
-                    },
-                    onItemLongClicked = {
-                        onUiEvent(UiEvent.SearchResultLongClicked(it))
-                    },
-                )
+                if (uiState.showRecentSearches) {
+                    RecentSearchList(
+                        modifier = Modifier.fillMaxWidth(),
+                        terms = uiState.recentSearches,
+                        onTermClicked = { onUiEvent(UiEvent.RecentSearchClicked(it)) },
+                    )
+                } else {
+                    SearchResultList(
+                        modifier = Modifier.fillMaxWidth(),
+                        searchTerm = uiState.currentSearchFilter,
+                        items = uiState.currentSearchResults,
+                        onItemClicked = {
+                            onUiEvent(UiEvent.SearchResultClicked(it))
+                        },
+                        onItemLongClicked = {
+                            onUiEvent(UiEvent.SearchResultLongClicked(it))
+                        },
+                    )
+                }
             }
         }
     }
@@ -143,13 +153,13 @@ private fun SearchScreenContentPreview() {
                         documentName = "documentName",
                         excerpts = listOf(
                             SearchResultItem.Document.ExcerptData(
-                                excerpt = AnnotatedString("Dieser Teil des Dokuments enthält den Suchbefriff \"test\"."),
-                                charsBefore = 10,
-                                charsAfter = 10,
-                                charBeforeExcerptIsNewline = false,
-                                charAfterExcerptIsNewline = false,
+                                text = "Dieser Teil des Dokuments enthält den Suchbegriff test.",
+                                matches = listOf(50..53),
+                                heading = "Eine Überschrift",
                             )
                         ),
+                        path = listOf("Ordner", "Unterordner"),
+                        matchCount = 2,
                     ),
                     SearchResultItem.Section(
                         sectionId = "sectionId",
