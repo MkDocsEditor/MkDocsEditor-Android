@@ -102,10 +102,14 @@ internal fun SearchScreenContent(
             Column {
                 Text(
                     modifier = Modifier.padding(8.dp),
-                    text = stringResource(
-                        R.string.search_result_count_header,
-                        uiState.currentSearchResults.size
-                    )
+                    text = if (uiState.isInputTooShort) {
+                        stringResource(R.string.search_input_too_short, SearchViewModel.MIN_SEARCH_LENGTH)
+                    } else {
+                        stringResource(
+                            R.string.search_result_count_header,
+                            uiState.currentSearchResults.size
+                        )
+                    }
                 )
 
                 SearchResultList(

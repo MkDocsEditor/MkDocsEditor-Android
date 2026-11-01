@@ -39,7 +39,7 @@ internal class SearchViewModel @Inject constructor(
                 }
             }.debounce(300).collectLatest { currentSearchFilter ->
                 val searchResults = when {
-                    currentSearchFilter.trimmedLength() > 1 -> searchUseCase(
+                    currentSearchFilter.isSearchable() -> searchUseCase(
                         currentSearchFilter
                     )
 
@@ -136,7 +136,9 @@ internal class SearchViewModel @Inject constructor(
         val isLoading: Boolean = false,
         val currentSearchFilter: String = "",
         val currentSearchResults: List<SearchResultItem> = emptyList(),
-    )
+    ) {
+        val isInputTooShort: Boolean get() = !currentSearchFilter.isSearchable()
+    }
 
     sealed class UiAction {
         data object NavigateBack : UiAction()
@@ -154,4 +156,9 @@ internal class SearchViewModel @Inject constructor(
         data class SearchResultLongClicked(val searchResultItem: SearchResultItem) : UiEvent()
     }
 
+    companion object {
+        const val MIN_SEARCH_LENGTH = 2
+
+        private fun String.isSearchable() = trimmedLength() >= MIN_SEARCH_LENGTH
+    }
 }

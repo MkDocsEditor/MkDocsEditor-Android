@@ -103,6 +103,7 @@
 
     <string name="search">Search</string>
     <string name="search_result_count_header">Results: %1$s</string>
+    <string name="search_input_too_short">Type at least %1$d characters to search</string>
 
     <string name="add">Add</string>
     <string name="delete">Delete</string>

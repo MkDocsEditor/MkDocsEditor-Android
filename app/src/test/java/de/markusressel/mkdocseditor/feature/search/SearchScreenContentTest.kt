@@ -59,6 +59,13 @@ class SearchScreenContentTest {
     }
 
     @Test
+    fun `an input that is too short asks for more instead of showing no results`() {
+        show(SearchViewModel.UiState(currentSearchFilter = " a "))
+        composeRule.onNodeWithText("Type at least 2 characters to search").assertIsDisplayed()
+        composeRule.onNodeWithText("Results: 0").assertDoesNotExist()
+    }
+
+    @Test
     fun `typing changes the search`() {
         show(SearchViewModel.UiState())
         composeRule.onNode(hasSetTextAction()).performTextInput("Kü")
