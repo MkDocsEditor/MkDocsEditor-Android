@@ -8,9 +8,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import de.markusressel.mkdocseditor.BuildConfig
+import de.markusressel.mkdocseditor.feature.auth.onboarding.ui.ConnectServerViewModel
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
@@ -27,6 +31,7 @@ internal fun BackendSelectionScreenContent(
     uiState: BackendSelectionViewModel.UiState,
     onUiEvent: (BackendSelectionViewModel.UiEvent) -> Unit,
     modifier: Modifier = Modifier,
+    onDevBackendClicked: () -> Unit = {},
 ) {
     TabContentScaffold(
         modifier = modifier,
@@ -58,6 +63,17 @@ internal fun BackendSelectionScreenContent(
                 uiState = uiState,
                 onUiEvent = onUiEvent
             )
+
+            if (BuildConfig.DEBUG) {
+                OutlinedButton(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    onClick = onDevBackendClicked,
+                ) {
+                    Text("Dev backend (${ConnectServerViewModel.DEV_BACKEND_URL})")
+                }
+            }
 
             Spacer(modifier = Modifier.height(128.dp))
         }

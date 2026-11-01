@@ -47,6 +47,11 @@ internal class ConnectServerViewModel @Inject constructor(
                 is UiEvent.WikiUsernameChanged -> _uiState.update { it.copy(wikiUsername = event.text) }
                 is UiEvent.WikiPasswordChanged -> _uiState.update { it.copy(wikiPassword = event.text) }
                 is UiEvent.ContinueClicked -> onContinue()
+                is UiEvent.DevBackendClicked -> {
+                    _uiState.update { it.copy(address = DEV_BACKEND_URL, error = null) }
+                    onContinue()
+                }
+
                 is UiEvent.SetupLinkChanged -> _uiState.update { it.copy(setupLink = event.text, error = null) }
                 is UiEvent.SetupLinkSubmitted -> onSetupLink()
                 is UiEvent.BackToAddressClicked -> _uiState.update { it.copy(setupBackendId = null, error = null) }
@@ -148,6 +153,7 @@ internal class ConnectServerViewModel @Inject constructor(
         }
 
         data object ContinueClicked : UiEvent
+        data object DevBackendClicked : UiEvent
         data class SetupLinkChanged(val text: String) : UiEvent {
             override fun toString() = "SetupLinkChanged"
         }
@@ -168,5 +174,10 @@ internal class ConnectServerViewModel @Inject constructor(
 
         /** a server without authentication: nothing more to do */
         data object Done : ConnectServerEvent
+    }
+
+    internal companion object {
+        /** A backend running on the development machine, as seen from an emulator. Debug builds only. */
+        const val DEV_BACKEND_URL = "http://10.0.2.2:7413"
     }
 }

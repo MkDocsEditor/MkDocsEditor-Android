@@ -18,6 +18,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.PasswordField
 import de.markusressel.mkdocseditor.feature.auth.onboarding.ui.ConnectServerViewModel
@@ -81,6 +83,16 @@ internal fun ConnectServerScreenContent(
 
 @Composable
 private fun AddressForm(uiState: ConnectServerViewModel.UiState, onUiEvent: (UiEvent) -> Unit) {
+    if (BuildConfig.DEBUG) {
+        OutlinedButton(
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !uiState.loading,
+            onClick = { onUiEvent(UiEvent.DevBackendClicked) },
+        ) {
+            Text("Dev backend (${ConnectServerViewModel.DEV_BACKEND_URL})")
+        }
+    }
+
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(text = stringResource(R.string.onboarding_qr_title), style = MaterialTheme.typography.titleMedium)
