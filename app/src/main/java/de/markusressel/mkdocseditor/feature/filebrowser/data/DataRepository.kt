@@ -68,7 +68,7 @@ class DataRepository @Inject constructor(
     /**
      * Find all data that matches the given search
      */
-    fun find(searchString: String): List<Any> {
+    fun find(searchString: String): List<FoundItem> {
         val searchRegex =
             searchString.toRegex(setOf(RegexOption.IGNORE_CASE, RegexOption.LITERAL))
 
@@ -90,10 +90,23 @@ class DataRepository @Inject constructor(
             filter { resource -> searchRegex.containsMatchIn(resource.name) }
         }.find()
 
-        return sections.map(dataFactory::toSectionData) +
-            documents.map(dataFactory::toDocumentData) +
-            resources.map(dataFactory::toResourceData)
+        return sections.map { FoundItem(dataFactory.toSectionData(it), it.parentSection.target.folderNames()) } +
+            documents.map { FoundItem(dataFactory.toDocumentData(it), it.parentSection.target.folderNames()) } +
+            resources.map { FoundItem(dataFactory.toResourceData(it), it.parentSection.target.folderNames()) }
     }
+
+    /** the names from below the root down to this section; the root itself has no parent */
+    private fun SectionEntity?.folderNames(): List<String> = generateSequence(this) { it.parentSection.target }
+        .filter { it.parentSection.target != null }
+        .map { it.name }
+        .toList()
+        .asReversed()
+
+    /**
+     * @param item the [SectionData], [DocumentData] or [ResourceData]
+     * @param path the names of the folders it is in, without the root
+     */
+    data class FoundItem(val item: Any, val path: List<String>)
 
 
     class SectionsUpdaterResult

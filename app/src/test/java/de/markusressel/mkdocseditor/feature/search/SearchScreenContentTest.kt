@@ -59,6 +59,46 @@ class SearchScreenContentTest {
     }
 
     @Test
+    fun `a page result shows where it is and the lines that match`() {
+        show(
+            SearchViewModel.UiState(
+                currentSearchFilter = "haft",
+                currentSearchResults = listOf(
+                    SearchResultItem.Document(
+                        documentId = "d",
+                        documentName = "Versicherungen",
+                        excerpts = listOf(
+                            SearchResultItem.Document.ExcerptData("Die Haftpflicht", listOf(4..7), heading = "Beiträge"),
+                            SearchResultItem.Document.ExcerptData("second line"),
+                            SearchResultItem.Document.ExcerptData("third line"),
+                        ),
+                        path = listOf("Wissen", "Haushalt"),
+                        matchCount = 3,
+                    ),
+                ),
+            )
+        )
+        composeRule.onNodeWithText("Versicherungen").assertIsDisplayed()
+        composeRule.onNodeWithText("Wissen › Haushalt").assertIsDisplayed()
+        composeRule.onNodeWithText("3 matches").assertIsDisplayed()
+        composeRule.onNodeWithText("Beiträge · Die Haftpflicht").assertIsDisplayed()
+        composeRule.onNodeWithText("second line").assertIsDisplayed()
+        composeRule.onNodeWithText("third line").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a result in the root says so`() {
+        show(
+            SearchViewModel.UiState(
+                currentSearchFilter = "guide",
+                currentSearchResults = listOf(SearchResultItem.Section("s", "guide", documentCount = 2)),
+            )
+        )
+        composeRule.onNodeWithText("Top level").assertIsDisplayed()
+        composeRule.onNodeWithText("2 pages").assertIsDisplayed()
+    }
+
+    @Test
     fun `an input that is too short asks for more instead of showing no results`() {
         show(SearchViewModel.UiState(currentSearchFilter = " a "))
         composeRule.onNodeWithText("Type at least 2 characters to search").assertIsDisplayed()

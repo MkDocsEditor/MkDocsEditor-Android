@@ -103,6 +103,7 @@
 
     <string name="search">Search</string>
     <string name="search_result_count_header">Results: %1$s</string>
+    <string name="search_location_root">Top level</string>
     <string name="search_input_too_short">Type at least %1$d characters to search</string>
 
     <string name="add">Add</string>
@@ -233,9 +234,17 @@
 
     <string name="hint_new_document">New Document</string>
     <string name="error_document_already_exists">Document already exists!</string>
-    <plurals name="additional_search_term_matches_within_document">
-        <item quantity="one">… and %1$s further match</item>
-        <item quantity="other">… and %1$s further matches</item>
+    <plurals name="search_match_count">
+        <item quantity="one">%1$d match</item>
+        <item quantity="other">%1$d matches</item>
+    </plurals>
+    <plurals name="search_section_documents">
+        <item quantity="one">%1$d page</item>
+        <item quantity="other">%1$d pages</item>
+    </plurals>
+    <plurals name="search_section_sections">
+        <item quantity="one">%1$d folder</item>
+        <item quantity="other">%1$d folders</item>
     </plurals>
 
 </resources>
