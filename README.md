@@ -95,7 +95,8 @@ For the links to open the app directly (Android App Links), the web client's hos
 `/.well-known/assetlinks.json` for the app, see `docs/auth.md` of the backend.
 
 **Passkeys in the app** need `https://<rpId>/.well-known/assetlinks.json` naming the app (package
-and signing certificate) with the relation `get_login_creds`. Password managers like Bitwarden
+and signing certificate) with the relations `handle_all_urls` (Bitwarden checks only this one) and
+`get_login_creds` (Google Password Manager). Password managers like Bitwarden
 and Google Password Manager do not read the file from the phone: Google's Digital Asset Links
 service fetches it, so the RP ID domain must be reachable **from the internet**. A server that
 is only reachable at home needs an RP ID on a public parent domain (see `docs/auth.md` of the
