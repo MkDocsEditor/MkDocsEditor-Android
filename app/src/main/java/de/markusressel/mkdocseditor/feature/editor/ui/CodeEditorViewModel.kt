@@ -1,14 +1,7 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
 import android.net.Uri
-import android.util.LruCache
-import androidx.compose.ui.graphics.ImageBitmap
-import de.markusressel.mkdocseditor.feature.editor.domain.decodeThumbnail
-import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.DocumentTextLoader
-import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.tree.ThumbnailLoader
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
-import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeTextDocument
-import org.mobilenativefoundation.store.store5.impl.extensions.fresh
 import de.markusressel.mkdocseditor.feature.editor.domain.TextPositions
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferences
 import de.markusressel.mkdocsrestclient.reference.ReferenceModel
@@ -30,7 +23,9 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendSer
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.domain.EditorFiles
+import de.markusressel.mkdocseditor.feature.editor.domain.EditorResources
 import de.markusressel.mkdocseditor.feature.editor.domain.ExternalLinkOpener
+import de.markusressel.mkdocseditor.feature.editor.domain.WikiTreeHolder
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatAction
 import de.markusressel.mkdocseditor.feature.editor.domain.PreviewLinkTarget
 import de.markusressel.mkdocseditor.feature.editor.domain.PreviewLinks
@@ -41,19 +36,13 @@ import de.markusressel.mkdocseditor.feature.editor.domain.FormatEdit
 import de.markusressel.mkdocseditor.feature.editor.domain.MarkdownFormatting
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
-import de.markusressel.mkdocseditor.feature.editor.domain.PreviewFileCache
-import de.markusressel.mkdocseditor.feature.editor.ui.compose.preview.PreviewResourceLoader
 import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.event.EventBusManager
-import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DownloadResourceUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ShareFileUseCase
-import de.markusressel.mkdocseditor.feature.filebrowser.ui.FileBrowserViewModel.Companion.ROOT_SECTION_ID
 import android.content.Context
 import android.os.SystemClock
-import android.webkit.MimeTypeMap
-import android.webkit.WebResourceResponse
 import org.mobilenativefoundation.store.store5.impl.extensions.get
 import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
@@ -87,7 +76,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -108,10 +96,11 @@ internal class CodeEditorViewModel @Inject constructor(
     private val editorFiles: EditorFiles,
     private val localDocumentStore: LocalDocumentStore,
     private val localCopyRedirects: LocalCopyRedirects,
-    private val previewFileCache: PreviewFileCache,
     private val downloadResourceUseCase: DownloadResourceUseCase,
     private val shareFileUseCase: ShareFileUseCase,
     private val externalLinkOpener: ExternalLinkOpener,
+    private val wikiTreeHolder: WikiTreeHolder,
+    private val editorResources: EditorResources,
     private val eventBusManager: EventBusManager,
     private val context: Context,
 ) : ViewModel() {
@@ -151,46 +140,20 @@ internal class CodeEditorViewModel @Inject constructor(
         localCopyAvailable && automergeDocumentSyncManager?.readOnly != true
     }.stateIn(viewModelScope, SharingStarted.Eagerly, initialValue = false)
 
-    /** the wiki tree, for links and images in the preview */
-    private val wikiTree = MutableStateFlow<WikiTree?>(null)
-
     /** the wiki tree, for the link and image pickers */
-    internal val pickerTree = wikiTree.asStateFlow()
+    internal val pickerTree = wikiTreeHolder.tree
 
     /** the text of other documents, for their headings in the link picker */
-    internal val documentTextLoader = DocumentTextLoader { documentId ->
-        withContext(Dispatchers.IO) {
-            restClient.getDocumentContent(documentId).fold(success = { it }, failure = { null })
-                ?: localDocumentStore.load(documentId)?.let { AutomergeTextDocument.load(it.documentState).text }
-        }
-    }
-
-    private val thumbnails = object : LruCache<String, ImageBitmap>(THUMBNAIL_CACHE_SIZE) {}
+    internal val documentTextLoader = editorResources.documentTextLoader
 
     /** small images of resources for the pickers */
-    internal val thumbnailLoader = ThumbnailLoader { resource ->
-        val key = "${resource.id}@${resource.modtime.time}"
-        thumbnails.get(key) ?: withContext(Dispatchers.IO) {
-            previewFileCache.get(resource)?.let { decodeThumbnail(it, THUMBNAIL_SIZE_PX) }
-        }?.also { thumbnails.put(key, it) }
-    }
+    internal val thumbnailLoader = editorResources.thumbnailLoader
 
     /** content URIs for photos taken from the image picker */
     internal val photoUriFactory = editorFiles.photoUriFactory
 
-    /**
-     * Loads the images of the preview: wiki paths are resolved in the tree, the files come
-     * from the server with the session, or from the offline cache
-     */
-    val previewResourceLoader = PreviewResourceLoader { encodedPath ->
-        val tree = wikiTree.value ?: return@PreviewResourceLoader null
-        val resource = (tree.resolve(tree.root, encodedPath) as? WikiItem.Resource)?.resource
-            ?: return@PreviewResourceLoader null
-        val bytes = runBlocking { previewFileCache.get(resource) } ?: return@PreviewResourceLoader null
-        val extension = resource.name.substringAfterLast('.', "").lowercase()
-        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: "application/octet-stream"
-        WebResourceResponse(mimeType, null, bytes.inputStream())
-    }
+    /** loads the images of the preview */
+    val previewResourceLoader = editorResources.previewResourceLoader { wikiTreeHolder.tree.value }
 
     private var automergeDocumentSyncManager: AutomergeDocumentSyncManager? = null
 
@@ -441,39 +404,17 @@ internal class CodeEditorViewModel @Inject constructor(
         )
     }
 
-    /**
-     * Loads the wiki tree (from the offline cache if the server is not reachable), so the
-     * preview can resolve links and images relative to the folder of the document
-     */
+    /** loads the wiki tree, so the preview can resolve links relative to the folder of the document */
     private suspend fun loadWikiTree(documentId: String) {
-        val root = try {
-            dataRepository.sectionStore.get(ROOT_SECTION_ID)
-        } catch (ex: Exception) {
-            Timber.w(ex) { "Could not load the wiki tree" }
-            return
-        }
-        val tree = WikiTree(root)
-        if (tree.documentById(documentId) == null) {
-            // the cached tree is older than the document (new or moved)
-            refreshWikiTree(documentId)
-            return
-        }
-        showWikiTree(tree, documentId)
+        wikiTreeHolder.load(documentId)?.let { showWikiTree(it, documentId) }
     }
 
     /** loads the wiki tree from the server, after uploads and moves */
     private suspend fun refreshWikiTree(documentId: String) {
-        val root = try {
-            dataRepository.sectionStore.fresh(ROOT_SECTION_ID)
-        } catch (ex: Exception) {
-            Timber.w(ex) { "Could not refresh the wiki tree" }
-            return
-        }
-        showWikiTree(WikiTree(root), documentId)
+        wikiTreeHolder.refresh()?.let { showWikiTree(it, documentId) }
     }
 
     private fun showWikiTree(tree: WikiTree, documentId: String) {
-        wikiTree.value = tree
         val section = tree.parentOfDocument(documentId)
         _uiState.update { old ->
             old.copy(previewSectionPath = section?.let { tree.pathOf(it) } ?: "")
@@ -485,7 +426,7 @@ internal class CodeEditorViewModel @Inject constructor(
      * the file browser, resources in another app, everything else in the browser
      */
     private suspend fun onPreviewLinkClicked(href: String) {
-        when (val target = PreviewLinks.resolve(wikiTree.value, documentId.value, href)) {
+        when (val target = PreviewLinks.resolve(wikiTreeHolder.tree.value, documentId.value, href)) {
             is PreviewLinkTarget.External -> if (!externalLinkOpener.open(target.href)) {
                 showMessage(context.getString(R.string.preview_link_not_found, href))
             }
@@ -804,7 +745,7 @@ internal class CodeEditorViewModel @Inject constructor(
      */
     private fun showPicker(dialog: DialogState, fallback: FormatAction?) {
         val documentId = documentId.value
-        if (wikiTree.value?.documentById(documentId ?: "") != null) {
+        if (wikiTreeHolder.tree.value?.documentById(documentId ?: "") != null) {
             showDialog(dialog)
         } else if (fallback != null) {
             applyFormat(fallback)
@@ -821,7 +762,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
     /** uploads files into a section, then inserts the Markdown for them */
     private suspend fun uploadFiles(sectionId: String, uris: List<Uri>, altText: String) {
-        val tree = wikiTree.value ?: return
+        val tree = wikiTreeHolder.tree.value ?: return
         val document = tree.documentById(documentId.value ?: return) ?: return
         val section = tree.section(sectionId) ?: return
         _uiState.update { old -> old.copy(uploading = true) }
@@ -856,7 +797,7 @@ internal class CodeEditorViewModel @Inject constructor(
     /** opens the references panel and loads its data */
     private suspend fun showPageReferences() {
         val documentId = documentId.value ?: return
-        if (wikiTree.value?.documentById(documentId) == null) {
+        if (wikiTreeHolder.tree.value?.documentById(documentId) == null) {
             showMessage(context.getString(R.string.page_references_offline))
             return
         }
@@ -1059,9 +1000,6 @@ internal class CodeEditorViewModel @Inject constructor(
     companion object {
         /** how long opening a document waits for the redirect lookups of the local copies */
         private const val REDIRECT_TIMEOUT_MS = 5_000L
-
-        private const val THUMBNAIL_SIZE_PX = 128
-        private const val THUMBNAIL_CACHE_SIZE = 200
 
         /** the toggle between reading and editing; there is none while editing is impossible */
         internal fun editModeFabs(editable: Boolean, editModeActive: Boolean): List<FabConfig.Fab<CodeEditorFabId>> = when {
