@@ -155,15 +155,17 @@ internal class DocumentSession(
      */
     private val localCopyAvailable = MutableStateFlow(false)
 
+    private val readOnly = MutableStateFlow(false)
+
     /**
      * Indicates whether the edit mode can be activated or not.
      * Editing works offline as soon as a local copy exists; the edits are synced later.
      */
     val editable: StateFlow<Boolean> = combine(
         localCopyAvailable,
-        _connectionStatus,
-    ) { localCopyAvailable, _ ->
-        localCopyAvailable && syncedDocument?.readOnly != true
+        readOnly,
+    ) { localCopyAvailable, readOnly ->
+        localCopyAvailable && !readOnly
     }.stateIn(scope, SharingStarted.Eagerly, initialValue = false)
 
     private var syncedDocument: SyncedDocument? = null
@@ -253,6 +255,7 @@ internal class DocumentSession(
         syncedDocument = null
         text.unbind()
         localCopyAvailable.value = false
+        readOnly.value = false
         documentLoadFailed = false
         updateOfflineBanner()
 
@@ -273,6 +276,7 @@ internal class DocumentSession(
         // show the local copy right away, it may hold edits made offline
         text.bind(document)
         localCopyAvailable.value = document.hasLocalCopy
+        readOnly.value = document.readOnly
 
         load(documentId, connect = true)
     }
@@ -308,8 +312,7 @@ internal class DocumentSession(
         }
 
         override fun onReadOnlyChanged(readOnly: Boolean) {
-            // re-evaluate editable
-            _connectionStatus.value = _connectionStatus.value?.copy()
+            this@DocumentSession.readOnly.value = readOnly
             if (readOnly) host.onReadOnly()
         }
 

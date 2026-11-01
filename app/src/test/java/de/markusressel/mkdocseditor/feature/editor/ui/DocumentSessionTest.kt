@@ -349,6 +349,19 @@ class DocumentSessionTest {
     }
 
     @Test
+    fun `a read-only document can not be edited, until the role changes back`() = test { f ->
+        f.open()
+        f.document.textArrived("text")
+        assertTrue(f.session.editable.value)
+
+        f.document.listener.onReadOnlyChanged(true)
+        assertFalse(f.session.editable.value)
+
+        f.document.listener.onReadOnlyChanged(false)
+        assertTrue(f.session.editable.value)
+    }
+
+    @Test
     fun `read-only, remote changes and deletion reach the host and the state`() = test { f ->
         f.open()
         f.document.textArrived("text")
