@@ -18,6 +18,49 @@ object TextDiff {
      */
     const val MAX_EDIT_DISTANCE = 1000
 
+    /** An edit at the caret that replaces more than this much text is not treated as typing */
+    private const val MAX_CARET_REPLACE = 64
+
+    /**
+     * The edit a user made by typing, where the caret is known. A text alone does not tell
+     * where an edit was: typing "a" into "a|a" looks like typing it at the end. With other
+     * users typing at the same time the place matters, and cursors follow it.
+     *
+     * @param caret the caret in [new], right behind the edit
+     * @return one splice for an edit in front of the caret, or the result of [diff] if the
+     * change is something else
+     */
+    fun diffAtCaret(old: String, new: String, caret: Int): List<TextSplice> {
+        if (old == new) {
+            return emptyList()
+        }
+        if (caret !in 0..new.length || new.length - caret > old.length ||
+            !old.regionMatches(old.length - (new.length - caret), new, caret, new.length - caret)
+        ) {
+            return diff(old, new)
+        }
+        var suffix = new.length - caret
+        var prefix = 0
+        val maxPrefix = minOf(old.length - suffix, new.length - suffix)
+        while (prefix < maxPrefix && old[prefix] == new[prefix]) {
+            prefix++
+        }
+        // never split a surrogate pair
+        if (prefix > 0 && old[prefix - 1].isHighSurrogate()) {
+            prefix--
+        }
+        if (suffix > 0 && old[old.length - suffix].isLowSurrogate()) {
+            suffix--
+        }
+        val deleted = old.length - suffix - prefix
+        val inserted = new.length - suffix - prefix
+        if (minOf(deleted, inserted) > MAX_CARET_REPLACE) {
+            // not typing, keep the text that stayed the same
+            return diff(old, new)
+        }
+        return listOf(TextSplice(prefix, deleted, new.substring(prefix, new.length - suffix)))
+    }
+
     /**
      * @return the splices (UTF-16 indices, applied in order) that turn [old] into [new]
      */

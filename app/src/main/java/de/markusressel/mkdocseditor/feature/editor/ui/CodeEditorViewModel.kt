@@ -29,7 +29,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -63,6 +66,7 @@ import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ShareFile
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.FileBrowserViewModel.Companion.ROOT_SECTION_ID
 import de.markusressel.mkdocseditor.network.ChromeCustomTabManager
 import android.content.Context
+import android.os.SystemClock
 import android.content.Intent
 import android.webkit.MimeTypeMap
 import android.webkit.WebResourceResponse
@@ -78,11 +82,14 @@ import de.markusressel.mkdocseditor.util.Resource.Success
 import de.markusressel.mkdocsrestclient.AuthorizationProvider
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.CloseCode
 import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeDocumentSyncManager
+import de.markusressel.mkdocsrestclient.sync.automerge.DocumentVersion
+import de.markusressel.mkdocsrestclient.sync.automerge.EditableTextDocument
+import de.markusressel.mkdocsrestclient.sync.automerge.EditorFieldValue
+import de.markusressel.mkdocsrestclient.sync.automerge.EditorTextBinding
 import de.markusressel.mkdocsrestclient.sync.automerge.LocalCopyRedirects
 import de.markusressel.mkdocsrestclient.sync.automerge.LocalDocumentStore
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 import de.markusressel.mkdocsrestclient.sync.text.TextSplice
-import de.markusressel.mkdocsrestclient.sync.text.transformIndex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -98,6 +105,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
@@ -206,6 +214,25 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     private var automergeDocumentSyncManager: AutomergeDocumentSyncManager? = null
+
+    /** connects the text field to the document, see [EditorTextBinding] */
+    private var editorBinding = EditorTextBinding(NoDocument, SystemClock::elapsedRealtime)
+
+    /** the other users, resolved against the text of the document */
+    private var documentPeers: List<RemotePeer> = emptyList()
+
+    private var editorFlushJob: Job? = null
+
+    private var editorFocused = false
+
+    // structural equality (the default): an unchanged field does not recompose
+    private val _editorField = mutableStateOf(EditorField())
+
+    /**
+     * What the text field shows. This is snapshot state and not part of [uiState]: the field
+     * must get a value in the same frame it was set, a flow would deliver it a frame later.
+     */
+    internal val editorField: State<EditorField> = _editorField
 
     init {
         launch {
@@ -346,7 +373,11 @@ internal class CodeEditorViewModel @Inject constructor(
         localCopyAvailable.value = false
 
         when (documentId) {
-            null -> automergeDocumentSyncManager = null
+            null -> {
+                automergeDocumentSyncManager = null
+                bindEditorTo(NoDocument)
+            }
+
             else -> {
                 val currentBackend = requireNotNull(getCurrentBackendConfigUseCase())
                 val serverConfig = requireNotNull(currentBackend.serverConfig)
@@ -355,7 +386,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 val manager = createAutomergeSyncManager(documentId, serverConfig, currentBackend.id)
                 automergeDocumentSyncManager = manager
                 // show the local copy right away, it may hold edits made offline
-                manager.text?.let { setEditorText(it) }
+                bindEditorTo(manager)
                 localCopyAvailable.value = manager.hasLocalCopy
 
                 loadDocumentResource(documentId)
@@ -389,7 +420,8 @@ internal class CodeEditorViewModel @Inject constructor(
                 }
 
                 override fun onTextReplaced(text: String) {
-                    setEditorText(text)
+                    editorBinding.onDocumentChanged()
+                    syncEditorState()
                     localCopyAvailable.value = true
                     _uiState.update { old -> old.copy(loading = false) }
 
@@ -401,7 +433,9 @@ internal class CodeEditorViewModel @Inject constructor(
                 }
 
                 override fun onRemoteChange(text: String, splices: List<TextSplice>) {
-                    onRemoteTextChanged(text, splices)
+                    editorBinding.onDocumentChanged(splices)
+                    syncEditorState()
+                    saveEditorState()
                 }
 
                 override fun onReadOnlyChanged(readOnly: Boolean) {
@@ -411,7 +445,8 @@ internal class CodeEditorViewModel @Inject constructor(
                 }
 
                 override fun onPeersChanged(peers: List<RemotePeer>) {
-                    _uiState.update { old -> old.copy(remotePeers = peers) }
+                    documentPeers = peers
+                    syncEditorState()
                 }
 
                 override fun onDocumentRenamed(oldDocumentId: String, newDocumentId: String) {
@@ -585,7 +620,18 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     /**
-     * Set the editor content to the specified text.
+     * Connects the editor to another document
+     */
+    private fun bindEditorTo(document: EditableTextDocument) {
+        editorFlushJob?.cancel()
+        editorBinding = EditorTextBinding(document, SystemClock::elapsedRealtime)
+        updateInputMethodActive()
+        documentPeers = emptyList()
+        syncEditorState()
+    }
+
+    /**
+     * Shows a text that does not come from the document, as long as there is no local copy
      *
      * @param text the text to set
      * @param selectionStart optional selection start index
@@ -596,20 +642,13 @@ internal class CodeEditorViewModel @Inject constructor(
         selectionStart: Int? = null,
         selectionEnd: Int? = null
     ) {
-        _uiState.update { old ->
-            old.copy(
-                text = AnnotatedString(text),
-                selection = selectionStart?.let {
-                    computeEditorSelection(text.length, it, selectionEnd)
-                } ?: old.selection
-            )
-        }
+        editorBinding.showDetachedText(text)
+        if (selectionStart != null) setSelection(selectionStart, selectionEnd) else syncEditorState()
     }
 
     /**
-     * Set the editor content to the specified text.
+     * Sets the selection of the editor.
      *
-     * @param text the text to set
      * @param selectionStart optional selection start index
      * @param selectionEnd optional selection end index
      */
@@ -617,13 +656,58 @@ internal class CodeEditorViewModel @Inject constructor(
         selectionStart: Int? = null,
         selectionEnd: Int? = null
     ) {
-        _uiState.update { old ->
-            old.copy(
-                selection = selectionStart?.let {
-                    computeEditorSelection(old.text?.length ?: 0, it, selectionEnd)
-                } ?: old.selection
+        if (selectionStart != null) {
+            val selection = computeEditorSelection(editorBinding.documentText.length, selectionStart, selectionEnd)
+            editorBinding.setSelection(selection.start, selection.end)
+        }
+        syncEditorState()
+    }
+
+    /**
+     * Copies the state of the binding to the field and to [uiState], and takes care that
+     * changes the field holds back get shown. Everything but the field uses the text of the
+     * document, and its selection.
+     */
+    private fun syncEditorState() {
+        val binding = editorBinding
+        updateInputMethodActive()
+        val value = binding.value
+        val peers = documentPeers.map { peer ->
+            peer.copy(
+                selections = peer.selections.map {
+                    it.copy(anchor = binding.toFieldIndex(it.anchor), head = binding.toFieldIndex(it.head))
+                }
             )
         }
+        _editorField.value = EditorField(value.toTextFieldValue(), binding.valueId, peers)
+        val text = binding.documentText
+        val selection = TextRange(binding.documentSelectionStart, binding.documentSelectionEnd)
+        _uiState.update { old ->
+            old.copy(
+                text = if (old.text?.text == text) old.text else AnnotatedString(text),
+                selection = selection,
+                remotePeers = documentPeers,
+            )
+        }
+        scheduleEditorFlush()
+    }
+
+    private fun scheduleEditorFlush() {
+        val delayMs = editorBinding.holdDelay()
+        editorFlushJob?.cancel()
+        if (delayMs == null) return
+        editorFlushJob = launch {
+            delay(delayMs)
+            editorBinding.flush()
+            syncEditorState()
+        }
+    }
+
+    /**
+     * The field took the value with this id, see [EditorTextBinding.onValueShown]
+     */
+    internal fun onEditorValueShown(id: Long) {
+        editorBinding.onValueShown(id)
     }
 
     private fun computeEditorSelection(
@@ -661,10 +745,10 @@ internal class CodeEditorViewModel @Inject constructor(
 
     private fun initializeInOfflineMode(cachedContent: String) {
         disableEditMode()
+        setEditorText(cachedContent)
         _uiState.update { old ->
             old.copy(
                 title = currentResource.value?.data?.name ?: "",
-                text = AnnotatedString(cachedContent),
                 isOfflineModeBannerVisible = true,
                 isBottomAppBarVisible = false,
             )
@@ -736,8 +820,9 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     private fun applyEdit(edit: FormatEdit) {
-        onTextChanged(edit.text)
-        setSelection(edit.selectionStart, edit.selectionEnd)
+        editorBinding.applyEdit(edit.text, edit.selectionStart, edit.selectionEnd)
+        syncEditorState()
+        saveEditorState()
     }
 
     /** the selected text, which the pickers use as link text */
@@ -954,19 +1039,26 @@ internal class CodeEditorViewModel @Inject constructor(
         this.documentId.value = documentId
     }
 
-    internal fun onUserTextInput(text: AnnotatedString, selection: TextRange) {
-        val oldText = uiState.value.text?.text
-        _uiState.update { old ->
-            old.copy(
-                text = text,
-                selection = selection,
-            )
-        }
-        val manager = automergeDocumentSyncManager ?: return
-        if (uiState.value.editModeActive && text.text != oldText) {
-            manager.onLocalTextChanged(text.text)
-        }
-        manager.onLocalSelectionChanged(selection.start, selection.end)
+    /**
+     * The text field got or lost the focus
+     */
+    internal fun onEditorFocusChanged(focused: Boolean) {
+        editorFocused = focused
+        updateInputMethodActive()
+        syncEditorState()
+    }
+
+    private fun updateInputMethodActive() {
+        editorBinding.inputMethodActive = editorFocused && uiState.value.editModeActive
+    }
+
+    internal fun onUserTextInput(value: TextFieldValue) {
+        editorBinding.onFieldChanged(value.toEditorFieldValue(), editable = uiState.value.editModeActive)
+        syncEditorState()
+        automergeDocumentSyncManager?.onLocalSelectionChanged(
+            editorBinding.documentSelectionStart,
+            editorBinding.documentSelectionEnd,
+        )
     }
 
     /**
@@ -980,42 +1072,6 @@ internal class CodeEditorViewModel @Inject constructor(
     override fun onCleared() {
         automergeDocumentSyncManager?.shutdown()
         super.onCleared()
-    }
-
-    private fun onTextChanged(newText: String) {
-        automergeDocumentSyncManager?.onLocalTextChanged(newText)
-
-        val oldSelectionStart = uiState.value.selection?.start ?: 0
-        val oldSelectionEnd = uiState.value.selection?.end ?: 0
-
-        _uiState.update { old ->
-            old.copy(
-                text = AnnotatedString(newText),
-                selection = TextRange(
-                    oldSelectionStart.coerceIn(0, newText.length),
-                    oldSelectionEnd.coerceIn(0, newText.length),
-                ),
-            )
-        }
-        saveEditorState()
-    }
-
-    /**
-     * Applies remote changes to the editor and moves the selection with them,
-     * so it stays on the same characters.
-     */
-    private fun onRemoteTextChanged(newText: String, splices: List<TextSplice>) {
-        _uiState.update { old ->
-            val selection = old.selection ?: TextRange.Zero
-            old.copy(
-                text = AnnotatedString(newText),
-                selection = TextRange(
-                    transformIndex(selection.start, splices).coerceIn(0, newText.length),
-                    transformIndex(selection.end, splices).coerceIn(0, newText.length),
-                ),
-            )
-        }
-        saveEditorState()
     }
 
     /**
@@ -1290,3 +1346,38 @@ internal class CodeEditorViewModel @Inject constructor(
         data class PageReferencesPanel(val data: PageReferences = PageReferences()) : DialogState
     }
 }
+
+/**
+ * The state of the text field of the editor
+ *
+ * @param value what the field shows
+ * @param id identifies [value], see [CodeEditorViewModel.onEditorValueShown]
+ * @param remotePeers the other users, resolved against the text of [value]
+ */
+internal data class EditorField(
+    val value: TextFieldValue = TextFieldValue(),
+    val id: Long = 0,
+    val remotePeers: List<RemotePeer> = emptyList(),
+)
+
+/** There is no document open */
+private object NoDocument : EditableTextDocument {
+    override val text: String? = null
+    override val version: DocumentVersion? = null
+    override fun applyLocalEdit(base: DocumentVersion, baseText: String, splices: List<TextSplice>) = null
+    override fun splicesSince(version: DocumentVersion, text: String) = emptyList<TextSplice>()
+}
+
+private fun EditorFieldValue.toTextFieldValue() = TextFieldValue(
+    text = text,
+    selection = TextRange(selectionStart, selectionEnd),
+    composition = if (isComposing) TextRange(compositionStart!!, compositionEnd!!) else null,
+)
+
+private fun TextFieldValue.toEditorFieldValue() = EditorFieldValue(
+    text = text,
+    selectionStart = selection.start,
+    selectionEnd = selection.end,
+    compositionStart = composition?.min,
+    compositionEnd = composition?.max,
+)

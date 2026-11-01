@@ -14,6 +14,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import de.markusressel.mkdocseditor.feature.editor.ui.EditorField
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorLayout
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.LaidOutPeers
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
@@ -55,10 +56,10 @@ class RemotePeersOverlayTest {
             MaterialTheme {
                 CodeEditorLayout(
                     modifier = Modifier.size(400.dp, 400.dp),
-                    text = TextFieldValue(text, TextRange.Zero),
+                    field = EditorField(TextFieldValue(text, TextRange.Zero), remotePeers = peers),
                     onTextChanged = {},
+                    onValueShown = {},
                     readOnly = true,
-                    remotePeers = peers,
                 )
             }
         }

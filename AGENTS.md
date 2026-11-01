@@ -29,3 +29,16 @@ without that, and tell Markus. Today only the CI debug build exists:
 
 The protocol and the account flows are specified in `docs/auth.md` and `docs/sync-protocol.md`
 of MkDocsEditor-Backend.
+
+## The editor and the document
+
+`EditorTextBinding` (in `rest`) is the only connection between the text field and the Automerge
+document; read its class comment before changing either side. Two rules come out of real bugs:
+
+- Never compare the text of the field with the current document to find out what the user typed.
+  The field takes a value from outside only in the next frame, so its text can be older than the
+  document, and the comparison deletes remote changes. An edit goes in at the document state the
+  field shows (`startTransactionAt`), and Automerge merges it.
+- Giving the field a new text commits the composition and restarts the input method, and key presses
+  in that moment are lost (Compose `EditProcessor.reset`). So remote changes wait for a pause of
+  typing and for the end of a composition. Keep `TextFieldValue.composition` when handing a value back.
