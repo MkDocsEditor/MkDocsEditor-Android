@@ -48,6 +48,15 @@ README sections "Installation", "Build variants" and "Release signing" describe 
 The protocol and the account flows are specified in `docs/auth.md` and `docs/sync-protocol.md`
 of MkDocsEditor-Backend.
 
+## The backend of the REST client
+
+`IMkDocsRestClient` has no setters for its host: `RequestManager` asks for the base URL with every
+request, and `createSelectedBackendRestClient` answers from the database. Android restores any screen
+after process death, so code that has to run first (it used to be the init of `FileBrowserViewModel`)
+does not run in time, and the requests went to a default `localhost:8080`. Do not bring back a default
+host or a step that applies the backend. Without a backend, a request fails with
+`BackendNotConfiguredException` and is not sent.
+
 ## The editor and the document
 
 `EditorTextBinding` (in `rest`) is the only connection between the text field and the Automerge

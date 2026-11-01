@@ -34,30 +34,6 @@ class MkDocsRestClient constructor(
     ResourceApi by resourceApi,
     ReferenceApi by referenceApi {
 
-    override fun setHostname(hostname: String) {
-        requestManager.hostname = hostname
-    }
-
-    override fun getHostname(): String {
-        return requestManager.hostname
-    }
-
-    override fun setUseSSL(enabled: Boolean) {
-        requestManager.ssl = enabled
-    }
-
-    override fun setPort(port: Int) {
-        requestManager.port = port
-    }
-
-    override fun setAuthorizationProvider(provider: AuthorizationProvider) {
-        requestManager.authorizationProvider = provider
-    }
-
-    override fun setUnauthorizedListener(listener: (() -> Unit)?) {
-        requestManager.unauthorizedListener = listener
-    }
-
     override suspend fun isHostAlive(): Result<String, FuelError> {
         return requestManager.doStatusRequest("/alive/", Method.GET)
     }

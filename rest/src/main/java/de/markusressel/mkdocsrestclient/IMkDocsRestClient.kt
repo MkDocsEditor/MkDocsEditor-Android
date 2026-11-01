@@ -12,42 +12,6 @@ import de.markusressel.mkdocsrestclient.section.SectionModel
 interface IMkDocsRestClient : MkDocsApi, SectionApi, DocumentApi, ResourceApi, ReferenceApi {
 
     /**
-     * Set the url for this client
-     *
-     * @param hostname the new url
-     */
-    fun setHostname(hostname: String)
-
-    /**
-     * @return the url for this client
-     */
-    fun getHostname(): String
-
-    /**
-     * Specify whether to use SSL
-     *
-     * @param enabled true enables ssl, false disables it
-     */
-    fun setUseSSL(enabled: Boolean)
-
-    /**
-     * Specify the port to use
-     *
-     * @param port the port number
-     */
-    fun setPort(port: Int)
-
-    /**
-     * Set what this client sends as Authorization header
-     */
-    fun setAuthorizationProvider(provider: AuthorizationProvider)
-
-    /**
-     * Set a listener that is called whenever the server answers 401 (the session is not valid)
-     */
-    fun setUnauthorizedListener(listener: (() -> Unit)?)
-
-    /**
      * Check if the server is alive and reachable
      */
     suspend fun isHostAlive(): Result<String, FuelError>
