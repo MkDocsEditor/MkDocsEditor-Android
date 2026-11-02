@@ -55,6 +55,7 @@ internal fun MarkdownPreview(
     resourceLoader: PreviewResourceLoader,
     onLinkClicked: (String) -> Unit,
     modifier: Modifier = Modifier,
+    visible: Boolean = true,
 ) {
     val context = LocalContext.current
     val palette = rememberEditorPalette()
@@ -70,6 +71,7 @@ internal fun MarkdownPreview(
     val currentText by rememberUpdatedState(text)
     val currentLoader by rememberUpdatedState(resourceLoader)
     val currentOnLinkClicked by rememberUpdatedState(onLinkClicked)
+    val currentVisible by rememberUpdatedState(visible)
 
     val state = remember { PreviewState() }
 
@@ -137,7 +139,12 @@ internal fun MarkdownPreview(
     // re-render at most every 150 ms while typing
     LaunchedEffect(text) {
         delay(150)
-        if (state.loaded) state.render(webView, text)
+        if (state.loaded && currentVisible) state.render(webView, text)
+    }
+
+    // nobody sees the page while typing without a split, so it catches up when it comes back
+    LaunchedEffect(visible) {
+        if (visible && state.loaded) state.render(webView, currentText)
     }
 
     AndroidView(modifier = modifier, factory = { webView })

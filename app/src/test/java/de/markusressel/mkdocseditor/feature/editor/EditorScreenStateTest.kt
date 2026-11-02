@@ -29,7 +29,12 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreenCo
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.LOADING_INDICATOR_TAG
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.SPLIT_DIVIDER_TAG
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.SplitMode
+import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.ui.test.performClick
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -42,12 +47,25 @@ class EditorScreenStateTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private class EditorScreen(private val uiState: CodeEditorViewModel.UiState) : Screen {
+    private val events = mutableListOf<CodeEditorViewModel.UiEvent>()
+
+    private inner class EditorScreen(private val uiState: CodeEditorViewModel.UiState) : Screen {
         @Composable
         override fun Content() {
             CodeEditorScreenContent(
                 uiState = uiState,
                 editorState = KodeEditorState(),
+                onUiEvent = { events += it },
+            )
+        }
+    }
+
+    private class StatefulEditorScreen(private val uiState: () -> CodeEditorViewModel.UiState) : Screen {
+        @Composable
+        override fun Content() {
+            CodeEditorScreenContent(
+                uiState = uiState(),
+                editorState = remember { KodeEditorState() },
                 onUiEvent = {},
             )
         }
@@ -110,6 +128,50 @@ class EditorScreenStateTest {
         show(CodeEditorViewModel.UiState())
         composeRule.onNode(editor).assertDoesNotExist()
         composeRule.onNodeWithContentDescription("Rendered page hidden, tap to show it below the editor").assertDoesNotExist()
+    }
+
+    @Test
+    fun `reading has an edit button in the top bar and no bottom bar`() {
+        show(CodeEditorViewModel.UiState(canEdit = true))
+        composeRule.onNodeWithContentDescription("Bold").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("gmi_check").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Edit").performClick()
+        assertEquals(
+            listOf<CodeEditorViewModel.UiEvent>(
+                CodeEditorViewModel.UiEvent.TopAppBarActionClicked(TopAppBarAction.CodeEditor.EditorModeAction(null))
+            ),
+            events,
+        )
+    }
+
+    @Test
+    fun `there is no edit button while editing is impossible`() {
+        show(CodeEditorViewModel.UiState(canEdit = false))
+        composeRule.onNodeWithContentDescription("Edit").assertDoesNotExist()
+    }
+
+    /** the buttons would otherwise vanish at once, while the bar is still on its way out */
+    @Test
+    fun `the bar keeps its buttons while it leaves`() {
+        var uiState by mutableStateOf(
+            CodeEditorViewModel.UiState(editModeActive = true, isBottomAppBarVisible = true)
+        )
+        composeRule.setContent {
+            MkDocsEditorTheme {
+                Navigator(StatefulEditorScreen { uiState })
+            }
+        }
+        composeRule.onNodeWithContentDescription("Bold").assertExists()
+
+        composeRule.mainClock.autoAdvance = false
+        uiState = uiState.copy(editModeActive = false, isBottomAppBarVisible = false)
+        Snapshot.sendApplyNotifications()
+        composeRule.mainClock.advanceTimeBy(100)
+        composeRule.onNodeWithContentDescription("Bold").assertExists()
+
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription("Bold").assertDoesNotExist()
     }
 
     @Test

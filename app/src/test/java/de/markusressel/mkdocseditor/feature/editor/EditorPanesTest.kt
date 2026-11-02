@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
@@ -18,13 +19,16 @@ import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertWidthIsEqualTo
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.EDITOR_MODE_ANIMATION_MS
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.EditorPanes
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.MAX_SPLIT_RATIO
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.SPLIT_DIVIDER_TAG
@@ -82,7 +86,8 @@ class EditorPanesTest {
     fun `without a split the editor has the whole space`() {
         composeRule.setContent { Panes(showPreview = false, mode = SplitMode.Off) }
 
-        composeRule.onNodeWithTag(PREVIEW).assertDoesNotExist()
+        // without room, but ready for when it comes back
+        composeRule.onNodeWithTag(PREVIEW).assertHeightIsEqualTo(0.dp)
         composeRule.onNodeWithTag(SPLIT_DIVIDER_TAG).assertDoesNotExist()
         composeRule.onNodeWithTag(EDITOR).assertWidthIsEqualTo(400.dp).assertHeightIsEqualTo(800.dp)
     }
@@ -138,6 +143,27 @@ class EditorPanesTest {
         mode = SplitMode.Vertical
         composeRule.waitForIdle()
         editor.assertIsFocused()
+    }
+
+    @Test
+    fun `changing the mode moves the panes over time`() {
+        var editing by mutableStateOf(false)
+        composeRule.setContent { Panes(showEditor = editing, showPreview = !editing, mode = SplitMode.Off) }
+        composeRule.onNodeWithTag(PREVIEW).assertHeightIsEqualTo(800.dp)
+
+        composeRule.mainClock.autoAdvance = false
+        editing = true
+        Snapshot.sendApplyNotifications()
+        composeRule.mainClock.advanceTimeBy(EDITOR_MODE_ANIMATION_MS / 2L)
+        val editorHeight = composeRule.onNodeWithTag(EDITOR).getUnclippedBoundsInRoot().height
+        assertTrue("the editor is at $editorHeight", editorHeight > 0.dp && editorHeight < 800.dp)
+        composeRule.onNodeWithTag(PREVIEW).assertExists()
+
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(EDITOR).assertHeightIsEqualTo(800.dp)
+        composeRule.onNodeWithTag(PREVIEW).assertHeightIsEqualTo(0.dp)
+        composeRule.onNodeWithTag(SPLIT_DIVIDER_TAG).assertDoesNotExist()
     }
 
     @Test

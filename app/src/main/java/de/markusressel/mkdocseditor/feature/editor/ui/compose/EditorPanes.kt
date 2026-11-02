@@ -1,12 +1,17 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
@@ -62,11 +67,16 @@ internal fun defaultSplitMode(widthDp: Int, heightDp: Int): SplitMode = when {
 }
 
 internal const val SPLIT_DIVIDER_TAG = "split-divider"
+
+/** the bar, the panes and the icon of a mode change move together */
+internal const val EDITOR_MODE_ANIMATION_MS = 250
+
 private val DIVIDER_TOUCH_SIZE = 24.dp
 
 /**
  * The code editor and the rendered page. Both stay in the same place of the composition whatever the mode is: a new
- * editor would lose the focus and close the keyboard, and a new page would load again.
+ * editor would lose the focus and close the keyboard. The page stays even without any room, because a new one would
+ * be empty until it has loaded, which is longer than the animation that brings it back.
  *
  * @param modifier compose modifiers
  * @param showEditor whether the code editor is shown
@@ -90,16 +100,42 @@ internal fun EditorPanes(
     editor: @Composable () -> Unit,
     preview: @Composable () -> Unit,
 ) {
-    val split = showEditor && showPreview && splitMode != SplitMode.Off
-    val sideBySide = splitMode == SplitMode.Horizontal
+    val arrangement = Triple(showEditor, showPreview, splitMode)
+    // the share of the editor, without a split all or nothing of the space
+    val targetShare = when {
+        !showEditor -> 0f
+        !showPreview -> 1f
+        else -> ratio
+    }
+    val animatedShare = remember { Animatable(targetShare) }
+    var settledArrangement by remember { mutableStateOf(arrangement) }
+    val animating = arrangement != settledArrangement
+    LaunchedEffect(arrangement, targetShare) {
+        if (arrangement != settledArrangement) {
+            animatedShare.animateTo(targetShare, tween(EDITOR_MODE_ANIMATION_MS))
+            settledArrangement = arrangement
+        } else {
+            animatedShare.snapTo(targetShare)
+        }
+    }
+    val currentTargetShare by rememberUpdatedState(targetShare)
+    // read while measuring, so a moving divider does not compose the panes again
+    val share = { if (settledArrangement == arrangement) currentTargetShare else animatedShare.value }
+
+    val editorComposed = showEditor || animating
+    val split = editorComposed && (showPreview || animating)
+    // stays the same while the panes move, also when the split goes away
+    var lastSideBySide by remember { mutableStateOf(splitMode == SplitMode.Horizontal) }
+    if (splitMode != SplitMode.Off) lastSideBySide = splitMode == SplitMode.Horizontal
+    val sideBySide = lastSideBySide
     // only the gesture reads it, so the layout does not depend on it
     val lengthAlongDivider = remember { floatArrayOf(1f) }
 
     Layout(
         modifier = modifier,
         content = {
-            Box { if (showEditor) editor() }
-            Box { if (showPreview) preview() }
+            Box { if (editorComposed) editor() }
+            Box { preview() }
             if (split) {
                 SplitDivider(
                     sideBySide = sideBySide,
@@ -115,29 +151,13 @@ internal fun EditorPanes(
         val height = constraints.maxHeight
         val length = if (sideBySide) width else height
         lengthAlongDivider[0] = length.coerceAtLeast(1).toFloat()
-        val editorLength = (length * ratio).roundToInt()
+        val editorLength = (length * share()).roundToInt()
 
-        fun fixed(paneLength: Int) = when {
-            !split -> Constraints.fixed(width, height)
-            sideBySide -> Constraints.fixed(paneLength, height)
-            else -> Constraints.fixed(width, paneLength)
-        }
+        fun fixed(paneLength: Int) =
+            if (sideBySide) Constraints.fixed(paneLength, height) else Constraints.fixed(width, paneLength)
 
-        val hidden = Constraints.fixed(0, 0)
-        val editorPane = measurables[0].measure(
-            when {
-                split -> fixed(editorLength)
-                showEditor -> fixed(length)
-                else -> hidden
-            }
-        )
-        val previewPane = measurables[1].measure(
-            when {
-                split -> fixed(length - editorLength)
-                showPreview -> fixed(length)
-                else -> hidden
-            }
-        )
+        val editorPane = measurables[0].measure(fixed(editorLength))
+        val previewPane = measurables[1].measure(fixed(length - editorLength))
         val touchSize = DIVIDER_TOUCH_SIZE.roundToPx()
         val divider = measurables.getOrNull(2)?.measure(
             if (sideBySide) Constraints.fixed(touchSize, height) else Constraints.fixed(width, touchSize)
@@ -146,8 +166,8 @@ internal fun EditorPanes(
         layout(width, height) {
             editorPane.place(0, 0)
             previewPane.place(
-                x = if (split && sideBySide) editorLength else 0,
-                y = if (split && !sideBySide) editorLength else 0,
+                x = if (sideBySide) editorLength else 0,
+                y = if (sideBySide) 0 else editorLength,
             )
             // over the edges of both panes, so it is easy to grab without taking room from them
             divider?.place(

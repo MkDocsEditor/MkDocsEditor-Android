@@ -38,40 +38,6 @@ class CodeEditorBottomBarTest {
         composeRule.onNodeWithContentDescription(description).performScrollTo().performClick()
 
     @Test
-    fun `reading shows the toggle into the edit mode, but no formatting`() {
-        composeRule.setContent {
-            MkDocsEditorTheme {
-                CodeEditorBottomBar(
-                    uiState = CodeEditorViewModel.UiState(
-                        editModeActive = false,
-                        fabConfig = FabConfig(right = CodeEditorViewModel.editModeFabs(editable = true, editModeActive = false)),
-                    ),
-                    onUiEvent = { events += it },
-                )
-            }
-        }
-        composeRule.onNodeWithContentDescription("Bold").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription("gmi_edit").performClick()
-        assertEquals(
-            listOf<UiEvent>(UiEvent.ExpandableFabItemSelected(CodeEditorViewModel.EnableEditModeFabConfig)),
-            events,
-        )
-    }
-
-    @Test
-    fun `the edit mode toggle follows the state`() {
-        assertEquals(
-            listOf(CodeEditorViewModel.EnableEditModeFabConfig),
-            CodeEditorViewModel.editModeFabs(editable = true, editModeActive = false),
-        )
-        assertEquals(
-            listOf(CodeEditorViewModel.DisableEditModeFabConfig),
-            CodeEditorViewModel.editModeFabs(editable = true, editModeActive = true),
-        )
-        assertEquals(emptyList(), CodeEditorViewModel.editModeFabs(editable = false, editModeActive = false))
-    }
-
-    @Test
     fun `every toolbar action sends its event`() {
         setContent()
         val expected = mapOf(

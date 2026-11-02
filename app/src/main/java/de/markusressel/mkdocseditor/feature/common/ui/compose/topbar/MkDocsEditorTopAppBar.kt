@@ -19,7 +19,7 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.OnlineUsersAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.ConnectionAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.PageReferencesAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.ShowInBrowserAction
-import de.markusressel.mkdocseditor.feature.editor.ui.compose.TogglePreviewAction
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.EditorModeAction
 
 @Composable
 fun MkDocsEditorTopAppBar(
@@ -80,8 +80,8 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
                         )
                     }
 
-                    is TopAppBarAction.CodeEditor.TogglePreviewAction -> {
-                        TogglePreviewAction(
+                    is TopAppBarAction.CodeEditor.EditorModeAction -> {
+                        EditorModeAction(
                             modifier = Modifier.align(Alignment.CenterVertically),
                             mode = action.mode,
                             onClick = { onActionClicked(action) }

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -76,12 +75,11 @@ internal fun MainScreenContent(
                     }
                 }
 
-                // the keyboard covers the navigation anyway; without it, screens get all the
-                // room above the keyboard
-                val keyboardVisible = WindowInsets.isImeVisible
+                // stays while the keyboard is open: the keyboard slides over it and uncovers it again,
+                // and a bar that comes and goes would make the screen jump
                 Scaffold(
                     bottomBar = {
-                        if (navigationType == NavigationLayoutType.BOTTOM_NAVIGATION && !keyboardVisible) {
+                        if (navigationType == NavigationLayoutType.BOTTOM_NAVIGATION) {
                             BottomBar(
                                 selectedNavItem = tabNavigator.current.toNavItem(),
                                 navItems = uiState.bottomBarNavItems,
