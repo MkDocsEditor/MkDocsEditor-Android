@@ -15,6 +15,7 @@ Jetpack Compose, Hilt, Voyager, ObjectBox and Automerge. Android 16 and newer on
 | Debug and release APK (CI) | `./gradlew app:assembleDebug app:assembleRelease` |
 | Install and start debug | `make run` |
 | R8 build for an x86_64 emulator | `./gradlew app:assembleRelease -Pmkdocs.releaseAbis=x86_64` |
+| Update the preview renderer (needs node) | `make updatePreview WEB_REF=<commit of MkDocsEditor-Web>` |
 
 There is no linter or formatter config, so match the surrounding code. An emulator reaches the host
 at `10.0.2.2`. `LiveBackendSyncTest` needs a backend on a test wiki and is skipped unless
@@ -99,6 +100,10 @@ Don't bring back a default host or such a step. Without a backend, a request fai
 rule only showed as an empty document. After changing dependencies or keep rules, run an R8 build on
 an emulator (throwaway key) against a local backend, then open and edit a document. For logs, plant
 the tree temporarily.
+
+**Preview renderer.** `mkdocs-renderer.*` in `assets/preview` are built from MkDocsEditor-Web, so the
+web client and the app render the same. Change the renderer and its styles there, then update the
+copy here. Only `preview.js`, `preview.css` and `PreviewPage` belong to the app.
 
 ## Packages, signing and passkeys
 

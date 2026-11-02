@@ -57,10 +57,9 @@ class EditorPaletteTest {
     }
 
     @Test
-    fun `preview css uses the palette`() {
-        val css = previewCodeCss(EditorPalette.Dark)
-        assertTrue(css.contains("background: #252722"))
-        assertTrue(css.contains(".hljs-keyword"))
-        assertTrue(css.contains("#D4895A"))
+    fun `preview variables use the palette`() {
+        val css = previewCodeVariables(EditorPalette.Dark)
+        assertTrue(css.contains("--md-code-background: #252722"))
+        assertTrue(css.contains("--md-code-keyword: #D4895A"))
     }
 }

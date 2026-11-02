@@ -2,7 +2,7 @@ package de.markusressel.mkdocseditor.feature.editor.ui.compose.preview
 
 import androidx.compose.ui.graphics.Color
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.EditorPalette
-import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.previewCodeCss
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.previewCodeVariables
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.toHex
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
 
@@ -30,18 +30,8 @@ internal object PreviewPage {
     const val ORIGIN = "https://$HOST"
     const val ASSET_PATH = "/__preview__/"
 
-    private val scripts = listOf(
-        "markdown-it.min.js",
-        "markdown-it-footnote.min.js",
-        "markdown-it-deflist.min.js",
-        "markdown-it-mark.min.js",
-        "markdown-it-task-lists.min.js",
-        "markdown-it-attrs.js",
-        "purify.min.js",
-        "highlight.min.js",
-        "highlight-extra.min.js",
-        "preview.js",
-    )
+    private val scripts = listOf("mkdocs-renderer.js", "preview.js")
+    private val styles = listOf("mkdocs-renderer.css", "preview.css")
 
     /**
      * The base URL of a document in the folder [sectionPath] (`a/b`, empty for the root)
@@ -65,29 +55,31 @@ internal object PreviewPage {
     fun assetOf(host: String?, encodedPath: String?): String? {
         if (host != HOST || encodedPath == null || !encodedPath.startsWith(ASSET_PATH)) return null
         val name = encodedPath.removePrefix(ASSET_PATH)
-        return name.takeIf { it in scripts || it == "preview.css" }?.let { "preview/$it" }
+        return name.takeIf { it in scripts || it in styles }?.let { "preview/$it" }
     }
 
     fun html(theme: PreviewTheme): String {
         val onSurface = theme.onSurface
         val rgb = listOf(onSurface.red, onSurface.green, onSurface.blue).joinToString(", ") { (it * 255).toInt().toString() }
-        val variables = """
-            :root {
-              color-scheme: ${if (theme.dark) "dark" else "light"};
-              --background: ${theme.palette.background.toHex()};
-              --on-surface: ${onSurface.toHex()};
-              --on-surface-rgb: $rgb;
-              --primary: ${theme.primary.toHex()};
-              --error: ${theme.error.toHex()};
-              --mark: ${if (theme.dark) "#6b5a00" else "#fff3a8"};
-            }
-        """.trimIndent()
+        val variables = buildString {
+            appendLine(":root {")
+            appendLine("color-scheme: ${if (theme.dark) "dark" else "light"};")
+            appendLine("--background: ${theme.palette.background.toHex()};")
+            appendLine("--on-surface: ${onSurface.toHex()};")
+            appendLine("--md-on-surface-rgb: $rgb;")
+            appendLine("--md-border-color-rgb: $rgb;")
+            appendLine("--md-primary: ${theme.primary.toHex()};")
+            appendLine("--md-error: ${theme.error.toHex()};")
+            appendLine("--md-mark-background: ${if (theme.dark) "#6b5a00" else "#fff3a8"};")
+            appendLine(previewCodeVariables(theme.palette))
+            append("}")
+        }
         return buildString {
             append("<!doctype html><html><head><meta charset=\"utf-8\">")
             append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
-            append("<link rel=\"stylesheet\" href=\"$ORIGIN${ASSET_PATH}preview.css\">")
-            append("<style>").append(variables).append('\n').append(previewCodeCss(theme.palette)).append("</style>")
-            append("</head><body><article id=\"content\"></article>")
+            styles.forEach { append("<link rel=\"stylesheet\" href=\"$ORIGIN$ASSET_PATH$it\">") }
+            append("<style>").append(variables).append("</style>")
+            append("</head><body><article id=\"content\" class=\"markdown-preview\"></article>")
             scripts.forEach { append("<script src=\"$ORIGIN$ASSET_PATH$it\"></script>") }
             append("</body></html>")
         }
