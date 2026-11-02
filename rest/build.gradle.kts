@@ -8,6 +8,11 @@ plugins {
 
 extensions.configure<LibraryExtension> {
     namespace = "de.markusressel.mkdocsrestclient"
+
+    // FakeSyncServer, for the tests of this module and of the app
+    testFixtures {
+        enable = true
+    }
 }
 
 dependencies {
@@ -35,6 +40,8 @@ dependencies {
     api(libs.markusressel.commons.android.material)
 
     api(libs.automerge)
+
+    testFixturesImplementation(libs.moshi)
 
 //    testimplementation("junit:junit:4.12")
 //    androidTestImplementation("androidx.test:runner:1.1.1-alpha01")
