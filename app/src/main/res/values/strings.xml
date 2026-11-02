@@ -93,6 +93,10 @@
     <string name="open_in_browser">Open in browser</string>
     <string name="code_editor_edit_mode">Edit Mode</string>
     <string name="code_editor_enable_edit_mode">Edit</string>
+    <string name="split_mode_off">Rendered page hidden, tap to show it below the editor</string>
+    <string name="split_mode_vertical">Rendered page below the editor, tap to show it next to the editor</string>
+    <string name="split_mode_horizontal">Rendered page next to the editor, tap to hide it</string>
+    <string name="split_divider">Divider between the editor and the rendered page</string>
     <string name="code_editor_disable_edit_mode">Read-Only</string>
 
     <string name="document_deleted_on_server">This page was deleted on the server. Your copy stays on this device.</string>

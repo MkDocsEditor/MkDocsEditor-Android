@@ -6,6 +6,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import com.github.ajalt.timberkt.Timber
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.DocumentLayoutPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
@@ -54,6 +55,7 @@ class DataRepository @Inject constructor(
     private val sectionPersistenceManager: SectionPersistenceManager,
     private val documentPersistenceManager: DocumentPersistenceManager,
     private val documentContentPersistenceManager: DocumentContentPersistenceManager,
+    private val documentLayoutPersistenceManager: DocumentLayoutPersistenceManager,
     private val resourcePersistenceManager: ResourcePersistenceManager,
 
     private val dataFactory: DataFactory,
@@ -439,6 +441,14 @@ class DataRepository @Inject constructor(
             documentId = documentId,
             text = text
         )
+    }
+
+    suspend fun getSplitRatio(documentId: String): Float? = withContext(Dispatchers.IO) {
+        documentLayoutPersistenceManager.getSplitRatio(documentId)
+    }
+
+    suspend fun saveSplitRatio(documentId: String, ratio: Float) = withContext(Dispatchers.IO) {
+        documentLayoutPersistenceManager.saveSplitRatio(documentId, ratio)
     }
 
     suspend fun saveEditorState(

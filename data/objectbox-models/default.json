@@ -359,10 +359,36 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "9:5198137635493741022",
+      "lastPropertyId": "3:1612526012496116529",
+      "name": "DocumentLayoutEntity",
+      "properties": [
+        {
+          "id": "1:1632728191917522343",
+          "name": "entityId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:6184883569071267069",
+          "name": "documentId",
+          "indexId": "16:521181462789065324",
+          "type": 9,
+          "flags": 34848
+        },
+        {
+          "id": "3:1612526012496116529",
+          "name": "splitRatio",
+          "type": 7
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "8:8318613628503764037",
-  "lastIndexId": "15:2219698567833615695",
+  "lastEntityId": "9:5198137635493741022",
+  "lastIndexId": "16:521181462789065324",
   "lastRelationId": "1:4945763545727530783",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

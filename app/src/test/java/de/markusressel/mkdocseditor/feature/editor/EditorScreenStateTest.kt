@@ -27,6 +27,8 @@ import de.markusressel.mkdocseditor.feature.editor.ui.ConnectionIndicator
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.CONNECTION_ACTION_TAG
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreenContent
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.LOADING_INDICATOR_TAG
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.SPLIT_DIVIDER_TAG
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.SplitMode
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import org.junit.Rule
 import org.junit.Test
@@ -99,6 +101,39 @@ class EditorScreenStateTest {
     fun `unsynced changes have their own icon`() {
         show(CodeEditorViewModel.UiState(connectionIndicator = ConnectionIndicator.UnsyncedChanges))
         composeRule.onNodeWithContentDescription("Changes not synced yet").assertIsDisplayed()
+    }
+
+    private val editor = SemanticsMatcher.keyIsDefined(SemanticsActions.SetText)
+
+    @Test
+    fun `a document opens on the rendered page`() {
+        show(CodeEditorViewModel.UiState())
+        composeRule.onNode(editor).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Rendered page hidden, tap to show it below the editor").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the edit mode of a phone shows only the code editor`() {
+        show(CodeEditorViewModel.UiState(editModeActive = true))
+        composeRule.onNode(editor).assertIsDisplayed()
+        composeRule.onNodeWithTag(SPLIT_DIVIDER_TAG).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Rendered page hidden, tap to show it below the editor").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "w840dp-h900dp")
+    fun `the edit mode of a wide screen splits on its own`() {
+        show(CodeEditorViewModel.UiState(editModeActive = true))
+        composeRule.onNode(editor).assertIsDisplayed()
+        composeRule.onNodeWithTag(SPLIT_DIVIDER_TAG).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Rendered page next to the editor, tap to hide it").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "w840dp-h900dp")
+    fun `the choice of the user beats the window`() {
+        show(CodeEditorViewModel.UiState(editModeActive = true, splitMode = SplitMode.Off))
+        composeRule.onNodeWithTag(SPLIT_DIVIDER_TAG).assertDoesNotExist()
     }
 
     /** the keyboard takes away height: a wide box must not build a new editor, which closes the keyboard again */

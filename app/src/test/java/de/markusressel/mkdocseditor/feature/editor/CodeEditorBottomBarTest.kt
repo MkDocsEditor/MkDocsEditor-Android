@@ -30,7 +30,7 @@ class CodeEditorBottomBarTest {
 
     private fun setContent() = composeRule.setContent {
         MkDocsEditorTheme {
-            CodeEditorBottomBar(uiState = CodeEditorViewModel.UiState(), onUiEvent = { events += it })
+            CodeEditorBottomBar(uiState = CodeEditorViewModel.UiState(editModeActive = true), onUiEvent = { events += it })
         }
     }
 

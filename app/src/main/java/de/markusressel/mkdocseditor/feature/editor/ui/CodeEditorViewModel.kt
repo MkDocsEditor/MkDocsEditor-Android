@@ -2,6 +2,10 @@ package de.markusressel.mkdocseditor.feature.editor.ui
 
 import android.net.Uri
 import de.markusressel.mkdocseditor.feature.editor.domain.TextPositions
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.DEFAULT_SPLIT_RATIO
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.MAX_SPLIT_RATIO
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.MIN_SPLIT_RATIO
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.SplitMode
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferences
 import de.markusressel.mkdocsrestclient.reference.ReferenceModel
 import androidx.compose.runtime.State
@@ -141,6 +145,10 @@ internal class CodeEditorViewModel @Inject constructor(
                     )
                 }
             }
+        }
+
+        launch {
+            session.documentId.filterNotNull().collect { documentId -> loadSplitRatio(documentId) }
         }
 
         session.start()
@@ -289,6 +297,8 @@ internal class CodeEditorViewModel @Inject constructor(
                 is UiEvent.UploadFiles -> uploadFiles(event.sectionId, event.uris, event.altText)
 
                 is UiEvent.PreviewLinkClicked -> onPreviewLinkClicked(event.href)
+                is UiEvent.SplitRatioChanged -> _uiState.update { it.copy(splitRatio = event.ratio) }
+                is UiEvent.SplitRatioChangeFinished -> saveSplitRatio()
 
                 is UiEvent.ReferenceClicked -> {
                     dismissCurrentDialog()
@@ -349,7 +359,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
     private suspend fun onTopAppBarActionClicked(action: TopAppBarAction.CodeEditor) {
         when (action) {
-            is TopAppBarAction.CodeEditor.TogglePreviewAction -> togglePreviewVisibility()
+            is TopAppBarAction.CodeEditor.TogglePreviewAction -> _uiState.update { it.copy(splitMode = action.mode.next()) }
             is TopAppBarAction.CodeEditor.ShowInBrowserAction -> onOpenInBrowserClicked()
             is TopAppBarAction.CodeEditor.OnlineUsersAction -> Unit
             is TopAppBarAction.CodeEditor.ConnectionAction -> onConnectionIconClicked(action.indicator)
@@ -420,10 +430,22 @@ internal class CodeEditorViewModel @Inject constructor(
         updateReferencesPanel { it.withFixedReference(reference, suggested) }
     }
 
-    private fun togglePreviewVisibility() {
-        _uiState.update { old ->
-            old.copy(isPreviewVisible = old.isPreviewVisible.not())
+    /**
+     * Takes over the ratio saved for the document. There is none under a new id after a rename, and then the ratio
+     * at hand moves to that id.
+     */
+    private suspend fun loadSplitRatio(documentId: String) {
+        val saved = dataRepository.getSplitRatio(documentId)
+        val current = uiState.value.splitRatio
+        when {
+            saved != null -> _uiState.update { it.copy(splitRatio = saved.coerceIn(MIN_SPLIT_RATIO, MAX_SPLIT_RATIO)) }
+            current != DEFAULT_SPLIT_RATIO -> dataRepository.saveSplitRatio(documentId, current)
         }
+    }
+
+    private suspend fun saveSplitRatio() {
+        val documentId = session.documentId.value ?: return
+        dataRepository.saveSplitRatio(documentId, uiState.value.splitRatio)
     }
 
     private fun onSnackbarAction(snackbar: SnackbarData) {
@@ -559,14 +581,20 @@ internal class CodeEditorViewModel @Inject constructor(
         /**
          * Indicates whether the CodeEditor is in "edit" mode or not
          */
-        val editModeActive: Boolean = true,
+        val editModeActive: Boolean = false,
 
 
         /**
          * Whether the document is connected, null until that is known
          */
         val connectionIndicator: ConnectionIndicator? = null,
-        val isPreviewVisible: Boolean = false,
+
+        /** what the user chose for the edit mode, null to go with what fits the window */
+        val splitMode: SplitMode? = null,
+
+        /** the share of the code editor when it is split */
+        val splitRatio: Float = DEFAULT_SPLIT_RATIO,
+
         val isBottomAppBarVisible: Boolean = false,
 
         val snackbar: SnackbarData? = null,
@@ -607,6 +635,8 @@ internal class CodeEditorViewModel @Inject constructor(
         data class UploadFiles(val sectionId: String, val uris: List<Uri>, val altText: String) : UiEvent()
 
         data class PreviewLinkClicked(val href: String) : UiEvent()
+        data class SplitRatioChanged(val ratio: Float) : UiEvent()
+        data object SplitRatioChangeFinished : UiEvent()
 
         /** selects a reference of the page in the editor */
         data class ReferenceClicked(val reference: ReferenceModel) : UiEvent()
