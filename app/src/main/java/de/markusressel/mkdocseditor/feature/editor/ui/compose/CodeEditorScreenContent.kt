@@ -1,12 +1,10 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -14,9 +12,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,6 +30,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
@@ -46,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
@@ -57,8 +56,8 @@ import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
+import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel.Companion.DisableEditModeFabConfig
 import de.markusressel.mkdocseditor.feature.editor.ui.ConnectionIndicator
-import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel.Companion.EnableEditModeFabConfig
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.activity.SnackbarData
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
@@ -80,12 +79,15 @@ internal fun CodeEditorScreenContent(
     onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
     previewResourceLoader: PreviewResourceLoader = PreviewResourceLoader { null },
 ) {
-    // from the window and not from the space of the editor: the keyboard takes away height, and with
-    // another split the editor is built anew, loses the focus and closes the keyboard again
+    // from the window and not from the space of the editor: the keyboard takes away height, and that must
+    // not close the page or change the arrangement while typing
     val configuration = LocalConfiguration.current
-    val splitOrientation = when {
-        configuration.screenWidthDp > configuration.screenHeightDp -> SplitOrientation.Horizontal
-        else -> SplitOrientation.Vertical
+    val splitMode = uiState.splitMode ?: defaultSplitMode(configuration.screenWidthDp, configuration.screenHeightDp)
+
+    // at the start of the animation, so the keyboard does not wait for the editor to leave
+    val focusManager = LocalFocusManager.current
+    LaunchedEffect(uiState.editModeActive) {
+        if (!uiState.editModeActive) focusManager.clearFocus()
     }
 
     val chrome = remember { EditorChromeState() }
@@ -124,7 +126,9 @@ internal fun CodeEditorScreenContent(
                             TopAppBarAction.CodeEditor.OnlineUsersAction(uiState.remotePeers)
                                 .takeIf { uiState.remotePeers.isNotEmpty() },
                             TopAppBarAction.CodeEditor.PageReferencesAction,
-                            TopAppBarAction.CodeEditor.TogglePreviewAction(splitOrientation),
+                            // one place for both, so nothing moves when the mode changes
+                            TopAppBarAction.CodeEditor.EditorModeAction(splitMode.takeIf { uiState.editModeActive })
+                                .takeIf { uiState.editModeActive || uiState.canEdit },
                             TopAppBarAction.CodeEditor.ShowInBrowserAction
                         ),
                         onActionClicked = {
@@ -136,16 +140,19 @@ internal fun CodeEditorScreenContent(
             }
         },
         bottomBar = {
+            // the buttons stay while the bar leaves, and the size change moves the content along with it
+            val lastVisibleState = remember { mutableStateOf(uiState) }
+            if (uiState.isBottomAppBarVisible) lastVisibleState.value = uiState
             AnimatedVisibility(
                 visible = uiState.isBottomAppBarVisible,
-                enter = slideInVertically(initialOffsetY = { it }),
-                exit = slideOutVertically(targetOffsetY = { it }),
+                enter = expandVertically(tween(EDITOR_MODE_ANIMATION_MS), expandFrom = Alignment.Top),
+                exit = shrinkVertically(tween(EDITOR_MODE_ANIMATION_MS), shrinkTowards = Alignment.Top),
             ) {
                 CodeEditorBottomBar(
                     modifier = Modifier
                         .fillMaxWidth()
                         .then(if (keyboardVisible) Modifier.height(COMPACT_TOOLBAR_HEIGHT) else Modifier),
-                    uiState = uiState,
+                    uiState = lastVisibleState.value,
                     onUiEvent = onUiEvent,
                 )
             }
@@ -173,26 +180,37 @@ internal fun CodeEditorScreenContent(
                 .padding(paddingValues)
                 .observeDragDown { chrome.onDraggedDown() },
         ) {
-            when (splitOrientation) {
-                SplitOrientation.Vertical -> {
-                    VerticalSplit(
-                        uiState = uiState,
-                        editorState = editorState,
-                        remotePeers = remotePeers,
-                        onUiEvent = onUiEvent,
-                        previewResourceLoader = previewResourceLoader,
-                    )
-                }
+            Column(modifier = Modifier.fillMaxSize()) {
+                EditorBanners(uiState)
 
-                SplitOrientation.Horizontal -> {
-                    HorizontalSplit(
-                        uiState = uiState,
-                        editorState = editorState,
-                        remotePeers = remotePeers,
-                        onUiEvent = onUiEvent,
-                        previewResourceLoader = previewResourceLoader,
-                    )
-                }
+                EditorPanes(
+                    modifier = Modifier.weight(1f),
+                    showEditor = uiState.editModeActive,
+                    // reading shows the page; editing shows it only if the user or a wide window wants it
+                    showPreview = !uiState.editModeActive || splitMode != SplitMode.Off,
+                    splitMode = splitMode,
+                    ratio = uiState.splitRatio,
+                    onRatioChange = { onUiEvent(CodeEditorViewModel.UiEvent.SplitRatioChanged(it)) },
+                    onRatioChangeFinished = { onUiEvent(CodeEditorViewModel.UiEvent.SplitRatioChangeFinished) },
+                    editor = {
+                        CodeEditorLayout(
+                            modifier = Modifier.fillMaxSize(),
+                            state = editorState,
+                            remotePeers = remotePeers,
+                            readOnly = false,
+                        )
+                    },
+                    preview = {
+                        MarkdownPreview(
+                            modifier = Modifier.fillMaxSize(),
+                            visible = !uiState.editModeActive || splitMode != SplitMode.Off,
+                            text = editorState.text,
+                            sectionPath = uiState.previewSectionPath,
+                            resourceLoader = previewResourceLoader,
+                            onLinkClicked = { onUiEvent(CodeEditorViewModel.UiEvent.PreviewLinkClicked(it)) },
+                        )
+                    },
+                )
             }
 
             // on top of the text, so the text does not move when it goes away
@@ -210,136 +228,39 @@ internal fun CodeEditorScreenContent(
 
 internal const val LOADING_INDICATOR_TAG = "editor-loading"
 
-@Composable
-internal fun VerticalSplit(
-    uiState: CodeEditorViewModel.UiState,
-    editorState: KodeEditorState,
-    remotePeers: State<List<RemotePeer>>,
-    onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
-    previewResourceLoader: PreviewResourceLoader,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        // Markdown Editor
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            EditorBanners(uiState)
-
-            if (uiState.editModeActive) {
-                CodeEditorLayout(
-                    modifier = Modifier.fillMaxSize(),
-                    state = editorState,
-                    remotePeers = remotePeers,
-                    readOnly = false,
-                )
-            } else {
-                CodeEditorLayout(
-                    modifier = Modifier.fillMaxSize(),
-                    state = editorState,
-                    remotePeers = remotePeers,
-                    readOnly = true,
-                )
-            }
-        }
-
-        // Page Preview
-        AnimatedVisibility(
-            modifier = Modifier.weight(1f),
-            enter = fadeIn() + slideInVertically { it },
-            exit = fadeOut() + slideOutVertically { it },
-            visible = uiState.isPreviewVisible
-        ) {
-            MarkdownPreview(
-                modifier = Modifier.fillMaxWidth(),
-                text = editorState.text,
-                sectionPath = uiState.previewSectionPath,
-                resourceLoader = previewResourceLoader,
-                onLinkClicked = { onUiEvent(CodeEditorViewModel.UiEvent.PreviewLinkClicked(it)) },
-            )
-        }
-    }
-}
-
-@Composable
-internal fun HorizontalSplit(
-    uiState: CodeEditorViewModel.UiState,
-    editorState: KodeEditorState,
-    remotePeers: State<List<RemotePeer>>,
-    onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
-    previewResourceLoader: PreviewResourceLoader,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        // Markdown Editor
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            EditorBanners(uiState)
-
-            if (uiState.editModeActive) {
-                CodeEditorLayout(
-                    modifier = Modifier.fillMaxSize(),
-                    state = editorState,
-                    remotePeers = remotePeers,
-                    readOnly = false,
-                )
-            } else {
-                CodeEditorLayout(
-                    modifier = Modifier.fillMaxSize(),
-                    state = editorState,
-                    remotePeers = remotePeers,
-                    readOnly = true,
-                )
-            }
-        }
-
-        // Page Preview
-        AnimatedVisibility(
-            modifier = Modifier.weight(1f),
-            enter = fadeIn() + slideInHorizontally { it },
-            exit = fadeOut() + slideOutHorizontally { it },
-            visible = uiState.isPreviewVisible
-        ) {
-            MarkdownPreview(
-                modifier = Modifier.fillMaxHeight(),
-                text = editorState.text,
-                sectionPath = uiState.previewSectionPath,
-                resourceLoader = previewResourceLoader,
-                onLinkClicked = { onUiEvent(CodeEditorViewModel.UiEvent.PreviewLinkClicked(it)) },
-            )
-        }
-    }
-}
-
 private val COMPACT_TOOLBAR_HEIGHT = 56.dp
-private const val SHORT_SCREEN_HEIGHT_DP = 480
+internal const val SHORT_SCREEN_HEIGHT_DP = 480
 
-enum class SplitOrientation {
-    Vertical,
-    Horizontal
-}
-
-
+/** starts editing while reading, and changes the arrangement while editing */
 @Composable
-internal fun TogglePreviewAction(
+internal fun EditorModeAction(
     modifier: Modifier,
-    orientation: SplitOrientation,
+    mode: SplitMode?,
     onClick: () -> Unit
 ) {
     IconButton(
         modifier = modifier,
         onClick = onClick
     ) {
-        Image(
-            asset = when (orientation) {
-                SplitOrientation.Vertical -> GoogleMaterial.Icon.gmd_horizontal_split
-                SplitOrientation.Horizontal -> GoogleMaterial.Icon.gmd_vertical_split
-            },
-            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
-        )
+        Crossfade(targetState = mode, animationSpec = tween(EDITOR_MODE_ANIMATION_MS)) { shown ->
+            Image(
+                asset = when (shown) {
+                    null -> MaterialDesignIconic.Icon.gmi_edit
+                    SplitMode.Off -> GoogleMaterial.Icon.gmd_code
+                    SplitMode.Vertical -> GoogleMaterial.Icon.gmd_horizontal_split
+                    SplitMode.Horizontal -> GoogleMaterial.Icon.gmd_vertical_split
+                },
+                contentDescription = stringResource(
+                    when (shown) {
+                        null -> R.string.code_editor_enable_edit_mode
+                        SplitMode.Off -> R.string.split_mode_off
+                        SplitMode.Vertical -> R.string.split_mode_vertical
+                        SplitMode.Horizontal -> R.string.split_mode_horizontal
+                    }
+                ),
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
+            )
+        }
     }
 }
 
@@ -475,9 +396,7 @@ private fun CodeEditorScreenContentOfflinePreview() {
         CodeEditorScreenContent(
             uiState = CodeEditorViewModel.UiState(
                 connectionIndicator = ConnectionIndicator.NotConnected,
-                fabConfig = FabConfig(
-                    right = listOf(EnableEditModeFabConfig)
-                ),
+                canEdit = true,
             ),
             editorState = remember { KodeEditorState() },
             onUiEvent = {},
@@ -493,8 +412,9 @@ private fun CodeEditorScreenContentOnlinePreview() {
         CodeEditorScreenContent(
             uiState = CodeEditorViewModel.UiState(
                 connectionIndicator = ConnectionIndicator.Connected,
+                editModeActive = true,
                 fabConfig = FabConfig(
-                    right = listOf(EnableEditModeFabConfig)
+                    right = listOf(DisableEditModeFabConfig)
                 ),
                 isBottomAppBarVisible = true,
                 remotePeers = listOf(
