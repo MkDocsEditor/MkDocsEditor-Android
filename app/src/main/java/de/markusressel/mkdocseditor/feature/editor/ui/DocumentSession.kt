@@ -336,7 +336,7 @@ internal class DocumentSession(
         }
 
         override fun onTextReplaced(text: String) {
-            this@DocumentSession.text.onDocumentChanged()
+            this@DocumentSession.text.onTextReplaced()
             localCopyAvailable.value = true
             _state.update { old -> old.copy(loading = false, noOfflineVersion = false) }
 
@@ -346,7 +346,7 @@ internal class DocumentSession(
         }
 
         override fun onRemoteChange(text: String, splices: List<TextSplice>) {
-            this@DocumentSession.text.onDocumentChanged(splices)
+            this@DocumentSession.text.onRemoteChange(text, splices)
             host.onRemoteChange()
         }
 

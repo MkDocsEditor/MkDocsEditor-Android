@@ -5,35 +5,31 @@ import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.TextFieldValue
 import de.markusressel.kodeeditor.library.compose.KodeEditor
 import de.markusressel.kodeeditor.library.compose.KodeEditorDefaults
+import de.markusressel.kodeeditor.library.compose.KodeEditorState
 import de.markusressel.kodehighlighter.core.ui.KodeTextFieldDefaults
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.EditorColorScheme
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.EditorPalette
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.MkDocsMarkdownRuleBook
-import de.markusressel.mkdocseditor.feature.editor.ui.EditorField
+import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 
+internal val NoRemotePeers: State<List<RemotePeer>> = mutableStateOf(emptyList())
 
 @Composable
 internal fun CodeEditorLayout(
-    field: EditorField,
-    onTextChanged: (TextFieldValue) -> Unit,
-    onValueShown: (Long) -> Unit,
+    state: KodeEditorState,
     readOnly: Boolean,
-    onFocusChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
+    remotePeers: State<List<RemotePeer>> = NoRemotePeers,
 ) {
-    // the text field takes its value in this composition, nothing can come between the two
-    SideEffect { onValueShown(field.id) }
-
     val palette = rememberEditorPalette()
     val colorScheme = remember(palette) { EditorColorScheme(palette) }
     val ruleBook = remember { MkDocsMarkdownRuleBook() }
@@ -45,11 +41,10 @@ internal fun CodeEditorLayout(
         )
     ) {
         KodeEditor(
-            modifier = modifier.onFocusChanged { onFocusChanged(it.hasFocus) },
-            text = field.value,
+            modifier = modifier,
+            state = state,
             languageRuleBook = ruleBook,
             colorScheme = colorScheme,
-            onValueChange = onTextChanged,
             colors = KodeEditorDefaults.editorColors(
                 textFieldBackgroundColor = palette.background,
                 lineNumberTextColor = palette.lineNumber,
@@ -64,11 +59,10 @@ internal fun CodeEditorLayout(
             ),
             enabled = true,
             readOnly = readOnly,
-            overlay = { textLayoutResult ->
+            overlay = { layout ->
                 RemotePeersOverlay(
-                    textLayoutResult = textLayoutResult,
-                    text = field.value.text,
-                    remotePeers = field.remotePeers,
+                    layout = layout,
+                    remotePeers = remotePeers.value,
                     background = palette.background,
                 )
             }

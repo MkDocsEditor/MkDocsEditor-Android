@@ -3,81 +3,98 @@ package de.markusressel.mkdocseditor.feature.editor.ui
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
+import de.markusressel.kodeeditor.library.compose.KodeEditorListener
+import de.markusressel.kodeeditor.library.compose.KodeEditorState
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatAction
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatEdit
 import de.markusressel.mkdocseditor.feature.editor.domain.MarkdownFormatting
 import de.markusressel.mkdocsrestclient.sync.automerge.DocumentVersion
 import de.markusressel.mkdocsrestclient.sync.automerge.EditableTextDocument
-import de.markusressel.mkdocsrestclient.sync.automerge.EditorFieldValue
-import de.markusressel.mkdocsrestclient.sync.automerge.EditorTextBinding
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 import de.markusressel.mkdocsrestclient.sync.text.TextSplice
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import timber.log.Timber
+import de.markusressel.kodeeditor.library.compose.TextSplice as EditorSplice
 
 /**
- * The text of the editor: connects the text field to the open document with an
- * [EditorTextBinding], resolves the cursors of other users against the field, and applies the
- * edits of the formatting actions and pickers. All calls must come from one thread, the main
- * thread in the app.
+ * The text of the editor: connects the [KodeEditorState] to the open document, and applies the
+ * edits of the formatting actions and pickers.
  *
- * @param now the current time in milliseconds
+ * The state takes every change synchronously, so the editor and the document show the same text
+ * at the end of each call: an edit of the user goes into the document within the call that made
+ * it, and a change of the document goes into the editor within the call that reports it. All
+ * calls must come from the main thread.
+ *
  * @param editModeActive whether the user may edit right now
- * @param onChanged the text, the selection or the other users changed
- * @param onEdited an edit that does not come from the text field was applied
+ * @param onPeersChanged the other users changed
+ * @param onSelectionChanged the user moved the selection
+ * @param onEdited an edit that does not come from the user typing in the editor was applied
  */
 internal class EditorTextController(
-    private val scope: CoroutineScope,
-    private val now: () -> Long,
     private val editModeActive: () -> Boolean,
-    private val onChanged: () -> Unit = {},
+    private val onPeersChanged: () -> Unit = {},
+    private val onSelectionChanged: (TextRange) -> Unit = {},
     private val onEdited: () -> Unit = {},
 ) {
-    private var binding = EditorTextBinding(NoDocument, now)
+    /** what the editor shows */
+    val editorState = KodeEditorState()
 
-    /** the other users, resolved against the text of the document */
-    var peers: List<RemotePeer> = emptyList()
-        private set
-
-    private var flushJob: Job? = null
-
-    private var focused = false
-
-    // structural equality (the default): an unchanged field does not recompose
-    private val _field = mutableStateOf(EditorField())
+    private var document: EditableTextDocument = NoDocument
 
     /**
-     * What the text field shows. This is snapshot state and not part of a flow: the field
-     * must get a value in the same frame it was set, a flow would deliver it a frame later.
+     * The text of the current version of the document, which is the text of the editor before
+     * the edit it reports. Reading it from the document takes too long for each key press.
      */
-    val field: State<EditorField> = _field
+    private var documentText = ""
 
-    /** the text of the document, which the field may not show yet */
+    /** an edit of an action, which does not depend on [editModeActive] */
+    private var applyingAction = false
+
+    /** the change at hand comes from the document, so the user did not move the selection */
+    private var applyingDocument = false
+
+    private var reportedSelection = editorState.selection
+
+    private val _peers = mutableStateOf(emptyList<RemotePeer>())
+
+    /**
+     * The other users, resolved against the text of the document. This is snapshot state and not
+     * part of a flow: a flow would deliver it a frame after the text it belongs to.
+     */
+    val peers: State<List<RemotePeer>> = _peers
+
+    /** the text of the document */
     val text: String
-        get() = binding.documentText
+        get() = editorState.text
 
     /** the selection in [text] */
     val selection: TextRange
-        get() = TextRange(binding.documentSelectionStart, binding.documentSelectionEnd)
+        get() = editorState.selection
 
     /** the selected text, which the pickers use as link text */
     val selectedText: String
         get() {
-            val text = text
             val selection = selection
-            return text.substring(selection.min.coerceIn(0, text.length), selection.max.coerceIn(0, text.length))
+            return text.substring(selection.min, selection.max)
         }
+
+    init {
+        editorState.addListener(object : KodeEditorListener {
+            override fun onLocalEdit(splice: EditorSplice) = applyToDocument(splice)
+
+            override fun onStateChanged() {
+                val selection = editorState.selection
+                if (selection == reportedSelection) return
+                reportedSelection = selection
+                if (!applyingDocument) onSelectionChanged(selection)
+            }
+        })
+    }
 
     /** Connects the editor to another document */
     fun bind(document: EditableTextDocument) {
-        flushJob?.cancel()
-        binding = EditorTextBinding(document, now)
-        updateInputMethodActive()
-        peers = emptyList()
-        sync()
+        this.document = document
+        showInEditor { editorState.setText(document.text.orEmpty(), TextRange.Zero) }
+        onPeersChanged(emptyList())
     }
 
     /** Disconnects the editor from its document */
@@ -85,43 +102,36 @@ internal class EditorTextController(
 
     /** Shows a text that does not come from the document, as long as there is no local copy */
     fun showDetachedText(text: String) {
-        binding.showDetachedText(text)
-        sync()
+        if (document.text != null) return
+        showInEditor { editorState.setText(text) }
     }
 
-    /** @param splices the changes, null if the whole text changed */
-    fun onDocumentChanged(splices: List<TextSplice>? = null) {
-        binding.onDocumentChanged(splices)
-        sync()
+    /** The whole text of the document changed */
+    fun onTextReplaced() = showInEditor { editorState.setText(document.text ?: documentText) }
+
+    /**
+     * Another user changed the document
+     *
+     * @param text the text of the document after the change
+     * @param splices the change, each one refers to the text after the one before it
+     */
+    fun onRemoteChange(text: String, splices: List<TextSplice>) = showInEditor {
+        editorState.applyRemote(splices.map { EditorSplice(it.index, it.deleteCount, it.insert) })
+        // an edit on a wrong base text would change the wrong characters of the document
+        if (editorState.text != text) {
+            Timber.e("The editor differs from the document after a remote change")
+            editorState.setText(text)
+        }
     }
 
     fun onPeersChanged(peers: List<RemotePeer>) {
-        this.peers = peers
-        sync()
-    }
-
-    /** The user changed the content of the text field */
-    fun onFieldChanged(value: TextFieldValue) {
-        binding.onFieldChanged(value.toEditorFieldValue(), editable = editModeActive())
-        sync()
-    }
-
-    /** The field took the value with this id, see [EditorTextBinding.onValueShown] */
-    fun onValueShown(id: Long) {
-        binding.onValueShown(id)
-    }
-
-    /** The text field got or lost the focus */
-    fun onFocusChanged(focused: Boolean) {
-        this.focused = focused
-        updateInputMethodActive()
-        sync()
+        _peers.value = peers
+        onPeersChanged()
     }
 
     fun select(start: Int, end: Int) {
         val length = text.length
-        binding.setSelection(start.coerceIn(0, length), end.coerceIn(0, length))
-        sync()
+        editorState.setSelection(TextRange(start.coerceIn(0, length), end.coerceIn(0, length)))
     }
 
     fun applyFormat(action: FormatAction) {
@@ -152,78 +162,51 @@ internal class EditorTextController(
     }
 
     private fun apply(edit: FormatEdit) {
-        binding.applyEdit(edit.text, edit.selectionStart, edit.selectionEnd)
-        sync()
+        applyingAction = true
+        try {
+            editorState.edit(edit.text, TextRange(edit.selectionStart, edit.selectionEnd))
+        } finally {
+            applyingAction = false
+        }
         onEdited()
     }
 
-    private fun updateInputMethodActive() {
-        binding.inputMethodActive = focused && editModeActive()
+    /** An edit the document refuses goes away again, so the user does not edit a text nobody keeps. */
+    private fun applyToDocument(splice: EditorSplice) {
+        val version = document.version.takeIf { applyingAction || editModeActive() }
+        val applied = version != null && applyToDocument(version, splice)
+        if (applied) {
+            documentText = editorState.text
+        } else {
+            onTextReplaced()
+        }
     }
 
-    /**
-     * Copies the state of the binding to the field, and takes care that changes the field holds
-     * back get shown. Everything but the field uses the text of the document, and its selection.
-     */
-    private fun sync() {
-        val binding = binding
-        updateInputMethodActive()
-        val value = binding.value
-        val fieldPeers = peers.map { peer ->
-            peer.copy(
-                selections = peer.selections.map {
-                    it.copy(anchor = binding.toFieldIndex(it.anchor), head = binding.toFieldIndex(it.head))
-                }
-            )
+    private fun applyToDocument(version: DocumentVersion, splice: EditorSplice): Boolean {
+        val splices = listOf(TextSplice(splice.start, splice.removedLength, splice.inserted))
+        return try {
+            document.applyLocalEdit(version, documentText, splices) != null
+        } catch (e: RuntimeException) {
+            Timber.e(e, "Could not apply an edit to the document")
+            false
         }
-        _field.value = EditorField(value.toTextFieldValue(), binding.valueId, fieldPeers)
-        onChanged()
-        scheduleFlush()
     }
 
-    private fun scheduleFlush() {
-        val delayMs = binding.holdDelay()
-        flushJob?.cancel()
-        if (delayMs == null) return
-        flushJob = scope.launch {
-            delay(delayMs)
-            binding.flush()
-            sync()
+    private inline fun showInEditor(change: () -> Unit) {
+        applyingDocument = true
+        try {
+            change()
+        } finally {
+            applyingDocument = false
         }
+        reportedSelection = editorState.selection
+        documentText = editorState.text
     }
 }
-
-/**
- * The state of the text field of the editor
- *
- * @param value what the field shows
- * @param id identifies [value], see [EditorTextController.onValueShown]
- * @param remotePeers the other users, resolved against the text of [value]
- */
-internal data class EditorField(
-    val value: TextFieldValue = TextFieldValue(),
-    val id: Long = 0,
-    val remotePeers: List<RemotePeer> = emptyList(),
-)
 
 /** There is no document open */
 private object NoDocument : EditableTextDocument {
     override val text: String? = null
     override val version: DocumentVersion? = null
     override fun applyLocalEdit(base: DocumentVersion, baseText: String, splices: List<TextSplice>) = null
-    override fun splicesSince(version: DocumentVersion, text: String) = emptyList<TextSplice>()
 }
-
-private fun EditorFieldValue.toTextFieldValue() = TextFieldValue(
-    text = text,
-    selection = TextRange(selectionStart, selectionEnd),
-    composition = if (isComposing) TextRange(compositionStart!!, compositionEnd!!) else null,
-)
-
-private fun TextFieldValue.toEditorFieldValue() = EditorFieldValue(
-    text = text,
-    selectionStart = selection.start,
-    selectionEnd = selection.end,
-    compositionStart = composition?.min,
-    compositionEnd = composition?.max,
-)

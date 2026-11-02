@@ -75,10 +75,8 @@ internal data class CodeEditorScreen(
         CodeEditorScreenContent(
             modifier = Modifier,
             uiState = uiState,
-            editorField = viewModel.editorField.value,
-            onTextChanged = viewModel::onUserTextInput,
-            onValueShown = viewModel::onEditorValueShown,
-            onFocusChanged = viewModel::onEditorFocusChanged,
+            editorState = viewModel.editorState,
+            remotePeers = viewModel.editorPeers,
             onUiEvent = viewModel::onUiEvent,
             previewResourceLoader = viewModel.previewResourceLoader,
         )

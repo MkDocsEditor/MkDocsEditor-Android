@@ -79,16 +79,6 @@ class AutomergeTextDocument private constructor(
     }
 
     /**
-     * The changes from the text of an earlier state to the current text.
-     *
-     * @param baseText the text of [base]
-     * @throws IllegalArgumentException if this document has no state [base]
-     */
-    fun splicesSince(base: DocumentVersion, baseText: String): List<TextSplice> {
-        return patchesToSplices(baseText, document.diff(base.toHeads(baseText), document.heads))
-    }
-
-    /**
      * The heads of a state that should have this text. Heads of another copy (a new epoch) are
      * not always an error for Automerge, they can just give some other text.
      */
