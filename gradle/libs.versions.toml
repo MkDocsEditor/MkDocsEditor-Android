@@ -15,7 +15,7 @@ androidxWork = "2.12.0"
 annotatedText = "1.0.3"
 annotation = "1.11.0"
 browserVersion = "1.10.0"
-codeHighlighterVersion = "ea4131ef84"
+codeHighlighterVersion = "5.0.0"
 collectionKtx = "1.7.0"
 commonsVersion = "master-SNAPSHOT"
 composeShimmer = "1.5.0"
@@ -155,7 +155,7 @@ markusressel-typedpreferences = { group = "com.github.markusressel", name = "Typ
 markusressel-kutepreferences-core = { group = "com.github.markusressel.KutePreferences", name = "core", version.ref = "kutePreferences" }
 markusressel-kutepreferences-ui = { group = "com.github.markusressel.KutePreferences", name = "ui", version.ref = "kutePreferences" }
 
-markusressel-kodeeditor = { group = "com.github.markusressel.KodeEditor", name = "library", version = "55cae9776a" }
+markusressel-kodeeditor = { group = "com.github.markusressel.KodeEditor", name = "library", version = "6.0.0" }
 
 mikepenz-aboutlibraries = { module = "com.mikepenz:aboutlibraries", version.ref = "aboutlibrariesVersion" }
 mikepenz-aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutlibrariesVersion" }
