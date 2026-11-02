@@ -36,14 +36,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -84,11 +80,17 @@ internal fun CodeEditorScreenContent(
     onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
     previewResourceLoader: PreviewResourceLoader = PreviewResourceLoader { null },
 ) {
-    var splitOrientation by remember { mutableStateOf(SplitOrientation.Vertical) }
+    // from the window and not from the space of the editor: the keyboard takes away height, and with
+    // another split the editor is built anew, loses the focus and closes the keyboard again
+    val configuration = LocalConfiguration.current
+    val splitOrientation = when {
+        configuration.screenWidthDp > configuration.screenHeightDp -> SplitOrientation.Horizontal
+        else -> SplitOrientation.Vertical
+    }
 
     val chrome = remember { EditorChromeState() }
     val keyboardVisible = WindowInsets.isImeVisible
-    chrome.shortScreen = LocalConfiguration.current.screenHeightDp < SHORT_SCREEN_HEIGHT_DP
+    chrome.shortScreen = configuration.screenHeightDp < SHORT_SCREEN_HEIGHT_DP
     SideEffect { chrome.keyboardVisible = keyboardVisible }
 
     DisposableEffect(editorState) {
@@ -169,15 +171,7 @@ internal fun CodeEditorScreenContent(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
-                .observeDragDown { chrome.onDraggedDown() }
-                .onGloballyPositioned { layoutCoordinates ->
-                    val width = layoutCoordinates.size.width
-                    val height = layoutCoordinates.size.height
-                    splitOrientation = when {
-                        width > height -> SplitOrientation.Horizontal
-                        else -> SplitOrientation.Vertical
-                    }
-                },
+                .observeDragDown { chrome.onDraggedDown() },
         ) {
             when (splitOrientation) {
                 SplitOrientation.Vertical -> {
