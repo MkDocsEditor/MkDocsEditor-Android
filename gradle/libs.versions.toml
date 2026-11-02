@@ -6,7 +6,7 @@ androidxActivity = "1.13.0"
 androidxActivityCompose = "1.13.0"
 androidxAppCompat = "1.8.0"
 androidxDatastore = "1.3.0"
-androidxComposeBom = "2026.06.01"
+androidxComposeBom = "2026.09.00"
 androidxCore = "1.18.0"
 androidxLifecycle = "2.10.0"
 androidxTestExtJunit = "1.3.0"
@@ -25,7 +25,7 @@ fragmentKtx = "1.9.1"
 fuelVersion = "2.3.1"
 hilt = "2.60.1"
 hiltExt = "1.4.0"
-hiltNavigationCompose = "1.3.0"
+hiltNavigationCompose = "1.4.0"
 iconicsVersion = "5.6.0"
 javaxAnnotationVersion = "10.0-b28"
 junit4 = "4.13.2"
@@ -55,7 +55,7 @@ webkitVersion = "1.18.0"
 windowVersion = "1.5.1"
 uiViewbinding = "1.11.4"
 workTesting = "2.12.0"
-voyager = "1.1.0-beta03"
+voyager = "2.2.21-1.10.3"
 zoomlayout = "1.9.0"
 documentfileVersion = "1.1.0"
 
@@ -166,7 +166,7 @@ mikepenz-iconics-core = { group = "com.mikepenz", name = "iconics-core", version
 mikepenz-iconics-views = { group = "com.mikepenz", name = "iconics-views", version.ref = "iconicsVersion" }
 mikepenz-iconics-compose = { group = "com.mikepenz", name = "iconics-compose", version.ref = "iconicsVersion" }
 mikepenz-iconics-typeface-api = { module = "com.mikepenz:iconics-typeface-api", version.ref = "iconicsVersion" }
-mikepenz-iconics-typeface-material = { group = "com.mikepenz", name = "material-design-iconic-typeface", version = "2.2.0.8-kotlin" }
+mikepenz-iconics-typeface-material = { group = "com.mikepenz", name = "material-design-iconic-typeface", version = "2.2.0.10-kotlin" }
 mikepenz-iconics-typeface-google-material = { module = "com.mikepenz:google-material-typeface", version = "4.0.0.4-kotlin" }
 mikepenz-iconics-typeface-community-material = { module = "com.mikepenz:community-material-typeface", version = "7.0.96.2-kotlin" }
 
