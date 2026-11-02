@@ -76,9 +76,13 @@ separate apps and can be installed at the same time, with separate data:
 | Size | about 18 MB, R8, `arm64-v8a` | about 110 MB, no R8, `arm64-v8a` and `x86_64` |
 | Signed with | the release key | `.ci/debug.keystore` |
 
-The easiest way to install and update them is [Obtainium](https://github.com/ImranR98/Obtainium).
-Add one app in Obtainium for each package you want. Both use the same address,
-`https://github.com/MkDocsEditor/MkDocsEditor-Android`, and the settings tell them apart:
+The easiest way to install and update them is [Obtainium](https://github.com/ImranR98/Obtainium):
+
+<a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/MkDocsEditor/MkDocsEditor-Android"><img src="screenshots/badge_obtainium.png" alt="Get it on Obtainium" width="161"></a>
+
+Open the link on the phone. Obtainium shows **Add App** with the address filled in, and the production
+build needs no other changes. Add one app in Obtainium for each package you want. Both use the same
+address, `https://github.com/MkDocsEditor/MkDocsEditor-Android`, and the settings tell them apart:
 
 | Setting in Obtainium | Production | Debug |
 |---|---|---|
@@ -87,8 +91,8 @@ Add one app in Obtainium for each package you want. Both use the same address,
 | Fallback to older releases | on | on |
 | Sort method | Release date | Release date |
 
-Everything else stays at its default. In **Add App**, enter the address, set the switches and tap
-**Add**, then **Install**. Obtainium checks for new builds and offers the update.
+Everything else stays at its default. In **Add App**, set the switches and tap **Add**, then
+**Install**. Obtainium checks for new builds and offers the update.
 
 An existing debug source keeps working without changes, because the debug build is always
 published last and so is the newest release it can see. The title filter makes that independent of
