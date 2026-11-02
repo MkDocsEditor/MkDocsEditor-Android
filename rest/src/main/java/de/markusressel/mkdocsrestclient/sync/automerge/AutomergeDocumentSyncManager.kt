@@ -162,10 +162,6 @@ class AutomergeDocumentSyncManager(
         return applied
     }
 
-    override fun splicesSince(version: DocumentVersion, text: String): List<TextSplice> {
-        return session.splicesSince(version, text)
-    }
-
     /**
      * @param anchor UTF-16 index where the selection started, null if the editor has no focus
      * @param head UTF-16 index of the caret

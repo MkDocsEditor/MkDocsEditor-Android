@@ -43,7 +43,6 @@ class DocumentSessionTest {
         var shutDown = false
 
         override fun applyLocalEdit(base: DocumentVersion, baseText: String, splices: List<TextSplice>) = null
-        override fun splicesSince(version: DocumentVersion, text: String) = emptyList<TextSplice>()
         override fun connect() {
             connects++
         }
@@ -165,10 +164,10 @@ class DocumentSessionTest {
     private inner class Fixture(scope: TestScope) {
         val environment = FakeEnvironment(scope)
         val host = FakeHost()
-        val text = EditorTextController(scope.backgroundScope, { scope.currentTime }, { false })
+        val text = EditorTextController(editModeActive = { false })
         val session = DocumentSession(scope.backgroundScope, text, environment, host)
         val document get() = environment.documents.last()
-        val fieldText get() = text.field.value.value.text
+        val fieldText get() = text.text
         val state get() = session.state.value
     }
 

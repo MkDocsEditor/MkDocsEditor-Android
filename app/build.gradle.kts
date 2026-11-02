@@ -197,6 +197,7 @@ dependencies {
     testImplementation(libs.junit4)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(testFixtures(project(":auth")))
+    testImplementation(testFixtures(project(":rest")))
     // Compose UI tests on the JVM
     testImplementation(libs.robolectric)
     testImplementation(platform(libs.androidx.compose.bom))

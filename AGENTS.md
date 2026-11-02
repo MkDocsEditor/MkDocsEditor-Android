@@ -11,7 +11,7 @@ Jetpack Compose, Hilt, Voyager, ObjectBox and Automerge. Android 16 and newer on
 |---|---|
 | All tests | `make test` |
 | JUnit tests (CI) | `make unitTests` (`./gradlew testDebugUnitTest`) |
-| One module or test | `./gradlew :rest:testDebugUnitTest --tests '*EditorTextBinding*'` |
+| One module or test | `./gradlew :rest:testDebugUnitTest --tests '*DocumentSyncSession*'` |
 | Debug and release APK (CI) | `./gradlew app:assembleDebug app:assembleRelease` |
 | Install and start debug | `make run` |
 | R8 build for an x86_64 emulator | `./gradlew app:assembleRelease -Pmkdocs.releaseAbis=x86_64` |
@@ -28,7 +28,7 @@ at `10.0.2.2`. `LiveBackendSyncTest` needs a backend on a test wiki and is skipp
 | `app` | UI, features, Hilt setup, the app's use cases |
 | `auth` | Accounts: API client, server discovery, links, tokens. Has test fixtures. |
 | `data` | ObjectBox persistence (`data/persistence`, entities, managers). Exposes `rest` as `api`. |
-| `rest` | REST client, Automerge sync session, `EditorTextBinding` |
+| `rest` | REST client, Automerge sync session. Has test fixtures. |
 | `build-logic` | Gradle convention plugins; SDK levels in `KotlinAndroid.kt` |
 
 Dependencies point one way: `app` uses `data` and `auth`, `data` uses `rest`. Versions belong in
@@ -79,16 +79,18 @@ use `kotlin.test.Test` in such a class: it is a Jupiter test then, and runs with
 
 Read before changing these areas.
 
-**Editor and document.** `EditorTextBinding` is the only connection between the text field and the
-Automerge document; read its class comment first.
+**Editor and document.** `EditorTextController` is the only connection between `KodeEditorState` and
+the Automerge document; read its class comment first.
 
-- Never compare the field's text with the current document to find what the user typed. The field
-  takes outside values only in the next frame, so its text can be older than the document, and the
-  comparison deletes remote changes. An edit goes in at the document state the field shows
-  (`startTransactionAt`), and Automerge merges it.
-- Giving the field new text commits the composition and restarts the input method, and key presses
-  in that moment are lost (Compose `EditProcessor.reset`). So remote changes wait for a typing pause
-  and the end of a composition. Keep `TextFieldValue.composition` when handing a value back.
+- The state takes every change synchronously and holds the only copy of the text in the editor. An
+  edit goes into the document within the call that made it, a remote change into the state within the
+  call that reports it, so both show the same text at the end of each main thread message. Don't add
+  a delay or a buffer between them.
+- Never restart the keyboard for an edit. Gboard repeats a held delete with key events, and a restart
+  ends the repeat. `applyRemote` moves the selection and the composition without a restart, `setText`
+  and `edit` restart it.
+- Never compare the editor's text with the document to find what the user typed. Edits arrive as
+  splices, and each one goes in at the document state it was made on.
 
 **Backend of the REST client.** `IMkDocsRestClient` has no host setters: `RequestManager` asks for the
 base URL with every request, and `createSelectedBackendRestClient` answers from the database. Android

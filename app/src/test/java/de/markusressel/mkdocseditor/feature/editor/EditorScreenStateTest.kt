@@ -1,7 +1,18 @@
 package de.markusressel.mkdocseditor.feature.editor
 
 import android.app.Application
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -10,9 +21,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.Navigator
+import de.markusressel.kodeeditor.library.compose.KodeEditorState
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
 import de.markusressel.mkdocseditor.feature.editor.ui.ConnectionIndicator
-import de.markusressel.mkdocseditor.feature.editor.ui.EditorField
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.CONNECTION_ACTION_TAG
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreenContent
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.LOADING_INDICATOR_TAG
@@ -34,8 +45,7 @@ class EditorScreenStateTest {
         override fun Content() {
             CodeEditorScreenContent(
                 uiState = uiState,
-                editorField = EditorField(),
-                onTextChanged = {},
+                editorState = KodeEditorState(),
                 onUiEvent = {},
             )
         }
@@ -89,5 +99,26 @@ class EditorScreenStateTest {
     fun `unsynced changes have their own icon`() {
         show(CodeEditorViewModel.UiState(connectionIndicator = ConnectionIndicator.UnsyncedChanges))
         composeRule.onNodeWithContentDescription("Changes not synced yet").assertIsDisplayed()
+    }
+
+    /** the keyboard takes away height: a wide box must not build a new editor, which closes the keyboard again */
+    @Test
+    fun `the editor keeps the focus when the keyboard makes the screen wider than high`() {
+        var height by mutableStateOf(800.dp)
+        composeRule.setContent {
+            MkDocsEditorTheme {
+                Box(Modifier.height(height)) {
+                    Navigator(EditorScreen(CodeEditorViewModel.UiState(editModeActive = true)))
+                }
+            }
+        }
+        val editor = composeRule.onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.SetText))
+        editor.performSemanticsAction(SemanticsActions.RequestFocus)
+        editor.assertIsFocused()
+
+        height = 300.dp
+        composeRule.waitForIdle()
+
+        editor.assertIsFocused()
     }
 }

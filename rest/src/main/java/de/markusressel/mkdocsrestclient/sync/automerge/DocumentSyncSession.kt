@@ -287,10 +287,6 @@ class DocumentSyncSession(
         return applied
     }
 
-    override fun splicesSince(version: DocumentVersion, text: String): List<TextSplice> {
-        return local?.document?.splicesSince(version, text).orEmpty()
-    }
-
     /**
      * Sends sync messages until there is nothing left to send
      */

@@ -5,7 +5,7 @@ import de.markusressel.mkdocseditor.feature.editor.domain.TextPositions
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferences
 import de.markusressel.mkdocsrestclient.reference.ReferenceModel
 import androidx.compose.runtime.State
-import androidx.compose.ui.text.input.TextFieldValue
+import de.markusressel.kodeeditor.library.compose.KodeEditorState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
@@ -31,7 +31,6 @@ import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DownloadResourceUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ShareFileUseCase
 import android.content.Context
-import android.os.SystemClock
 import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.ui.activity.SnackbarData
@@ -93,15 +92,17 @@ internal class CodeEditorViewModel @Inject constructor(
     val previewResourceLoader = editorResources.previewResourceLoader { wikiTreeHolder.tree.value }
 
     private val editorText = EditorTextController(
-        scope = viewModelScope,
-        now = SystemClock::elapsedRealtime,
         editModeActive = { uiState.value.editModeActive },
-        onChanged = ::publishPeers,
+        onPeersChanged = ::publishPeers,
+        onSelectionChanged = { session.onLocalSelectionChanged(it.start, it.end) },
         onEdited = { saveEditorState() },
     )
 
-    /** what the text field shows, see [EditorTextController.field] */
-    internal val editorField: State<EditorField> = editorText.field
+    /** what the editor shows */
+    internal val editorState: KodeEditorState = editorText.editorState
+
+    /** the other users, see [EditorTextController.peers] */
+    internal val editorPeers: State<List<RemotePeer>> = editorText.peers
 
     private val session: DocumentSession = DocumentSession(
         scope = viewModelScope,
@@ -256,13 +257,8 @@ internal class CodeEditorViewModel @Inject constructor(
 
     /** the text stays out of [uiState]: a new state for every keystroke recomposes the whole screen */
     private fun publishPeers() {
-        _uiState.update { old -> old.copy(remotePeers = editorText.peers) }
+        _uiState.update { old -> old.copy(remotePeers = editorText.peers.value) }
     }
-
-    /**
-     * The field took the value with this id, see [EditorTextController.onValueShown]
-     */
-    internal fun onEditorValueShown(id: Long) = editorText.onValueShown(id)
 
     private fun showSnackbar(snackbar: SnackbarData?) {
         _uiState.update { old ->
@@ -447,16 +443,6 @@ internal class CodeEditorViewModel @Inject constructor(
      */
     fun setCurrentDocumentId(documentId: String?) {
         session.setDocument(documentId)
-    }
-
-    /**
-     * The text field got or lost the focus
-     */
-    internal fun onEditorFocusChanged(focused: Boolean) = editorText.onFocusChanged(focused)
-
-    internal fun onUserTextInput(value: TextFieldValue) {
-        editorText.onFieldChanged(value)
-        session.onLocalSelectionChanged(editorText.selection.start, editorText.selection.end)
     }
 
     /**

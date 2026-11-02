@@ -33,18 +33,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
@@ -52,13 +49,15 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
+import de.markusressel.kodeeditor.library.compose.KodeEditorListener
+import de.markusressel.kodeeditor.library.compose.KodeEditorState
+import de.markusressel.kodeeditor.library.compose.TextSplice
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
 import de.markusressel.mkdocseditor.feature.editor.ui.ConnectionIndicator
-import de.markusressel.mkdocseditor.feature.editor.ui.EditorField
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel.Companion.EnableEditModeFabConfig
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.ui.activity.SnackbarData
@@ -76,23 +75,30 @@ internal const val CONNECTION_ACTION_TAG = "connection-action"
 internal fun CodeEditorScreenContent(
     modifier: Modifier = Modifier,
     uiState: CodeEditorViewModel.UiState,
-    editorField: EditorField,
-    onTextChanged: (TextFieldValue) -> Unit,
-    onValueShown: (Long) -> Unit = {},
-    onFocusChanged: (Boolean) -> Unit = {},
+    editorState: KodeEditorState,
+    remotePeers: State<List<RemotePeer>> = NoRemotePeers,
     onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
     previewResourceLoader: PreviewResourceLoader = PreviewResourceLoader { null },
 ) {
-    var splitOrientation by remember { mutableStateOf(SplitOrientation.Vertical) }
+    // from the window and not from the space of the editor: the keyboard takes away height, and with
+    // another split the editor is built anew, loses the focus and closes the keyboard again
+    val configuration = LocalConfiguration.current
+    val splitOrientation = when {
+        configuration.screenWidthDp > configuration.screenHeightDp -> SplitOrientation.Horizontal
+        else -> SplitOrientation.Vertical
+    }
 
     val chrome = remember { EditorChromeState() }
     val keyboardVisible = WindowInsets.isImeVisible
-    chrome.shortScreen = LocalConfiguration.current.screenHeightDp < SHORT_SCREEN_HEIGHT_DP
+    chrome.shortScreen = configuration.screenHeightDp < SHORT_SCREEN_HEIGHT_DP
     SideEffect { chrome.keyboardVisible = keyboardVisible }
 
-    val onEditorValueChanged: (TextFieldValue) -> Unit = { value ->
-        if (value.text != editorField.value.text) chrome.onTextEdited()
-        onTextChanged(value)
+    DisposableEffect(editorState) {
+        val listener = object : KodeEditorListener {
+            override fun onLocalEdit(splice: TextSplice) = chrome.onTextEdited()
+        }
+        editorState.addListener(listener)
+        onDispose { editorState.removeListener(listener) }
     }
 
     TabContentScaffold(
@@ -165,24 +171,14 @@ internal fun CodeEditorScreenContent(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
-                .observeDragDown { chrome.onDraggedDown() }
-                .onGloballyPositioned { layoutCoordinates ->
-                    val width = layoutCoordinates.size.width
-                    val height = layoutCoordinates.size.height
-                    splitOrientation = when {
-                        width > height -> SplitOrientation.Horizontal
-                        else -> SplitOrientation.Vertical
-                    }
-                },
+                .observeDragDown { chrome.onDraggedDown() },
         ) {
             when (splitOrientation) {
                 SplitOrientation.Vertical -> {
                     VerticalSplit(
                         uiState = uiState,
-                        editorField = editorField,
-                        onTextChanged = onEditorValueChanged,
-                        onValueShown = onValueShown,
-                        onFocusChanged = onFocusChanged,
+                        editorState = editorState,
+                        remotePeers = remotePeers,
                         onUiEvent = onUiEvent,
                         previewResourceLoader = previewResourceLoader,
                     )
@@ -191,10 +187,8 @@ internal fun CodeEditorScreenContent(
                 SplitOrientation.Horizontal -> {
                     HorizontalSplit(
                         uiState = uiState,
-                        editorField = editorField,
-                        onTextChanged = onEditorValueChanged,
-                        onValueShown = onValueShown,
-                        onFocusChanged = onFocusChanged,
+                        editorState = editorState,
+                        remotePeers = remotePeers,
                         onUiEvent = onUiEvent,
                         previewResourceLoader = previewResourceLoader,
                     )
@@ -219,10 +213,8 @@ internal const val LOADING_INDICATOR_TAG = "editor-loading"
 @Composable
 internal fun VerticalSplit(
     uiState: CodeEditorViewModel.UiState,
-    editorField: EditorField,
-    onTextChanged: (TextFieldValue) -> Unit,
-    onValueShown: (Long) -> Unit,
-    onFocusChanged: (Boolean) -> Unit,
+    editorState: KodeEditorState,
+    remotePeers: State<List<RemotePeer>>,
     onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
     previewResourceLoader: PreviewResourceLoader,
 ) {
@@ -238,19 +230,15 @@ internal fun VerticalSplit(
             if (uiState.editModeActive) {
                 CodeEditorLayout(
                     modifier = Modifier.fillMaxSize(),
-                    field = editorField,
-                    onTextChanged = onTextChanged,
-                    onValueShown = onValueShown,
-                    onFocusChanged = onFocusChanged,
+                    state = editorState,
+                    remotePeers = remotePeers,
                     readOnly = false,
                 )
             } else {
                 CodeEditorLayout(
                     modifier = Modifier.fillMaxSize(),
-                    field = editorField,
-                    onTextChanged = onTextChanged,
-                    onValueShown = onValueShown,
-                    onFocusChanged = onFocusChanged,
+                    state = editorState,
+                    remotePeers = remotePeers,
                     readOnly = true,
                 )
             }
@@ -265,7 +253,7 @@ internal fun VerticalSplit(
         ) {
             MarkdownPreview(
                 modifier = Modifier.fillMaxWidth(),
-                text = editorField.value.text,
+                text = editorState.text,
                 sectionPath = uiState.previewSectionPath,
                 resourceLoader = previewResourceLoader,
                 onLinkClicked = { onUiEvent(CodeEditorViewModel.UiEvent.PreviewLinkClicked(it)) },
@@ -277,10 +265,8 @@ internal fun VerticalSplit(
 @Composable
 internal fun HorizontalSplit(
     uiState: CodeEditorViewModel.UiState,
-    editorField: EditorField,
-    onTextChanged: (TextFieldValue) -> Unit,
-    onValueShown: (Long) -> Unit,
-    onFocusChanged: (Boolean) -> Unit,
+    editorState: KodeEditorState,
+    remotePeers: State<List<RemotePeer>>,
     onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
     previewResourceLoader: PreviewResourceLoader,
 ) {
@@ -296,19 +282,15 @@ internal fun HorizontalSplit(
             if (uiState.editModeActive) {
                 CodeEditorLayout(
                     modifier = Modifier.fillMaxSize(),
-                    field = editorField,
-                    onTextChanged = onTextChanged,
-                    onValueShown = onValueShown,
-                    onFocusChanged = onFocusChanged,
+                    state = editorState,
+                    remotePeers = remotePeers,
                     readOnly = false,
                 )
             } else {
                 CodeEditorLayout(
                     modifier = Modifier.fillMaxSize(),
-                    field = editorField,
-                    onTextChanged = onTextChanged,
-                    onValueShown = onValueShown,
-                    onFocusChanged = onFocusChanged,
+                    state = editorState,
+                    remotePeers = remotePeers,
                     readOnly = true,
                 )
             }
@@ -323,7 +305,7 @@ internal fun HorizontalSplit(
         ) {
             MarkdownPreview(
                 modifier = Modifier.fillMaxHeight(),
-                text = editorField.value.text,
+                text = editorState.text,
                 sectionPath = uiState.previewSectionPath,
                 resourceLoader = previewResourceLoader,
                 onLinkClicked = { onUiEvent(CodeEditorViewModel.UiEvent.PreviewLinkClicked(it)) },
@@ -497,8 +479,7 @@ private fun CodeEditorScreenContentOfflinePreview() {
                     right = listOf(EnableEditModeFabConfig)
                 ),
             ),
-            editorField = EditorField(),
-            onTextChanged = {},
+            editorState = remember { KodeEditorState() },
             onUiEvent = {},
         )
     }
@@ -526,8 +507,7 @@ private fun CodeEditorScreenContentOnlinePreview() {
                     )
                 ),
             ),
-            editorField = EditorField(),
-            onTextChanged = {},
+            editorState = remember { KodeEditorState() },
             onUiEvent = {},
         )
     }

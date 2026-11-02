@@ -4,7 +4,7 @@ import de.markusressel.mkdocsrestclient.sync.text.TextSplice
 
 /**
  * A state of a document: an opaque set of Automerge heads, or a state without a document.
- * Every text the editor has ever shown is one of these states, see [EditorTextBinding].
+ * Every text the editor has ever shown is one of these states.
  */
 class DocumentVersion internal constructor(internal val headsHex: List<String>) {
     override fun equals(other: Any?): Boolean = other is DocumentVersion && headsHex == other.headsHex
@@ -35,11 +35,4 @@ interface EditableTextDocument {
      * @throws IllegalArgumentException if this document does not know [base]
      */
     fun applyLocalEdit(base: DocumentVersion, baseText: String, splices: List<TextSplice>): DocumentVersion?
-
-    /**
-     * The changes from the text of an earlier state to the current text
-     *
-     * @throws IllegalArgumentException if this document does not know [version]
-     */
-    fun splicesSince(version: DocumentVersion, text: String): List<TextSplice>
 }

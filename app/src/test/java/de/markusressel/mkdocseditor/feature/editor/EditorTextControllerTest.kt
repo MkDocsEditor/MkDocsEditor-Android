@@ -1,7 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor
 
 import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatAction
 import de.markusressel.mkdocseditor.feature.editor.ui.EditorTextController
 import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeTextDocument
@@ -10,21 +9,13 @@ import de.markusressel.mkdocsrestclient.sync.automerge.EditableTextDocument
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 import de.markusressel.mkdocsrestclient.sync.automerge.RemoteSelection
 import de.markusressel.mkdocsrestclient.sync.text.TextSplice
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.currentTime
-import kotlinx.coroutines.test.runCurrent
-import kotlinx.coroutines.test.runTest
 import org.automerge.Document
 import org.automerge.ObjectId
 import org.automerge.ObjectType
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class EditorTextControllerTest {
 
     private class TestDocument(text: String) : EditableTextDocument {
@@ -42,7 +33,6 @@ class EditorTextControllerTest {
         override fun applyLocalEdit(base: DocumentVersion, baseText: String, splices: List<TextSplice>) =
             automerge.applySplicesAt(base, baseText, splices)
 
-        override fun splicesSince(version: DocumentVersion, text: String) = automerge.splicesSince(version, text)
 
         /** what a sync message from another user does */
         fun remoteEdit(newText: String): List<TextSplice> {
@@ -54,38 +44,41 @@ class EditorTextControllerTest {
 
     private var editMode = true
     private var edits = 0
+    private val selections = mutableListOf<TextRange>()
 
-    private fun TestScope.controller() = EditorTextController(
-        scope = backgroundScope,
-        now = { currentTime },
+    private fun controller() = EditorTextController(
         editModeActive = { editMode },
+        onSelectionChanged = { selections += it },
         onEdited = { edits++ },
     )
 
     @Test
-    fun `a bound document shows up in the field`() = runTest {
+    fun `a bound document shows up in the editor`() {
         val controller = controller()
         controller.bind(TestDocument("hello"))
-        assertEquals("hello", controller.field.value.value.text)
+        assertEquals("hello", controller.editorState.text)
         assertEquals("hello", controller.text)
     }
 
     @Test
-    fun `typing goes into the document, but not outside of the edit mode`() = runTest {
+    fun `typing goes into the document, but not outside of the edit mode`() {
         val document = TestDocument("hello")
         val controller = controller()
         controller.bind(document)
+        controller.select(5, 5)
 
-        controller.onFieldChanged(TextFieldValue("hello!", TextRange(6)))
+        controller.editorState.replaceSelection("!")
         assertEquals("hello!", document.text)
+        assertEquals(0, edits)
 
         editMode = false
-        controller.onFieldChanged(TextFieldValue("hello!?", TextRange(7)))
+        controller.editorState.replaceSelection("?")
         assertEquals("hello!", document.text)
+        assertEquals("hello!", controller.text)
     }
 
     @Test
-    fun `formatting wraps the selection, and counts as an edit`() = runTest {
+    fun `formatting wraps the selection, and counts as an edit`() {
         val document = TestDocument("one two")
         val controller = controller()
         controller.bind(document)
@@ -99,7 +92,7 @@ class EditorTextControllerTest {
     }
 
     @Test
-    fun `a selection outside of the text stays inside of it`() = runTest {
+    fun `a selection outside of the text stays inside of it`() {
         val controller = controller()
         controller.bind(TestDocument("abc"))
         controller.select(-5, 99)
@@ -107,7 +100,7 @@ class EditorTextControllerTest {
     }
 
     @Test
-    fun `markdown replaces the selection, or goes after it`() = runTest {
+    fun `markdown replaces the selection, or goes after it`() {
         val document = TestDocument("abc")
         val controller = controller()
         controller.bind(document)
@@ -123,7 +116,7 @@ class EditorTextControllerTest {
     }
 
     @Test
-    fun `a replaced range keeps the rest of the text`() = runTest {
+    fun `a replaced range keeps the rest of the text`() {
         val document = TestDocument("[a](old.md) b")
         val controller = controller()
         controller.bind(document)
@@ -132,46 +125,74 @@ class EditorTextControllerTest {
     }
 
     @Test
-    fun `a remote change waits while the user types, then shows up`() = runTest {
+    fun `a remote change shows up at once, also while the user types`() {
         val document = TestDocument("hello")
         val controller = controller()
         controller.bind(document)
-        controller.onValueShown(controller.field.value.id)
-        controller.onFocusChanged(true)
-        controller.onFieldChanged(TextFieldValue("hello!", TextRange(6)))
-        controller.onValueShown(controller.field.value.id)
+        controller.select(5, 5)
+        controller.editorState.replaceSelection("!")
 
         val splices = document.remoteEdit("remote hello!")
-        controller.onDocumentChanged(splices)
-        assertEquals("remote hello!", controller.text)
-        assertFalse(controller.field.value.value.text.startsWith("remote"))
+        controller.onRemoteChange(document.text, splices)
 
-        advanceTimeBy(60_000)
-        runCurrent()
-        assertEquals("remote hello!", controller.field.value.value.text)
+        assertEquals("remote hello!", controller.text)
+        assertEquals(TextRange(13), controller.selection)
+        controller.editorState.replaceSelection("?")
+        assertEquals("remote hello!?", document.text)
     }
 
     @Test
-    fun `other users are resolved against the field`() = runTest {
+    fun `an editor that differs from the document after a remote change takes its text`() {
+        val document = TestDocument("hello")
+        val controller = controller()
+        controller.bind(document)
+
+        val splices = document.remoteEdit("hello world")
+        controller.onRemoteChange(document.text, splices.drop(1) + TextSplice(0, 0, "wrong"))
+
+        assertEquals("hello world", controller.text)
+    }
+
+    @Test
+    fun `only the user moves the reported selection`() {
+        val document = TestDocument("hello")
+        val controller = controller()
+        controller.bind(document)
+        assertTrue(selections.isEmpty())
+
+        controller.select(5, 5)
+        assertEquals(listOf(TextRange(5)), selections)
+
+        val splices = document.remoteEdit(">> hello")
+        controller.onRemoteChange(document.text, splices)
+        assertEquals(TextRange(8), controller.selection)
+        assertEquals(listOf(TextRange(5)), selections)
+
+        controller.select(0, 0)
+        assertEquals(listOf(TextRange(5), TextRange(0)), selections)
+    }
+
+    @Test
+    fun `other users are kept until another document comes`() {
         val controller = controller()
         controller.bind(TestDocument("hello"))
         val peer = RemotePeer("client", "other", null, null, listOf(RemoteSelection(2, 3)))
 
         controller.onPeersChanged(listOf(peer))
-        assertEquals(listOf(peer), controller.field.value.remotePeers)
+        assertEquals(listOf(peer), controller.peers.value)
 
         controller.bind(TestDocument("other"))
-        assertTrue(controller.field.value.remotePeers.isEmpty())
+        assertTrue(controller.peers.value.isEmpty())
     }
 
     @Test
-    fun `a detached text is shown until the document has a text`() = runTest {
+    fun `a detached text is shown until the document has a text`() {
         val controller = controller()
         controller.showDetachedText("cached")
-        assertEquals("cached", controller.field.value.value.text)
+        assertEquals("cached", controller.text)
 
         controller.bind(TestDocument("server"))
         controller.showDetachedText("cached")
-        assertEquals("server", controller.field.value.value.text)
+        assertEquals("server", controller.text)
     }
 }
