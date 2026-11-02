@@ -1,4 +1,4 @@
-.PHONY: build test unitTests
+.PHONY: build test unitTests updatePreview
 
 clean:
 	./gradlew clean
@@ -13,6 +13,10 @@ test: unitTests
 
 unitTests:
 	./gradlew testDebugUnitTest
+
+# The markdown renderer of the preview, built from MkDocsEditor-Web: make updatePreview WEB_REF=<commit>
+updatePreview:
+	./scripts/update-preview.sh $(WEB_REF)
 
 buildRelease:
 	./gradlew assembleRelease
