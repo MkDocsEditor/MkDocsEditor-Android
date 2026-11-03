@@ -59,6 +59,7 @@ internal fun CodeEditorLayout(
             ),
             enabled = true,
             readOnly = readOnly,
+            lineWrapping = true,
             overlay = { layout ->
                 RemotePeersOverlay(
                     layout = layout,
