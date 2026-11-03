@@ -51,8 +51,12 @@ class DataRepository @Inject constructor(
      *
      * @see [OfflineSyncWorker]
      */
-    val _backgroundSyncInProgress = MutableStateFlow(false)
+    private val _backgroundSyncInProgress = MutableStateFlow(false)
     val backgroundSyncInProgress = _backgroundSyncInProgress.asStateFlow()
+
+    fun setBackgroundSyncInProgress(inProgress: Boolean) {
+        _backgroundSyncInProgress.value = inProgress
+    }
 
     /**
      * Find all data that matches the given search
