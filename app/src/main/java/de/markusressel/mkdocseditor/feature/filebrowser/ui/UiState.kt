@@ -5,22 +5,17 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.MoveOutcome
-import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.SectionItem
-import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
+import de.markusressel.mkdocseditor.feature.filebrowser.data.FolderContent
+import de.markusressel.mkdocseditor.feature.filebrowser.data.SectionItem
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocsrestclient.reference.BacklinkModel
 import de.markusressel.mkdocsrestclient.reference.MoveResultModel
 
-sealed interface DialogState {
-    data class CreateDocument(
-        val sectionId: String,
-        val initialDocumentName: String
-    ) : DialogState
+enum class NewItemKind { Document, Section }
 
-    data class CreateSection(
-        val parentSectionId: String,
-        val initialSectionName: String
-    ) : DialogState
+sealed interface DialogState {
+    /** @param sectionId the folder the new item goes into */
+    data class CreateItem(val kind: NewItemKind, val sectionId: String) : DialogState
 
     /** what can be done with an item: rename, move, see what links to it, delete */
     data class ItemActions(val item: WikiItem) : DialogState
@@ -83,25 +78,23 @@ internal data class UiState(
     val unsyncedDocumentIds: Set<String> = emptySet(),
     val currentDialogState: DialogState? = null,
 
-    val fabConfig: FabConfig<FileBrowserFabId> = CreateItemsFabConfig,
-
     val isLoading: Boolean = false,
     val error: String? = null,
 
-    val canGoUp: Boolean = false,
+    /** from the root down to the open folder, starting with the root itself */
+    val currentSectionPath: List<SectionItem> = emptyList(),
 
-    val currentSearchFilter: String = "",
-    val isSearchExpanded: Boolean = false,
-
-    val currentSectionPath: List<SectionItem> = listOf(),
-
-    val listItems: List<Any> = emptyList(),
-
-    val currentSearchResults: List<SearchResultItem> = emptyList(),
+    /** null until it is known what is in the open folder */
+    val folderContent: FolderContent? = null,
 
     /** the selected backend, when its server rejected the session; the cached data stays visible */
     val loginRequiredBackendId: Long? = null,
-)
+) {
+    val canGoUp: Boolean get() = currentSectionPath.size > 1
+
+    /** nothing can be created in a folder that is not known */
+    val fabConfig: FabConfig<FileBrowserFabId> get() = if (folderContent == null) FabConfig() else CreateItemsFabConfig
+}
 
 sealed class FileBrowserFabId {
     data object FAB : FileBrowserFabId()

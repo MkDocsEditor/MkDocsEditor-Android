@@ -67,30 +67,7 @@ internal fun SectionListEntry(
 
                 Text(
                     modifier = Modifier.padding(start = 8.dp),
-                    text = stringResource(
-                        R.string.section_entry_subsections_count,
-                        item.subsections.size
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-
-                Text(
-                    modifier = Modifier.padding(start = 8.dp),
-                    text = stringResource(
-                        R.string.section_entry_documents_count,
-                        item.documents.size
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-
-                Text(
-                    modifier = Modifier.padding(start = 8.dp),
-                    text = stringResource(
-                        R.string.section_entry_resources_count,
-                        item.resources.size
-                    ),
+                    text = item.contentSummary(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
@@ -98,6 +75,14 @@ internal fun SectionListEntry(
         }
     }
 }
+
+/** only what is in the folder, so that the entry stays small */
+@Composable
+private fun SectionData.contentSummary(): String = listOfNotNull(
+    subsections.size.takeIf { it > 0 }?.let { stringResource(R.string.section_entry_subsections_count, it) },
+    documents.size.takeIf { it > 0 }?.let { stringResource(R.string.section_entry_documents_count, it) },
+    resources.size.takeIf { it > 0 }?.let { stringResource(R.string.section_entry_resources_count, it) },
+).joinToString(" · ").ifEmpty { stringResource(R.string.file_browser_empty) }
 
 @CombinedPreview
 @Composable

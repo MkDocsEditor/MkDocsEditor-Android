@@ -64,6 +64,20 @@ internal class MoveItemUseCase @Inject constructor(
         )
     }
 
+    /**
+     * Renames with the PUT endpoints of older backends, which do not update the links to the item
+     *
+     * @return the failure, null if it worked
+     */
+    suspend fun renameWithoutPreview(item: WikiItem, name: String): MoveOutcome.Failed? {
+        val error = when (item) {
+            is WikiItem.Document -> restClient.renameDocument(item.id, name).component2()
+            is WikiItem.Section -> restClient.renameSection(item.id, name).component2()
+            is WikiItem.Resource -> restClient.renameResource(item.id, name).component2()
+        }
+        return error?.let(::failure)
+    }
+
     private suspend fun followWithLocalCopies(result: MoveResultModel) = withContext(Dispatchers.IO) {
         result.moved.filter { it.type == ItemType.DOCUMENT && it.oldId != it.newId }.forEach {
             try {

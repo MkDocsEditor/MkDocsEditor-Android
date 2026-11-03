@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.markusressel.mkdocseditor.feature.editor.documentData
+import de.markusressel.mkdocseditor.feature.filebrowser.data.FolderContent
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.FileBrowserList
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import org.junit.Rule
@@ -25,7 +26,7 @@ class DocumentListEntryTest {
         composeRule.setContent {
             MkDocsEditorTheme {
                 FileBrowserList(
-                    items = listOf(documentData("one"), documentData("two")),
+                    content = FolderContent(documents = listOf(documentData("one"), documentData("two"))),
                     unsyncedDocumentIds = setOf("two"),
                     onDocumentClicked = {},
                     onDocumentLongClicked = {},

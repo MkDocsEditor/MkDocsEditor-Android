@@ -1,13 +1,15 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui.compose
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,6 +22,7 @@ import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.filebrowser.data.DocumentData
+import de.markusressel.mkdocseditor.feature.filebrowser.data.FolderContent
 import de.markusressel.mkdocseditor.feature.filebrowser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.filebrowser.data.SectionData
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.listentry.DocumentListEntry
@@ -29,9 +32,13 @@ import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 import java.util.Date
 
+/**
+ * @param content what is in the folder, null while that is unknown
+ * @param isLoading whether the folder is loading: an unknown folder is not an empty one
+ */
 @Composable
 internal fun FileBrowserList(
-    items: List<Any>,
+    content: FolderContent?,
     onDocumentClicked: (DocumentData) -> Unit,
     onDocumentLongClicked: (DocumentData) -> Unit,
     onResourceClicked: (ResourceData) -> Unit,
@@ -39,83 +46,65 @@ internal fun FileBrowserList(
     onSectionClicked: (SectionData) -> Unit,
     onSectionLongClicked: (SectionData) -> Unit,
     modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
     unsyncedDocumentIds: Set<String> = emptySet(),
 ) {
-    Column(
+    LazyColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp),
+        // the last entry can be scrolled out from under the button
+        contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 128.dp),
     ) {
-        if (items.isEmpty()) {
-            EmptyPathView(
-                modifier = Modifier
-                    .defaultMinSize(minHeight = 128.dp)
-                    .fillMaxWidth()
-            )
-        } else {
-            val sectionItems = items.filterIsInstance<SectionData>()
-            val documentItems = items.filterIsInstance<DocumentData>()
-            val resourceItems = items.filterIsInstance<ResourceData>()
-
-            if (sectionItems.isNotEmpty()) {
-                Text(
-                    modifier = Modifier.padding(start = 8.dp),
-                    text = stringResource(id = R.string.file_browser_sections_headline),
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        color = MaterialTheme.colorScheme.onSurface
-                    ),
-                )
-
-                sectionItems.forEach { section ->
-                    SectionListEntry(
-                        item = section,
-                        onClick = onSectionClicked,
-                        onLongClick = onSectionLongClicked,
+        if (content == null || content.isEmpty) {
+            if (content != null || !isLoading) {
+                item(key = "empty") {
+                    EmptyPathView(
+                        modifier = Modifier
+                            .defaultMinSize(minHeight = 128.dp)
+                            .fillMaxWidth()
                     )
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
             }
+            return@LazyColumn
+        }
 
-            if (documentItems.isNotEmpty()) {
-                Text(
-                    modifier = Modifier.padding(start = 8.dp),
-                    text = stringResource(id = R.string.file_browser_documents_headline),
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        color = MaterialTheme.colorScheme.onSurface
-                    ),
-                )
-
-                documentItems.forEach { document ->
-                    DocumentListEntry(
-                        item = document,
-                        onClick = onDocumentClicked,
-                        onLongClick = onDocumentLongClicked,
-                        hasUnsyncedChanges = document.id in unsyncedDocumentIds,
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
+        if (content.sections.isNotEmpty()) {
+            item(key = "sections") { ListHeadline(R.string.file_browser_sections_headline) }
+            items(content.sections, key = { "section-${it.id}" }) { section ->
+                SectionListEntry(item = section, onClick = onSectionClicked, onLongClick = onSectionLongClicked)
             }
+        }
 
-            if (resourceItems.isNotEmpty()) {
-                Text(
-                    modifier = Modifier.padding(start = 8.dp),
-                    text = stringResource(id = R.string.file_browser_resources_headline),
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        color = MaterialTheme.colorScheme.onSurface
-                    ),
+        if (content.documents.isNotEmpty()) {
+            item(key = "documents") { ListHeadline(R.string.file_browser_documents_headline) }
+            items(content.documents, key = { "document-${it.id}" }) { document ->
+                DocumentListEntry(
+                    item = document,
+                    onClick = onDocumentClicked,
+                    onLongClick = onDocumentLongClicked,
+                    hasUnsyncedChanges = document.id in unsyncedDocumentIds,
                 )
+            }
+        }
 
-                resourceItems.forEach { resource ->
-                    ResourceListEntry(
-                        item = resource,
-                        onClick = onResourceClicked,
-                        onLongClick = onResourceLongClicked,
-                    )
-                }
+        if (content.resources.isNotEmpty()) {
+            item(key = "resources") { ListHeadline(R.string.file_browser_resources_headline) }
+            items(content.resources, key = { "resource-${it.id}" }) { resource ->
+                ResourceListEntry(item = resource, onClick = onResourceClicked, onLongClick = onResourceLongClicked)
             }
         }
     }
+}
+
+@Composable
+private fun ListHeadline(@StringRes text: Int) {
+    Text(
+        modifier = Modifier.padding(start = 8.dp, top = 8.dp),
+        text = stringResource(id = text),
+        style = MaterialTheme.typography.headlineSmall.copy(
+            color = MaterialTheme.colorScheme.onSurface
+        ),
+    )
 }
 
 @Composable
@@ -144,43 +133,12 @@ private fun EmptyPathView(
     }
 }
 
-@Composable
-internal fun FileBrowserListEntry(
-    item: Any,
-    onDocumentClicked: (DocumentData) -> Unit,
-    onDocumentLongClicked: (DocumentData) -> Unit,
-    onResourceClicked: (ResourceData) -> Unit,
-    onResourceLongClicked: (ResourceData) -> Unit,
-    onSectionClicked: (SectionData) -> Unit,
-    onSectionLongClicked: (SectionData) -> Unit,
-) {
-    when (item) {
-        is DocumentData -> DocumentListEntry(
-            item = item,
-            onClick = onDocumentClicked,
-            onLongClick = onDocumentLongClicked,
-        )
-
-        is ResourceData -> ResourceListEntry(
-            item = item,
-            onClick = onResourceClicked,
-            onLongClick = onResourceLongClicked,
-        )
-
-        is SectionData -> SectionListEntry(
-            item = item,
-            onClick = onSectionClicked,
-            onLongClick = onSectionLongClicked
-        )
-    }
-}
-
 @CombinedPreview
 @Composable
 private fun FileBrowserListEmptyPreview() {
     MkDocsEditorTheme {
         FileBrowserList(
-            items = listOf(),
+            content = FolderContent(),
             onDocumentClicked = {},
             onDocumentLongClicked = {},
             onResourceClicked = {},
@@ -196,16 +154,16 @@ private fun FileBrowserListEmptyPreview() {
 private fun FileBrowserListPreview() {
     MkDocsEditorTheme {
         FileBrowserList(
-            items = listOf(
-                SectionData(
+            content = FolderContent(
+                sections = listOf(SectionData(
                     entityId = 1,
                     id = "1",
                     name = "Subsection",
                     subsections = listOf(),
                     documents = listOf(),
                     resources = listOf()
-                ),
-                DocumentData(
+                )),
+                documents = listOf(DocumentData(
                     entityId = 1,
                     id = "1",
                     name = "Sample Document",
@@ -214,15 +172,15 @@ private fun FileBrowserListPreview() {
                     url = "https://www.google.com",
                     content = null,
                     isOfflineAvailable = true
-                ),
-                ResourceData(
+                )),
+                resources = listOf(ResourceData(
                     entityId = 1,
                     id = "1",
                     name = "Sample Ressource.png",
                     filesize = 1234,
                     modtime = Date(),
                     isOfflineAvailable = true
-                )
+                )),
             ),
             onDocumentClicked = {},
             onDocumentLongClicked = {},

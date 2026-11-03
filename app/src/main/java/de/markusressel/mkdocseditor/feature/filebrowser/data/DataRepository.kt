@@ -276,17 +276,16 @@ class DataRepository @Inject constructor(
         return sectionStore.get(ROOT_SECTION_ID).getDocumentsRecursive()
     }
 
-    fun getSectionsTo(sectionId: String): List<SectionData> {
-        val result = mutableListOf<SectionData>()
+    /** @return the sections from the root down to the given one, empty if it does not exist */
+    internal fun getPathTo(sectionId: String): List<SectionItem> =
+        generateSequence(sectionPersistenceManager.findById(sectionId)) { it.parentSection.target }
+            .map { SectionItem(id = it.id, name = it.name) }
+            .toList()
+            .asReversed()
 
-        var section = sectionPersistenceManager.findById(sectionId)
-        while (section != null) {
-            result.add(dataFactory.toSectionData(section))
-            section = section.parentSection.target
-        }
-
-        return result.reversed().toList()
-    }
+    /** @return a flow with a value at the start and whenever the sections in the database change */
+    fun observeSectionChanges(sectionId: String): Flow<Unit> =
+        sectionPersistenceManager.findByIdFlow(sectionId).map { }
 
 }
 
