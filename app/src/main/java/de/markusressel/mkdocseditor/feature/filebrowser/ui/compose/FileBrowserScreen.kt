@@ -23,8 +23,7 @@ import de.markusressel.mkdocseditor.feature.filebrowser.ui.DialogState
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.FileBrowserEvent
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.FileBrowserViewModel
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.UiEvent
-import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.CreateDocumentDialog
-import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.CreateSectionDialog
+import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.CreateItemDialog
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.BacklinksDialog
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.DeleteConfirmationDialog
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.ItemActionsDialog
@@ -33,7 +32,6 @@ import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
 import de.markusressel.mkdocseditor.feature.filepicker.ui.compose.FilePickerScreen
 import de.markusressel.mkdocseditor.feature.search.ui.compose.SearchScreen
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.runBlocking
 
 object FileBrowserScreen : Screen {
     @Composable
@@ -46,14 +44,7 @@ object FileBrowserScreen : Screen {
 
         BackHandler(
             enabled = uiState.canGoUp,
-            onBack = {
-                val consumed = runBlocking {
-                    viewModel.navigateUp()
-                }
-                if (consumed.not()) {
-                    navigator.pop()
-                }
-            }
+            onBack = { viewModel.onUiEvent(UiEvent.NavigateUp) },
         )
 
         // Runs only on initial composition
@@ -93,37 +84,14 @@ object FileBrowserScreen : Screen {
         )
 
         when (val dialogState = uiState.currentDialogState) {
-            is DialogState.CreateDocument -> {
-                CreateDocumentDialog(
-                    uiState = dialogState,
-                    onSaveClicked = { text ->
-                        viewModel.onUiEvent(
-                            UiEvent.CreateDocumentDialogSaveClicked(
-                                sectionId = dialogState.sectionId,
-                                name = text
-                            )
-                        )
+            is DialogState.CreateItem -> {
+                CreateItemDialog(
+                    kind = dialogState.kind,
+                    folder = uiState.folderContent,
+                    onCreateClicked = { name ->
+                        viewModel.onUiEvent(UiEvent.CreateItemConfirmed(dialogState, name))
                     },
-                    onDismissRequest = {
-                        viewModel.onUiEvent(UiEvent.DismissDialog)
-                    },
-                )
-            }
-
-            is DialogState.CreateSection -> {
-                CreateSectionDialog(
-                    uiState = dialogState,
-                    onSaveClicked = { text ->
-                        viewModel.onUiEvent(
-                            UiEvent.CreateSectionDialogSaveClicked(
-                                parentSectionId = dialogState.parentSectionId,
-                                name = text
-                            )
-                        )
-                    },
-                    onDismissRequest = {
-                        viewModel.onUiEvent(UiEvent.DismissDialog)
-                    },
+                    onDismissRequest = { viewModel.onUiEvent(UiEvent.DismissDialog) },
                 )
             }
 

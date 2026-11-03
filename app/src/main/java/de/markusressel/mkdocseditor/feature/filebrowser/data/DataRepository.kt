@@ -24,7 +24,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import org.mobilenativefoundation.store.store5.Fetcher
 import org.mobilenativefoundation.store.store5.SourceOfTruth
@@ -104,8 +103,9 @@ class DataRepository @Inject constructor(
 
     private val sourceOfTruth = SourceOfTruth.of<String, SectionEntity, SectionData>(
         reader = { sectionId ->
-            sectionPersistenceManager.findByIdFlow(sectionId).filterNotNull()
-                .map(dataFactory::toSectionData)
+            // null tells the store that there is nothing yet: without it get() waits forever on an empty cache,
+            // and a folder that is gone from the server never finishes loading
+            sectionPersistenceManager.findByIdFlow(sectionId).map { it?.let(dataFactory::toSectionData) }
         },
         writer = { key, entity ->
             // NOTE: this always stores the whole tree
@@ -276,17 +276,16 @@ class DataRepository @Inject constructor(
         return sectionStore.get(ROOT_SECTION_ID).getDocumentsRecursive()
     }
 
-    fun getSectionsTo(sectionId: String): List<SectionData> {
-        val result = mutableListOf<SectionData>()
+    /** @return the sections from the root down to the given one, empty if it does not exist */
+    internal fun getPathTo(sectionId: String): List<SectionItem> =
+        generateSequence(sectionPersistenceManager.findById(sectionId)) { it.parentSection.target }
+            .map { SectionItem(id = it.id, name = it.name) }
+            .toList()
+            .asReversed()
 
-        var section = sectionPersistenceManager.findById(sectionId)
-        while (section != null) {
-            result.add(dataFactory.toSectionData(section))
-            section = section.parentSection.target
-        }
-
-        return result.reversed().toList()
-    }
+    /** @return a flow with a value at the start and whenever the sections in the database change */
+    fun observeSectionChanges(sectionId: String): Flow<Unit> =
+        sectionPersistenceManager.findByIdFlow(sectionId).map { }
 
 }
 

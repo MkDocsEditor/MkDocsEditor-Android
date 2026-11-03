@@ -141,7 +141,7 @@
 
     <string name="edit_auth_config_empty">There are no authentication configurations yet. Please create one using the + Icon above.</string>
 
-    <string name="section_entry_subsections_count">Subsectons: %1$s</string>
+    <string name="section_entry_subsections_count">Subsections: %1$s</string>
     <string name="section_entry_documents_count">Documents: %1$s</string>
     <string name="section_entry_resources_count">Resources: %1$s</string>
 
@@ -154,6 +154,9 @@
     <string name="delete_document_confirmation_message">Deleting a document removes it <b>permanently</b> for everyone on this backend.</string>
     <string name="create_section">Create Section</string>
     <string name="create_section_hint">New Section</string>
+    <string name="new_item_name_not_allowed">A name cannot start with a dot or contain / or \\</string>
+    <string name="new_item_name_exists">This name already exists in this folder</string>
+    <string name="section_path_root">Top level of the wiki</string>
     <string name="delete_section_confirmation_title">Delete section?</string>
     <string name="delete_section_confirmation_message">Deleting a section removes it and all of its contents <b>permanently</b> for everyone on this backend.</string>
 
