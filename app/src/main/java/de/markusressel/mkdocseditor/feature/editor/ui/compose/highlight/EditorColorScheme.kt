@@ -8,9 +8,11 @@ import androidx.compose.ui.text.style.TextDecoration
 import de.markusressel.kodehighlighter.core.StyleFactory
 import de.markusressel.kodehighlighter.core.colorscheme.ColorScheme
 import de.markusressel.kodehighlighter.core.rule.LanguageRule
+import de.markusressel.kodehighlighter.core.rule.TokenType
 
 /**
- * Maps the rules of [MkDocsMarkdownRuleBook] to the colors of an [EditorPalette]
+ * Maps the rules of [MkDocsMarkdownRuleBook] to the colors of an [EditorPalette]. The rules of the languages inside of
+ * code blocks are mapped by their token type.
  */
 class EditorColorScheme(private val palette: EditorPalette) : ColorScheme<SpanStyle> {
 
@@ -40,6 +42,32 @@ class EditorColorScheme(private val palette: EditorPalette) : ColorScheme<SpanSt
         )
     }
 
+    private val tokenStyles: Map<TokenType, SpanStyle> = TokenType.entries.associateWith { tokenStyle(it) }
+
+    private fun tokenStyle(type: TokenType): SpanStyle = with(palette) {
+        when (type) {
+            TokenType.KEYWORD -> SpanStyle(color = keyword)
+            TokenType.TYPE, TokenType.CONSTANT -> SpanStyle(color = constant)
+            TokenType.FUNCTION -> SpanStyle(color = function)
+            TokenType.STRING, TokenType.CODE -> SpanStyle(color = string)
+            TokenType.NUMBER -> SpanStyle(color = number)
+            TokenType.COMMENT -> SpanStyle(color = comment, fontStyle = FontStyle.Italic)
+            TokenType.ANNOTATION, TokenType.META -> SpanStyle(color = annotation)
+            TokenType.PROPERTY -> SpanStyle(color = property)
+            TokenType.TAG -> SpanStyle(color = tag)
+            TokenType.ATTRIBUTE -> SpanStyle(color = attribute)
+            TokenType.HEADING -> SpanStyle(color = heading, fontWeight = FontWeight.Bold)
+            TokenType.STRONG -> SpanStyle(fontWeight = FontWeight.Bold)
+            TokenType.EMPHASIS -> SpanStyle(fontStyle = FontStyle.Italic)
+            TokenType.STRIKETHROUGH -> SpanStyle(textDecoration = TextDecoration.LineThrough)
+            TokenType.LINK -> SpanStyle(color = link)
+            TokenType.QUOTE -> SpanStyle(color = comment, fontStyle = FontStyle.Italic)
+            TokenType.MARKER -> SpanStyle(color = keyword, fontWeight = FontWeight.Bold)
+            TokenType.ADDITION -> SpanStyle(color = inserted)
+            TokenType.DELETION -> SpanStyle(color = deleted)
+        }
+    }
+
     private fun codeStyle(color: Color) = SpanStyle(
         color = color,
         background = palette.codeBackground,
@@ -49,7 +77,7 @@ class EditorColorScheme(private val palette: EditorPalette) : ColorScheme<SpanSt
     )
 
     override fun getStyles(type: LanguageRule): Set<StyleFactory<SpanStyle>> {
-        val style = styles[type] ?: return emptySet()
+        val style = styles[type] ?: type.tokenType?.let { tokenStyles[it] } ?: return emptySet()
         return setOf { style }
     }
 }
