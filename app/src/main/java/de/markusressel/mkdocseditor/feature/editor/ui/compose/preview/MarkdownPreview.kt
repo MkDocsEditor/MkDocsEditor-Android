@@ -3,6 +3,7 @@ package de.markusressel.mkdocseditor.feature.editor.ui.compose.preview
 import android.annotation.SuppressLint
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
@@ -108,6 +109,10 @@ internal fun MarkdownPreview(
 
                 // links are handled by the page script; nothing navigates the page away
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest) = true
+            }
+            // without room a WebView that never had any paints over the views around it
+            addOnLayoutChangeListener { view, left, top, right, bottom, _, _, _, _ ->
+                view.visibility = if (right > left && bottom > top) View.VISIBLE else View.INVISIBLE
             }
             val mainHandler = Handler(Looper.getMainLooper())
             addJavascriptInterface(object {

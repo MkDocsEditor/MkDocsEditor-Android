@@ -72,7 +72,12 @@ internal class CodeEditorViewModel @Inject constructor(
     private val context: Context,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(UiState())
+    private val _uiState = MutableStateFlow(
+        UiState(
+            editModeOpening = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value &&
+                !sessionEnvironment.offlineMode.value,
+        )
+    )
     internal val uiState = _uiState.asStateFlow()
 
     private var saveJob: Job? = null
@@ -186,6 +191,12 @@ internal class CodeEditorViewModel @Inject constructor(
                 // edits are kept in the local copy and synced on reconnect
                 if (it) enableEditMode()
             }
+        }
+
+        launch {
+            // the page only comes up when the edit mode will not open after all
+            session.awaitOpeningFailed()
+            _uiState.update { old -> old.copy(editModeOpening = false) }
         }
 
         launch {
@@ -508,6 +519,7 @@ internal class CodeEditorViewModel @Inject constructor(
         _uiState.update { old ->
             old.copy(
                 editModeActive = true,
+                editModeOpening = false,
                 fabConfig = old.fabConfig.copy(
                     right = listOf(DisableEditModeFabConfig)
                 ),
@@ -521,6 +533,7 @@ internal class CodeEditorViewModel @Inject constructor(
         _uiState.update { old ->
             old.copy(
                 editModeActive = false,
+                editModeOpening = false,
                 fabConfig = old.fabConfig.copy(right = emptyList()),
                 isBottomAppBarVisible = false,
             )
@@ -566,6 +579,11 @@ internal class CodeEditorViewModel @Inject constructor(
          * Indicates whether the CodeEditor is in "edit" mode or not
          */
         val editModeActive: Boolean = false,
+        /**
+         * The edit mode opens on its own as soon as the document can be edited. Until then the editor shows the text
+         * without taking input, so the page does not come up just to move away again.
+         */
+        val editModeOpening: Boolean = false,
 
 
         /**

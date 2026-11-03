@@ -12,6 +12,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.currentTime
@@ -225,6 +226,47 @@ class DocumentSessionTest {
 
         f.document.connected()
         assertFalse(f.state.loading, "with a local copy, the connection is all it waits for")
+    }
+
+    private fun TestScope.waitForFailedOpening(f: Fixture) = backgroundScope.launch { f.session.awaitOpeningFailed() }
+
+    @Test
+    fun `opening has not failed before it starts or while it connects`() = test { f ->
+        val failed = waitForFailedOpening(f)
+        assertFalse(failed.isCompleted)
+
+        f.open()
+        assertFalse(failed.isCompleted)
+    }
+
+    @Test
+    fun `opening fails with a failed connection`() = test { f ->
+        val failed = waitForFailedOpening(f)
+        f.open()
+
+        f.document.listener.onConnectionStatusChanged(false, 1006)
+        assertTrue(failed.isCompleted)
+    }
+
+    @Test
+    fun `opening has not failed while the text is on its way after connecting, or when it arrives`() = test { f ->
+        val failed = waitForFailedOpening(f)
+        f.open()
+
+        f.document.connected()
+        assertFalse(failed.isCompleted)
+
+        f.document.textArrived("server text")
+        assertFalse(failed.isCompleted)
+    }
+
+    @Test
+    fun `opening fails when there is neither a connection nor a text`() = test { f ->
+        f.environment.loadAnswer = CompletableDeferred(DocumentLoad(null, IOException("no server")))
+        val failed = waitForFailedOpening(f)
+        f.open()
+
+        assertTrue(failed.isCompleted)
     }
 
     @Test
