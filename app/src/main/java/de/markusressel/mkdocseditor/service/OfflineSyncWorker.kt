@@ -2,7 +2,13 @@ package de.markusressel.mkdocseditor.service
 
 import android.content.Context
 import androidx.hilt.work.HiltWorker
+import androidx.work.Constraints
 import androidx.work.CoroutineWorker
+import androidx.work.ExistingWorkPolicy
+import androidx.work.ListenableWorker.Result
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.github.ajalt.timberkt.Timber
 import dagger.assisted.Assisted
@@ -11,7 +17,29 @@ import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceM
 import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
+import kotlinx.coroutines.CancellationException
 
+internal const val OFFLINE_SYNC_WORK_NAME = "update-offline-cache"
+
+/** after this many runs a failed sync waits for the next start of the app */
+internal const val MAX_OFFLINE_SYNC_ATTEMPTS = 3
+
+/**
+ * Starts the [OfflineSyncWorker], unless it is already waiting or running: a second one would fetch the same documents.
+ * WorkManager runs it once there is a network, and keeps it across restarts of the app.
+ */
+internal fun WorkManager.enqueueOfflineSync() {
+    val request = OneTimeWorkRequestBuilder<OfflineSyncWorker>()
+        .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+        .build()
+    enqueueUniqueWork(OFFLINE_SYNC_WORK_NAME, ExistingWorkPolicy.KEEP, request)
+}
+
+/** What a run of the [OfflineSyncWorker] tells WorkManager. It only tries again when that can help. */
+internal fun CacheOutcome.toWorkResult(attempt: Int): Result = when (this) {
+    CacheOutcome.Complete, CacheOutcome.NotSignedIn -> Result.success()
+    CacheOutcome.SomeFailed -> if (attempt + 1 < MAX_OFFLINE_SYNC_ATTEMPTS) Result.retry() else Result.success()
+}
 
 @HiltWorker
 internal class OfflineSyncWorker @AssistedInject constructor(
@@ -24,40 +52,34 @@ internal class OfflineSyncWorker @AssistedInject constructor(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
+        dataRepository.setBackgroundSyncInProgress(true)
         return try {
-            dataRepository._backgroundSyncInProgress.value = true
-            work()
+            work().toWorkResult(runAttemptCount)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            Result.failure()
+            Timber.e(e) { "Offline cache sync failed" }
+            CacheOutcome.SomeFailed.toWorkResult(runAttemptCount)
         } finally {
-            dataRepository._backgroundSyncInProgress.value = false
+            dataRepository.setBackgroundSyncInProgress(false)
         }
     }
 
-    private suspend fun work(): Result {
-        val documentIds = inputData.getStringArray(DOCUMENT_IDS_KEY)
-        if (documentIds == null) {
-            Timber.wtf { "Missing documentIds parameter!" }
-            return Result.failure()
-        }
-
+    private suspend fun work(): CacheOutcome {
+        val documentIds = dataRepository.getAllDocuments().map { it.id }
         Timber.d { "Running background worker for updating offline cache of ${documentIds.size} documents..." }
         // use random order to evenly distribute probability of caching a document
-        val completed = cacheDocuments(
-            documentIds = documentIds.toSet().shuffled(),
+        val outcome = cacheDocuments(
+            documentIds = documentIds.shuffled(),
             getContent = restClient::getDocumentContent,
             store = { documentId, text ->
                 documentContentPersistenceManager.insertOrUpdate(documentId = documentId, text = text)
             },
         )
-        if (completed) {
+        if (outcome == CacheOutcome.Complete) {
             Timber.d { "Offline cache sync job complete." }
             preferencesHolder.lastOfflineCacheUpdate.updateToNow()
         }
-        return Result.success()
-    }
-
-    companion object {
-        const val DOCUMENT_IDS_KEY = "DOCUMENT_IDS_KEY"
+        return outcome
     }
 }

@@ -3,19 +3,23 @@ package de.markusressel.mkdocseditor.data.persistence
 import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
-import io.objectbox.query.QueryBuilder
+import io.objectbox.BoxStore
+import io.objectbox.query.QueryBuilder.StringOrder
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class DocumentContentPersistenceManager @Inject constructor(
-    private val documentPersistenceManager: DocumentPersistenceManager
-) : PersistenceManagerBase<DocumentContentEntity>(DocumentContentEntity::class) {
+    boxStore: BoxStore,
+    private val documentPersistenceManager: DocumentPersistenceManager,
+) : PersistenceManagerBase<DocumentContentEntity>(boxStore, DocumentContentEntity::class) {
+
+    fun findByDocumentId(documentId: String): DocumentContentEntity? =
+        findUnique(DocumentContentEntity_.documentId.equal(documentId, StringOrder.CASE_SENSITIVE))
 
     /**
-     * Updates or creates a DocumentContentEntity with the given data and
-     * saves it in the database.
+     * Updates or creates a DocumentContentEntity with the given data and saves it in the database. All in one
+     * transaction: the background sync and the editor write to the same row, and neither may undo the other.
      *
      * @param documentId the documentId for reference
      * @param text the text content of the document
@@ -28,40 +32,33 @@ class DocumentContentPersistenceManager @Inject constructor(
         panX: Float? = null,
         panY: Float? = null
     ) {
-        val entity = standardOperation().query(
-            DocumentContentEntity_.documentId.equal(
-                documentId, QueryBuilder.StringOrder.CASE_INSENSITIVE
-            )
-        ).order(DocumentContentEntity_.documentId).build().findUnique()
-            ?: DocumentContentEntity(
-                entityId = 0,
-                date = System.currentTimeMillis(),
-                documentId = documentId,
-            )
+        boxStore.runInTx {
+            val entity = findByDocumentId(documentId) ?: DocumentContentEntity(documentId = documentId)
 
-        // attach parent if necessary
-        if (entity.documentEntity.isNull) {
-            val documentEntity = documentPersistenceManager.standardOperation()
-                .query(
-                    DocumentEntity_.id.equal(
-                        documentId, QueryBuilder.StringOrder.CASE_INSENSITIVE
-                    )
-                ).build().findUnique()
-            entity.documentEntity.target = documentEntity
+            entity.date = System.currentTimeMillis()
+            text?.let { entity.text = it }
+            selection?.let { entity.selection = it }
+            zoomLevel?.let { entity.zoomLevel = it }
+            panX?.let { entity.panX = it }
+            panY?.let { entity.panY = it }
+
+            val document = documentPersistenceManager.findById(documentId)
+            entity.documentEntity.target = document
+            standardOperation().put(entity)
+
+            // every observer of documents hears about this, so only when it changes something
+            if (document != null && document.content.targetId != entity.entityId) {
+                document.content.target = entity
+                documentPersistenceManager.standardOperation().put(document)
+            }
         }
-
-        // set values if present
-        entity.date = System.currentTimeMillis()
-        text?.let { entity.text = it }
-        selection?.let { entity.selection = it }
-        zoomLevel?.let { entity.zoomLevel = it }
-        panX?.let { entity.panX = it }
-        panY?.let { entity.panY = it }
-
-        standardOperation().put(entity)
     }
 
-    fun deleteAll() {
-        standardOperation().removeAll()
+    /** Removes the cached content of all documents other than the given ones */
+    fun deleteAllExcept(documentIds: Collection<String>) {
+        val kept = findIds(
+            DocumentContentEntity_.documentId.oneOf(documentIds.toTypedArray(), StringOrder.CASE_SENSITIVE)
+        )
+        standardOperation().removeByIds(findIds(DocumentContentEntity_.entityId.notOneOf(kept)).toList())
     }
 }

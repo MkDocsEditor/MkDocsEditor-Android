@@ -151,6 +151,7 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     // optional - Test helpers
     androidTestImplementation(libs.androidx.work.testing)
+    testImplementation(libs.androidx.work.testing)
 
     // Permissions
     implementation(libs.dexter)

@@ -3,27 +3,27 @@ package de.markusressel.mkdocseditor.data.persistence
 import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendConfigEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendConfigEntity_
+import io.objectbox.BoxStore
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class BackendConfigPersistenceManager @Inject constructor(
+    boxStore: BoxStore,
     private val backendAuthConfigPersistenceManager: BackendAuthConfigPersistenceManager,
     private val backendServerConfigPersistenceManager: BackendServerConfigPersistenceManager,
     private val mkdDocsWebConfigPersistenceManager: MkdDocsWebConfigPersistenceManager,
-) : PersistenceManagerBase<BackendConfigEntity>(BackendConfigEntity::class) {
+) : PersistenceManagerBase<BackendConfigEntity>(boxStore, BackendConfigEntity::class) {
 
     fun selectBackendConfig(id: Long) {
         boxStore.runInTx {
             // disable all others
-            standardOperation().query(BackendConfigEntity_.isSelected.equal(true)).build().find().forEach {
+            standardOperation().query(BackendConfigEntity_.isSelected.equal(true)).build().use { it.find() }.forEach {
                 standardOperation().put(it.apply { isSelected = false })
             }
 
             // enable the given one
-            val backendConfigEntity =
-                standardOperation().query(BackendConfigEntity_.entityId.equal(id)).build().findUnique()
-            requireNotNull(backendConfigEntity)
+            val backendConfigEntity = requireNotNull(standardOperation().get(id))
             standardOperation().put(backendConfigEntity.apply { isSelected = true })
         }
     }

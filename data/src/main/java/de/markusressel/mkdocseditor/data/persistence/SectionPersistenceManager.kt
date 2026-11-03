@@ -1,60 +1,36 @@
 package de.markusressel.mkdocseditor.data.persistence
 
 import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity_
-import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity_
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity_
-import io.objectbox.kotlin.toFlow
-import io.objectbox.query.QueryBuilder
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import io.objectbox.BoxStore
+import io.objectbox.query.QueryBuilder.StringOrder
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class SectionPersistenceManager @Inject constructor(
+    boxStore: BoxStore,
     private val documentPersistenceManager: DocumentPersistenceManager,
     private val documentContentPersistenceManager: DocumentContentPersistenceManager,
-    private val resourcePersistenceManager: ResourcePersistenceManager
-) : PersistenceManagerBase<SectionEntity>(SectionEntity::class) {
-
-    /**
-     * Get the root section
-     */
-    fun getRootSection(): SectionEntity? {
-        return findById("root")
-    }
+    private val resourcePersistenceManager: ResourcePersistenceManager,
+) : PersistenceManagerBase<SectionEntity>(boxStore, SectionEntity::class) {
 
     /**
      * Find a section by it's document id (not the database entity id)
      */
-    fun findById(sectionId: String): SectionEntity? {
-        return standardOperation().query(
-            SectionEntity_.id.equal(
-                sectionId, QueryBuilder.StringOrder.CASE_INSENSITIVE
-            )
-        ).build().findUnique()
-    }
+    fun findById(sectionId: String): SectionEntity? = findUnique(byId(sectionId))
 
     /**
      * Find a section by it's document id (not the database entity id)
      */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun findByIdFlow(sectionId: String): Flow<SectionEntity?> {
-        return standardOperation().query(
-            SectionEntity_.id.equal(
-                sectionId, QueryBuilder.StringOrder.CASE_INSENSITIVE
-            )
-        ).build().subscribe().toFlow().map { it.firstOrNull() }
-    }
+    fun findByIdFlow(sectionId: String): Flow<SectionEntity?> = observeFirst(byId(sectionId))
 
     /**
-     * Inserts sections (and their contents) if missing,
-     * updates any already existing entities,
-     * and finally removes entities that are not present in the given dataset
+     * Replaces the whole tree with the given one. The cached content of the documents stays, unless a document is not
+     * part of the new tree.
      */
     fun insertOrUpdateRoot(newData: SectionEntity) {
         boxStore.runInTx {
@@ -62,118 +38,48 @@ class SectionPersistenceManager @Inject constructor(
             resourcePersistenceManager.deleteAll()
             deleteAll()
 
-            addOrUpdate(newData)
-            // remove data that is not on the server anymore
-            deleteMissing(newData)
+            val documentIds = mutableListOf<String>()
+            insert(newData, documentIds)
+            documentContentPersistenceManager.deleteAllExcept(documentIds)
         }
     }
 
+    private fun insert(section: SectionEntity, documentIds: MutableList<String>) {
+        standardOperation().put(section)
 
-    private fun addOrUpdate(rootSection: SectionEntity) {
-        addOrUpdateEntityFields(section = rootSection)
-    }
-
-    private fun addOrUpdateEntityFields(
-        section: SectionEntity,
-        parentSection: SectionEntity? = null
-    ): SectionEntity {
-        // use existing section or insert new one
-        val sectionEntity =
-            standardOperation().query(
-                SectionEntity_.id.equal(section.id, QueryBuilder.StringOrder.CASE_INSENSITIVE)
-            ).build().findUnique() ?: run {
-                val newSection = standardOperation().get(standardOperation().put(section))
-                parentSection?.subsections?.add(newSection)
-                newSection
-            }
-
-        section.documents.forEach { newDocument ->
-            val documentEntity = documentPersistenceManager.standardOperation()
-                .query(
-                    DocumentEntity_.id.equal(newDocument.id, QueryBuilder.StringOrder.CASE_INSENSITIVE)
-                ).build().findUnique()?.apply {
-                    filesize = newDocument.filesize
-                    modtime = newDocument.modtime
-                } ?: newDocument
-            documentEntity.parentSection.target = sectionEntity
-
-            val documentContentEntity =
-                documentContentPersistenceManager.standardOperation().query(
-                    DocumentContentEntity_.documentId.equal(
-                        documentEntity.id,
-                        QueryBuilder.StringOrder.CASE_INSENSITIVE
-                    )
-                ).build().findUnique()
-            documentEntity.content.target = documentContentEntity
-
-            documentPersistenceManager.standardOperation().put(documentEntity)
+        section.documents.forEach { document ->
+            documentIds.add(document.id)
+            document.parentSection.target = section
+            insertWithContent(document)
         }
 
-        section.resources.forEach { newResource ->
-            val resourceEntity = resourcePersistenceManager.standardOperation()
-                .query(ResourceEntity_.id.equal(newResource.id, QueryBuilder.StringOrder.CASE_INSENSITIVE)).build()
-                .findUnique()?.apply {
-                    filesize = newResource.filesize
-                    modtime = newResource.modtime
-                } ?: newResource
-            resourceEntity.parentSection.target = sectionEntity
-
-            resourcePersistenceManager.standardOperation().put(resourceEntity)
+        section.resources.forEach { resource ->
+            resource.parentSection.target = section
+            resourcePersistenceManager.standardOperation().put(resource)
         }
 
         section.subsections.forEach { subsection ->
-            addOrUpdateEntityFields(subsection, sectionEntity)
+            subsection.parentSection.target = section
+            insert(subsection, documentIds)
         }
-        // insert updated section
-        standardOperation().put(sectionEntity)
-
-        return sectionEntity
     }
 
-    private fun deleteMissing(newData: SectionEntity) {
-        // TODO: this currently only works when the whole dataset is updated,
-        //  but it should also be possible to update only parts of the tree
+    private fun insertWithContent(document: DocumentEntity) {
+        val content = documentContentPersistenceManager.findByDocumentId(document.id)
+        document.content.target = content
+        documentPersistenceManager.standardOperation().put(document)
 
-        val sectionIds = mutableSetOf<String>()
-        val documentIds = mutableSetOf<String>()
-        val resourceIds = mutableSetOf<String>()
-        findIdsRecursive(newData, sectionIds, documentIds, resourceIds)
+        if (content != null) {
+            content.documentEntity.target = document
+            documentContentPersistenceManager.standardOperation().put(content)
+        }
+    }
 
-        // remove stale sections
-        val existingSectionIds = standardOperation()
-            .query(SectionEntity_.id.oneOf(sectionIds.toTypedArray(), QueryBuilder.StringOrder.CASE_INSENSITIVE))
-            .build().findIds()
-
-        // find others
-        val missingSectionIds = standardOperation()
-            .query(SectionEntity_.entityId.notOneOf(existingSectionIds))
-            .build().findIds()
-
-        standardOperation().removeByIds(missingSectionIds.toList())
-
-        // remove stale documents
-        val existingDocumentIds = documentPersistenceManager.standardOperation()
-            .query(DocumentEntity_.id.oneOf(documentIds.toTypedArray(), QueryBuilder.StringOrder.CASE_INSENSITIVE))
-            .build().findIds()
-
-        // find others
-        val missingDocumentIds = documentPersistenceManager.standardOperation()
-            .query(DocumentEntity_.entityId.notOneOf(existingDocumentIds))
-            .build().findIds()
-
-        documentPersistenceManager.standardOperation().removeByIds(missingDocumentIds.toList())
-
-        // remove stale resources
-        val existingResourceIds = resourcePersistenceManager.standardOperation()
-            .query(ResourceEntity_.id.oneOf(resourceIds.toTypedArray(), QueryBuilder.StringOrder.CASE_INSENSITIVE))
-            .build().findIds()
-
-        // find others
-        val missingResourceIds = resourcePersistenceManager.standardOperation()
-            .query(ResourceEntity_.entityId.notOneOf(existingResourceIds))
-            .build().findIds()
-
-        resourcePersistenceManager.standardOperation().removeByIds(missingResourceIds.toList())
+    /** Adds a section the server just created to its parent */
+    fun addSubsection(parentSection: SectionEntity, section: SectionEntity) {
+        section.parentSection.target = parentSection
+        parentSection.subsections.add(section)
+        standardOperation().put(parentSection)
     }
 
     /**
@@ -182,35 +88,18 @@ class SectionPersistenceManager @Inject constructor(
      * @param sectionId ID of the section
      */
     fun delete(sectionId: String) {
-        val existingSectionIds = standardOperation()
-            .query(SectionEntity_.id.equal(sectionId, QueryBuilder.StringOrder.CASE_INSENSITIVE))
-            .build().findIds()
-
-        standardOperation().removeByIds(existingSectionIds.toList())
+        standardOperation().removeByIds(findIds(byId(sectionId)).toList())
     }
 
-    fun deleteAll() {
-        standardOperation().removeAll()
-    }
-
-    companion object {
-
-        /**
-         * Recursive method to find all section, document and resource ids
-         */
-        private fun findIdsRecursive(
-            section: SectionEntity,
-            sectionIds: MutableSet<String>,
-            documentIds: MutableSet<String>,
-            resourceIds: MutableSet<String>
-        ) {
-            sectionIds.add(section.id)
-            documentIds.addAll(section.documents.map { it.id })
-            resourceIds.addAll(section.resources.map { it.id })
-            section.subsections.forEach {
-                findIdsRecursive(it, sectionIds, documentIds, resourceIds)
-            }
+    /** Removes the whole tree and all cached content */
+    fun deleteTreeAndContent() {
+        boxStore.runInTx {
+            documentContentPersistenceManager.deleteAll()
+            resourcePersistenceManager.deleteAll()
+            documentPersistenceManager.deleteAll()
+            deleteAll()
         }
     }
 
+    private fun byId(sectionId: String) = SectionEntity_.id.equal(sectionId, StringOrder.CASE_SENSITIVE)
 }

@@ -14,9 +14,6 @@ import de.markusressel.kutepreferences.core.preference.section.KuteSection
 import de.markusressel.kutepreferences.core.preference.select.KuteSingleSelectStringPreference
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.application.triggerAppRebirth
-import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
-import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
 import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.event.EventBusManager
@@ -39,9 +36,6 @@ class KutePreferencesHolder @Inject constructor(
     private val iconHelper: IconHandler,
     private val dataProvider: KutePreferenceDataProvider,
     private val sectionPersistenceManager: SectionPersistenceManager,
-    private val documentPersistenceManager: DocumentPersistenceManager,
-    private val documentContentPersistenceManager: DocumentContentPersistenceManager,
-    private val resourcePersistenceManager: ResourcePersistenceManager,
     private val eventBusManager: EventBusManager,
 ) {
 
@@ -81,10 +75,7 @@ class KutePreferencesHolder @Inject constructor(
             title = context.getString(R.string.clear_offline_cache_title),
             description = context.getString(R.string.clear_offline_cache_description),
             onClick = {
-                documentContentPersistenceManager.standardOperation().removeAll()
-                resourcePersistenceManager.standardOperation().removeAll()
-                documentPersistenceManager.standardOperation().removeAll()
-                sectionPersistenceManager.standardOperation().removeAll()
+                sectionPersistenceManager.deleteTreeAndContent()
                 context.toast("DB cleared")
             })
     }
