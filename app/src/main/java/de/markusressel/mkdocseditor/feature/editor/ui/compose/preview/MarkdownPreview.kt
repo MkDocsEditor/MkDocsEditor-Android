@@ -85,6 +85,14 @@ internal fun MarkdownPreview(
             settings.allowFileAccess = false
             settings.allowContentAccess = false
             settings.domStorageEnabled = false
+            settings.setSupportZoom(true)
+            settings.builtInZoomControls = true
+            // only the pinch, without the buttons on top of the page
+            settings.displayZoomControls = false
+            settings.setSupportZoom(true)
+            settings.builtInZoomControls = true
+            // only the pinch, without the buttons on top of the page
+            settings.displayZoomControls = false
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
                     val url = request.url
