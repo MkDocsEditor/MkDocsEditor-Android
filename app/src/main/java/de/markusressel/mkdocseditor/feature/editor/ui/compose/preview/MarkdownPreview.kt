@@ -73,7 +73,7 @@ internal fun MarkdownPreview(
     val currentOnLinkClicked by rememberUpdatedState(onLinkClicked)
     val currentVisible by rememberUpdatedState(visible)
 
-    val state = remember { PreviewState() }
+    val state = remember { PreviewRenderState() }
 
     val webView = remember {
         WebView(context).apply {
@@ -108,11 +108,6 @@ internal fun MarkdownPreview(
 
                 // links are handled by the page script; nothing navigates the page away
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest) = true
-
-                override fun onPageFinished(view: WebView, url: String?) {
-                    state.loaded = true
-                    state.render(view, currentText)
-                }
             }
             val mainHandler = Handler(Looper.getMainLooper())
             addJavascriptInterface(object {
@@ -120,17 +115,25 @@ internal fun MarkdownPreview(
                 fun openLink(href: String) {
                     mainHandler.post { currentOnLinkClicked(href) }
                 }
+
+                @JavascriptInterface
+                fun pageReady() {
+                    mainHandler.post { state.onPageReady(currentText, ::renderMarkdown) }
+                }
             }, "MkDocsPreviewBridge")
         }
     }
 
     DisposableEffect(webView) {
-        onDispose { webView.destroy() }
+        onDispose {
+            state.dispose()
+            webView.destroy()
+        }
     }
 
     // a new page for another folder or theme; the text follows when it has loaded
     LaunchedEffect(sectionPath, theme) {
-        state.reset()
+        state.onPageLoading()
         webView.loadDataWithBaseURL(
             PreviewPage.baseUrl(sectionPath),
             PreviewPage.html(theme),
@@ -143,31 +146,19 @@ internal fun MarkdownPreview(
     // re-render at most every 150 ms while typing
     LaunchedEffect(text) {
         delay(150)
-        if (state.loaded && currentVisible) state.render(webView, text)
+        if (currentVisible) state.show(text, webView::renderMarkdown)
     }
 
     // nobody sees the page while typing without a split, so it catches up when it comes back
     LaunchedEffect(visible) {
-        if (visible && state.loaded) state.render(webView, currentText)
+        if (visible) state.show(currentText, webView::renderMarkdown)
     }
 
     AndroidView(modifier = modifier, factory = { webView })
 }
 
-private class PreviewState {
-    var loaded = false
-    private var rendered: String? = null
-
-    fun reset() {
-        loaded = false
-        rendered = null
-    }
-
-    fun render(webView: WebView, text: String) {
-        if (rendered == text) return
-        rendered = text
-        webView.evaluateJavascript("MkDocsPreview.render(${JSONObject.quote(text)})", null)
-    }
+private fun WebView.renderMarkdown(text: String) {
+    evaluateJavascript("MkDocsPreview.render(${JSONObject.quote(text)})", null)
 }
 
 private fun notFound() =
