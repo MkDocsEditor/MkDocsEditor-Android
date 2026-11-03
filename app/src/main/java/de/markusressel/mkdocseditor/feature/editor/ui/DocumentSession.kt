@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.dropWhile
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -192,6 +194,16 @@ internal class DocumentSession(
     ) { localCopyAvailable, readOnly ->
         localCopyAvailable && !readOnly
     }.stateIn(scope, SharingStarted.Eagerly, initialValue = false)
+
+    /**
+     * Waits until opening the document has come to an end without a connection or without a text. After a connection
+     * the text is on its way, and it ends the loading itself.
+     */
+    suspend fun awaitOpeningFailed() {
+        state.dropWhile { !it.loading }.first { state ->
+            state.noOfflineVersion || (!state.loading && _connectionStatus.value?.connected != true)
+        }
+    }
 
     private var syncedDocument: SyncedDocument? = null
 

@@ -84,6 +84,8 @@ internal fun CodeEditorScreenContent(
     val configuration = LocalConfiguration.current
     val splitMode = uiState.splitMode ?: defaultSplitMode(configuration.screenWidthDp, configuration.screenHeightDp)
 
+    val editorShown = uiState.editModeActive || uiState.editModeOpening
+
     // at the start of the animation, so the keyboard does not wait for the editor to leave
     val focusManager = LocalFocusManager.current
     LaunchedEffect(uiState.editModeActive) {
@@ -185,9 +187,9 @@ internal fun CodeEditorScreenContent(
 
                 EditorPanes(
                     modifier = Modifier.weight(1f),
-                    showEditor = uiState.editModeActive,
+                    showEditor = editorShown,
                     // reading shows the page; editing shows it only if the user or a wide window wants it
-                    showPreview = !uiState.editModeActive || splitMode != SplitMode.Off,
+                    showPreview = !editorShown || splitMode != SplitMode.Off,
                     splitMode = splitMode,
                     ratio = uiState.splitRatio,
                     onRatioChange = { onUiEvent(CodeEditorViewModel.UiEvent.SplitRatioChanged(it)) },
@@ -197,13 +199,13 @@ internal fun CodeEditorScreenContent(
                             modifier = Modifier.fillMaxSize(),
                             state = editorState,
                             remotePeers = remotePeers,
-                            readOnly = false,
+                            readOnly = !uiState.editModeActive,
                         )
                     },
                     preview = {
                         MarkdownPreview(
                             modifier = Modifier.fillMaxSize(),
-                            visible = !uiState.editModeActive || splitMode != SplitMode.Off,
+                            visible = !editorShown || splitMode != SplitMode.Off,
                             text = editorState.text,
                             sectionPath = uiState.previewSectionPath,
                             resourceLoader = previewResourceLoader,

@@ -32,6 +32,7 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.SplitMode
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import androidx.compose.runtime.remember
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.test.performClick
 import org.junit.Assert.assertEquals
@@ -172,6 +173,45 @@ class EditorScreenStateTest {
         composeRule.mainClock.autoAdvance = true
         composeRule.waitForIdle()
         composeRule.onNodeWithContentDescription("Bold").assertDoesNotExist()
+    }
+
+    /** any text field: unlike [editor] also one that takes no input */
+    private val textField = SemanticsMatcher.keyIsDefined(SemanticsProperties.EditableText)
+
+    @Test
+    fun `while the edit mode opens the editor shows and takes no input yet`() {
+        show(CodeEditorViewModel.UiState(editModeOpening = true))
+
+        composeRule.onNode(textField).assertIsDisplayed()
+        composeRule.onNode(editor).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the editor takes input as soon as the edit mode is open`() {
+        var uiState by mutableStateOf(CodeEditorViewModel.UiState(editModeOpening = true))
+        composeRule.setContent {
+            MkDocsEditorTheme {
+                Navigator(StatefulEditorScreen { uiState })
+            }
+        }
+
+        uiState = CodeEditorViewModel.UiState(editModeActive = true)
+
+        composeRule.onNode(editor).assertIsDisplayed()
+    }
+
+    @Test
+    fun `the page comes up when the edit mode does not open after all`() {
+        var uiState by mutableStateOf(CodeEditorViewModel.UiState(editModeOpening = true))
+        composeRule.setContent {
+            MkDocsEditorTheme {
+                Navigator(StatefulEditorScreen { uiState })
+            }
+        }
+
+        uiState = CodeEditorViewModel.UiState()
+
+        composeRule.onNode(textField).assertDoesNotExist()
     }
 
     @Test
