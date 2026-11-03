@@ -43,4 +43,7 @@
       window.scrollTo(0, target ? target.offsetTop - 8 : 0)
     },
   }
+
+  // the last script of the page: from here on the app can render
+  if (window.MkDocsPreviewBridge) MkDocsPreviewBridge.pageReady()
 })()
