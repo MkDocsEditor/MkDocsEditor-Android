@@ -3,13 +3,15 @@ package de.markusressel.mkdocseditor.data.persistence
 import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentLayoutEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentLayoutEntity_
-import io.objectbox.query.QueryBuilder
+import io.objectbox.BoxStore
+import io.objectbox.query.QueryBuilder.StringOrder
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class DocumentLayoutPersistenceManager @Inject constructor() :
-    PersistenceManagerBase<DocumentLayoutEntity>(DocumentLayoutEntity::class) {
+class DocumentLayoutPersistenceManager @Inject constructor(
+    boxStore: BoxStore,
+) : PersistenceManagerBase<DocumentLayoutEntity>(boxStore, DocumentLayoutEntity::class) {
 
     /** @return the saved ratio of the document, null if the user never changed it */
     fun getSplitRatio(documentId: String): Float? = find(documentId)?.splitRatio
@@ -20,7 +22,6 @@ class DocumentLayoutPersistenceManager @Inject constructor() :
         standardOperation().put(entity)
     }
 
-    private fun find(documentId: String): DocumentLayoutEntity? = standardOperation().query(
-        DocumentLayoutEntity_.documentId.equal(documentId, QueryBuilder.StringOrder.CASE_SENSITIVE)
-    ).build().use { it.findUnique() }
+    private fun find(documentId: String): DocumentLayoutEntity? =
+        findUnique(DocumentLayoutEntity_.documentId.equal(documentId, StringOrder.CASE_SENSITIVE))
 }

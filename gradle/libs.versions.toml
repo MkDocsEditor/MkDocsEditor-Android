@@ -195,6 +195,7 @@ moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "mosh
 objectbox-processor = { module = "io.objectbox:objectbox-processor", version.ref = "objectboxVersion" }
 objectbox-kotlin = { module = "io.objectbox:objectbox-kotlin", version.ref = "objectboxVersion" }
 objectbox-android = { module = "io.objectbox:objectbox-android", version.ref = "objectboxVersion" }
+objectbox-linux = { module = "io.objectbox:objectbox-linux", version.ref = "objectboxVersion" }
 objectbox-gradle-plugin = { group = "io.objectbox", name = "objectbox-gradle-plugin", version.ref = "objectboxVersion" }
 
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }

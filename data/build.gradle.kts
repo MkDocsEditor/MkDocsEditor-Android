@@ -35,6 +35,8 @@ dependencies {
     // KSP is NOT supported atm, see: https://github.com/objectbox/objectbox-java/issues/1075
     kapt(libs.objectbox.processor)
     compileOnly(libs.objectbox.gradle.plugin)
+    // the database itself for unit tests on the JVM, so they run against the real thing
+    testImplementation(libs.objectbox.linux)
 
     // Store
 //    api(libs.store4)

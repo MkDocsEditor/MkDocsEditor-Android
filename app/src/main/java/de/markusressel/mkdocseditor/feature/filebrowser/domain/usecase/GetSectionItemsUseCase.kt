@@ -15,12 +15,6 @@ internal class GetSectionItemsUseCase @Inject constructor(
     operator fun invoke(
         sectionId: String,
     ): Flow<StoreReadResponse<SectionData>> =
-//        dataRepository.sectionMutableStore.stream<SectionData>(
-//            StoreReadRequest.cached(
-//                key = sectionId,
-//                refresh = refresh
-//            )
-//        )
         dataRepository.sectionStore.stream(
             StoreReadRequest.freshWithFallBackToSourceOfTruth(
                 key = sectionId
