@@ -139,12 +139,15 @@ internal class CodeEditorViewModel @Inject constructor(
 
     init {
         launch {
+            session.showsLoading.collect { loading -> _uiState.update { old -> old.copy(loading = loading) } }
+        }
+
+        launch {
             session.state.collect { state ->
                 _uiState.update { old ->
                     old.copy(
                         documentId = state.documentId,
                         title = state.title,
-                        loading = state.loading,
                         isDocumentDeletedOnServer = state.deletedOnServer,
                         isNoOfflineVersionVisible = state.noOfflineVersion,
                     )

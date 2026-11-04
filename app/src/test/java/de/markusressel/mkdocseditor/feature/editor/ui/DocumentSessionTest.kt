@@ -217,6 +217,20 @@ class DocumentSessionTest {
     }
 
     @Test
+    fun `waiting for the connection shows no loading when a local copy is shown`() = test { f ->
+        f.environment.localCopyText = "my offline edits"
+        f.open()
+        assertTrue(f.state.loading)
+        assertFalse(f.session.showsLoading.value)
+    }
+
+    @Test
+    fun `waiting for the connection shows the loading without a local copy`() = test { f ->
+        f.open()
+        assertTrue(f.session.showsLoading.value)
+    }
+
+    @Test
     fun `a local copy wins over the cached text and can be edited right away`() = test { f ->
         f.environment.localCopyText = "my offline edits"
         f.environment.cached = CachedDocument("Title", "cached text")
