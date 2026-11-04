@@ -1,21 +1,25 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui.compose
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
@@ -31,7 +35,6 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.filebrowser.data.SectionItem
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
-import kotlinx.coroutines.flow.collectLatest
 
 /** the longest a folder name gets, so that a long one does not push away the others */
 private val MAX_CHIP_WIDTH = 200.dp
@@ -49,10 +52,9 @@ internal fun SectionPath(
     onSectionClicked: (SectionItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val scrollState = rememberScrollState()
+    val listState = rememberLazyListState()
     LaunchedEffect(path) {
-        // the new width is only known after the layout, and changes when the chips do
-        snapshotFlow { scrollState.maxValue }.collectLatest { scrollState.animateScrollTo(it) }
+        if (path.size > 1) listState.animateScrollToItem(path.lastIndex - 1)
     }
 
     Row(
@@ -73,23 +75,31 @@ internal fun SectionPath(
             )
         }
 
-        Row(
-            modifier = Modifier
-                .weight(1F)
-                .horizontalScroll(scrollState),
+        LazyRow(
+            modifier = Modifier.weight(1F),
+            state = listState,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            path.drop(1).forEachIndexed { index, section ->
-                Image(
-                    modifier = Modifier.size(16.dp),
-                    asset = MaterialDesignIconic.Icon.gmi_chevron_right,
-                    colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer),
-                )
-                PathChip(
-                    section = section,
-                    isCurrent = index == path.lastIndex - 1,
-                    onClick = onSectionClicked,
-                )
+            itemsIndexed(path.drop(1), key = { _, section -> section.id }) { index, section ->
+                Row(
+                    modifier = Modifier.animateItem(
+                        fadeInSpec = tween(FOLDER_ANIMATION_MS),
+                        placementSpec = tween(FOLDER_ANIMATION_MS),
+                        fadeOutSpec = tween(FOLDER_ANIMATION_MS),
+                    ),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Image(
+                        modifier = Modifier.size(16.dp),
+                        asset = MaterialDesignIconic.Icon.gmi_chevron_right,
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimaryContainer),
+                    )
+                    PathChip(
+                        section = section,
+                        isCurrent = index == path.lastIndex - 1,
+                        onClick = onSectionClicked,
+                    )
+                }
             }
         }
     }
@@ -103,6 +113,22 @@ private fun PathChip(
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(8.dp)
+    val colors = MaterialTheme.colorScheme
+    val color by animateColorAsState(
+        targetValue = if (isCurrent) colors.primary else colors.secondaryContainer,
+        animationSpec = tween(FOLDER_ANIMATION_MS),
+        label = "chip color",
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (isCurrent) colors.onPrimary else colors.onSecondaryContainer,
+        animationSpec = tween(FOLDER_ANIMATION_MS),
+        label = "chip content color",
+    )
+    val padding by animateDpAsState(
+        targetValue = if (isCurrent) 2.dp else 0.dp,
+        animationSpec = tween(FOLDER_ANIMATION_MS),
+        label = "chip padding",
+    )
     val content: @Composable () -> Unit = {
         Text(
             modifier = Modifier
@@ -118,19 +144,19 @@ private fun PathChip(
 
     if (isCurrent) {
         Surface(
-            modifier = modifier.padding(2.dp),
+            modifier = modifier.padding(padding),
             shape = shape,
-            color = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
+            color = color,
+            contentColor = contentColor,
             content = content,
         )
     } else {
         Surface(
-            modifier = modifier,
+            modifier = modifier.padding(padding),
             onClick = { onClick(section) },
             shape = shape,
-            color = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            color = color,
+            contentColor = contentColor,
             content = content,
         )
     }

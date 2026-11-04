@@ -176,7 +176,7 @@ private fun folderTransition(from: String?, to: String?, path: List<SectionItem>
         (fadeOut(fade) + slideOutHorizontally(offset) { -direction * it / FOLDER_SLIDE_FRACTION })
 }
 
-private const val FOLDER_ANIMATION_MS = 250
+internal const val FOLDER_ANIMATION_MS = 250
 private const val FOLDER_SLIDE_FRACTION = 10
 
 /** the scroll state while the content of the folder is unknown, so the state of a folder keeps its position */

@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -85,7 +84,8 @@ class SectionPathTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("folder12").assertIsDisplayed()
-        composeRule.onNodeWithText("folder1").assertIsNotDisplayed()
+        // the list only composes what fits on the screen
+        composeRule.onNodeWithText("folder1").assertDoesNotExist()
     }
 
     @Test
@@ -98,6 +98,22 @@ class SectionPathTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("folder11").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a folder that was left fades out`() {
+        show(items("guide"))
+        composeRule.waitForIdle()
+
+        composeRule.mainClock.autoAdvance = false
+        path = items()
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.onNodeWithText("guide").assertExists()
+
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("guide").assertDoesNotExist()
     }
 
     @Test
