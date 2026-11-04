@@ -194,6 +194,14 @@ internal class DocumentSession(
     }.stateIn(scope, SharingStarted.Eagerly, initialValue = false)
 
     /**
+     * Whether the user waits for something. With a local copy the text is there already, and the
+     * connection icon shows the state of the connection.
+     */
+    val showsLoading: StateFlow<Boolean> = combine(_state, localCopyAvailable) { state, localCopyAvailable ->
+        state.loading && !localCopyAvailable
+    }.stateIn(scope, SharingStarted.Eagerly, initialValue = false)
+
+    /**
      * Waits until opening the document has come to an end without a connection or without a text. After a connection
      * the text is on its way, and it ends the loading itself.
      */
