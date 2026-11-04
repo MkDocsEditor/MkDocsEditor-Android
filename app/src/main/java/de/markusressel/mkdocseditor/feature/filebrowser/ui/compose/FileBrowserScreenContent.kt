@@ -4,10 +4,13 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -51,6 +54,7 @@ internal fun FileBrowserScreenContent(
         ) {
             ErrorCard(
                 modifier = Modifier
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
                     .padding(16.dp)
                     .wrapContentSize(),
                 text = uiState.error ?: "Error",
