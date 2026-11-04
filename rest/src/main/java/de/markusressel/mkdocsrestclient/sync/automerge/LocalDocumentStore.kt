@@ -29,6 +29,9 @@ class StoredDocument(
     /** the server this copy syncs with, null in old copies that were not written since */
     val origin: String? = null,
 ) {
+    /** @return true if both servers are known and differ; an old copy without an origin counts as this server's */
+    fun isFromOtherServer(server: String?): Boolean = origin != null && server != null && origin != server
+
     /** true when the copy holds changes the server is not known to have */
     val hasUnsyncedChanges: Boolean
         get() = (heads ?: AutomergeTextDocument.load(documentState).headsHex).toSet() != serverHeads.toSet()
@@ -53,6 +56,9 @@ interface LocalDocumentStore {
 
     /** Reads all copies once to fill [unsyncedIds], so this is not called on the main thread */
     fun scanUnsynced() {}
+
+    /** @return the store that keeps serving the same data, for a session that must outlive a switch of the server */
+    fun pinned(): LocalDocumentStore = this
 
     /**
      * The ids of all stored documents
@@ -233,6 +239,28 @@ class FileDocumentStore(
         }
         trackUnsynced(documentId, false)
         Timber.w("Kept the local copy of $documentId aside as $backup")
+    }
+
+    /** @param origin only look at copies of this server, null for all copies. @return the ids with unsynced changes */
+    @Synchronized
+    fun unsyncedOf(origin: String?): List<String> = ids().filter { id ->
+        load(id)?.let { (origin == null || it.origin == origin) && isUnsynced(id, it) } == true
+    }
+
+    /** Deletes the copies of a removed server. Copies of other servers and old ones without an origin stay. */
+    @Synchronized
+    fun deleteCopiesOf(origin: String) {
+        ids().filter { load(it)?.origin == origin }.forEach { id ->
+            fileFor(id).delete()
+            trackUnsynced(id, false)
+        }
+    }
+
+    /** Deletes all copies and backups in this store */
+    @Synchronized
+    fun deleteAll() {
+        directory.deleteRecursively()
+        _unsyncedIds.value = emptySet()
     }
 
     private fun fileFor(documentId: String): File {

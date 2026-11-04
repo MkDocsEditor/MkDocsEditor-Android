@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.data.persistence
 
+import de.markusressel.mkdocseditor.data.persistence.base.WikiDatabase
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.MyObjectBox
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
@@ -15,6 +16,7 @@ abstract class PersistenceTestBase {
 
     private lateinit var directory: File
     protected lateinit var boxStore: BoxStore
+    protected lateinit var database: WikiDatabase
 
     protected lateinit var documents: DocumentPersistenceManager
     protected lateinit var contents: DocumentContentPersistenceManager
@@ -25,10 +27,11 @@ abstract class PersistenceTestBase {
     fun openDatabase() {
         directory = Files.createTempDirectory("objectbox-test").toFile()
         boxStore = MyObjectBox.builder().directory(directory).build()
-        documents = DocumentPersistenceManager(boxStore)
-        contents = DocumentContentPersistenceManager(boxStore, documents)
-        resources = ResourcePersistenceManager(boxStore)
-        sections = SectionPersistenceManager(boxStore, documents, contents, resources)
+        database = WikiDatabase(boxStore)
+        documents = DocumentPersistenceManager(database)
+        contents = DocumentContentPersistenceManager(database, documents)
+        resources = ResourcePersistenceManager(database)
+        sections = SectionPersistenceManager(database, documents, contents, resources)
     }
 
     @AfterEach

@@ -4,6 +4,8 @@ import de.markusressel.mkdocseditor.feature.filebrowser.data.SectionItem
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.FileBrowserViewModel.Companion.ROOT_SECTION_ID
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -120,5 +122,12 @@ class SectionNavigatorTest {
 
         assertEquals(ROOT_SECTION_ID, navigator.currentSectionId.value)
         assertEquals(listOf(rootItem), path())
+    }
+
+    @Test
+    fun `only a change to another server counts as a switch`() = runTest {
+        val switches = flowOf(null, 1L, 1L, null, 1L, 2L, null, 3L).switchesOfServer().toList()
+
+        assertEquals(listOf(2L, 3L), switches)
     }
 }

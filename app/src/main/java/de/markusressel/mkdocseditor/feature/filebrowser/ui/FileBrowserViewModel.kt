@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import org.mobilenativefoundation.store.store5.StoreReadResponse
@@ -168,6 +169,14 @@ internal class FileBrowserViewModel @Inject constructor(
                 _uiState.update { old ->
                     old.copy(lastSync = config?.let { syncStatusStore.lastSync(it.id) }, lastSyncFailed = false)
                 }
+            }
+        }
+
+        launch {
+            getCurrentBackendConfigFlowUseCase().map { it?.id }.switchesOfServer().collect {
+                // the open folder belongs to the previous server
+                navigator.open(ROOT_SECTION_ID)
+                reload()
             }
         }
 

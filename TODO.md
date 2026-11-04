@@ -9,11 +9,10 @@ clients show the same thing.
 | Area | Entry | Kind of work | Needs another repo |
 |---|---|---|---|
 | Editor | [Opening a document when the backend is unavailable](#opening-a-document-when-the-backend-is-unavailable) | Bug and small feature | No |
-| Editor | [Author highlighting](#author-highlighting) | Open questions left | Maybe KodeEditor |
+| Editor | [Author highlighting](#author-highlighting) | Open questions left | No |
 | File browser | [Entries lack context](#file-browser-entries-lack-context) | Design and UI | Maybe the backend |
 | File browser | [Transitions between sections](#transitions-between-sections) | Design and UI | No |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Feature | Yes, the backend and the web client |
-| App-wide | [Error handling](#error-handling) | Move the other screens to the spec | No |
 | App-wide | [Sync indicator](#sync-indicator) | Small feature | No |
 | App-wide | [Settings](#settings) | Few candidates left | Maybe KutePreferences |
 | Accounts | [Onboarding](#onboarding) | Optional feature tour | No |
@@ -42,9 +41,10 @@ Order that fits how they depend on each other (Idea):
 - The bar is `LOADING_INDICATOR_TAG` in `CodeEditorScreenContent`, driven by `DocumentSession.State.loading`.
 - #121 hides the bar while a local copy is showing (`DocumentSession.showsLoading`). `State.loading` itself is unchanged,
   and without a local copy the bar can still last long.
-- `WebsocketConnectionHandler` now gives up on an upgrade that never gets an answer after 15 s (a proxy without a
-  backend, for example). `DocumentSession` ends the loading when the connection closes, as far as the code reads. Not
-  tried against a real proxy. Whether no network or a blocked route also wait long is still to check.
+- Tried on an emulator on 2026-11-04, with the server down and in airplane mode. With a local copy the page opens at once
+  without a bar. Without one, a banner says the page isn't on this device yet, within 3 seconds.
+- `WebsocketConnectionHandler` gives up on an upgrade that never gets an answer after 15 s. A blocked route and a real
+  proxy are not tried.
 
 **Out-of-date warning**
 
@@ -79,10 +79,7 @@ is on permanently. Three modes:
 
 **Open questions**
 
-- The strip is only on the first row of a wrapped line, because that is what `KodeEditorGutterColumn` draws. KodeEditor
-  has `GutterCell.fullHeight` ready on its branch `gutter-cell-full-height`, not merged yet. Once it is, adopt the commit
-  and draw with it; `drawCell` is then also called for lines whose top is above the window.
-- Is a toggle in the editor needed as well? The web client has only that, as on/off and off by default.
+- Is a toggle in the editor needed as well?
 - Colors of users who were never online during the session fall back to one derived from the username.
 
 ---
@@ -95,7 +92,6 @@ is on permanently. Three modes:
 
 - There is not much information to decide which folder might be interesting and why. I like how minimalistic it is,
   but the lack of context feels like bad UX.
-- All the text is the same green, and the numbers are green too. That feels like bad UI.
 
 **Where to start**
 
@@ -253,20 +249,6 @@ If notifications get annoying, people turn them off, and the goal is lost.
 
 # App-wide
 
-## Error handling
-
-**What I want**
-
-- We have a big error banner. It is not bad, but it is badly placed (below system bars on some systems with camera
-  cutouts), and probably not always the best way to handle errors.
-- Write a design spec of how we handle errors and why, based on what we have now and on what is considered good UX on
-  Android in 2026.
-
-**State**
-
-- The spec is `docs/error-handling.md`, and its migration list is what's left to do.
-- The file browser follows it: no `ErrorCard` and no raw exception text (`Throwable.userMessage()`).
-
 ## Sync indicator
 
 **What I want**
@@ -303,7 +285,6 @@ browser loads only, and `SyncStatusStore` remembers the time per server.
 
 **Candidates left (Idea)**
 
-- author highlighting mode, once that exists
 - connect automatically: `connectsAutomatically` follows "always open in edit mode" today
 - default split mode: the window size decides today, and that seems fine
 

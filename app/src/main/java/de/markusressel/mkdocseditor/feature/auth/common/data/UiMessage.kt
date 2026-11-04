@@ -7,6 +7,7 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.auth.api.AuthApiException
 import de.markusressel.mkdocseditor.auth.api.AuthErrorCode
 import de.markusressel.mkdocseditor.auth.domain.NotSignedInException
+import timber.log.Timber
 import java.io.IOException
 
 /**
@@ -26,9 +27,15 @@ data class UiMessage(
 fun Throwable.toAuthMessage(): UiMessage = when (this) {
     is AuthApiException -> toAuthMessage()
     is NotSignedInException -> UiMessage(R.string.auth_error_not_signed_in)
-    is CredentialException -> UiMessage(R.string.auth_error_credential_provider, listOf(message.orEmpty()))
-    is IOException -> UiMessage(R.string.auth_error_network, listOf(message ?: javaClass.simpleName))
-    else -> UiMessage(R.string.auth_error_unknown, listOf(message ?: javaClass.simpleName))
+    // the text of an exception is for developers, see docs/error-handling.md
+    is CredentialException -> logged(R.string.auth_error_credential_provider)
+    is IOException -> logged(R.string.auth_error_network)
+    else -> logged(R.string.auth_error_unknown)
+}
+
+private fun Throwable.logged(@StringRes message: Int): UiMessage {
+    Timber.w(this)
+    return UiMessage(message)
 }
 
 private fun AuthApiException.toAuthMessage(): UiMessage = when (code) {

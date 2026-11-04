@@ -1,18 +1,18 @@
 package de.markusressel.mkdocseditor.data.persistence
 
 import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
+import de.markusressel.mkdocseditor.data.persistence.base.WikiDatabase
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentContentEntity_
-import io.objectbox.BoxStore
 import io.objectbox.query.QueryBuilder.StringOrder
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class DocumentContentPersistenceManager @Inject constructor(
-    boxStore: BoxStore,
+    database: WikiDatabase,
     private val documentPersistenceManager: DocumentPersistenceManager,
-) : PersistenceManagerBase<DocumentContentEntity>(boxStore, DocumentContentEntity::class) {
+) : PersistenceManagerBase<DocumentContentEntity>(database, DocumentContentEntity::class) {
 
     fun findByDocumentId(documentId: String): DocumentContentEntity? =
         findUnique(DocumentContentEntity_.documentId.equal(documentId, StringOrder.CASE_SENSITIVE))

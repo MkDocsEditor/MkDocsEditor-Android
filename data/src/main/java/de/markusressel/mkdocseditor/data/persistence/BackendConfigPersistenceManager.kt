@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.data.persistence
 
+import de.markusressel.mkdocseditor.data.persistence.base.FixedDatabase
 import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendConfigEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendConfigEntity_
@@ -13,7 +14,7 @@ class BackendConfigPersistenceManager @Inject constructor(
     private val backendAuthConfigPersistenceManager: BackendAuthConfigPersistenceManager,
     private val backendServerConfigPersistenceManager: BackendServerConfigPersistenceManager,
     private val mkdDocsWebConfigPersistenceManager: MkdDocsWebConfigPersistenceManager,
-) : PersistenceManagerBase<BackendConfigEntity>(boxStore, BackendConfigEntity::class) {
+) : PersistenceManagerBase<BackendConfigEntity>(FixedDatabase(boxStore), BackendConfigEntity::class) {
 
     fun selectBackendConfig(id: Long) {
         boxStore.runInTx {

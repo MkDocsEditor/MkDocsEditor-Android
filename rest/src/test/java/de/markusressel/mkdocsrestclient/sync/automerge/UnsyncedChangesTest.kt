@@ -1,10 +1,14 @@
 package de.markusressel.mkdocsrestclient.sync.automerge
 
 import kotlin.io.path.createTempDirectory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import java.io.File
 
@@ -125,5 +129,99 @@ class UnsyncedChangesTest {
 
         store.keepAside("moved")
         assertEquals(emptySet(), store.unsyncedIds.value)
+    }
+
+    @Test
+    fun `unsynced edits never reach another server with the same document id`() {
+        val first = FakeSyncServer("first")
+        val firstSession = session(first)
+        val connection = first.connect(firstSession)
+        first.pump()
+        first.disconnect(connection)
+        assertTrue(firstSession.onLocalTextChanged("first offline"))
+        firstSession.persist()
+
+        val second = FakeSyncServer("second", documentId = first.documentId)
+        second.restartWithLostState("second")
+        val session = DocumentSyncSession(second.documentId, store, Reports(), origin = "server:2")
+        second.connect(session)
+        second.pump()
+
+        assertEquals("second", session.text)
+        assertEquals("second", second.document.text)
+
+        session.persist()
+        assertEquals("server:2", store.load(second.documentId)?.origin)
+        assertEquals(1, store.backups().size, "the edits of the first server stay available")
+    }
+
+    @Test
+    fun `a pinned store stays with its server, and unsynced edits are back after switching back`() {
+        val first = FakeSyncServer("first")
+        val firstSession = session(first)
+        val connection = first.connect(firstSession)
+        first.pump()
+        first.disconnect(connection)
+        assertTrue(firstSession.onLocalTextChanged("first offline"))
+        firstSession.persist()
+
+        val otherDirectory = createTempDirectory("unsynced-other").toFile()
+        val scope = CoroutineScope(Dispatchers.Unconfined)
+        try {
+            val other = FileDocumentStore(otherDirectory)
+            val scoped = ScopedDocumentStore(store, scope)
+            val pinned = scoped.pinned()
+            assertEquals(setOf(first.documentId), scoped.unsyncedIds.value)
+
+            scoped.switchTo(other)
+            assertEquals(emptySet(), scoped.unsyncedIds.value)
+            assertNull(scoped.load(first.documentId))
+            assertEquals(setOf(first.documentId), pinned.ids().toSet())
+
+            scoped.switchTo(store)
+            assertEquals(setOf(first.documentId), scoped.unsyncedIds.value)
+            assertEquals("first offline", DocumentSyncSession(first.documentId, scoped, Reports(), origin = "server:1").text)
+        } finally {
+            scope.cancel()
+            otherDirectory.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `removing a server deletes only its copies`() {
+        fun stored(id: String, origin: String?) = StoredDocument(
+            documentState = FakeSyncServer("text").document.save(),
+            actorId = "00".repeat(16),
+            epoch = "epoch",
+            serverHeads = listOf("other"),
+            origin = origin,
+        ).also { store.save(id, it) }
+        stored("mine", "server:1")
+        stored("other", "server:2")
+        stored("old", null)
+
+        assertEquals(listOf("mine"), store.unsyncedOf("server:1"))
+        assertEquals(listOf("mine", "old", "other"), store.unsyncedOf(null))
+
+        store.deleteCopiesOf("server:1")
+
+        assertEquals(listOf("old", "other"), store.ids())
+        assertEquals(setOf("old", "other"), store.unsyncedIds.value)
+    }
+
+    @Test
+    fun `deleting all copies leaves nothing behind`() {
+        val server = FakeSyncServer("text")
+        val session = session(server)
+        server.connect(session)
+        server.pump()
+        session.persist()
+        store.keepAside(server.documentId)
+        session.persist()
+
+        store.deleteAll()
+
+        assertEquals(emptyList(), store.ids())
+        assertFalse(tempDir.exists())
     }
 }

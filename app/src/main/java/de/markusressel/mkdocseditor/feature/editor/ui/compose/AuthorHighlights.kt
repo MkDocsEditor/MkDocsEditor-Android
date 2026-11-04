@@ -59,7 +59,7 @@ internal class AuthorStripColumn(
     override fun DrawScope.drawCell(cell: GutterCell) {
         var top = 0f
         lines.getOrNull(cell.line)?.forEach { share ->
-            val height = cell.height * share.fraction
+            val height = cell.fullHeight * share.fraction
             drawRect(color = colorOf(share.author), topLeft = Offset(0f, top), size = Size(cell.width, height))
             top += height
         }

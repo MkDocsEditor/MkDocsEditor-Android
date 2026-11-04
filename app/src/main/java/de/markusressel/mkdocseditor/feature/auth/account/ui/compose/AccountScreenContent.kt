@@ -36,7 +36,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -464,17 +467,16 @@ private fun TotpEnrollDialog(
             text = enrollment.otpauthUri,
             contentDescription = stringResource(R.string.account_totp_qr_description),
         )
-        val noApp = stringResource(R.string.account_totp_no_app)
+        var noAppFound by remember { mutableStateOf(false) }
         Button(
             modifier = Modifier.fillMaxWidth(),
             onClick = {
-                if (!onOpenUri(enrollment.otpauthUri)) {
-                    Toast.makeText(context, noApp, Toast.LENGTH_LONG).show()
-                }
+                noAppFound = !onOpenUri(enrollment.otpauthUri)
             },
         ) {
             Text(stringResource(R.string.account_totp_open_app))
         }
+        if (noAppFound) ErrorText(stringResource(R.string.account_totp_no_app))
         SelectionContainer {
             Text(
                 text = stringResource(R.string.account_totp_secret, enrollment.secret.chunked(4).joinToString(" ")),

@@ -1,10 +1,10 @@
 package de.markusressel.mkdocseditor.data.persistence
 
 import de.markusressel.mkdocseditor.data.persistence.base.PersistenceManagerBase
+import de.markusressel.mkdocseditor.data.persistence.base.WikiDatabase
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity_
-import io.objectbox.BoxStore
 import io.objectbox.query.QueryBuilder.StringOrder
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -12,11 +12,11 @@ import javax.inject.Singleton
 
 @Singleton
 class SectionPersistenceManager @Inject constructor(
-    boxStore: BoxStore,
+    database: WikiDatabase,
     private val documentPersistenceManager: DocumentPersistenceManager,
     private val documentContentPersistenceManager: DocumentContentPersistenceManager,
     private val resourcePersistenceManager: ResourcePersistenceManager,
-) : PersistenceManagerBase<SectionEntity>(boxStore, SectionEntity::class) {
+) : PersistenceManagerBase<SectionEntity>(database, SectionEntity::class) {
 
     /**
      * Find a section by it's document id (not the database entity id)

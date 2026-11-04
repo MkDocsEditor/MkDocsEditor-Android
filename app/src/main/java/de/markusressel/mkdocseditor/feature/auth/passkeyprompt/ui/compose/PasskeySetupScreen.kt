@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.feature.auth.passkeyprompt.ui.compose
 
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -76,7 +75,7 @@ data class PasskeySetupScreen(
             onOpenProviderSettings = {
                 val activity = context.findActivity() ?: context
                 if (!viewModel.providers.openProviderSettings(activity)) {
-                    Toast.makeText(context, R.string.passkey_setup_settings_missing, Toast.LENGTH_LONG).show()
+                    viewModel.onUiEvent(UiEvent.ProviderSettingsMissing)
                 }
             },
             onOpenStore = { url -> viewModel.providers.openStore(context.findActivity() ?: context, url) },

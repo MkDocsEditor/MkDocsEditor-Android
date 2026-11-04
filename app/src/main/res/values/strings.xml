@@ -159,7 +159,11 @@
     <string name="server_save_failed">The server could not be saved.</string>
     <string name="server_delete">Remove server</string>
     <string name="server_delete_title">Remove %1$s?</string>
-    <string name="server_delete_message">This signs you out of the server and removes it from this device.</string>
+    <string name="server_delete_message">This signs you out of the server and removes it and its stored pages from this device.</string>
+    <plurals name="server_delete_unsynced">
+        <item quantity="one">%1$d page has changes that were not uploaded. They will be lost.</item>
+        <item quantity="other">%1$d pages have changes that were not uploaded. They will be lost.</item>
+    </plurals>
     <string name="server_delete_failed">The server could not be removed.</string>
     <string name="server_signed_out">Signed out</string>
 

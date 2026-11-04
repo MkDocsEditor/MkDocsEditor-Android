@@ -57,14 +57,14 @@
     <string name="auth_link_set_password">Set the new password</string>
     <string name="auth_link_done_hint">You can add an authenticator app and passkeys in your account.</string>
 
-    <string name="auth_error_unknown">Something went wrong: %1$s</string>
-    <string name="auth_error_network">The backend could not be reached: %1$s</string>
+    <string name="auth_error_unknown">Something went wrong. Please try again.</string>
+    <string name="auth_error_network">The server could not be reached. Check your connection and try again.</string>
     <string name="auth_error_http">The backend answered %1$d: %2$s</string>
     <string name="auth_error_not_supported">This backend does not support accounts yet. Update it to a version with docs/auth.md.</string>
     <string name="auth_error_not_signed_in">You are not signed in (anymore). Please sign in again.</string>
     <string name="auth_error_backend_missing">This backend configuration does not exist anymore.</string>
     <string name="auth_error_backend_url">Please enter a URL like https://backend.wiki.example.com</string>
-    <string name="auth_error_credential_provider">The password manager reported an error: %1$s</string>
+    <string name="auth_error_credential_provider">The password manager reported an error. Please try again.</string>
     <string name="auth_error_missing_credentials">Please enter username and password.</string>
     <string name="auth_error_invalid_credentials">Wrong username or password.</string>
     <string name="auth_error_invalid_code">Wrong code.</string>

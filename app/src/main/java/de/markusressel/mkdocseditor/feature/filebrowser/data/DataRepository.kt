@@ -126,7 +126,10 @@ class DataRepository @Inject constructor(
             rootSectionModel.asEntity()
         },
         sourceOfTruth = sourceOfTruth,
-    ).build()
+    )
+        // a cache in memory would keep showing the tree of the previous server after a switch
+        .disableCache()
+        .build()
 
     private fun SectionModel.asEntity(parentSection: SectionEntity? = null): SectionEntity {
         val s = SectionEntity(0, this.id, this.name)

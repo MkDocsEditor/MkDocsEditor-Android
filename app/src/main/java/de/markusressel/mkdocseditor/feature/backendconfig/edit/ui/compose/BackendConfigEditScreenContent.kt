@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -56,7 +57,21 @@ internal fun BackendConfigEditScreenContent(
         AlertDialog(
             onDismissRequest = { onUiEvent(UiEvent.DeleteDismissed) },
             title = { Text(stringResource(R.string.server_delete_title, uiState.config?.name.orEmpty())) },
-            text = { Text(stringResource(R.string.server_delete_message)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.server_delete_message))
+                    if (uiState.unsyncedPagesOnDelete > 0) {
+                        Text(
+                            text = pluralStringResource(
+                                R.plurals.server_delete_unsynced,
+                                uiState.unsyncedPagesOnDelete,
+                                uiState.unsyncedPagesOnDelete,
+                            ),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            },
             confirmButton = {
                 TextButton(onClick = { onUiEvent(UiEvent.DeleteConfirmed) }) {
                     Text(stringResource(R.string.server_delete))

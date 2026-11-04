@@ -16,7 +16,9 @@ import de.markusressel.kutepreferences.core.DefaultKuteNavigator
 import de.markusressel.kutepreferences.core.KuteNavigator
 import de.markusressel.kutepreferences.core.persistence.DefaultKutePreferenceDataProvider
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
+import de.markusressel.mkdocseditor.data.persistence.base.WikiDatabase
 import de.markusressel.mkdocseditor.data.persistence.entity.MyObjectBox
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.WikiScope
 import de.markusressel.mkdocseditor.feature.auth.common.data.AndroidCredentialClient
 import de.markusressel.mkdocseditor.feature.auth.common.data.CredentialClient
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
@@ -26,10 +28,8 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.createSe
 import de.markusressel.mkdocsrestclient.DummyMkDocsRestClient
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import de.markusressel.mkdocsrestclient.reference.ItemType
-import de.markusressel.mkdocsrestclient.sync.automerge.FileDocumentStore
 import de.markusressel.mkdocsrestclient.sync.automerge.LocalCopyRedirects
 import de.markusressel.mkdocsrestclient.sync.automerge.LocalDocumentStore
-import java.io.File
 import io.objectbox.BoxStore
 import javax.inject.Singleton
 
@@ -92,9 +92,11 @@ class AppModule {
      */
     @Provides
     @Singleton
-    fun provideLocalDocumentStore(@ApplicationContext context: Context): LocalDocumentStore {
-        return FileDocumentStore(File(context.filesDir, "automerge"))
-    }
+    fun provideLocalDocumentStore(wikiScope: WikiScope): LocalDocumentStore = wikiScope.documents
+
+    @Provides
+    @Singleton
+    fun provideWikiDatabase(wikiScope: WikiScope): WikiDatabase = wikiScope.database
 
     /**
      * Re-keys local copies of documents that moved on the server

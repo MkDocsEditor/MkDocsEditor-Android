@@ -97,6 +97,10 @@ internal class PasskeySetupViewModel @Inject constructor(
                     _uiState.update { it.copy(loading = false, error = event.error.toAuthMessage()) }
                 }
 
+                is UiEvent.ProviderSettingsMissing -> _uiState.update {
+                    it.copy(error = UiMessage(R.string.passkey_setup_settings_missing))
+                }
+
                 is UiEvent.LaterClicked -> {
                     backend?.let { store.skipped(it.id, clock.instant()) }
                     _events.send(PasskeySetupEvent.Finish)
@@ -163,6 +167,7 @@ internal class PasskeySetupViewModel @Inject constructor(
         /** @param registrationResponseJson null when cancelled */
         data class PasskeyCreated(val registrationResponseJson: String?) : UiEvent
         data class PasskeyFailed(val error: Throwable) : UiEvent
+        data object ProviderSettingsMissing : UiEvent
         data object LaterClicked : UiEvent
         data object DoneClicked : UiEvent
     }

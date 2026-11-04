@@ -86,7 +86,11 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 is UiEvent.MessageShown -> _uiState.update { it.copy(message = null) }
 
                 is UiEvent.SaveClicked -> save()
-                is UiEvent.DeleteClicked -> _uiState.update { it.copy(confirmingDelete = true) }
+                is UiEvent.DeleteClicked -> {
+                    val unsyncedPages = uiState.value.config?.let { deleteBackendConfigUseCase.unsyncedPages(it) } ?: 0
+                    _uiState.update { it.copy(confirmingDelete = true, unsyncedPagesOnDelete = unsyncedPages) }
+                }
+
                 is UiEvent.DeleteDismissed -> _uiState.update { it.copy(confirmingDelete = false) }
                 is UiEvent.DeleteConfirmed -> delete()
 
@@ -233,6 +237,7 @@ internal class BackendConfigEditViewModel @Inject constructor(
         val signedInUsername: String? = null,
         val advancedExpanded: Boolean = false,
         val confirmingDelete: Boolean = false,
+        val unsyncedPagesOnDelete: Int = 0,
         @param:StringRes val message: Int? = null,
     ) {
         val addressIsValid: Boolean get() = ParsedBackendUrl.parse(address) != null
