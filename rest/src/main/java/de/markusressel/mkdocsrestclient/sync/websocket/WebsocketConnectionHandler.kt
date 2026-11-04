@@ -20,9 +20,25 @@ class WebsocketConnectionHandler(
      * Supplies the Authorization header of the upgrade request (a bearer session), evaluated
      * on every connect. Without one the server waits for a ticket in the hello message.
      */
-    private val authorizationProvider: AuthorizationProvider,
-    private val client: OkHttpClient = defaultClient,
+    authorizationProvider: AuthorizationProvider,
+    client: OkHttpClient = defaultClient,
 ) {
+
+    /**
+     * Reads the token in an interceptor, because [connect] is called on the main thread and the
+     * token can take a while: it may have to be decrypted, and others may hold the lock of the
+     * store. So connecting stays synchronous, and its order with [disconnect] does not change.
+     */
+    private val client = client.newBuilder()
+        .addInterceptor { chain ->
+            val request = chain.request()
+            val authorization = authorizationProvider.authorization()
+            chain.proceed(
+                if (authorization == null) request
+                else request.newBuilder().header("Authorization", authorization).build()
+            )
+        }
+        .build()
 
     private var listener: WebsocketConnectionListener? = null
 
@@ -48,9 +64,7 @@ class WebsocketConnectionHandler(
         webSocket?.close(1000, "Reconnecting")
         isConnected = false
 
-        val request = Request.Builder().url(url).apply {
-            authorizationProvider.authorization()?.let { header("Authorization", it) }
-        }.build()
+        val request = Request.Builder().url(url).build()
 
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             private fun isCurrent(socket: WebSocket) = socket === webSocket
