@@ -21,6 +21,7 @@ import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.filebrowser.data.SectionData
+import de.markusressel.mkdocseditor.feature.filebrowser.data.lastChange
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.feature.theme.sectionBackgroundColor
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
@@ -61,7 +62,7 @@ internal fun SectionListEntry(
                 Text(
                     modifier = Modifier.padding(start = 8.dp),
                     text = item.name,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleMedium,
                 )
 
@@ -69,8 +70,15 @@ internal fun SectionListEntry(
                     modifier = Modifier.padding(start = 8.dp),
                     text = item.contentSummary(),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+
+                item.lastChange()?.let { lastChange ->
+                    LastModifiedDate(
+                        modifier = Modifier.padding(start = 8.dp),
+                        modtime = lastChange,
+                    )
+                }
             }
         }
     }

@@ -86,7 +86,7 @@ internal fun DocumentListEntry(
                 Text(
                     modifier = Modifier.padding(start = 8.dp),
                     text = item.name,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleMedium,
                 )
 
@@ -97,7 +97,7 @@ internal fun DocumentListEntry(
                         item.formattedDocumentSize(context)
                     ),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 LastModifiedDate(
