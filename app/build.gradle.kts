@@ -1,3 +1,4 @@
+import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 
@@ -12,14 +13,41 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+// Android only installs an update with a higher version code, so CI uses its run number
+val appVersionCode = providers.environmentVariable("GITHUB_RUN_NUMBER").orNull?.toInt() ?: 1
+
+/**
+ * Sets the version code in the merged manifest. As the versionCode of the build it would also end up in BuildConfig, and
+ * then each CI run would compile the whole app again and run R8, instead of taking them from the build cache.
+ */
+abstract class SetManifestVersionCode : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val mergedManifest: RegularFileProperty
+
+    @get:Input
+    abstract val versionCode: Property<Int>
+
+    @get:OutputFile
+    abstract val updatedManifest: RegularFileProperty
+
+    @TaskAction
+    fun run() {
+        val manifest = mergedManifest.get().asFile.readText()
+        val updated = manifest.replace(Regex("""android:versionCode="\d+""""), """android:versionCode="${versionCode.get()}"""")
+        check(updated.contains("""android:versionCode="${versionCode.get()}"""")) { "The merged manifest has no version code" }
+        updatedManifest.get().asFile.writeText(updated)
+    }
+}
+
 extensions.configure<ApplicationExtension> {
     namespace = "de.markusressel.mkdocseditor"
 
     defaultConfig {
         applicationId = "de.markusressel.mkdocseditor"
 
-        // Android only installs an update with a higher version code, so CI uses its run number
-        versionCode = providers.environmentVariable("GITHUB_RUN_NUMBER").orNull?.toInt() ?: 1
+        // the real one is set by SetManifestVersionCode, see there
+        versionCode = 1
         versionName = "0.1.0"
 
         // host of the web client whose setup/invite/reset links open in the app (App Links)
@@ -53,16 +81,22 @@ extensions.configure<ApplicationExtension> {
 
 extensions.configure<ApplicationAndroidComponentsExtension> {
     onVariants { variant ->
+        val setVersionCode = tasks.register<SetManifestVersionCode>("set${variant.name.replaceFirstChar { it.uppercase() }}VersionCode") {
+            versionCode.set(appVersionCode)
+        }
+        variant.artifacts.use(setVersionCode)
+            .wiredWithFiles(SetManifestVersionCode::mergedManifest, SetManifestVersionCode::updatedManifest)
+            .toTransform(SingleArtifact.MERGED_MANIFEST)
+
         val appExtension = extensions.getByType<ApplicationExtension>()
         val versionName = appExtension.defaultConfig.versionName
-        val versionCode = appExtension.defaultConfig.versionCode
         variant.outputs.forEach { output ->
             val outputImpl = output as com.android.build.api.variant.impl.VariantOutputImpl
             outputImpl.outputFileName.set(
                 if (variant.buildType == "release") {
-                    "MkDocsEditor-release_v${versionName}_$versionCode.apk"
+                    "MkDocsEditor-release_v${versionName}_$appVersionCode.apk"
                 } else {
-                    "MkDocsEditor_v${versionName}_($versionCode).apk"
+                    "MkDocsEditor_v${versionName}_($appVersionCode).apk"
                 }
             )
         }
