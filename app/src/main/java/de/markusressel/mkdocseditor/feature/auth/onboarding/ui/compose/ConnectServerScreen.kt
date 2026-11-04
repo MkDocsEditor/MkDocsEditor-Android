@@ -57,6 +57,7 @@ data class ConnectServerScreen(
         ConnectServerScreenContent(
             uiState = uiState,
             canGoBack = !firstRun && navigator.canPop,
+            firstRun = firstRun,
             onUiEvent = viewModel::onUiEvent,
             onBackClicked = { navigator.pop() },
         )

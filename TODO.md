@@ -15,13 +15,12 @@ clients show the same thing.
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Feature | Yes, the backend and the web client |
 | App-wide | [Error handling](#error-handling) | Move the other screens to the spec | No |
 | App-wide | [Sync indicator](#sync-indicator) | Small feature | No |
-| App-wide | [Settings](#settings) | Audit, then UI | Maybe KutePreferences |
-| Accounts | [Onboarding](#onboarding) | Feature | No |
+| App-wide | [Settings](#settings) | Few candidates left | Maybe KutePreferences |
+| Accounts | [Onboarding](#onboarding) | Optional feature tour | No |
 
 Order that fits how they depend on each other (Idea):
 
 - New screens follow the error handling spec in `docs/error-handling.md`.
-- Do settings after author highlighting: that adds a setting.
 
 ---
 
@@ -312,25 +311,18 @@ browser loads only, and `SyncStatusStore` remembers the time per server.
 - Changing [KutePreferences](https://github.com/markusressel/KutePreferences) is fine if needed. It's my own project,
   and it can adapt to more use cases.
 
-**Where to start**
+**State**
 
-- All in `feature/preferences/data/KutePreferencesHolder.kt`. KutePreferences is pinned to `a7bcad2bae` in
-  `gradle/libs.versions.toml`, and a checkout is next to this repo in `../KutePreferences`.
-- What exists today:
-  - theme
-  - offline mode
-  - always open in edit mode
-  - force offline cache update
-  - clear offline cache
-  - last cache update
-  - debug: demo mode, log network requests
-- #123 removed the sync interval setting, which did nothing.
-- Candidates (Idea):
-  - author highlighting mode
-  - default split mode and ratio
-  - connect automatically (`connectsAutomatically` in `DocumentSessionEnvironment`)
-  - editor text size, line numbers, line wrapping
-  - rendered page zoom
+- Categories are Offline, Editor and Appearance. Offline mode has its setting, and the editor has line wrapping, line
+  numbers and text size.
+- The category cards are flat, using `KutePreferencesTheme` colors. `Category.kt` in KutePreferences hardcodes its
+  container color, which KutePreferences would have to change.
+
+**Candidates left (Idea)**
+
+- author highlighting mode, once that exists
+- connect automatically: `connectsAutomatically` follows "always open in edit mode" today
+- default split mode: the window size decides today, and that seems fine
 
 ---
 
@@ -357,25 +349,15 @@ Reworked. The edit screen has one address field instead of host, port and SSL, a
 - It could also show off the features of the app. That's low priority. If we do it, keep it succinct but visually
   pleasing (fancy animations would be awesome).
 
-**Where to start**
+**State**
 
-- A fresh install today: without a backend, the bottom bar has no file browser (`MainViewModel.updateNavItems`), and the
-  start tab comes from `GetInitialTabUseCase`. So the user lands in the backend list.
-- Reuse what exists:
-  - `ConnectServerScreen`: enter an address. `ServerDiscovery` finds the server.
-  - `ConnectLinkScreen`: a device link. A signed-in user creates it in the web client and scans its QR code.
-  - `feature/auth/link`: setup, invite and reset links (the App Link and `mkdocseditor://`), then
-    `feature/auth/login` and `feature/auth/passkeyprompt`.
-- Invites: an admin creates them with `POST /admin/invites/`. See `docs/auth.md` in MkDocsEditor-Backend.
-- Passkeys: a new package or signing key breaks them, see `AGENTS.md`. Nothing here should need one.
+The first start shows a short welcome and the hint about invite links above `ConnectServerScreen`'s QR code and address
+field. It shows whenever no server exists, so nothing needs storing. There is no link to a web client, because its
+address is only known once a server is.
 
-**Open questions**
+**Left to do**
 
-- **Which web login do we point to?** A new user has no server yet. `ServerInfo.webClientUrl` is only known once a
-  server is found, and `auth_web_client_url` is a build-time default for `edit.wiki.markusressel.de`. Is this app only
-  for one instance, or do we ask for the server first?
-- Where is "onboarding done" stored, and when does it show again (after removing the last backend)?
-- Is the feature tour part of the first version? I'd leave it out.
+- A feature tour, if we want one.
 
 ---
 

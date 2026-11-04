@@ -2,11 +2,11 @@
 <resources>
 
     <string name="category_offline_cache_key" translatable="false">category_offline_cache_key</string>
-    <string name="category_offline_cache_title">Offline Cache</string>
-    <string name="category_offline_cache_description">Offline Cache update conditions</string>
+    <string name="category_offline_cache_title">Offline</string>
+    <string name="category_offline_cache_description">Work without a connection, and what is stored on this device</string>
 
     <string name="section_background_sync_key">section_background_sync_key</string>
-    <string name="section_background_sync_title">Background Sync</string>
+    <string name="section_background_sync_title">Local copies</string>
 
     <string name="action_force_offline_cache_update_key">action_force_offline_cache_update_key</string>
     <string name="action_force_offline_cache_update_title">Schedule update now</string>
@@ -31,16 +31,24 @@
 
     <!-- UI -->
     <string name="category_ui_key" translatable="false">category_ui</string>
-    <string name="category_ui_title">UI</string>
-    <string name="category_ui_description">Settings to fine-tune the user interface</string>
+    <string name="category_ui_title">Appearance</string>
+    <string name="category_ui_description">How the app looks</string>
 
     <string name="section_general_ui_key" translatable="false">section_general_ui_key</string>
-    <string name="section_general_ui_title">General</string>
+    <string name="section_general_ui_title">Theme</string>
 
     <string name="theme_key">theme</string>
 
     <string name="offline_mode_key" translatable="false">offline_mode</string>
     <string name="clear_offline_cache_key" translatable="false">clear_offline_cache_key</string>
+    <string name="clear_offline_cache_done">The local copies were removed.</string>
+    <string name="offline_mode_title">Offline mode</string>
+    <string name="editor_line_wrapping_key" translatable="false">editor_line_wrapping</string>
+    <string name="editor_line_wrapping_title">Wrap long lines</string>
+    <string name="editor_line_numbers_key" translatable="false">editor_line_numbers</string>
+    <string name="editor_line_numbers_title">Show line numbers</string>
+    <string name="editor_text_size_key" translatable="false">editor_text_size</string>
+    <string name="editor_text_size_title">Text size</string>
     <string name="clear_offline_cache_title">Clear offline cache</string>
     <string name="clear_offline_cache_description">Removes all locally cached documents.</string>
 
@@ -55,11 +63,11 @@
 
     <!-- UX -->
     <string name="category_ux_key" translatable="false">category_ux</string>
-    <string name="category_ux_title">UX</string>
-    <string name="category_ux_description">Settings to fine-tune your experience</string>
+    <string name="category_ux_title">Editor</string>
+    <string name="category_ux_description">How documents open and look</string>
 
     <string name="section_code_editor_key" translatable="false">section_code_editor_key</string>
-    <string name="section_code_editor_title">Code Editor</string>
+    <string name="section_code_editor_title">Documents</string>
 
     <string name="code_editor_always_edit_mode_key" translatable="false">code_editor_always_edit_mode_key</string>
     <string name="code_editor_always_edit_mode_title">Always open edit-mode</string>

@@ -1,5 +1,8 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
+import androidx.compose.ui.unit.sp
+import de.markusressel.kodeeditor.library.compose.rememberLineNumberColumn
+import de.markusressel.mkdocseditor.feature.preferences.data.DEFAULT_EDITOR_TEXT_SIZE
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material3.MaterialTheme
@@ -29,10 +32,25 @@ internal fun CodeEditorLayout(
     readOnly: Boolean,
     modifier: Modifier = Modifier,
     remotePeers: State<List<RemotePeer>> = NoRemotePeers,
+    settings: EditorSettings = EditorSettings(),
 ) {
     val palette = rememberEditorPalette()
     val colorScheme = remember(palette) { EditorColorScheme(palette) }
     val ruleBook = remember { MkDocsMarkdownRuleBook() }
+    val colors = KodeEditorDefaults.editorColors(
+        textFieldBackgroundColor = palette.background,
+        lineNumberTextColor = palette.lineNumber,
+        lineNumberBackgroundColor = palette.background,
+        textFieldColors = KodeTextFieldDefaults.textFieldColors(
+            textColor = palette.text,
+            cursorColor = MaterialTheme.colorScheme.primary,
+        )
+    )
+    val textStyle = TextStyle(
+        fontFamily = FontFamily.Monospace,
+        fontSize = settings.textSize.sp,
+    )
+    val lineNumbers = rememberLineNumberColumn(textStyle, colors, enabled = true)
 
     CompositionLocalProvider(
         LocalTextSelectionColors provides TextSelectionColors(
@@ -45,21 +63,12 @@ internal fun CodeEditorLayout(
             state = state,
             languageRuleBook = ruleBook,
             colorScheme = colorScheme,
-            colors = KodeEditorDefaults.editorColors(
-                textFieldBackgroundColor = palette.background,
-                lineNumberTextColor = palette.lineNumber,
-                lineNumberBackgroundColor = palette.background,
-                textFieldColors = KodeTextFieldDefaults.textFieldColors(
-                    textColor = palette.text,
-                    cursorColor = MaterialTheme.colorScheme.primary,
-                )
-            ),
-            textStyle = TextStyle(
-                fontFamily = FontFamily.Monospace,
-            ),
+            colors = colors,
+            textStyle = textStyle,
             enabled = true,
             readOnly = readOnly,
-            lineWrapping = true,
+            lineWrapping = settings.lineWrapping,
+            gutterColumns = if (settings.lineNumbers) listOf(lineNumbers) else emptyList(),
             overlay = { layout ->
                 RemotePeersOverlay(
                     layout = layout,
@@ -79,3 +88,10 @@ internal fun rememberEditorPalette(): EditorPalette {
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     return EditorPalette.forDarkTheme(dark)
 }
+
+/** How the code editor looks, from the settings */
+internal data class EditorSettings(
+    val lineWrapping: Boolean = true,
+    val lineNumbers: Boolean = true,
+    val textSize: Int = DEFAULT_EDITOR_TEXT_SIZE.toInt(),
+)

@@ -200,6 +200,7 @@ internal fun CodeEditorScreenContent(
                             modifier = Modifier.fillMaxSize(),
                             state = editorState,
                             remotePeers = remotePeers,
+                            settings = uiState.editorSettings,
                             readOnly = !uiState.editModeActive,
                         )
                     },
