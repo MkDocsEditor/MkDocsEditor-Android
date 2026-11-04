@@ -1,10 +1,14 @@
 package de.markusressel.mkdocsrestclient.sync.automerge
 
 import kotlin.io.path.createTempDirectory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import java.io.File
 
@@ -149,5 +153,37 @@ class UnsyncedChangesTest {
         session.persist()
         assertEquals("server:2", store.load(second.documentId)?.origin)
         assertEquals(1, store.backups().size, "the edits of the first server stay available")
+    }
+
+    @Test
+    fun `a pinned store stays with its server, and unsynced edits are back after switching back`() {
+        val first = FakeSyncServer("first")
+        val firstSession = session(first)
+        val connection = first.connect(firstSession)
+        first.pump()
+        first.disconnect(connection)
+        assertTrue(firstSession.onLocalTextChanged("first offline"))
+        firstSession.persist()
+
+        val otherDirectory = createTempDirectory("unsynced-other").toFile()
+        val scope = CoroutineScope(Dispatchers.Unconfined)
+        try {
+            val other = FileDocumentStore(otherDirectory)
+            val scoped = ScopedDocumentStore(store, scope)
+            val pinned = scoped.pinned()
+            assertEquals(setOf(first.documentId), scoped.unsyncedIds.value)
+
+            scoped.switchTo(other)
+            assertEquals(emptySet(), scoped.unsyncedIds.value)
+            assertNull(scoped.load(first.documentId))
+            assertEquals(setOf(first.documentId), pinned.ids().toSet())
+
+            scoped.switchTo(store)
+            assertEquals(setOf(first.documentId), scoped.unsyncedIds.value)
+            assertEquals("first offline", DocumentSyncSession(first.documentId, scoped, Reports(), origin = "server:1").text)
+        } finally {
+            scope.cancel()
+            otherDirectory.deleteRecursively()
+        }
     }
 }

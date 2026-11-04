@@ -10,7 +10,6 @@ clients show the same thing.
 |---|---|---|---|
 | Editor | [Opening a document when the backend is unavailable](#opening-a-document-when-the-backend-is-unavailable) | Bug and small feature | No |
 | Editor | [Author highlighting](#author-highlighting) | Open questions left | No |
-| Editor | [Local data of several servers](#local-data-of-several-servers) | Idea | No |
 | File browser | [Entries lack context](#file-browser-entries-lack-context) | Design and UI | Maybe the backend |
 | File browser | [Transitions between sections](#transitions-between-sections) | Design and UI | No |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Feature | Yes, the backend and the web client |
@@ -80,15 +79,10 @@ is on permanently. Three modes:
 
 **Open questions**
 
-- Is a toggle in the editor needed as well? The web client has only that, as on/off and off by default.
+- Is a toggle in the editor needed as well?
+- A removed server's local copies stay on disk (`automerge-s<n>`), because they may hold unsynced edits. Nothing cleans
+  them up yet.
 - Colors of users who were never online during the session fall back to one derived from the username.
-
-## Local data of several servers
-
-Sections and local copies are stored per device, not per server, and document ids are a hash of the path. Selecting
-another server drops the stored tree, and a session ignores a copy of another server, which is kept aside as a backup
-once the new copy is saved. So going back to a server has no offline copy until it syncs again, and unsynced edits only
-stay in the backup. Keeping the data per server would solve both, if several servers turn out to be common.
 
 ---
 

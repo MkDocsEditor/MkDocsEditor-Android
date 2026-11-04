@@ -7,6 +7,7 @@ import io.objectbox.kotlin.toFlow
 import io.objectbox.query.QueryCondition
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlin.reflect.KClass
 
@@ -14,13 +15,16 @@ import kotlin.reflect.KClass
  * Base class of a persistance manager for a specific type
  */
 open class PersistenceManagerBase<EntityType : Any>(
-    protected val boxStore: BoxStore,
+    private val database: Database,
     private val entityType: KClass<EntityType>,
 ) {
 
-    private val box: Box<EntityType> by lazy {
-        boxStore.boxFor(entityType)
-    }
+    protected val boxStore: BoxStore
+        get() = database.current.value
+
+    // resolved for each use, because the wiki database changes with the selected server
+    private val box: Box<EntityType>
+        get() = boxStore.boxFor(entityType)
 
     /**
      * Returns the BoxStore for this PersistenceManager to perform standard (ObjectBox) operations
@@ -40,7 +44,9 @@ open class PersistenceManagerBase<EntityType : Any>(
     /** @return the first entity that matches, with a new value whenever an entity of this type changes */
     @OptIn(ExperimentalCoroutinesApi::class)
     fun observeFirst(condition: QueryCondition<EntityType>): Flow<EntityType?> =
-        box.query(condition).build().subscribe().toFlow().map { it.firstOrNull() }
+        database.current.flatMapLatest { store ->
+            store.boxFor(entityType).query(condition).build().subscribe().toFlow().map { it.firstOrNull() }
+        }
 
     fun deleteAll() {
         box.removeAll()

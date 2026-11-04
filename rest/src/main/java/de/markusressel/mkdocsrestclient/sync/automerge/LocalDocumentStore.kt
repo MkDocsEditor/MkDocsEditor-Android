@@ -57,6 +57,9 @@ interface LocalDocumentStore {
     /** Reads all copies once to fill [unsyncedIds], so this is not called on the main thread */
     fun scanUnsynced() {}
 
+    /** @return the store that keeps serving the same data, for a session that must outlive a switch of the server */
+    fun pinned(): LocalDocumentStore = this
+
     /**
      * The ids of all stored documents
      */

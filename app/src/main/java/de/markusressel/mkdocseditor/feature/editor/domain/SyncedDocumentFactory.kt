@@ -24,7 +24,7 @@ internal class SyncedDocumentFactory @Inject constructor(
         ssl = serverConfig.useSsl,
         authorizationProvider = AuthorizationProvider.bearer { authRepository.token(backendId) },
         documentId = documentId,
-        store = localDocumentStore,
+        store = localDocumentStore.pinned(),
         listener = listener,
     )
 }

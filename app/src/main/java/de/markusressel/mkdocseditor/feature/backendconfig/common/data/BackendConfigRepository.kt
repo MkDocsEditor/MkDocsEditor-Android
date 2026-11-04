@@ -23,6 +23,7 @@ internal class BackendConfigRepository @Inject constructor(
     private val backendServerConfigPersistenceManager: BackendServerConfigPersistenceManager,
     private val mkdDocsWebConfigPersistenceManager: MkdDocsWebConfigPersistenceManager,
     private val backendAuthConfigPersistenceManager: BackendAuthConfigPersistenceManager,
+    private val wikiScope: WikiScope,
 ) {
 
     fun getBackendConfigs() = backendConfigPersistenceManager.standardOperation().all.toList()
@@ -99,6 +100,8 @@ internal class BackendConfigRepository @Inject constructor(
 
     fun selectBackendConfig(config: BackendConfig) {
         backendConfigPersistenceManager.selectBackendConfig(config.id)
+        // before anything reads wiki data of the new server
+        wikiScope.refresh()
     }
 
     fun selectedBackendConfig(): BackendConfigEntity? {
@@ -137,7 +140,8 @@ internal class BackendConfigRepository @Inject constructor(
     }
 
     fun delete(config: BackendConfig): Boolean {
-        return backendConfigPersistenceManager.remove(config.id)
+        wikiScope.forget(config.id)
+        return backendConfigPersistenceManager.standardOperation().remove(config.id)
     }
 
 }
