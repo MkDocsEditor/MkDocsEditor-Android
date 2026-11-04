@@ -27,3 +27,18 @@ val BackendServerConfig.baseUrl: String
         val path = sanitized.substringAfter("/", "").trim('/')
         return "$protocol://$host:$port/" + if (path.isEmpty()) "" else "$path/"
     }
+
+/**
+ * A stored address as the user would write it: without the port when it is the usual one of the protocol, so
+ * `ParsedBackendUrl.parse` reads the same address back.
+ *
+ * @param domain the host, optionally followed by a path
+ */
+internal fun displayAddress(domain: String, port: Int, useSsl: Boolean): String {
+    if (domain.isBlank()) return ""
+    val protocol = if (useSsl) "https" else "http"
+    val host = domain.substringBefore('/')
+    val path = domain.substringAfter('/', "").trim('/')
+    val shownPort = if (port == if (useSsl) 443 else 80) "" else ":$port"
+    return "$protocol://$host$shownPort" + if (path.isEmpty()) "" else "/$path"
+}

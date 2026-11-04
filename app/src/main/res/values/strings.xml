@@ -2,7 +2,7 @@
     <string name="app_name">MkDocsEditor</string>
     <string name="app_description">Collaborative editor for MkDocs projects.</string>
 
-    <string name="bottom_navigation_backend_selection">Backend</string>
+    <string name="bottom_navigation_backend_selection">Servers</string>
     <string name="bottom_navigation_item_files">Files</string>
     <string name="bottom_navigation_item_settings">Settings</string>
     <string name="bottom_navigation_item_about">About</string>
@@ -133,27 +133,35 @@
     <string name="create">Create</string>
     <string name="cancel">Cancel</string>
 
-    <string name="create_backend_config">Create Backend Config</string>
+    <string name="create_backend_config">Add server</string>
 
-    <string name="edit_backend_config_name_label">Name</string>
-    <string name="edit_backend_config_description_label">Description</string>
-
-    <string name="edit_server_config_title">Backend</string>
-    <string name="edit_server_config_description">Configure access to your MkDocsEditor backend instance.</string>
-    <string name="edit_server_config_domain">Domain</string>
-    <string name="edit_server_config_domain_label">Domain</string>
-    <string name="edit_server_config_port">Port</string>
-    <string name="edit_server_config_port_label">Port</string>
-    <string name="edit_server_config_use_ssl">SSL</string>
-
-    <string name="edit_mkdocsweb_config_title">Web</string>
-    <string name="edit_mkdocsweb_config_description">Configure access to your webserver instance that is hosting your MkDocs project.</string>
-
-    <string name="edit_auth_config_title">Authentication</string>
-    <string name="edit_auth_config_username">User</string>
-    <string name="edit_auth_config_password">Password</string>
-
-    <string name="edit_auth_config_empty">There are no authentication configurations yet. Please create one using the + Icon above.</string>
+    <string name="save">Save</string>
+    <string name="synced_just_now">Synced just now</string>
+    <plurals name="synced_minutes">
+        <item quantity="one">Synced %1$d minute ago</item>
+        <item quantity="other">Synced %1$d minutes ago</item>
+    </plurals>
+    <plurals name="synced_hours">
+        <item quantity="one">Synced %1$d hour ago</item>
+        <item quantity="other">Synced %1$d hours ago</item>
+    </plurals>
+    <plurals name="synced_days">
+        <item quantity="one">Synced %1$d day ago</item>
+        <item quantity="other">Synced %1$d days ago</item>
+    </plurals>
+    <string name="sync_not_connected">Not connected</string>
+    <string name="sync_not_connected_since">Not connected · %1$s</string>
+    <string name="servers_title">Servers</string>
+    <string name="server_edit_title">Edit server</string>
+    <string name="server_address">Server address</string>
+    <string name="server_web_address">Web client address</string>
+    <string name="server_address_invalid">This doesn\'t look like an address, for example https://wiki.example.com</string>
+    <string name="server_save_failed">The server could not be saved.</string>
+    <string name="server_delete">Remove server</string>
+    <string name="server_delete_title">Remove %1$s?</string>
+    <string name="server_delete_message">This signs you out of the server and removes it from this device.</string>
+    <string name="server_delete_failed">The server could not be removed.</string>
+    <string name="server_signed_out">Signed out</string>
 
     <string name="section_entry_subsections_count">Subsections: %1$s</string>
     <string name="section_entry_documents_count">Documents: %1$s</string>

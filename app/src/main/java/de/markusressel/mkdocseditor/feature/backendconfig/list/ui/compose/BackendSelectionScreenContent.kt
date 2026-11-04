@@ -1,5 +1,7 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.list.ui.compose
 
+import androidx.compose.ui.res.stringResource
+import de.markusressel.mkdocseditor.R
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,7 +40,7 @@ internal fun BackendSelectionScreenContent(
         topBar = {
             MkDocsEditorTopAppBar(
                 canGoBack = false,
-                title = "Backend selection",
+                title = stringResource(R.string.servers_title),
             )
         },
         floatingActionButton = {

@@ -14,7 +14,7 @@ internal class GetDocumentUrlUseCase @Inject constructor(
         entity: DocumentEntity,
     ): String? {
         val mkdDocsWebConfig = backendConfig.mkDocsWebConfig
-        val domain = mkdDocsWebConfig?.domain ?: return null
+        val domain = mkdDocsWebConfig?.domain?.takeIf { it.isNotBlank() } ?: return null
         val protocol = when (mkdDocsWebConfig.useSsl) {
             true -> "https"
             else -> "http"
@@ -34,9 +34,21 @@ internal class GetDocumentUrlUseCase @Inject constructor(
         val result = listOfNotNull(
             "$protocol://",
             "$basicAuthInUrl@".takeUnless { username.isNullOrBlank() || password.isNullOrBlank() },
-            "$domain/view/$pagePath"
+            "${hostWithPort(domain, mkdDocsWebConfig.port, mkdDocsWebConfig.useSsl)}/view/$pagePath"
         ).joinToString(separator = "")
 
         return result
     }
+}
+
+/**
+ * The old form stored port 80 for an empty field, also with https, and the port had no effect then. So https on 80
+ * means no port.
+ */
+internal fun hostWithPort(domain: String, port: Int, useSsl: Boolean): String {
+    val usual = if (useSsl) port == 443 || port == 80 else port == 80
+    if (usual) return domain
+    val host = domain.substringBefore('/')
+    val path = domain.substringAfter('/', "")
+    return "$host:$port" + if (path.isEmpty()) "" else "/$path"
 }

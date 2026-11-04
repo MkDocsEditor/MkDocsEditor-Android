@@ -1,5 +1,9 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui
 
+import de.markusressel.mkdocseditor.feature.common.ui.compose.SyncAge
+import de.markusressel.mkdocseditor.feature.common.ui.compose.syncAge
+import java.util.Date
+import java.util.concurrent.TimeUnit
 import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertIsDisplayed
@@ -74,6 +78,38 @@ class FileBrowserErrorTest {
 
         composeRule.onNodeWithText("The server has a problem. Please try again later.").assertIsDisplayed()
         composeRule.onNodeWithText("Retry").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the top bar says how long ago the backend answered`() {
+        show(UiState(lastSync = Date(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(3))))
+
+        composeRule.onNodeWithText("Synced 3 hours ago").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the top bar says when the backend did not answer`() {
+        show(UiState(lastSync = Date(), lastSyncFailed = true))
+        composeRule.onNodeWithText("Not connected · Synced just now").assertIsDisplayed()
+    }
+
+    @Test
+    fun `without an answer so far and without a failure the top bar has no status`() {
+        show(UiState())
+
+        composeRule.onNodeWithText("Synced", substring = true).assertDoesNotExist()
+        composeRule.onNodeWithText("Not connected", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the age of a sync uses the largest fitting unit`() {
+        val now = Date(TimeUnit.DAYS.toMillis(100))
+        fun ago(minutes: Long) = syncAge(Date(now.time - TimeUnit.MINUTES.toMillis(minutes)), now)
+
+        assertEquals(null, ago(0))
+        assertEquals(SyncAge(R.plurals.synced_minutes, 59), ago(59))
+        assertEquals(SyncAge(R.plurals.synced_hours, 1), ago(60))
+        assertEquals(SyncAge(R.plurals.synced_days, 2), ago(48 * 60))
     }
 
     @Test

@@ -1,13 +1,12 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.server
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -28,30 +27,25 @@ internal fun BackendAccountCard(
     onSignOutClicked: () -> Unit,
 ) {
     Card(modifier = modifier) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        Row(
+            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(R.string.auth_account_title),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Text(
+                modifier = Modifier.weight(1F),
                 text = when (signedInUsername) {
                     null -> stringResource(R.string.auth_signed_out)
                     else -> stringResource(R.string.auth_signed_in_as, signedInUsername)
                 },
                 style = MaterialTheme.typography.bodyMedium,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (signedInUsername == null) {
-                    Button(onClick = onSignInClicked) {
-                        Text(stringResource(R.string.auth_sign_in))
-                    }
-                } else {
-                    OutlinedButton(onClick = onSignOutClicked) {
-                        Text(stringResource(R.string.auth_sign_out))
-                    }
+            if (signedInUsername == null) {
+                Button(onClick = onSignInClicked) {
+                    Text(stringResource(R.string.auth_sign_in))
+                }
+            } else {
+                TextButton(onClick = onSignOutClicked) {
+                    Text(stringResource(R.string.auth_sign_out))
                 }
             }
         }

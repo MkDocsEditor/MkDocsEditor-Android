@@ -21,8 +21,8 @@ internal fun BackendConfigList(
         uiState.listItems.forEach { item ->
             BackendConfigListItem(modifier = Modifier.fillMaxWidth(), item = item, onClick = {
                 onUiEvent(BackendSelectionViewModel.UiEvent.BackendConfigClicked(item))
-            }, onLongClick = {
-                onUiEvent(BackendSelectionViewModel.UiEvent.BackendConfigLongClicked(item))
+            }, onEditClick = {
+                onUiEvent(BackendSelectionViewModel.UiEvent.BackendConfigEditClicked(item))
             })
         }
     }

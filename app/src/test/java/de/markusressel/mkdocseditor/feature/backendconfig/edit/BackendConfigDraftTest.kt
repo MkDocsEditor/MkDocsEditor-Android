@@ -5,6 +5,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.serialization.saved
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.withConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigDraft
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel.UiState
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.toDraft
@@ -25,19 +27,21 @@ class BackendConfigDraftTest {
         var draft by handle.saved<BackendConfigDraft?> { null }
     }
 
-    private val authConfig = AuthConfig(id = 7, username = "user", password = "secret-password")
+    private val stored = BackendConfig(
+        id = 1,
+        name = "stored",
+        description = "",
+        isSelected = true,
+        serverConfig = null,
+        mkDocsWebConfig = null,
+        mkDocsWebAuthConfig = AuthConfig(id = 7, username = "user", password = "secret-password"),
+    )
 
-    private val edited = UiState(
-        authConfigs = listOf(authConfig),
+    private val edited = UiState().withConfig(stored).copy(
         name = "wiki",
         description = "family",
-        currentDomain = "wiki.example.org",
-        currentPort = "8123",
-        currentUseSsl = true,
-        currentMkDocsWebDomain = "web.example.org",
-        currentMkDocsWebPort = "443",
-        currentMkDocsWebUseSsl = true,
-        currentMkDocsWebAuthConfig = authConfig,
+        address = "https://wiki.example.org:8123",
+        webAddress = "https://web.example.org",
     )
 
     @Test
@@ -47,7 +51,7 @@ class BackendConfigDraftTest {
 
         val restored = Holder(SavedStateHandle.createHandle(handle.savedStateProvider().saveState(), null))
 
-        assertEquals(edited, UiState(authConfigs = listOf(authConfig)).withDraft(restored.draft!!))
+        assertEquals(edited, UiState().withConfig(stored).withDraft(restored.draft!!))
     }
 
     @Test
@@ -61,16 +65,17 @@ class BackendConfigDraftTest {
     }
 
     @Test
-    fun `an auth config deleted in the meantime is not selected again`() {
-        val state = UiState(authConfigs = emptyList()).withDraft(edited.toDraft())
+    fun `a changed username does not keep the stored password`() {
+        val state = UiState().withConfig(stored).withDraft(edited.copy(wikiUsername = "other").toDraft())
 
-        assertNull(state.currentMkDocsWebAuthConfig)
+        assertEquals("", state.wikiPassword)
     }
 
     @Test
-    fun `passwords never reach the saved state`() {
-        val draft = edited.copy(currentAuthConfigPassword = "typed-password").toDraft()
+    fun `passwords never reach the saved state or the log`() {
+        val state = edited.copy(wikiPassword = "typed-password")
 
-        assertFalse(draft.toString().contains("password"))
+        assertFalse(state.toDraft().toString().contains("password"))
+        assertFalse(state.toString().contains("password"))
     }
 }

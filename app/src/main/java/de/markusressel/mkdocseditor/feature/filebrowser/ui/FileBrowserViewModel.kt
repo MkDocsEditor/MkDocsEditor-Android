@@ -1,5 +1,8 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui
 
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.SyncStatusStore
+import org.mobilenativefoundation.store.store5.StoreReadResponseOrigin
+import java.util.Date
 import androidx.annotation.StringRes
 import de.markusressel.mkdocseditor.feature.common.ui.userMessage
 import de.markusressel.mkdocseditor.R
@@ -63,6 +66,7 @@ internal class FileBrowserViewModel @Inject constructor(
     computePathToSectionUseCase: ComputePathToSectionUseCase,
     private val createNewDocumentUseCase: CreateNewDocumentUseCase,
     moveItemUseCase: MoveItemUseCase,
+    private val syncStatusStore: SyncStatusStore,
     getBacklinksUseCase: GetBacklinksUseCase,
     loadWikiTreeUseCase: LoadWikiTreeUseCase,
     dataRepository: DataRepository,
@@ -160,6 +164,14 @@ internal class FileBrowserViewModel @Inject constructor(
         }
 
         launch {
+            getCurrentBackendConfigFlowUseCase().collect { config ->
+                _uiState.update { old ->
+                    old.copy(lastSync = config?.let { syncStatusStore.lastSync(it.id) }, lastSyncFailed = false)
+                }
+            }
+        }
+
+        launch {
             navigator.currentSectionId.collect { savedSectionId = it }
         }
 
@@ -179,7 +191,8 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private fun onSectionResponse(sectionId: String, userAsked: Boolean, response: StoreReadResponse<SectionData>) {
+    private suspend fun onSectionResponse(sectionId: String, userAsked: Boolean, response: StoreReadResponse<SectionData>) {
+        if (response.isAnswerFromBackend()) onBackendAnswered()
         _uiState.update { old ->
             old.copy(
                 isLoading = response is StoreReadResponse.Loading,
@@ -272,7 +285,17 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
+    private fun StoreReadResponse<SectionData>.isAnswerFromBackend() =
+        this is StoreReadResponse.NoNewData || (this is StoreReadResponse.Data && origin is StoreReadResponseOrigin.Fetcher)
+
+    private suspend fun onBackendAnswered() {
+        val now = Date()
+        getCurrentBackendConfigFlowUseCase().first()?.let { syncStatusStore.setLastSync(it.id, now) }
+        _uiState.update { old -> old.copy(lastSync = now, lastSyncFailed = false) }
+    }
+
     private fun onLoadFailed(sectionId: String, userAsked: Boolean, @StringRes message: Int) {
+        _uiState.update { old -> old.copy(lastSyncFailed = true) }
         val contentShown = uiState.value.folderContent?.sectionId == sectionId
         when (placeOfLoadFailure(contentShown, userAsked)) {
             LoadFailurePlace.InPlaceOfContent -> _uiState.update { old ->

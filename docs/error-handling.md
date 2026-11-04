@@ -50,13 +50,12 @@ Done:
 - The file browser: `ErrorCard` is gone, and its failures follow the table. Its hints and confirmations are in
   `strings.xml`.
 - `UploadFilesUseCase` and `MoveItemUseCase` no longer show exception text.
+- The server screens: no toasts, and a snackbar for what fails or finishes.
 
 To do, in this order:
 
 1. Check where the auth screens show their `UiMessage` errors against the table. Their texts are already string
    resources, not exception text. The editor's snackbars and banners need the same check.
-2. Toasts in `BackendConfigEditScreen` and `BackendConfigSelectionScreen`: wait for the
-   [backend configuration](../TODO.md#backend-configuration) redesign, which replaces those screens.
 
 ## Open questions
 

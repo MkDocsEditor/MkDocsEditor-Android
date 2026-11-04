@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui.compose
 
+import de.markusressel.mkdocseditor.feature.common.ui.compose.syncStatusText
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -75,6 +76,7 @@ internal fun FileBrowserScreenContent(
                 MkDocsEditorTopAppBar<TopAppBarAction.FileBrowser>(
                     canGoBack = false,
                     title = stringResource(id = R.string.screen_files_title),
+                    subtitle = syncStatusText(uiState.lastSync, uiState.lastSyncFailed),
                     actions = listOf(
                         TopAppBarAction.FileBrowser.Search,
                         TopAppBarAction.FileBrowser.Profile,
