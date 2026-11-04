@@ -129,8 +129,8 @@ internal fun CodeEditorScreenContent(
                                 .takeIf { uiState.remotePeers.isNotEmpty() },
                             TopAppBarAction.CodeEditor.PageReferencesAction,
                             // one place for both, so nothing moves when the mode changes
-                            TopAppBarAction.CodeEditor.EditorModeAction(splitMode.takeIf { uiState.editModeActive })
-                                .takeIf { uiState.editModeActive || uiState.canEdit },
+                            TopAppBarAction.CodeEditor.EditorModeAction(splitMode.takeIf { editorShown })
+                                .takeIf { editorShown || uiState.canEdit },
                             TopAppBarAction.CodeEditor.ShowInBrowserAction
                         ),
                         onActionClicked = {
@@ -155,7 +155,8 @@ internal fun CodeEditorScreenContent(
                         .fillMaxWidth()
                         .then(if (keyboardVisible) Modifier.height(COMPACT_TOOLBAR_HEIGHT) else Modifier),
                     uiState = lastVisibleState.value,
-                    onUiEvent = onUiEvent,
+                    // while the edit mode opens there is no document to change yet
+                    onUiEvent = { if (uiState.editModeActive) onUiEvent(it) },
                 )
             }
         },

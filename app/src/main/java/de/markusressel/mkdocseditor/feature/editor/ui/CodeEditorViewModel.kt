@@ -73,7 +73,7 @@ internal class CodeEditorViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
-        UiState(
+        initialUiState(
             editModeOpening = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value &&
                 !sessionEnvironment.offlineMode.value,
         )
@@ -196,7 +196,7 @@ internal class CodeEditorViewModel @Inject constructor(
         launch {
             // the page only comes up when the edit mode will not open after all
             session.awaitOpeningFailed()
-            _uiState.update { old -> old.copy(editModeOpening = false) }
+            if (uiState.value.editModeOpening) disableEditMode()
         }
 
         launch {
@@ -555,6 +555,16 @@ internal class CodeEditorViewModel @Inject constructor(
             id = CodeEditorFabId.DisableEditMode,
             description = R.string.code_editor_disable_edit_mode,
             icon = MaterialDesignIconic.Icon.gmi_check,
+        )
+
+        /**
+         * An edit mode that opens on its own has its whole layout from the first frame, so nothing moves or fades in
+         * while the screen slides in and the document loads.
+         */
+        internal fun initialUiState(editModeOpening: Boolean) = UiState(
+            editModeOpening = editModeOpening,
+            isBottomAppBarVisible = editModeOpening,
+            fabConfig = if (editModeOpening) FabConfig(right = listOf(DisableEditModeFabConfig)) else FabConfig(),
         )
     }
 
