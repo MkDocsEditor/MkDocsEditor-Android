@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
+import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRuns
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -76,6 +77,8 @@ internal fun CodeEditorScreenContent(
     uiState: CodeEditorViewModel.UiState,
     editorState: KodeEditorState,
     remotePeers: State<List<RemotePeer>> = NoRemotePeers,
+    authorRuns: State<AuthorRuns> = remember { mutableStateOf(AuthorRuns()) },
+    authorColors: () -> Map<String, String?> = { emptyMap() },
     onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
     previewResourceLoader: PreviewResourceLoader = PreviewResourceLoader { null },
 ) {
@@ -201,6 +204,8 @@ internal fun CodeEditorScreenContent(
                             state = editorState,
                             remotePeers = remotePeers,
                             settings = uiState.editorSettings,
+                            authorRuns = authorRuns,
+                            authorColors = authorColors,
                             readOnly = !uiState.editModeActive,
                         )
                     },

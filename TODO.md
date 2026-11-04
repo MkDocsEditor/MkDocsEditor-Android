@@ -9,7 +9,7 @@ clients show the same thing.
 | Area | Entry | Kind of work | Needs another repo |
 |---|---|---|---|
 | Editor | [Opening a document when the backend is unavailable](#opening-a-document-when-the-backend-is-unavailable) | Bug and small feature | No |
-| Editor | [Author highlighting](#author-highlighting) | Feature | Probably KodeEditor |
+| Editor | [Author highlighting](#author-highlighting) | Open questions left | Maybe KodeEditor |
 | File browser | [Entries lack context](#file-browser-entries-lack-context) | Design and UI | Maybe the backend |
 | File browser | [Transitions between sections](#transitions-between-sections) | Design and UI | No |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Feature | Yes, the backend and the web client |
@@ -69,38 +69,21 @@ is on permanently. Three modes:
 - that strip plus a slight background highlight, like a marker, on the text itself
 - nothing
 
+**State**
+
+- Built, using `GET /document/{id}/authorship/`. The setting is under Editor, and the default is strip and marker.
+- `AuthorRuns` moves with each edit, in the call that makes it. New text has no author until the backend's next answer,
+  about 2 seconds after the text settles, because the app can't tell which actor made a remote change.
+- A strip with several authors on a line shows each one with its share.
+- Offline shows nothing, and nothing stores the runs.
+
 **Open questions**
 
-- Which mode is the default? I'm leaning towards the most verbose one: CodiMD uses it, and it gives the most value
-  for a use case like mine.
-- Where is the toggle: in the editor, in the settings, or both?
-- A strip for a line with several authors: split it, or show one color?
-
-**Where to start**
-
-- The backend has it: `GET /document/{id}/authorship/` returns `heads` and `runs` (`start`, `end`, `actorId`,
-  `username`). See `docs/sync-protocol.md` section 7 in MkDocsEditor-Backend.
-- **`start` and `end` are Unicode code points**, while the editor works in UTF-16, so they need converting. Emojis
-  would shift everything otherwise.
-- The app doesn't use this yet. `DocumentSyncSession` and the protocol messages (`ActorInfo`, `ActorMessage`) already
-  carry the actor to user bindings. The protocol docs say to key per-user data on `accountId`.
-- The server only sends the state at open. The client must then update the runs itself from local and remote changes,
-  and fetch them again after a reconnect or when they get out of step.
-- The first request replays the whole history, about 1.5 s for 3000 changes, so it must not block opening a document.
-- Decide what offline shows, since the endpoint needs a connection. Nothing stores the runs today.
-- The web client already does this: `src/editor/authorship.ts`, `src/sync/session.ts` and `DocumentView.vue` in
-  MkDocsEditor-Web. It uses a background at 14 % alpha and a 2 px underline at 60 %.
-- Colors: reuse `RemotePeerColor.kt`, so an author has the same color as their cursor.
-
-**KodeEditor**
-
-- Strip: `KodeEditorGutterColumn` and the `gutterColumns` parameter. The column draws per line, so check how it looks
-  with wrapped lines (`lineWrapping = true`).
-- Marker on text: `KodeEditorLineDecoration` only covers whole lines, so it doesn't fit per-character ranges. The
-  `overlay` parameter is what `RemotePeersOverlay` uses and may work. Otherwise KodeEditor needs a new API.
-- Only Markus merges in KodeEditor.
-- Read the "Editor and document" rules in `AGENTS.md`: the runs have to move within the call that makes the edit, and
-  must not come from comparing texts.
+- The strip is only on the first row of a wrapped line, because that is what `KodeEditorGutterColumn` draws. KodeEditor
+  has `GutterCell.fullHeight` ready on its branch `gutter-cell-full-height`, not merged yet. Once it is, adopt the commit
+  and draw with it; `drawCell` is then also called for lines whose top is above the window.
+- Is a toggle in the editor needed as well? The web client has only that, as on/off and off by default.
+- Colors of users who were never online during the session fall back to one derived from the username.
 
 ---
 

@@ -221,3 +221,28 @@ fun FuelError.isUnsupportedEndpoint(): Boolean =
     response.statusCode in UNSUPPORTED_STATUS && ApiErrorModel.parse(response.data)?.code == null
 
 private val UNSUPPORTED_STATUS = setOf(404, 405)
+
+/**
+ * Who wrote which part of a document, see docs/sync-protocol.md section 7 in MkDocsEditor-Backend
+ *
+ * @param heads the state of the document that [runs] describes
+ * @param runs the whole text without gaps, with positions in Unicode code points
+ */
+@JsonClass(generateAdapter = true)
+data class AuthorshipModel(
+    val heads: List<String> = emptyList(),
+    val runs: List<AuthorshipRunModel> = emptyList(),
+)
+
+/**
+ * @param start the first code point, inclusive
+ * @param end the last code point, exclusive
+ * @param actorId `:disk` and `:server` mark external or imported text
+ */
+@JsonClass(generateAdapter = true)
+data class AuthorshipRunModel(
+    val start: Int,
+    val end: Int,
+    val actorId: String,
+    val username: String = "",
+)

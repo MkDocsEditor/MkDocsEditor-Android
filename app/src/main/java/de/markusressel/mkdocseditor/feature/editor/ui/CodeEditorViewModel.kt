@@ -1,5 +1,9 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
+import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRuns
+import de.markusressel.mkdocseditor.feature.editor.domain.GetAuthorshipUseCase
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.AuthorHighlightMode
+import kotlinx.coroutines.flow.map
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.EditorSettings
 import android.net.Uri
 import de.markusressel.mkdocseditor.feature.editor.domain.TextPositions
@@ -71,6 +75,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private val editorResources: EditorResources,
     private val eventBusManager: EventBusManager,
     private val context: Context,
+    private val getAuthorshipUseCase: GetAuthorshipUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -101,12 +106,21 @@ internal class CodeEditorViewModel @Inject constructor(
     /** loads the images of the preview */
     val previewResourceLoader = editorResources.previewResourceLoader { wikiTreeHolder.tree.value }
 
+    /** every new value asks the backend again who wrote what, once the text has settled */
+    private val authorshipRequests = MutableStateFlow(0)
+
     private val editorText = EditorTextController(
         editModeActive = { uiState.value.editModeActive },
         onPeersChanged = ::publishPeers,
         onSelectionChanged = { session.onLocalSelectionChanged(it.start, it.end) },
         onEdited = { saveEditorState() },
+        onDocumentChanged = { authorshipRequests.update { it + 1 } },
     )
+
+    /** who wrote what, see [EditorTextController.authorRuns] */
+    internal val editorAuthorRuns: State<AuthorRuns> = editorText.authorRuns
+
+    internal fun editorAuthorColors(): Map<String, String?> = editorText.authorColors
 
     /** what the editor shows */
     internal val editorState: KodeEditorState = editorText.editorState
@@ -165,9 +179,27 @@ internal class CodeEditorViewModel @Inject constructor(
                 preferencesHolder.editorLineWrappingPreference.persistedValue,
                 preferencesHolder.editorLineNumbersPreference.persistedValue,
                 preferencesHolder.editorTextSizePreference.persistedValue,
-            ) { wrapping, numbers, size ->
-                EditorSettings(lineWrapping = wrapping, lineNumbers = numbers, textSize = size.toInt())
+                preferencesHolder.editorAuthorHighlightPreference.persistedValue,
+            ) { wrapping, numbers, size, authors ->
+                EditorSettings(
+                    lineWrapping = wrapping,
+                    lineNumbers = numbers,
+                    textSize = size.toInt(),
+                    authorHighlight = AuthorHighlightMode.fromValue(authors),
+                )
             }.collect { settings -> _uiState.update { it.copy(editorSettings = settings) } }
+        }
+
+        launch {
+            combine(
+                session.documentId,
+                session.connectionStatus.map { it?.connected == true },
+                preferencesHolder.editorAuthorHighlightPreference.persistedValue,
+                authorshipRequests,
+            ) { documentId, connected, mode, request ->
+                val wanted = connected && AuthorHighlightMode.fromValue(mode) != AuthorHighlightMode.Off
+                documentId.takeIf { wanted } to request
+            }.collectLatest { (documentId, _) -> if (documentId != null) loadAuthors(documentId) }
         }
 
         session.start()
@@ -377,6 +409,22 @@ internal class CodeEditorViewModel @Inject constructor(
         }
         // show the new files in the tree (pickers, preview)
         session.documentId.value?.let { refreshWikiTree(it) }
+    }
+
+    /** Waits until the text settled, because an answer only fits the exact state of the text it describes */
+    private suspend fun loadAuthors(documentId: String) {
+        repeat(AUTHORSHIP_ATTEMPTS) {
+            delay(AUTHORSHIP_SETTLE_MS)
+            val fits = getAuthorshipUseCase(documentId).fold(
+                success = { editorText.showAuthors(it) },
+                failure = {
+                    // for example a backend that does not have this yet; the editor works without it
+                    Timber.w(it)
+                    return
+                },
+            )
+            if (fits) return
+        }
     }
 
     private suspend fun onTopAppBarActionClicked(action: TopAppBarAction.CodeEditor) {
@@ -716,3 +764,6 @@ internal class CodeEditorViewModel @Inject constructor(
         data class PageReferencesPanel(val data: PageReferences = PageReferences()) : DialogState
     }
 }
+
+private const val AUTHORSHIP_SETTLE_MS = 2000L
+private const val AUTHORSHIP_ATTEMPTS = 3

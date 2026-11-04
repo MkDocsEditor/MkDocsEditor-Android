@@ -1,5 +1,8 @@
 package de.markusressel.mkdocseditor.feature.editor
 
+import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRun
+import de.markusressel.mkdocsrestclient.reference.AuthorshipModel
+import de.markusressel.mkdocsrestclient.reference.AuthorshipRunModel
 import androidx.compose.ui.text.TextRange
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatAction
 import de.markusressel.mkdocseditor.feature.editor.ui.EditorTextController
@@ -14,6 +17,7 @@ import org.automerge.ObjectId
 import org.automerge.ObjectType
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class EditorTextControllerTest {
@@ -194,5 +198,53 @@ class EditorTextControllerTest {
         controller.bind(TestDocument("server"))
         controller.showDetachedText("cached")
         assertEquals("server", controller.text)
+    }
+
+    private fun TestDocument.authorship(vararg runs: AuthorshipRunModel) = AuthorshipModel(
+        heads = automerge.headsHex,
+        runs = runs.toList(),
+    )
+
+    @Test
+    fun `an answer for the current state shows, and moves with the next edit in the same call`() {
+        val controller = controller()
+        val document = TestDocument("abcd")
+        controller.bind(document)
+
+        assertTrue(controller.showAuthors(document.authorship(AuthorshipRunModel(0, 4, "1", "anna"))))
+        assertEquals(listOf(AuthorRun(0, 4, "anna")), controller.authorRuns.value.runs)
+
+        controller.select(2, 2)
+        controller.editorState.replaceSelection("xy")
+
+        assertEquals(
+            listOf(AuthorRun(0, 2, "anna"), AuthorRun(2, 4, null), AuthorRun(4, 6, "anna")),
+            controller.authorRuns.value.runs,
+        )
+    }
+
+    @Test
+    fun `an answer for another state of the text is not used`() {
+        val controller = controller()
+        val document = TestDocument("abcd")
+        controller.bind(document)
+        val old = document.authorship(AuthorshipRunModel(0, 4, "1", "anna"))
+
+        controller.onRemoteChange("abcde", document.remoteEdit("abcde"))
+
+        assertFalse(controller.showAuthors(old))
+        assertTrue(controller.authorRuns.value.runs.isEmpty())
+    }
+
+    @Test
+    fun `a remote change moves the authors with it`() {
+        val controller = controller()
+        val document = TestDocument("abcd")
+        controller.bind(document)
+        controller.showAuthors(document.authorship(AuthorshipRunModel(0, 4, "1", "anna")))
+
+        controller.onRemoteChange("zabcd", document.remoteEdit("zabcd"))
+
+        assertEquals(listOf(AuthorRun(0, 1, null), AuthorRun(1, 5, "anna")), controller.authorRuns.value.runs)
     }
 }
