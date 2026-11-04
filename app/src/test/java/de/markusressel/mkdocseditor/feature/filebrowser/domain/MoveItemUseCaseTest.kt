@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.domain
 
+import de.markusressel.mkdocseditor.R
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Response
 import com.github.kittinunf.fuel.core.requests.DefaultBody
@@ -122,11 +123,12 @@ class MoveItemUseCaseTest {
     }
 
     @Test
-    fun `errors without a JSON body keep the message`() {
+    fun `errors without a JSON body do not show the raw text`() {
         val failed = MoveItemUseCase.failure(fuelError(502, "Bad Gateway"))
         assertEquals(502, failed.status)
         assertNull(failed.reason)
-        assertTrue(failed.message.isNotEmpty())
+        assertEquals("", failed.message)
+        assertEquals(R.string.error_server, failed.fallback)
     }
 
     @Test

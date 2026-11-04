@@ -8,6 +8,15 @@
     <string name="bottom_navigation_item_about">About</string>
 
     <string name="unknown_error">Something went wrong. Please try again.</string>
+    <string name="retry">Retry</string>
+    <string name="document_not_available_offline">This document is not available offline.</string>
+    <string name="resource_downloading">Downloading…</string>
+    <string name="renamed_without_links">Renamed. This server does not update links to it.</string>
+    <plurals name="moved_to">
+        <item quantity="one">Now at /%1$s (%2$d page updated)</item>
+        <item quantity="other">Now at /%1$s (%2$d pages updated)</item>
+    </plurals>
+    <string name="move_error_folders_unavailable">The folders could not be loaded.</string>
     <string name="error_no_backend">No server is set up yet.</string>
     <string name="error_not_allowed">You don\'t have access to this. Try signing in again.</string>
     <string name="error_not_found">This no longer exists on the server.</string>

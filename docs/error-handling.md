@@ -1,7 +1,7 @@
 # Error handling
 
-How the app tells users that something failed, and why. Status: proposal, for Markus to decide. Only the first rule is
-partly in place (see [Migration](#migration)).
+How the app tells users that something failed, and why. Status: accepted. The file browser follows it, the other
+screens are still to do (see [Migration](#migration)).
 
 ## Rules
 
@@ -18,7 +18,8 @@ partly in place (see [Migration](#migration)).
 
 | Kind | Example | Place |
 |---|---|---|
-| Background failure, stored content on screen | Refresh fails, no connection | Connection icon only |
+| Background failure, stored content on screen | Automatic load fails, no connection | Connection icon where the screen has one, otherwise nothing |
+| Refresh the user asked for fails, stored content on screen | Pull to refresh | Snackbar, with retry |
 | Nothing to show | Folder without a stored copy, server unreachable | In place of the content, with a retry button |
 | Action failed | Download, delete | Snackbar, with retry if a retry can work |
 | Action inside a dialog failed | Move, backlinks | Inline in the dialog, which stays open |
@@ -46,16 +47,15 @@ client, because each has its own translation resources.
 
 Done:
 
-- `FileBrowserViewModel`, `ItemActions` and `UploadFilesUseCase` no longer show exception text.
+- The file browser: `ErrorCard` is gone, and its failures follow the table. Its hints and confirmations are in
+  `strings.xml`.
+- `UploadFilesUseCase` and `MoveItemUseCase` no longer show exception text.
 
 To do, in this order:
 
-1. `FileBrowserScreenContent`: replace `ErrorCard` with the "nothing to show" state and a snackbar. A failed refresh with
-   a folder on screen only updates the connection state. Then remove `ErrorCard`.
-2. `MoveItemUseCase` still passes raw exception text when the backend sent no message.
-3. `FileBrowserEvent.Toast` has hardcoded English strings. Move them to `strings.xml`.
-4. Go through the other ViewModels (`grep -E "error = |setError\("`, about 50 places) and sort each into the table.
-5. Toasts in `BackendConfigEditScreen` and `BackendConfigSelectionScreen`: wait for the
+1. Check where the auth screens show their `UiMessage` errors against the table. Their texts are already string
+   resources, not exception text. The editor's snackbars and banners need the same check.
+2. Toasts in `BackendConfigEditScreen` and `BackendConfigSelectionScreen`: wait for the
    [backend configuration](../TODO.md#backend-configuration) redesign, which replaces those screens.
 
 ## Open questions

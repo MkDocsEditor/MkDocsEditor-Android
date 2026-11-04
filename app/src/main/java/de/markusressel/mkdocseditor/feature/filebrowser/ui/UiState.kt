@@ -80,7 +80,10 @@ internal data class UiState(
     val currentDialogState: DialogState? = null,
 
     val isLoading: Boolean = false,
-    @param:StringRes val error: Int? = null,
+    /** shows in a snackbar, on top of content that can still be read */
+    val error: ScreenError? = null,
+    /** the open folder has no stored copy and could not be loaded, shows in place of its content */
+    @param:StringRes val folderError: Int? = null,
 
     /** from the root down to the open folder, starting with the root itself */
     val currentSectionPath: List<SectionItem> = emptyList(),
@@ -128,3 +131,29 @@ val CreateItemsFabConfig = FabConfig(
         )
     )
 )
+
+/**
+ * @param canRetry loading the folder again can fix it; a failed action is simply tapped again
+ */
+internal data class ScreenError(@param:StringRes val message: Int, val canRetry: Boolean)
+
+/** Where a failure to load the open folder shows, see docs/error-handling.md */
+internal enum class LoadFailurePlace { InPlaceOfContent, Snackbar, Nowhere }
+
+/**
+ * @param contentShown the stored copy of this folder is on the screen
+ * @param userAsked the user asked for this load, and is waiting for its result
+ */
+internal fun placeOfLoadFailure(contentShown: Boolean, userAsked: Boolean): LoadFailurePlace = when {
+    !contentShown -> LoadFailurePlace.InPlaceOfContent
+    userAsked -> LoadFailurePlace.Snackbar
+    else -> LoadFailurePlace.Nowhere
+}
+
+/** A short confirmation or hint, turned into text by the screen */
+internal sealed interface BrowserMessage {
+    data object NotAvailableOffline : BrowserMessage
+    data object Downloading : BrowserMessage
+    data object RenamedWithoutLinks : BrowserMessage
+    data class Moved(val newPath: String, val documents: Int) : BrowserMessage
+}

@@ -21,7 +21,7 @@ internal class ItemActions(
     private val moveItem: MoveItemUseCase,
     private val getBacklinks: suspend (WikiItem) -> Result<List<BacklinkModel>>,
     private val loadTree: suspend () -> WikiTree?,
-    private val showMessage: suspend (String) -> Unit,
+    private val showMessage: suspend (BrowserMessage) -> Unit,
     private val reload: () -> Unit,
 ) {
     suspend fun onActionClicked(item: WikiItem, action: ItemAction) {
@@ -38,7 +38,7 @@ internal class ItemActions(
         val tree = loadTree()
         updateMoveDialog {
             if (tree == null) {
-                it.copy(error = MoveOutcome.Failed(null, null, "Could not load the folders"))
+                it.copy(error = MoveOutcome.Failed(null, MoveOutcome.Failed.FOLDERS_UNAVAILABLE, ""))
             } else {
                 it.copy(tree = tree)
             }
@@ -97,7 +97,7 @@ internal class ItemActions(
         val failure = moveItem.renameWithoutPreview(item, name)
         if (failure == null) {
             showDialog(null)
-            showMessage("Renamed. This server does not update links to it.")
+            showMessage(BrowserMessage.RenamedWithoutLinks)
             reload()
         } else {
             updateMoveDialog { it.copy(working = false, error = failure) }
@@ -111,7 +111,7 @@ internal class ItemActions(
         when (val outcome = moveItem(dialog.item, preview.parentId, preview.name, dryRun = false)) {
             is MoveOutcome.Done -> {
                 showDialog(null)
-                showMessage(movedMessage(outcome.result.documents.size, outcome.result.newPath))
+                showMessage(BrowserMessage.Moved(outcome.result.newPath, outcome.result.documents.size))
                 reload()
             }
 
@@ -120,11 +120,6 @@ internal class ItemActions(
     }
 
     fun backToTarget() = updateMoveDialog { it.copy(preview = null, error = null) }
-
-    private fun movedMessage(documents: Int, newPath: String): String {
-        val updated = if (documents == 1) "1 page updated" else "$documents pages updated"
-        return "Now at /$newPath ($updated)"
-    }
 
     private fun showDialog(dialog: DialogState?) = state.update { it.copy(currentDialogState = dialog) }
 

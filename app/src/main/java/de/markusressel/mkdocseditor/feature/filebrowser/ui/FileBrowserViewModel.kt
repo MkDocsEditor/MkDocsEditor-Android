@@ -108,6 +108,9 @@ internal class FileBrowserViewModel @Inject constructor(
     /** every new value loads the open folder again */
     private val reloadRequests = MutableStateFlow(0)
 
+    /** the value of [reloadRequests] that the user asked for by refreshing */
+    private var refreshRequestedByUser = -1
+
     /** waits for the file picker; the file goes to the folder that was open when the upload started */
     private var pendingUpload: Job? = null
 
@@ -167,15 +170,24 @@ internal class FileBrowserViewModel @Inject constructor(
         }
 
         launch {
-            combine(navigator.currentSectionId, reloadRequests) { sectionId, _ -> sectionId }
-                .collectLatest { sectionId ->
-                    getSectionItemsUseCase(sectionId).collect(::onSectionResponse)
+            combine(navigator.currentSectionId, reloadRequests) { sectionId, reload -> sectionId to reload }
+                .collectLatest { (sectionId, reload) ->
+                    getSectionItemsUseCase(sectionId).collect { response ->
+                        onSectionResponse(sectionId, userAsked = reload == refreshRequestedByUser, response)
+                    }
                 }
         }
     }
 
-    private fun onSectionResponse(response: StoreReadResponse<SectionData>) {
-        _uiState.update { old -> old.copy(isLoading = response is StoreReadResponse.Loading) }
+    private fun onSectionResponse(sectionId: String, userAsked: Boolean, response: StoreReadResponse<SectionData>) {
+        _uiState.update { old ->
+            old.copy(
+                isLoading = response is StoreReadResponse.Loading,
+                folderError = old.folderError.takeUnless {
+                    response is StoreReadResponse.Loading || response is StoreReadResponse.Data
+                },
+            )
+        }
         when (response) {
             is StoreReadResponse.NoNewData,
             is StoreReadResponse.Data -> _uiState.update { old ->
@@ -184,12 +196,12 @@ internal class FileBrowserViewModel @Inject constructor(
 
             is StoreReadResponse.Error.Exception -> {
                 Timber.e(response.error)
-                setError(response.error.userMessage())
+                onLoadFailed(sectionId, userAsked, response.error.userMessage())
             }
 
             is StoreReadResponse.Error.Message -> {
                 Timber.e(IllegalStateException(response.message))
-                setError(R.string.unknown_error)
+                onLoadFailed(sectionId, userAsked, R.string.unknown_error)
             }
 
             else -> {
@@ -202,7 +214,10 @@ internal class FileBrowserViewModel @Inject constructor(
         launch {
             when (event) {
                 is UiEvent.DismissError -> setError(null)
-                is UiEvent.Refresh -> reload()
+                is UiEvent.Refresh -> {
+                    refreshRequestedByUser = reloadRequests.value + 1
+                    reload()
+                }
                 is UiEvent.SignInClicked -> uiState.value.loginRequiredBackendId?.let {
                     _events.send(FileBrowserEvent.OpenLogin(it))
                 }
@@ -257,8 +272,23 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private fun setError(@StringRes message: Int?) {
-        _uiState.update { old -> old.copy(isLoading = false, error = message) }
+    private fun onLoadFailed(sectionId: String, userAsked: Boolean, @StringRes message: Int) {
+        val contentShown = uiState.value.folderContent?.sectionId == sectionId
+        when (placeOfLoadFailure(contentShown, userAsked)) {
+            LoadFailurePlace.InPlaceOfContent -> _uiState.update { old ->
+                // the content of the last folder must not pass as this one
+                old.copy(folderContent = null, folderError = message)
+            }
+
+            LoadFailurePlace.Snackbar -> setError(message, canRetry = true)
+            LoadFailurePlace.Nowhere -> Unit
+        }
+    }
+
+    private fun setError(@StringRes message: Int?, canRetry: Boolean = false) {
+        _uiState.update { old ->
+            old.copy(isLoading = false, error = message?.let { ScreenError(it, canRetry) })
+        }
     }
 
     /** Runs what the user asked for and shows a failure on the screen */
@@ -338,7 +368,7 @@ internal class FileBrowserViewModel @Inject constructor(
 
     private suspend fun onDocumentClicked(entity: DocumentData) {
         if (isOfflineModeEnabledFlowUseCase().value && entity.isOfflineAvailable.not()) {
-            _events.send(FileBrowserEvent.Toast("Document is not available offline"))
+            _events.send(FileBrowserEvent.Toast(BrowserMessage.NotAvailableOffline))
             return
         }
         _events.send(FileBrowserEvent.OpenDocumentEditor(entity.id))
@@ -346,7 +376,7 @@ internal class FileBrowserViewModel @Inject constructor(
 
     private suspend fun onResourceClicked(entity: ResourceData) {
         val result = try {
-            _events.send(FileBrowserEvent.Toast("Downloading resource..."))
+            _events.send(FileBrowserEvent.Toast(BrowserMessage.Downloading))
             downloadResourceUseCase.invoke(entity.id, entity.name)
         } catch (ex: CancellationException) {
             throw ex
@@ -405,7 +435,7 @@ internal enum class ItemAction { Rename, Move, UsedBy, Delete }
 internal sealed class FileBrowserEvent {
     data object OpenSearch : FileBrowserEvent()
     data class OpenDocumentEditor(val documentId: String) : FileBrowserEvent()
-    data class Toast(val message: String) : FileBrowserEvent()
+    data class Toast(val message: BrowserMessage) : FileBrowserEvent()
 
     data class OpenAccount(val backendId: Long) : FileBrowserEvent()
     data object OpenResourceSelection : FileBrowserEvent()
