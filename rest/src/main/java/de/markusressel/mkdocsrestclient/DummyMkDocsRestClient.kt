@@ -13,7 +13,7 @@ import de.markusressel.mkdocsrestclient.reference.DocumentReferencesModel
 import de.markusressel.mkdocsrestclient.reference.LinkResultModel
 import de.markusressel.mkdocsrestclient.reference.MoveRequestModel
 import de.markusressel.mkdocsrestclient.reference.MoveResultModel
-import de.markusressel.mkdocsrestclient.reference.MovedModel
+import de.markusressel.mkdocsrestclient.reference.MovedListModel
 import de.markusressel.mkdocsrestclient.resource.ResourceModel
 import de.markusressel.mkdocsrestclient.section.SectionModel
 import java.util.Date
@@ -249,7 +249,7 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
     override suspend fun move(request: MoveRequestModel): Result<MoveResultModel, FuelError> =
         Result.error(FuelError.wrap(UnsupportedOperationException("not in the demo")))
 
-    override suspend fun getMoved(oldId: String): Result<MovedModel, FuelError> =
+    override suspend fun getMoved(oldIds: List<String>): Result<MovedListModel, FuelError> =
         Result.error(FuelError.wrap(UnsupportedOperationException("not in the demo")))
 
     override suspend fun getMkDocsConfig(): Result<MkDocsConfigModel, FuelError> {

@@ -26,8 +26,10 @@ interface ReferenceApi {
     suspend fun move(request: MoveRequestModel): Result<MoveResultModel, FuelError>
 
     /**
-     * Where an item with an old id is now. Fails with status 404 for ids that did not move
-     * (current ids too) and for items that are gone.
+     * Where the items with the given old ids are now. Ids that did not move (current ids too) and
+     * items that are gone are not part of the answer.
+     *
+     * @param oldIds at most 200 ids, the server refuses more
      */
-    suspend fun getMoved(oldId: String): Result<MovedModel, FuelError>
+    suspend fun getMoved(oldIds: List<String>): Result<MovedListModel, FuelError>
 }

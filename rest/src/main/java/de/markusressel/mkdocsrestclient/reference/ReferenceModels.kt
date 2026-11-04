@@ -162,7 +162,7 @@ data class MoveResultModel(
 )
 
 /**
- * Answer of `GET /moved/{id}/`: where a moved item is now
+ * Where a moved item is now, see [MovedListModel]
  */
 @JsonClass(generateAdapter = true)
 data class MovedModel(
@@ -170,6 +170,14 @@ data class MovedModel(
     val type: String,
     val item: ItemRefModel,
     val movedAt: Date,
+)
+
+/**
+ * Answer of `GET /moved/`
+ */
+@JsonClass(generateAdapter = true)
+data class MovedListModel(
+    val moved: List<MovedModel>,
 )
 
 /**
