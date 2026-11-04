@@ -154,6 +154,11 @@ class EncryptedTokenStoreTest {
     }
 
     @Test
+    fun `toString does not contain the token`() {
+        assertFalse(session.toString().contains(session.token))
+    }
+
+    @Test
     fun `session expiry respects the leeway`() {
         val now = Instant.ofEpochSecond(1000)
         assertFalse(session.copy(expiresAt = null).isExpired(now))
