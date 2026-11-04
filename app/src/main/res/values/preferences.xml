@@ -64,8 +64,6 @@
     <string name="code_editor_always_edit_mode_key" translatable="false">code_editor_always_edit_mode_key</string>
     <string name="code_editor_always_edit_mode_title">Always open edit-mode</string>
 
-    <string name="code_editor_sync_interval_key" translatable="false">code_editor_sync_interval_key</string>
-    <string name="code_editor_sync_interval_title">Sync Interval</string>
 
     <!-- Debug -->
     <string name="category_debug_key" translatable="false">category_debug</string>
