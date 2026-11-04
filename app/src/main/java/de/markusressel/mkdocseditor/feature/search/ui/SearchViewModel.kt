@@ -82,12 +82,6 @@ internal class SearchViewModel(
         launch {
             when (event) {
                 is UiEvent.SearchInputChanged -> setSearch(event.searchFilter)
-                is UiEvent.SearchCleared -> {
-                    setSearch("")
-                    // an empty input is untouched again, so the recent searches return
-                    _uiState.update { it.copy(inputChanged = false) }
-                }
-
                 is UiEvent.SearchExpandedChanged -> onSearchExpandedChanged(event.isSearchExpanded)
                 is UiEvent.SearchRequested -> onSearchRequested(event.searchFilter)
                 is UiEvent.RecentSearchClicked -> onSearchRequested(event.term)
@@ -153,7 +147,8 @@ internal class SearchViewModel(
             _uiState.update { old ->
                 old.copy(
                     currentSearchFilter = text,
-                    inputChanged = true,
+                    // an empty input is untouched again, so the recent searches return
+                    inputChanged = text.isNotEmpty(),
                 )
             }
             true
@@ -196,7 +191,6 @@ internal class SearchViewModel(
 
     sealed class UiEvent {
         data class SearchInputChanged(val searchFilter: String) : UiEvent()
-        data object SearchCleared : UiEvent()
         data class SearchRequested(val searchFilter: String) : UiEvent()
         data class RecentSearchClicked(val term: String) : UiEvent()
         data class SearchExpandedChanged(val isSearchExpanded: Boolean) : UiEvent()

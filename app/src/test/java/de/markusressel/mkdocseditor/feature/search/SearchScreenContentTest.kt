@@ -142,6 +142,6 @@ class SearchScreenContentTest {
 
         composeRule.onNodeWithContentDescription("Clear the search").performClick()
 
-        assertEquals(SearchViewModel.UiEvent.SearchCleared, events.last())
+        assertEquals(SearchViewModel.UiEvent.SearchInputChanged(""), events.last())
     }
 }

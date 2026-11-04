@@ -21,9 +21,8 @@ import timber.log.Timber
  */
 @MainThread
 class AutomergeDocumentSyncManager(
-    private val hostname: String,
-    private val port: Int,
-    private val ssl: Boolean,
+    private val websocketBaseUrl: String,
+    origin: String,
     authorizationProvider: AuthorizationProvider,
     documentId: String,
     store: LocalDocumentStore,
@@ -53,7 +52,7 @@ class AutomergeDocumentSyncManager(
                 // the server closes with 4009, then we reconnect to the new id
             }
         },
-        origin = originOf(hostname, port),
+        origin = origin,
     )
 
     private val connection = WebsocketConnectionHandler(authorizationProvider)
@@ -91,10 +90,7 @@ class AutomergeDocumentSyncManager(
         get() = session.isSyncing
 
     private val websocketUrl: String
-        get() {
-            val protocol = if (ssl) "wss" else "ws"
-            return "$protocol://$hostname:$port/document/${session.documentId}/ws/"
-        }
+        get() = documentWebsocketUrl(websocketBaseUrl, session.documentId)
 
     init {
         connection.setListener(object : WebsocketConnectionListener {
@@ -284,6 +280,10 @@ class AutomergeDocumentSyncManager(
     }
 
     companion object {
+        /** @param websocketBaseUrl what all websocket URLs of the server start with, ending in a slash */
+        fun documentWebsocketUrl(websocketBaseUrl: String, documentId: String) =
+            "${websocketBaseUrl}document/$documentId/ws/"
+
         /** identifies a server in a stored copy */
         fun originOf(hostname: String, port: Int) = "$hostname:$port"
 

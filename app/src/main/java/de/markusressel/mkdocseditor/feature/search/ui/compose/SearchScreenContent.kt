@@ -92,7 +92,7 @@ internal fun SearchScreenContent(
                 leadingIcon = leadingIcon,
                 trailingIcon = {
                     if (uiState.currentSearchFilter.isNotEmpty()) {
-                        IconButton(onClick = { onUiEvent(UiEvent.SearchCleared) }) {
+                        IconButton(onClick = { onUiEvent(UiEvent.SearchInputChanged("")) }) {
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = stringResource(R.string.search_clear),

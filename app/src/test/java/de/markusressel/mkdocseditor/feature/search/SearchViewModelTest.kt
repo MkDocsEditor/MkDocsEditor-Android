@@ -93,13 +93,15 @@ class SearchViewModelTest {
     }
 
     @Test
-    fun `recent searches are only offered until the input changes`() = runTest {
+    fun `recent searches are only offered while the input is empty`() = runTest {
         RecentSearchStore(keyValues).remember("haft")
         assertTrue(viewModel.uiState.value.showRecentSearches)
 
         viewModel.onUiEvent(SearchViewModel.UiEvent.SearchInputChanged("h"))
-        viewModel.onUiEvent(SearchViewModel.UiEvent.SearchInputChanged(""))
         assertFalse(viewModel.uiState.value.showRecentSearches)
+
+        viewModel.onUiEvent(SearchViewModel.UiEvent.SearchInputChanged(""))
+        assertTrue(viewModel.uiState.value.showRecentSearches)
     }
 
     @Test
@@ -130,7 +132,7 @@ class SearchViewModelTest {
         viewModel.onUiEvent(SearchViewModel.UiEvent.SearchInputChanged("haft und"))
         assertFalse(viewModel.uiState.value.showRecentSearches)
 
-        viewModel.onUiEvent(SearchViewModel.UiEvent.SearchCleared)
+        viewModel.onUiEvent(SearchViewModel.UiEvent.SearchInputChanged(""))
 
         assertEquals("", viewModel.uiState.value.currentSearchFilter)
         assertTrue(viewModel.uiState.value.showRecentSearches)
