@@ -119,21 +119,17 @@ is on permanently. Three modes:
 **Where to start**
 
 - `listentry/SectionListEntry.kt`, `DocumentListEntry.kt` and `ResourceListEntry.kt` in `feature/filebrowser/ui/compose`.
-- Green text: the title and subtitle both use `colorScheme.onPrimaryContainer`, with `titleMedium` and `bodySmall`. Icons
-  use `sectionBackgroundColor` and `documentBackgroundColor`.
-- A folder shows its name and counts (`Subsections: 1 · Documents: 3`). A document shows its name, size and last
-  modified.
-- Already in the data: a folder's whole subtree (`SectionData`), so counts and the newest `modtime` inside it can be
-  computed locally without a server change.
+- Names use `onSurface`, and everything below them `onSurfaceVariant`.
+- A folder shows its name, counts and last change in its subtree (`SectionData.lastChange`). A document shows its name,
+  size and last modified.
 - The API also has `path` and `index` on sections, plus `mimeType` and `thumbnail` on resources. I didn't check which
   of these the app already stores.
 - Tests: `DocumentListEntryTest`, `FolderScrollPositionTest`.
 
 **Open questions**
 
-- What context actually helps choosing a folder? Ideas: last changed date, who changed it, the first line of its
-  index page, names of the newest documents. The first one is free, the others may need backend or data work.
-- Which text keeps a strong color, and which becomes `onSurfaceVariant`? Worth trying side by side with previews.
+- Does the last changed date give enough context? Further ideas: who changed it, the first line of its index page, names
+  of the newest documents. These may need backend or data work.
 
 ## Transitions between sections
 
@@ -142,22 +138,12 @@ is on permanently. Three modes:
 We have no transitions when entering or exiting a section in the file browser, which looks a bit jarring. I'm not sure
 which direction to take the animations. Maybe there are widely used patterns we can adopt.
 
-**Where to start**
+**State**
 
-- The list switches in `FileBrowserScreenContent`, inside `folderScrollStates.SaveableStateProvider`. An `AnimatedContent`
-  would go around it. Each folder keeps its own scroll state there, and that has to keep working (`FolderScrollPositionTest`).
-- Animate on `folderContent.sectionId`, not on the whole content, or a refresh of the same folder would animate too.
-- The path changes first and the content follows when it has loaded (`FileBrowserViewModel`), so a slow folder would
-  animate late. Decide what shows meanwhile.
-- `folderContent` can be null for a moment, which needs its own case so the list doesn't animate to nothing and back.
-- The direction comes from comparing the old and new `currentSectionPath`: deeper, higher, or a jump through a path chip
-  in `SectionPath`.
-- Back goes through `BackHandler` in `FileBrowserScreen` (`UiEvent.NavigateUp`).
+Folder changes now use a shared axis on X with a fade, in `FileBrowserScreenContent`. A slow folder animates only when its content has loaded.
 
 **Open questions**
 
-- Which pattern? Idea: Material's shared axis on X, where a deeper folder slides in from the end and going up reverses
-  that. It's the usual choice for moving through a hierarchy, and it shows the direction.
 - Should the back gesture preview the parent folder (predictive back)? That needs a `PredictiveBackHandler` and the
   parent's content on hand, so it's more work.
 - Should the path chips at the bottom animate along with the list?

@@ -18,6 +18,10 @@ import de.markusressel.mkdocseditor.feature.filebrowser.data.FolderContent
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.UiState
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.FileBrowserScreenContent
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
+import de.markusressel.mkdocseditor.feature.filebrowser.data.SectionItem
+import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.opensDeeper
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -94,4 +98,21 @@ class FolderScrollPositionTest {
 
         composeRule.onNodeWithText("parent-39").assertIsDisplayed()
     }
+
+    @Test
+    fun `new content of the same folder shows`() {
+        showBrowser()
+
+        show(FolderContent(sectionId = "parent", documents = listOf(documentData("added"))))
+
+        composeRule.onNodeWithText("added").assertIsDisplayed()
+    }
+
+    private val path = listOf(SectionItem("root", "/"), SectionItem("a", "a"))
+
+    @Test
+    fun `opening a subfolder goes deeper`() = assertTrue(opensDeeper(from = "root", to = "a", path = path))
+
+    @Test
+    fun `going up does not go deeper`() = assertFalse(opensDeeper(from = "b", to = "a", path = path))
 }

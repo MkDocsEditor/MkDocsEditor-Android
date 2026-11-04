@@ -1,8 +1,14 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui.compose
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Column
@@ -20,6 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import de.markusressel.mkdocseditor.R
@@ -116,28 +123,61 @@ internal fun FileBrowserScreenContent(
                         onUiEvent(UiEvent.Refresh)
                     }
                 ) {
-                    // each folder keeps its own position. It follows the content and not the path,
-                    // because the content of the last folder stays until the next one has loaded
-                    folderScrollStates.SaveableStateProvider(uiState.folderContent?.sectionId ?: NO_FOLDER) {
-                        FileBrowserList(
-                            modifier = Modifier.fillMaxSize(),
-                            state = rememberLazyListState(),
-                            content = uiState.folderContent,
-                            isLoading = uiState.isLoading,
-                            unsyncedDocumentIds = uiState.unsyncedDocumentIds,
-                            onDocumentClicked = { onUiEvent(UiEvent.DocumentClicked(it)) },
-                            onDocumentLongClicked = { onUiEvent(UiEvent.DocumentLongClicked(it)) },
-                            onResourceClicked = { onUiEvent(UiEvent.ResourceClicked(it)) },
-                            onResourceLongClicked = { onUiEvent(UiEvent.ResourceLongClicked(it)) },
-                            onSectionClicked = { onUiEvent(UiEvent.SectionClicked(it)) },
-                            onSectionLongClicked = { onUiEvent(UiEvent.SectionLongClicked(it)) },
-                        )
+                    AnimatedContent(
+                        targetState = uiState.folderContent,
+                        // a refresh of the same folder does not animate
+                        contentKey = { it?.sectionId },
+                        transitionSpec = {
+                            folderTransition(
+                                from = initialState?.sectionId,
+                                to = targetState?.sectionId,
+                                path = uiState.currentSectionPath,
+                            )
+                        },
+                        label = "folder",
+                    ) { folder ->
+                        // each folder keeps its own position. It follows the content and not the path,
+                        // because the content of the last folder stays until the next one has loaded
+                        folderScrollStates.SaveableStateProvider(folder?.sectionId ?: NO_FOLDER) {
+                            FileBrowserList(
+                                modifier = Modifier.fillMaxSize(),
+                                state = rememberLazyListState(),
+                                content = folder,
+                                isLoading = uiState.isLoading,
+                                unsyncedDocumentIds = uiState.unsyncedDocumentIds,
+                                onDocumentClicked = { onUiEvent(UiEvent.DocumentClicked(it)) },
+                                onDocumentLongClicked = { onUiEvent(UiEvent.DocumentLongClicked(it)) },
+                                onResourceClicked = { onUiEvent(UiEvent.ResourceClicked(it)) },
+                                onResourceLongClicked = { onUiEvent(UiEvent.ResourceLongClicked(it)) },
+                                onSectionClicked = { onUiEvent(UiEvent.SectionClicked(it)) },
+                                onSectionLongClicked = { onUiEvent(UiEvent.SectionLongClicked(it)) },
+                            )
+                        }
                     }
                 }
             }
         }
     }
 }
+
+/**
+ * @return whether opening [to] goes deeper: the path of the open folder still contains the folder that was shown
+ */
+internal fun opensDeeper(from: String?, to: String?, path: List<SectionItem>): Boolean =
+    from != to && path.any { it.id == from }
+
+/** The shared axis of Material: a deeper folder comes in from the end, and going back reverses that */
+private fun folderTransition(from: String?, to: String?, path: List<SectionItem>): ContentTransform {
+    val fade = tween<Float>(FOLDER_ANIMATION_MS)
+    if (from == null || to == null) return fadeIn(fade) togetherWith fadeOut(fade)
+    val offset = tween<IntOffset>(FOLDER_ANIMATION_MS)
+    val direction = if (opensDeeper(from, to, path)) 1 else -1
+    return (fadeIn(fade) + slideInHorizontally(offset) { direction * it / FOLDER_SLIDE_FRACTION }) togetherWith
+        (fadeOut(fade) + slideOutHorizontally(offset) { -direction * it / FOLDER_SLIDE_FRACTION })
+}
+
+private const val FOLDER_ANIMATION_MS = 250
+private const val FOLDER_SLIDE_FRACTION = 10
 
 /** the scroll state while the content of the folder is unknown, so the state of a folder keeps its position */
 private const val NO_FOLDER = ""
