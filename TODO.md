@@ -44,9 +44,9 @@ Order that fits how they depend on each other (Idea):
 - The bar is `LOADING_INDICATOR_TAG` in `CodeEditorScreenContent`, driven by `DocumentSession.State.loading`.
 - #121 hides the bar while a local copy is showing (`DocumentSession.showsLoading`). `State.loading` itself is unchanged,
   and without a local copy the bar can still last long.
-- Lead, not confirmed: `WebsocketConnectionHandler` has a `connectTimeout` of 5 s and a `readTimeout` of 0 (none).
-  An upgrade that connects but never gets an answer might never end the loading. Reproduce this first, and find
-  out which kind of "unavailable" causes the long wait: no network, a blocked route, or a proxy without a backend.
+- `WebsocketConnectionHandler` now gives up on an upgrade that never gets an answer after 15 s (a proxy without a
+  backend, for example). Not tried against a real proxy. Whether no network or a blocked route also wait long is still
+  to check.
 
 **Out-of-date warning**
 

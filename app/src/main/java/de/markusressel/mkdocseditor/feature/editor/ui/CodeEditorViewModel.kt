@@ -355,7 +355,7 @@ internal class CodeEditorViewModel @Inject constructor(
         } finally {
             _uiState.update { old -> old.copy(uploading = false) }
         }
-        result.failure?.let { showMessage(context.getString(R.string.upload_failed, it)) }
+        result.failure?.let { showMessage(context.getString(R.string.upload_failed, context.getString(it))) }
         if (result.snippets.isEmpty()) return
 
         dismissCurrentDialog()

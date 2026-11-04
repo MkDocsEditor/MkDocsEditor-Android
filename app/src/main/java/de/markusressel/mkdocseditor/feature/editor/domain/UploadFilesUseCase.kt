@@ -1,5 +1,7 @@
 package de.markusressel.mkdocseditor.feature.editor.domain
 
+import androidx.annotation.StringRes
+import de.markusressel.mkdocseditor.feature.common.ui.userMessage
 import android.net.Uri
 import com.github.ajalt.timberkt.Timber
 import de.markusressel.mkdocseditor.feature.filebrowser.data.DocumentData
@@ -19,7 +21,7 @@ import javax.inject.Inject
  */
 internal data class UploadResult(
     val snippets: List<String>,
-    val failure: String? = null,
+    @param:StringRes val failure: Int? = null,
 )
 
 /**
@@ -44,7 +46,7 @@ internal class UploadFilesUseCase(
         altText: String,
     ): UploadResult {
         val created = mutableListOf<String>()
-        var failure: String? = null
+        var failure: Int? = null
         try {
             uris.forEach { uri ->
                 val (displayName, bytes) = withContext(Dispatchers.IO) { source.read(uri) }
@@ -59,7 +61,7 @@ internal class UploadFilesUseCase(
             }
         } catch (ex: Exception) {
             Timber.e(ex) { "Upload failed" }
-            failure = ex.message ?: ex.javaClass.simpleName
+            failure = ex.userMessage()
         }
 
         val fromPath = tree.pathOf(WikiItem.Document(document))

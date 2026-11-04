@@ -46,13 +46,13 @@ client, because each has its own translation resources.
 
 Done:
 
-- `FileBrowserViewModel` and `ItemActions` no longer show exception text.
+- `FileBrowserViewModel`, `ItemActions` and `UploadFilesUseCase` no longer show exception text.
 
 To do, in this order:
 
 1. `FileBrowserScreenContent`: replace `ErrorCard` with the "nothing to show" state and a snackbar. A failed refresh with
    a folder on screen only updates the connection state. Then remove `ErrorCard`.
-2. `MoveItemUseCase` and `UploadFilesUseCase` still pass raw exception text when the backend sent no message.
+2. `MoveItemUseCase` still passes raw exception text when the backend sent no message.
 3. `FileBrowserEvent.Toast` has hardcoded English strings. Move them to `strings.xml`.
 4. Go through the other ViewModels (`grep -E "error = |setError\("`, about 50 places) and sort each into the table.
 5. Toasts in `BackendConfigEditScreen` and `BackendConfigSelectionScreen`: wait for the
