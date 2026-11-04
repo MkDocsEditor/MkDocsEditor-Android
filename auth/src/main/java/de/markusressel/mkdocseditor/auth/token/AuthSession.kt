@@ -21,4 +21,6 @@ data class AuthSession(
         val expiry = expiresAt ?: return false
         return !now.isBefore(expiry.minusSeconds(leewaySeconds))
     }
+
+    override fun toString() = "AuthSession(expiresAt=$expiresAt, username=$username)"
 }
