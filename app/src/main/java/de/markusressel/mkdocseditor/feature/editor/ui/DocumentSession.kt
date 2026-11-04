@@ -98,6 +98,7 @@ internal interface DocumentSessionEnvironment {
     /** @return the current id of a document that may have moved */
     suspend fun followRedirect(documentId: String): String
 
+    /** Not on each call: it sends a request per local copy */
     suspend fun followAllRedirects()
 
     /**

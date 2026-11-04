@@ -29,12 +29,20 @@ class EncryptedTokenStore(
     )
     override val changes: Flow<Long> = _changes.asSharedFlow()
 
+    /**
+     * The decrypted sessions. Each request reads the token and a decrypt goes through the
+     * Keystore, so a burst of requests would hold the lock long enough to freeze the main thread,
+     * which reads the token when an editor connects.
+     */
+    private val decrypted = mutableMapOf<Long, AuthSession>()
+
     @Synchronized
     override fun get(backendId: Long): AuthSession? {
+        decrypted[backendId]?.let { return it }
         val encoded = storage.get(key(backendId)) ?: return null
         return try {
             val json = cipher.decrypt(Base64.getDecoder().decode(encoded)).decodeToString()
-            requireNotNull(adapter.fromJson(json)).toAuthSession()
+            requireNotNull(adapter.fromJson(json)).toAuthSession().also { decrypted[backendId] = it }
         } catch (e: Exception) {
             Timber.w(e, "Dropping unreadable session of backend $backendId")
             storage.remove(key(backendId))
@@ -47,11 +55,13 @@ class EncryptedTokenStore(
         val json = adapter.toJson(session.toStoredSession())
         val encrypted = cipher.encrypt(json.encodeToByteArray())
         storage.put(key(backendId), Base64.getEncoder().encodeToString(encrypted))
+        decrypted[backendId] = session
         _changes.tryEmit(backendId)
     }
 
     @Synchronized
     override fun remove(backendId: Long) {
+        decrypted.remove(backendId)
         storage.remove(key(backendId))
         _changes.tryEmit(backendId)
     }

@@ -79,6 +79,70 @@ class EncryptedTokenStoreTest {
         assertNull(store.get(1))
     }
 
+    private class CountingCipher(private val delegate: TokenCipher) : TokenCipher by delegate {
+        var decrypts = 0
+        override fun decrypt(data: ByteArray): ByteArray {
+            decrypts++
+            return delegate.decrypt(data)
+        }
+    }
+
+    @Test
+    fun `a stored session is decrypted only once`() {
+        val storage = MapKeyValueStore()
+        val key = newKey()
+        EncryptedTokenStore(storage, AesGcmTokenCipher { key }).put(1, session)
+        val cipher = CountingCipher(AesGcmTokenCipher { key })
+        val store = EncryptedTokenStore(storage, cipher)
+
+        repeat(3) { assertEquals(session, store.get(1)) }
+
+        assertEquals(1, cipher.decrypts)
+    }
+
+    @Test
+    fun `a session that was read before is gone after remove`() {
+        val storage = MapKeyValueStore()
+        val key = newKey()
+        val store = EncryptedTokenStore(storage, AesGcmTokenCipher { key })
+        store.put(1, session)
+        assertEquals(session, store.get(1))
+
+        store.remove(1)
+
+        assertNull(store.get(1))
+        assertTrue(storage.map.isEmpty())
+    }
+
+    @Test
+    fun `a session that was read before is replaced by put`() {
+        val key = newKey()
+        val store = EncryptedTokenStore(MapKeyValueStore(), AesGcmTokenCipher { key })
+        store.put(1, session)
+        assertEquals(session, store.get(1))
+
+        val renewed = session.copy(token = "renewed-token")
+        store.put(1, renewed)
+
+        assertEquals(renewed, store.get(1))
+    }
+
+    @Test
+    fun `sessions of different backends stay apart after reading them`() {
+        val key = newKey()
+        val store = EncryptedTokenStore(MapKeyValueStore(), AesGcmTokenCipher { key })
+        val other = session.copy(token = "other-token", username = "bob")
+        store.put(1, session)
+        store.put(2, other)
+        store.get(1)
+        store.get(2)
+
+        store.remove(1)
+
+        assertNull(store.get(1))
+        assertEquals(other, store.get(2))
+    }
+
     @Test
     fun `cipher uses a fresh IV per message`() {
         val key = newKey()
