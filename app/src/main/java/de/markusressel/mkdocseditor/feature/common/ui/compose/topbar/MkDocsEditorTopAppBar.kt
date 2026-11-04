@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.common.ui.compose.topbar
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +38,7 @@ fun MkDocsEditorTopAppBar(
 @Composable
 fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
     title: String,
+    subtitle: String? = null,
     canGoBack: Boolean = true,
     onBackClicked: (() -> Unit)? = null,
     actions: List<T> = emptyList(),
@@ -52,7 +54,14 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
 
     TopAppBar(
         windowInsets = windowInsets,
-        title = { Text(text = title) },
+        title = {
+            Column {
+                Text(text = title)
+                if (subtitle != null) {
+                    Text(text = subtitle, style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        },
         navigationIcon = {
             if (canGoBack) {
                 IconButton(onClick = onBackClicked ?: defaultNavigationAction) {

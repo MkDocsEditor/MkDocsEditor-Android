@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui
 
+import java.util.Date
 import androidx.annotation.StringRes
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
@@ -82,6 +83,10 @@ internal data class UiState(
     val isLoading: Boolean = false,
     /** shows in a snackbar, on top of content that can still be read */
     val error: ScreenError? = null,
+    /** when the backend last answered, null if it never did */
+    val lastSync: Date? = null,
+    /** the backend did not answer the last load, so the list may be out of date */
+    val lastSyncFailed: Boolean = false,
     /** the open folder has no stored copy and could not be loaded, shows in place of its content */
     @param:StringRes val folderError: Int? = null,
 

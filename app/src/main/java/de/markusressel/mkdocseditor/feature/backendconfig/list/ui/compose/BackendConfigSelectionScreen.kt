@@ -1,13 +1,11 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.list.ui.compose
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -19,7 +17,6 @@ import de.markusressel.mkdocseditor.feature.backendconfig.list.ui.BackendSelecti
 object BackendConfigSelectionScreen : Screen {
     @Composable
     override fun Content() {
-        val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
 
         val viewModel = getViewModel<BackendSelectionViewModel>()
@@ -28,7 +25,7 @@ object BackendConfigSelectionScreen : Screen {
         LaunchedEffect(viewModel) {
             viewModel.events.collect { event ->
                 when (event) {
-                    is BackendSelectionViewModel.BackendSelectionEvent.CreateBackend -> {
+                    BackendSelectionViewModel.BackendSelectionEvent.CreateBackend -> {
                         // the address is enough, discovery fills in the rest
                         navigator.push(ConnectServerScreen())
                     }
@@ -37,9 +34,6 @@ object BackendConfigSelectionScreen : Screen {
                         navigator.push(BackendConfigEditScreen(event.id))
                     }
 
-                    is BackendSelectionViewModel.BackendSelectionEvent.Error -> {
-                        Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
-                    }
                 }
             }
         }

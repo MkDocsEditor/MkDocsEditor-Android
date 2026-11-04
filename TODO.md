@@ -14,14 +14,13 @@ clients show the same thing.
 | File browser | [Transitions between sections](#transitions-between-sections) | Design and UI | No |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Feature | Yes, the backend and the web client |
 | App-wide | [Error handling](#error-handling) | Move the other screens to the spec | No |
+| App-wide | [Sync indicator](#sync-indicator) | Small feature | No |
 | App-wide | [Settings](#settings) | Audit, then UI | Maybe KutePreferences |
-| Accounts | [Backend configuration](#backend-configuration) | Redesign and refactor | No |
 | Accounts | [Onboarding](#onboarding) | Feature | No |
 
 Order that fits how they depend on each other (Idea):
 
 - New screens follow the error handling spec in `docs/error-handling.md`.
-- Do backend configuration before onboarding: onboarding leads into those screens.
 - Do settings after author highlighting: that adds a setting.
 
 ---
@@ -169,6 +168,13 @@ its content has loaded. The path chips fade in and out with the same timing (`Se
 - A little gamification here and there wouldn't hurt, but it might be hard to fit into an app like this.
 - All of this has to work in the web client as well.
 
+**The index page (Idea from Markus)**
+
+MkDocs always has an `index` document, which the web page opens by default. It could serve as the dashboard, or a part
+of it: the family already edits it like any other page, it works offline like any other page, and it needs no new
+backend storage. It could hold what pinned pages would otherwise do, at least for the whole family, with the feed below
+or next to it.
+
 **Suggested approach (Idea)**
 
 Build it in this order, because each step uses the one before:
@@ -279,6 +285,22 @@ If notifications get annoying, people turn them off, and the goal is lost.
 - The spec is `docs/error-handling.md`, and its migration list is what's left to do.
 - The file browser follows it: no `ErrorCard` and no raw exception text (`Throwable.userMessage()`).
 
+## Sync indicator
+
+**What I want**
+
+A small "synced" indicator, maybe global or on every relevant top-level page, that says how long ago the last check with
+the backend was, and whether that might affect anything. Really minimal, and it has to fit into the rest of the design.
+
+**State**
+
+The file browser shows it below its title ("Synced 3 hours ago", "Not connected · Synced 3 hours ago"). It counts file
+browser loads only, and `SyncStatusStore` remembers the time per server.
+
+**Open questions**
+
+- Should other top-level pages show it too? Should document syncs count as an answer from the backend?
+
 ## Settings
 
 **What I want**
@@ -321,24 +343,10 @@ If notifications get annoying, people turn them off, and the goal is lost.
 Both the code and the UI deserve a rework. It has everything we need, but it looks clunky and crammed, and doesn't
 behave very elegantly. Redesign the UX and UI, and the code of the UI layer.
 
-**Where to start**
+**State**
 
-- `feature/backendconfig/edit/ui/BackendConfigEditViewModel.kt` is the big one, at 514 lines. The whole feature is about
-  2700 lines.
-- Edit screen: `BackendConfigEditScreenContent` with `MkDocsBackendSection`, `MkDocsWebSection`, `AuthConfigSection` and
-  `BackendAccountCard`.
-- `compose/auth/` has a composable for each button (`AuthAddButton`, `AuthSaveButton`, `AuthAbortButton`,
-  `AuthDeleteButton`), plus `AuthConfigEditLayout` and `AuthConfigEmptyLayout`.
-- List screen: `feature/backendconfig/list`, with `BackendSelectionViewModel`.
-- Newer flows already exist that may replace part of this: `feature/auth/onboarding` (`ConnectServerScreen`,
-  `ConnectLinkScreen`) and `feature/auth/account`. Decide what the manual form is still for, before redesigning it.
-- Follow `AGENTS.md`: one `UiState`, one `onUiEvent`, a stateless `XScreenContent` with `@CombinedPreview`, and a
-  `toString` override on state that holds a password or token.
-- Read "Backend of the REST client" in `AGENTS.md` before touching how the selected backend works.
-
-**Open questions**
-
-- Does anyone still need a manual form with host and port, or is a server address plus sign-in enough?
+Reworked. The edit screen has one address field instead of host, port and SSL, and the rarely needed fields are under
+"Advanced". A new server still starts in `ConnectServerScreen`. Not tried on a device yet.
 
 ## Onboarding
 
