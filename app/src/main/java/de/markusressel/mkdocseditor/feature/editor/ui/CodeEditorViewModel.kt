@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.EditorSettings
 import android.net.Uri
 import de.markusressel.mkdocseditor.feature.editor.domain.TextPositions
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.DEFAULT_SPLIT_RATIO
@@ -157,6 +158,16 @@ internal class CodeEditorViewModel @Inject constructor(
 
         launch {
             session.documentId.filterNotNull().collect { documentId -> loadSplitRatio(documentId) }
+        }
+
+        launch {
+            combine(
+                preferencesHolder.editorLineWrappingPreference.persistedValue,
+                preferencesHolder.editorLineNumbersPreference.persistedValue,
+                preferencesHolder.editorTextSizePreference.persistedValue,
+            ) { wrapping, numbers, size ->
+                EditorSettings(lineWrapping = wrapping, lineNumbers = numbers, textSize = size.toInt())
+            }.collect { settings -> _uiState.update { it.copy(editorSettings = settings) } }
         }
 
         session.start()
@@ -603,6 +614,8 @@ internal class CodeEditorViewModel @Inject constructor(
          * Whether the document is connected, null until that is known
          */
         val connectionIndicator: ConnectionIndicator? = null,
+
+        val editorSettings: EditorSettings = EditorSettings(),
 
         /** what the user chose for the edit mode, null to go with what fits the window */
         val splitMode: SplitMode? = null,

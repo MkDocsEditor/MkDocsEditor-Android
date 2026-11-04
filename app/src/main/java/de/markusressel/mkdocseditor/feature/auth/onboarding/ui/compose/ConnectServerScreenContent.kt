@@ -45,6 +45,7 @@ internal fun ConnectServerScreenContent(
     canGoBack: Boolean,
     onUiEvent: (UiEvent) -> Unit,
     onBackClicked: () -> Unit,
+    firstRun: Boolean = false,
 ) {
     TabContentScaffold(
         topBar = {
@@ -71,6 +72,7 @@ internal fun ConnectServerScreenContent(
             if (uiState.setupBackendId != null) {
                 SetupRequired(uiState, onUiEvent)
             } else {
+                if (firstRun) Welcome()
                 AddressForm(uiState, onUiEvent)
             }
 
@@ -79,6 +81,14 @@ internal fun ConnectServerScreenContent(
             }
         }
     }
+}
+
+/** Says what the app is for, and what a new user needs. The web client's address depends on the server, so no link. */
+@Composable
+private fun Welcome() {
+    Text(text = stringResource(R.string.onboarding_welcome_title), style = MaterialTheme.typography.headlineSmall)
+    Text(text = stringResource(R.string.onboarding_welcome_message), style = MaterialTheme.typography.bodyMedium)
+    Text(text = stringResource(R.string.onboarding_invite_hint), style = MaterialTheme.typography.bodyMedium)
 }
 
 @Composable

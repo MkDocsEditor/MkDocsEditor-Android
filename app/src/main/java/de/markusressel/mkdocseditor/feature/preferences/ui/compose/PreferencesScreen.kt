@@ -1,5 +1,8 @@
 package de.markusressel.mkdocseditor.feature.preferences.ui.compose
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.unit.dp
+import de.markusressel.kutepreferences.ui.theme.KutePreferencesThemeDefaults
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,7 +31,22 @@ internal fun PreferencesScreen(
     )
 
     Box(modifier = modifier) {
-        KutePreferencesTheme {
+        val defaults = KutePreferencesThemeDefaults.defaultColors
+        KutePreferencesTheme(
+            // flat and with the text colors of the other lists of the app
+            colors = defaults.copy(
+                category = defaults.category.copy(
+                    elevation = 0.dp,
+                    cardBackgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    titleColor = MaterialTheme.colorScheme.onSurface,
+                ),
+                section = defaults.section.copy(
+                    elevation = 0.dp,
+                    titleBackgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    contentBackgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                ),
+            ),
+        ) {
             KutePreferencesScreen(
                 modifier = Modifier.fillMaxSize(),
                 kuteViewModel = viewModel,

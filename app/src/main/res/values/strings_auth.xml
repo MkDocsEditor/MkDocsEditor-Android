@@ -160,6 +160,9 @@
     <string name="account_cancel">Cancel</string>
     <string name="account_signed_out">Signed out.</string>
     <!-- onboarding: add a server -->
+    <string name="onboarding_welcome_title">Welcome</string>
+    <string name="onboarding_welcome_message">Write and look up your wiki together with others, also without a connection.</string>
+    <string name="onboarding_invite_hint">You need an account on your wiki\'s server. No account yet? Ask your admin for an invite link, and open it on this phone or enter it below.</string>
     <string name="onboarding_title">Add a server</string>
     <string name="onboarding_qr_title">Fastest: scan the QR code</string>
     <string name="onboarding_qr_hint">Sign in on the web client, open your account page and choose "Connect the Android app". Scan the QR code with your camera or tap the link on this phone. The app sets everything up and signs you in.</string>

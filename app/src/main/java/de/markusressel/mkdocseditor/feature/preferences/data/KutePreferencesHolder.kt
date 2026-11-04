@@ -50,6 +50,7 @@ class KutePreferencesHolder @Inject constructor(
                     key = R.string.section_background_sync_key,
                     title = context.getString(R.string.section_background_sync_title),
                     children = listOf(
+                        offlineModePreference,
                         lastOfflineCacheUpdate,
                         forceOfflineCacheUpdatePreference,
                         clearOfflineCache
@@ -76,7 +77,7 @@ class KutePreferencesHolder @Inject constructor(
             description = context.getString(R.string.clear_offline_cache_description),
             onClick = {
                 sectionPersistenceManager.deleteTreeAndContent()
-                context.toast("DB cleared")
+                context.toast(R.string.clear_offline_cache_done)
             })
     }
 
@@ -106,8 +107,8 @@ class KutePreferencesHolder @Inject constructor(
 
     val offlineModePreference by lazy {
         KuteBooleanPreference(key = R.string.offline_mode_key,
-            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_colorize),
-            title = context.getString(R.string.theme_title),
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_airplane),
+            title = context.getString(R.string.offline_mode_title),
             defaultValue = false,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { old, new ->
@@ -118,7 +119,7 @@ class KutePreferencesHolder @Inject constructor(
     val uxCategory by lazy {
         KuteCategory(
             key = R.string.category_ux_key,
-            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_compass),
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_edit),
             title = context.getString(R.string.category_ux_title),
             description = context.getString(R.string.category_ux_description),
             children = listOf(
@@ -127,6 +128,9 @@ class KutePreferencesHolder @Inject constructor(
                     title = context.getString(R.string.section_code_editor_title),
                     children = listOf(
                         codeEditorAlwaysOpenEditModePreference,
+                        editorLineWrappingPreference,
+                        editorLineNumbersPreference,
+                        editorTextSizePreference,
                     )
                 )
             )
@@ -163,6 +167,35 @@ class KutePreferencesHolder @Inject constructor(
             dataProvider = dataProvider,
             onPreferenceChangedListener = { old, new ->
             })
+    }
+
+    val editorLineWrappingPreference by lazy {
+        KuteBooleanPreference(key = R.string.editor_line_wrapping_key,
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_wrap_text),
+            title = context.getString(R.string.editor_line_wrapping_title),
+            defaultValue = true,
+            dataProvider = dataProvider,
+            onPreferenceChangedListener = { _, _ -> })
+    }
+
+    val editorLineNumbersPreference by lazy {
+        KuteBooleanPreference(key = R.string.editor_line_numbers_key,
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_format_list_numbered),
+            title = context.getString(R.string.editor_line_numbers_title),
+            defaultValue = true,
+            dataProvider = dataProvider,
+            onPreferenceChangedListener = { _, _ -> })
+    }
+
+    val editorTextSizePreference by lazy {
+        KuteNumberPreference(key = R.string.editor_text_size_key,
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_format_size),
+            title = context.getString(R.string.editor_text_size_title),
+            minimum = 10,
+            maximum = 24,
+            defaultValue = DEFAULT_EDITOR_TEXT_SIZE,
+            unit = "sp",
+            dataProvider = dataProvider)
     }
 
     val debugCategory by lazy {
@@ -226,3 +259,6 @@ class KutePreferencesHolder @Inject constructor(
 
 }
 
+
+/** the size that the editor uses without a setting */
+const val DEFAULT_EDITOR_TEXT_SIZE = 14L
