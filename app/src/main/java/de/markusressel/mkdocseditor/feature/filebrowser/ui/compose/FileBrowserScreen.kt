@@ -6,6 +6,9 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
@@ -48,6 +51,12 @@ object FileBrowserScreen : Screen {
             enabled = uiState.canGoUp,
             onBack = { viewModel.onUiEvent(UiEvent.NavigateUp) },
         )
+
+        val lifecycleOwner = LocalLifecycleOwner.current
+        LaunchedEffect(lifecycleOwner) {
+            // only while visible: nothing needs the socket in the background
+            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.followTreeChanges() }
+        }
 
         // Runs only on initial composition
         LaunchedEffect(Unit) {

@@ -84,13 +84,24 @@ class SearchViewModelTest {
     }
 
     @Test
-    fun `recent searches are only offered until the input changes`() = runTest {
+    fun `words of one letter are too short, however many there are`() = runTest {
+        viewModel.onUiEvent(SearchViewModel.UiEvent.SearchInputChanged("a b"))
+        assertTrue(viewModel.uiState.value.isInputTooShort)
+
+        viewModel.onUiEvent(SearchViewModel.UiEvent.SearchInputChanged("a bc"))
+        assertFalse(viewModel.uiState.value.isInputTooShort)
+    }
+
+    @Test
+    fun `recent searches are only offered while the input is empty`() = runTest {
         RecentSearchStore(keyValues).remember("haft")
         assertTrue(viewModel.uiState.value.showRecentSearches)
 
         viewModel.onUiEvent(SearchViewModel.UiEvent.SearchInputChanged("h"))
-        viewModel.onUiEvent(SearchViewModel.UiEvent.SearchInputChanged(""))
         assertFalse(viewModel.uiState.value.showRecentSearches)
+
+        viewModel.onUiEvent(SearchViewModel.UiEvent.SearchInputChanged(""))
+        assertTrue(viewModel.uiState.value.showRecentSearches)
     }
 
     @Test
@@ -113,5 +124,17 @@ class SearchViewModelTest {
     @Test
     fun `tapping a resource goes to the resource`() = runTest {
         assertClickGoesTo(SearchResultItem.Resource("r", "image"), BusEvent.CodeEditorBusEvent.GoToResource("r"))
+    }
+
+    @Test
+    fun `clearing the input offers the recent searches again`() = runTest {
+        RecentSearchStore(keyValues).remember("haft")
+        viewModel.onUiEvent(SearchViewModel.UiEvent.SearchInputChanged("haft und"))
+        assertFalse(viewModel.uiState.value.showRecentSearches)
+
+        viewModel.onUiEvent(SearchViewModel.UiEvent.SearchInputChanged(""))
+
+        assertEquals("", viewModel.uiState.value.currentSearchFilter)
+        assertTrue(viewModel.uiState.value.showRecentSearches)
     }
 }

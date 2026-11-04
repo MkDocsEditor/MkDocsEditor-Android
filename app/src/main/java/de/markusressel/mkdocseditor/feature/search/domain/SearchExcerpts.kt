@@ -19,20 +19,20 @@ internal object SearchExcerpts {
     )
 
     fun find(content: String, searchTerm: String): Result {
-        if (searchTerm.isEmpty()) return Result(0, emptyList())
-        val regex = searchTerm.toSearchRegex()
-        val headings = Headings.of(content)
+        val query = SearchQuery(searchTerm)
+        // only when a line matches: finding the headings is the expensive part
+        val headings by lazy(LazyThreadSafetyMode.NONE) { Headings.of(content) }
 
         var matchCount = 0
         val excerpts = content.split('\n').mapIndexedNotNull { index, line ->
-            val matches = regex.findAll(line).map { it.range }.toList()
-            if (matches.isEmpty()) return@mapIndexedNotNull null
-            matchCount += matches.size
+            val occurrences = query.occurrencesIn(line)
+            if (occurrences.isEmpty()) return@mapIndexedNotNull null
+            matchCount += occurrences.size
 
             val lineNumber = index + 1
             excerpt(
                 line = line,
-                matches = matches,
+                matches = SearchQuery.merged(occurrences),
                 heading = headings.takeUnless { it.any { heading -> heading.line == lineNumber } }
                     ?.lastOrNull { it.line < lineNumber }?.text,
             )
@@ -67,20 +67,11 @@ internal object SearchExcerpts {
     }
 }
 
-internal fun String.toSearchRegex() = toRegex(setOf(RegexOption.LITERAL, RegexOption.IGNORE_CASE))
-
 /** the best matches first: the name before the content, the whole name before a part of it */
 internal fun List<SearchResultItem>.sortedByRelevance(searchTerm: String): List<SearchResultItem> {
-    val term = searchTerm.trim()
+    val query = SearchQuery(searchTerm)
     return sortedWith(
-        compareBy<SearchResultItem> {
-            when {
-                it.name.equals(term, ignoreCase = true) -> 0
-                it.name.startsWith(term, ignoreCase = true) -> 1
-                it.name.contains(term, ignoreCase = true) -> 2
-                else -> 3
-            }
-        }
+        compareBy<SearchResultItem> { query.nameRank(it.name) }
             .thenByDescending { (it as? SearchResultItem.Document)?.matchCount ?: 0 }
             .thenBy { it.name.lowercase() }
     )

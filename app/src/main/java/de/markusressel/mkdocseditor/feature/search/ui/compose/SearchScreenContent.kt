@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -89,6 +90,16 @@ internal fun SearchScreenContent(
                 expanded = true,
                 onExpandedChange = { searchActive -> onUiEvent(UiEvent.SearchExpandedChanged(searchActive)) },
                 leadingIcon = leadingIcon,
+                trailingIcon = {
+                    if (uiState.currentSearchFilter.isNotEmpty()) {
+                        IconButton(onClick = { onUiEvent(UiEvent.SearchInputChanged("")) }) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = stringResource(R.string.search_clear),
+                            )
+                        }
+                    }
+                },
             )
         },
         expanded = true,

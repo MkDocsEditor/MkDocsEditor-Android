@@ -22,6 +22,10 @@ internal val fallbackPeerColors = listOf(
     Color(0xFF6F7FE0),
 )
 
+/** The same color for the same name. As a Long, because the absolute value of the smallest Int stays negative. */
+internal fun fallbackPeerColor(username: String): Color =
+    fallbackPeerColors[(username.hashCode().toLong().absoluteValue % fallbackPeerColors.size).toInt()]
+
 /**
  * The minimum contrast of a cursor or selection color against the editor background,
  * the WCAG AA value for graphical objects
@@ -56,7 +60,7 @@ internal fun labelTextColorOn(color: Color): Color =
  * Falls back to a color derived from the username, so a user keeps the same color.
  */
 internal val RemotePeer.composeColor: Color
-    get() = parsePeerColor(color) ?: fallbackPeerColors[username.hashCode().absoluteValue % fallbackPeerColors.size]
+    get() = parsePeerColor(color) ?: fallbackPeerColor(username)
 
 /**
  * The name to show for this peer

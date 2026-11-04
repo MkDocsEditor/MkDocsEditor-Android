@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -126,5 +127,21 @@ class SearchScreenContentTest {
         show(SearchViewModel.UiState())
         composeRule.onNode(hasSetTextAction()).performTextInput("Kü")
         assertEquals(SearchViewModel.UiEvent.SearchInputChanged("Kü"), events.last())
+    }
+
+    @Test
+    fun `an empty input has no clear button`() {
+        show(SearchViewModel.UiState())
+
+        composeRule.onNodeWithContentDescription("Clear the search").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the clear button clears the search`() {
+        show(SearchViewModel.UiState(currentSearchFilter = "Küche"))
+
+        composeRule.onNodeWithContentDescription("Clear the search").performClick()
+
+        assertEquals(SearchViewModel.UiEvent.SearchInputChanged(""), events.last())
     }
 }

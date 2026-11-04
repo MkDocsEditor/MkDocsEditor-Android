@@ -130,6 +130,8 @@ internal fun CodeEditorScreenContent(
                             uiState.connectionIndicator?.let { TopAppBarAction.CodeEditor.ConnectionAction(it) },
                             TopAppBarAction.CodeEditor.OnlineUsersAction(uiState.remotePeers)
                                 .takeIf { uiState.remotePeers.isNotEmpty() },
+                            TopAppBarAction.CodeEditor.AuthorHighlightAction(uiState.editorSettings.authorHighlight)
+                                .takeIf { editorShown },
                             TopAppBarAction.CodeEditor.PageReferencesAction,
                             // one place for both, so nothing moves when the mode changes
                             TopAppBarAction.CodeEditor.EditorModeAction(splitMode.takeIf { editorShown })
@@ -305,6 +307,28 @@ internal fun ConnectionAction(
                 if (indicator == ConnectionIndicator.UnsyncedChanges) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSurfaceVariant
             ),
+        )
+    }
+}
+
+@Composable
+internal fun AuthorHighlightAction(
+    modifier: Modifier,
+    mode: AuthorHighlightMode,
+    onClick: () -> Unit
+) {
+    val modeName = stringResource(mode.nameRes)
+    IconButton(
+        modifier = modifier.testTag("author-highlight-action"),
+        onClick = onClick
+    ) {
+        Image(
+            asset = if (mode == AuthorHighlightMode.Off) MaterialDesignIconic.Icon.gmi_accounts_outline else MaterialDesignIconic.Icon.gmi_accounts,
+            contentDescription = stringResource(R.string.editor_author_highlight_action, modeName),
+            colorFilter = ColorFilter.tint(
+                if (mode == AuthorHighlightMode.StripAndMarker) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant
+            )
         )
     }
 }

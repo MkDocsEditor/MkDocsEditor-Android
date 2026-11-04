@@ -28,6 +28,13 @@ val BackendServerConfig.baseUrl: String
         return "$protocol://$host:$port/" + if (path.isEmpty()) "" else "$path/"
     }
 
+/** What websocket URLs start with, from [baseUrl] because [BackendServerConfig.domain] can hold a path and a protocol */
+internal val BackendServerConfig.websocketBaseUrl: String
+    get() = baseUrl.replaceFirst("http", "ws")
+
+internal val BackendServerConfig.eventsWebsocketUrl: String
+    get() = websocketBaseUrl + "events/ws/"
+
 /**
  * A stored address as the user would write it: without the port when it is the usual one of the protocol, so
  * `ParsedBackendUrl.parse` reads the same address back.

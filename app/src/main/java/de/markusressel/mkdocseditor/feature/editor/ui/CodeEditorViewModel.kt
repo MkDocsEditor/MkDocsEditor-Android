@@ -437,6 +437,11 @@ internal class CodeEditorViewModel @Inject constructor(
             is TopAppBarAction.CodeEditor.OnlineUsersAction -> Unit
             is TopAppBarAction.CodeEditor.ConnectionAction -> onConnectionIconClicked(action.indicator)
             is TopAppBarAction.CodeEditor.PageReferencesAction -> showPageReferences()
+            is TopAppBarAction.CodeEditor.AuthorHighlightAction -> {
+                val next = action.mode.next()
+                preferencesHolder.editorAuthorHighlightPreference.persistValue(next.value)
+                showMessage(context.getString(R.string.editor_author_highlight_changed, context.getString(next.nameRes)))
+            }
         }
     }
 

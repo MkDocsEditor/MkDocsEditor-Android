@@ -125,6 +125,7 @@
     <string name="search">Search</string>
     <string name="search_result_count_header">Results: %1$s</string>
     <string name="search_location_root">Top level</string>
+    <string name="search_clear">Clear the search</string>
     <string name="search_recent_header">Recent searches</string>
     <string name="search_input_too_short">Type at least %1$d characters to search</string>
 
@@ -257,6 +258,8 @@
     <string name="backlinks_line">Line %1$d · %2$s</string>
     <string name="close">Close</string>
 
+    <string name="editor_author_highlight_action">Who wrote what: %1$s</string>
+    <string name="editor_author_highlight_changed">Who wrote what: %1$s</string>
     <string name="page_references_action">Links and files of this page</string>
     <string name="page_references_title">Links and files</string>
     <string name="page_references_tab_resources">Files</string>

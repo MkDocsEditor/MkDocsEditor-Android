@@ -3,6 +3,7 @@ package de.markusressel.mkdocseditor.feature.editor
 import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRun
 import de.markusressel.mkdocsrestclient.reference.AuthorshipModel
 import de.markusressel.mkdocsrestclient.reference.AuthorshipRunModel
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.text.TextRange
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatAction
 import de.markusressel.mkdocseditor.feature.editor.ui.EditorTextController
@@ -246,5 +247,20 @@ class EditorTextControllerTest {
         controller.onRemoteChange("zabcd", document.remoteEdit("zabcd"))
 
         assertEquals(listOf(AuthorRun(0, 1, null), AuthorRun(1, 5, "anna")), controller.authorRuns.value.runs)
+    }
+
+    @Test
+    fun `drawing an author color follows a color that arrives later`() {
+        val controller = controller()
+        val reads = mutableSetOf<Any>()
+        val writes = mutableSetOf<Any>()
+
+        Snapshot.observe(readObserver = { reads += it }) { controller.authorColors["anna"] }
+        Snapshot.observe(writeObserver = { writes += it }) {
+            controller.onAuthorColorsChanged(mapOf("anna" to "#e8590c"))
+        }
+
+        assertTrue(reads.intersect(writes).isNotEmpty())
+        assertEquals("#e8590c", controller.authorColors["anna"])
     }
 }

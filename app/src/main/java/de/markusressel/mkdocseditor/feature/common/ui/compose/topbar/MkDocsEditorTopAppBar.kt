@@ -18,6 +18,7 @@ import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesign
 import de.markusressel.mkdocseditor.extensions.common.android.isComposePreview
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.OnlineUsersAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.ConnectionAction
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.AuthorHighlightAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.PageReferencesAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.ShowInBrowserAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.EditorModeAction
@@ -101,6 +102,14 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
                             modifier = Modifier.align(Alignment.CenterVertically),
                             indicator = action.indicator,
                             onClick = { onActionClicked(action) }
+                        )
+                    }
+
+                    is TopAppBarAction.CodeEditor.AuthorHighlightAction -> {
+                        AuthorHighlightAction(
+                            modifier = Modifier,
+                            mode = action.mode,
+                            onClick = { onActionClicked(action) },
                         )
                     }
 

@@ -8,7 +8,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -42,7 +45,7 @@ class SectionPathTest {
         composeRule.setContent {
             MkDocsEditorTheme {
                 SectionPath(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("bar"),
                     path = path,
                     onSectionClicked = { clicked += it.id },
                 )
@@ -121,5 +124,27 @@ class SectionPathTest {
         show(emptyList())
 
         composeRule.onNode(hasClickAction()).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the bar and the root stay in place during the animation`() {
+        show(items())
+        composeRule.waitForIdle()
+        fun bar() = composeRule.onNodeWithTag("bar").getUnclippedBoundsInRoot().let { it.bottom - it.top }
+        fun root() = composeRule.onNode(hasText("/"), useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val height = bar()
+        val rootLeft = root().left
+
+        listOf(items("guide"), items()).forEach { next ->
+            composeRule.mainClock.autoAdvance = false
+            path = next
+            repeat(30) {
+                composeRule.mainClock.advanceTimeByFrame()
+                assertEquals(height, bar())
+                assertEquals(rootLeft, root().left)
+            }
+            composeRule.mainClock.autoAdvance = true
+            composeRule.waitForIdle()
+        }
     }
 }

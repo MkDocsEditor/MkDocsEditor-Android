@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui
 
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.SyncStatusStore
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ObserveTreeChangesUseCase
 import org.mobilenativefoundation.store.store5.StoreReadResponseOrigin
 import java.util.Date
 import androidx.annotation.StringRes
@@ -51,12 +52,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import org.mobilenativefoundation.store.store5.StoreReadResponse
+import org.mobilenativefoundation.store.store5.impl.extensions.fresh
 import javax.inject.Inject
 
 @HiltViewModel
@@ -70,7 +73,8 @@ internal class FileBrowserViewModel @Inject constructor(
     private val syncStatusStore: SyncStatusStore,
     getBacklinksUseCase: GetBacklinksUseCase,
     loadWikiTreeUseCase: LoadWikiTreeUseCase,
-    dataRepository: DataRepository,
+    private val dataRepository: DataRepository,
+    private val observeTreeChangesUseCase: ObserveTreeChangesUseCase,
     private val deleteDocumentUseCase: DeleteDocumentUseCase,
     private val deleteResourceUseCase: DeleteResourceUseCase,
     private val deleteSectionUseCase: DeleteSectionUseCase,
@@ -377,6 +381,23 @@ internal class FileBrowserViewModel @Inject constructor(
             is WikiItem.Resource -> deleteResourceUseCase(item.id)
         }
         reload()
+    }
+
+    /**
+     * Keeps the stored tree up to date until cancelled, for changes made elsewhere. It only writes to the store, so the
+     * open folder follows through its stream without a loading indicator, and a failure stays quiet.
+     */
+    internal suspend fun followTreeChanges() {
+        observeTreeChangesUseCase().conflate().collect {
+            try {
+                dataRepository.sectionStore.fresh(ROOT_SECTION_ID)
+                onBackendAnswered()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e) { "Could not follow a change of the tree" }
+            }
+        }
     }
 
     private fun reload() {

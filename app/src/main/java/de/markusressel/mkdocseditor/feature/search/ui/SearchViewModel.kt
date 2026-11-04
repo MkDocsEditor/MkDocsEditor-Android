@@ -8,6 +8,7 @@ import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.event.EventBusManager
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.search.data.RecentSearchStore
+import de.markusressel.mkdocseditor.feature.search.domain.SearchQuery
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.feature.search.domain.SearchUseCase
 import kotlinx.coroutines.channels.Channel
@@ -146,7 +147,8 @@ internal class SearchViewModel(
             _uiState.update { old ->
                 old.copy(
                     currentSearchFilter = text,
-                    inputChanged = true,
+                    // an empty input is untouched again, so the recent searches return
+                    inputChanged = text.isNotEmpty(),
                 )
             }
             true
@@ -200,6 +202,6 @@ internal class SearchViewModel(
     companion object {
         const val MIN_SEARCH_LENGTH = 2
 
-        private fun String.isSearchable() = trim().length >= MIN_SEARCH_LENGTH
+        private fun String.isSearchable() = SearchQuery(this).hasWordOf(MIN_SEARCH_LENGTH)
     }
 }

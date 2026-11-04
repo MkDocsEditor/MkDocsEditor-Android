@@ -72,9 +72,14 @@ internal class EditorTextController(
     /** who wrote what, moved within the call of each edit like [peers]. Empty until the backend told us. */
     val authorRuns: State<AuthorRuns> = _authorRuns
 
-    /** the colors of the users seen so far, by username. They stay when a user leaves. */
-    var authorColors: Map<String, String?> = emptyMap()
-        private set
+    private val _authorColors = mutableStateOf(emptyMap<String, String?>())
+
+    /**
+     * The colors of the users seen so far, by username. They stay when a user leaves. This is snapshot state, because a
+     * color can arrive after the runs that use it, and those have to be drawn again then.
+     */
+    val authorColors: Map<String, String?>
+        get() = _authorColors.value
 
     /** the text of the document */
     val text: String
@@ -170,9 +175,13 @@ internal class EditorTextController(
         splices.forEach { moveAuthors(it.index, it.deleteCount, it.insert.length) }
     }
 
+    fun onAuthorColorsChanged(colors: Map<String, String?>) {
+        _authorColors.value = authorColors + colors
+    }
+
     fun onPeersChanged(peers: List<RemotePeer>) {
         _peers.value = peers
-        authorColors = authorColors + peers.associate { it.username to it.color }
+        _authorColors.value = authorColors + peers.associate { it.username to it.color }
         onPeersChanged()
     }
 
