@@ -13,14 +13,14 @@ clients show the same thing.
 | File browser | [Entries lack context](#file-browser-entries-lack-context) | Design and UI | Maybe the backend |
 | File browser | [Transitions between sections](#transitions-between-sections) | Design and UI | No |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Feature | Yes, the backend and the web client |
-| App-wide | [Error handling](#error-handling) | Spec, then UI | No |
+| App-wide | [Error handling](#error-handling) | Decide on the spec, then UI | No |
 | App-wide | [Settings](#settings) | Audit, then UI | Maybe KutePreferences |
 | Accounts | [Backend configuration](#backend-configuration) | Redesign and refactor | No |
 | Accounts | [Onboarding](#onboarding) | Feature | No |
 
 Order that fits how they depend on each other (Idea):
 
-- Do the error handling spec first: the other entries will need to show errors.
+- Settle the error handling spec first: the other entries will need to show errors.
 - Do backend configuration before onboarding: onboarding leads into those screens.
 - Do settings after author highlighting: that adds a setting.
 
@@ -121,7 +121,7 @@ is on permanently. Three modes:
 - `listentry/SectionListEntry.kt`, `DocumentListEntry.kt` and `ResourceListEntry.kt` in `feature/filebrowser/ui/compose`.
 - Names use `onSurface`, and everything below them `onSurfaceVariant`.
 - A folder shows its name, counts and last change in its subtree (`SectionData.lastChange`). A document shows its name,
-  size and last modified.
+  size and last change. Changes read as relative time, and aren't shown after a year (`LastModifiedDate.kt`).
 - The API also has `path` and `index` on sections, plus `mimeType` and `thumbnail` on resources. I didn't check which
   of these the app already stores.
 - Tests: `DocumentListEntryTest`, `FolderScrollPositionTest`.
@@ -140,13 +140,13 @@ which direction to take the animations. Maybe there are widely used patterns we 
 
 **State**
 
-Folder changes now use a shared axis on X with a fade, in `FileBrowserScreenContent`. A slow folder animates only when its content has loaded.
+Folder changes now use a shared axis on X with a fade, in `FileBrowserScreenContent`. A slow folder animates only when
+its content has loaded. The path chips fade in and out with the same timing (`SectionPath`).
 
 **Open questions**
 
 - Should the back gesture preview the parent folder (predictive back)? That needs a `PredictiveBackHandler` and the
   parent's content on hand, so it's more work.
-- Should the path chips at the bottom animate along with the list?
 
 ---
 
@@ -274,25 +274,11 @@ If notifications get annoying, people turn them off, and the goal is lost.
 - Write a design spec of how we handle errors and why, based on what we have now and on what is considered good UX on
   Android in 2026.
 
-**Where to start**
+**State**
 
-- The banner is `ErrorCard`, and only `FileBrowserScreenContent` uses it. #122 keeps it clear of system bars and
-  cutouts. That wasn't tried on a device with a cutout. The spec is still to do.
-- The other ways errors show up, which the spec needs to sort out:
-  - `Toast`, in 9 files (for example `FileBrowserEvent.Toast`)
-  - the snackbars in `CodeEditorScreenContent` and `MainViewModel`
-  - the `EditorBanners` in the editor
-  - `SignInRequiredBanner`
-  - the connection icon
-- About 50 places in ViewModels set an error (`grep -E "error = |setError\("`). Sort them by kind before designing:
-  temporary or permanent, whether the user can act on it, and whether cached data is still showing.
-- `feature/filebrowser/ui/FileBrowserViewModel.kt` passes `localizedMessage` straight to the UI, so users see raw
-  exception text.
-- Reminder from a past bug: release plants no Timber tree, so a caught exception leaves no trace in release.
-
-**Open questions**
-
-- Where does the spec live? `docs/` doesn't exist yet in this repo.
+- The spec is a proposal in `docs/error-handling.md`, waiting for a decision. Its migration list is what's left to do.
+- #122 keeps `ErrorCard` clear of system bars and cutouts. That wasn't tried on a device with a cutout.
+- The file browser no longer shows raw exception text (`Throwable.userMessage()`).
 
 ## Settings
 

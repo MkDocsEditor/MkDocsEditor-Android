@@ -366,7 +366,7 @@ internal fun BacklinksDialog(
                         text = stringResource(R.string.backlinks_unsupported),
                         modifier = Modifier.testTag("backlinks-unsupported"),
                     )
-                    state.error != null -> Text(state.error, color = MaterialTheme.colorScheme.error)
+                    state.error != null -> Text(stringResource(state.error), color = MaterialTheme.colorScheme.error)
                     backlinks == null -> Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(modifier = Modifier.padding(16.dp))
                     }
