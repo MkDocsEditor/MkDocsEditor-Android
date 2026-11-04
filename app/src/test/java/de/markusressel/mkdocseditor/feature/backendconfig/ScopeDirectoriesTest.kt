@@ -65,4 +65,16 @@ class ScopeDirectoriesTest {
         assertEquals(setOf(markus, anna), directories.forget(1).toSet())
         assertNotEquals(markus, directories.directoryOf(2, "markus"))
     }
+
+    @Test
+    fun `all directories in use are known, and a removed server's are not`() {
+        val first = directories.directoryOf(1, "markus")
+        val second = directories.directoryOf(12, "markus")
+        assertEquals(listOf(first), directories.directoriesOf(1))
+        assertEquals(setOf(first, second), directories.all())
+
+        directories.forget(1)
+
+        assertEquals(setOf(second), directories.all())
+    }
 }

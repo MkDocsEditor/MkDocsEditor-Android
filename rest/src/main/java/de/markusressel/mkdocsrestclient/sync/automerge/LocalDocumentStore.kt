@@ -241,6 +241,28 @@ class FileDocumentStore(
         Timber.w("Kept the local copy of $documentId aside as $backup")
     }
 
+    /** @param origin only look at copies of this server, null for all copies. @return the ids with unsynced changes */
+    @Synchronized
+    fun unsyncedOf(origin: String?): List<String> = ids().filter { id ->
+        load(id)?.let { (origin == null || it.origin == origin) && isUnsynced(id, it) } == true
+    }
+
+    /** Deletes the copies of a removed server. Copies of other servers and old ones without an origin stay. */
+    @Synchronized
+    fun deleteCopiesOf(origin: String) {
+        ids().filter { load(it)?.origin == origin }.forEach { id ->
+            fileFor(id).delete()
+            trackUnsynced(id, false)
+        }
+    }
+
+    /** Deletes all copies and backups in this store */
+    @Synchronized
+    fun deleteAll() {
+        directory.deleteRecursively()
+        _unsyncedIds.value = emptySet()
+    }
+
     private fun fileFor(documentId: String): File {
         val name = if (documentId.matches(SAFE_NAME)) {
             documentId

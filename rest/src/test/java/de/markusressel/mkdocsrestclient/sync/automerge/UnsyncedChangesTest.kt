@@ -186,4 +186,42 @@ class UnsyncedChangesTest {
             otherDirectory.deleteRecursively()
         }
     }
+
+    @Test
+    fun `removing a server deletes only its copies`() {
+        fun stored(id: String, origin: String?) = StoredDocument(
+            documentState = FakeSyncServer("text").document.save(),
+            actorId = "00".repeat(16),
+            epoch = "epoch",
+            serverHeads = listOf("other"),
+            origin = origin,
+        ).also { store.save(id, it) }
+        stored("mine", "server:1")
+        stored("other", "server:2")
+        stored("old", null)
+
+        assertEquals(listOf("mine"), store.unsyncedOf("server:1"))
+        assertEquals(listOf("mine", "old", "other"), store.unsyncedOf(null))
+
+        store.deleteCopiesOf("server:1")
+
+        assertEquals(listOf("old", "other"), store.ids())
+        assertEquals(setOf("old", "other"), store.unsyncedIds.value)
+    }
+
+    @Test
+    fun `deleting all copies leaves nothing behind`() {
+        val server = FakeSyncServer("text")
+        val session = session(server)
+        server.connect(session)
+        server.pump()
+        session.persist()
+        store.keepAside(server.documentId)
+        session.persist()
+
+        store.deleteAll()
+
+        assertEquals(emptyList(), store.ids())
+        assertFalse(tempDir.exists())
+    }
 }

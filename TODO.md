@@ -80,8 +80,6 @@ is on permanently. Three modes:
 **Open questions**
 
 - Is a toggle in the editor needed as well?
-- A removed server's local copies stay on disk (`automerge-s<n>`), because they may hold unsynced edits. Nothing cleans
-  them up yet.
 - Colors of users who were never online during the session fall back to one derived from the username.
 
 ---

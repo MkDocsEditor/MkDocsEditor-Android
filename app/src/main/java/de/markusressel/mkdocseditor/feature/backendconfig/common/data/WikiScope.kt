@@ -47,6 +47,8 @@ class WikiScope @Inject constructor(
 
     init {
         scope.launch { authRepository.sessionChanges.collect { refresh() } }
+        val used = directories.all() + directory
+        scope.launch(Dispatchers.IO) { deleteUnused(used) }
     }
 
     /** Follows the selected server and account. Without a selected server the data stays where it is. */
@@ -62,9 +64,22 @@ class WikiScope @Inject constructor(
         scope.launch(Dispatchers.IO) { documentStore.scanUnsynced() }
     }
 
-    /** A removed server has no tree to show anymore. Its local copies stay on disk, as they may hold unsynced edits. */
+    /** @return how many pages hold edits that removing this server would lose */
     @Synchronized
-    fun forget(backendId: Long) {
+    fun unsyncedPages(backendId: Long, origin: String?): Int {
+        val own = directories.directoriesOf(backendId).filter { it != ScopeDirectories.EXISTING }
+            .sumOf { documentStoreOf(it).unsyncedOf(null).size }
+        // the existing storage is older than this class and can hold copies of several servers
+        val existing = origin?.let { documentStoreOf(ScopeDirectories.EXISTING).unsyncedOf(it).size } ?: 0
+        return own + existing
+    }
+
+    /**
+     * Deletes the local data of a removed server, because nothing can reach it afterwards: adding the server again starts
+     * with a new directory. An open database can't be deleted, so its files go at the next start, see [deleteUnused].
+     */
+    @Synchronized
+    fun forget(backendId: Long, origin: String?) {
         directories.forget(backendId).forEach { removed ->
             val store = storeOf(removed)
             store.runInTx {
@@ -74,7 +89,19 @@ class WikiScope @Inject constructor(
                 store.boxFor<DocumentEntity>().removeAll()
                 store.boxFor<SectionEntity>().removeAll()
             }
+            if (removed != ScopeDirectories.EXISTING) documentStoreOf(removed).deleteAll()
         }
+        origin?.let { documentStoreOf(ScopeDirectories.EXISTING).deleteCopiesOf(it) }
+    }
+
+    /** Removes what [forget] could not, or what a late save of an open page wrote afterwards */
+    private fun deleteUnused(used: Set<String>) {
+        context.filesDir.listFiles { file -> file.name.startsWith(COPIES_PREFIX) }
+            ?.filter { it.name.removePrefix(COPIES_PREFIX) !in used }
+            ?.forEach { it.deleteRecursively() }
+        File(context.filesDir, "objectbox").listFiles { file -> file.name.startsWith(DATABASE_PREFIX) }
+            ?.filter { it.name.removePrefix(DATABASE_PREFIX) !in used }
+            ?.forEach { BoxStore.deleteAllFiles(it) }
     }
 
     private fun selectedDirectory(): String? {
@@ -85,14 +112,17 @@ class WikiScope @Inject constructor(
 
     private fun storeOf(directory: String): BoxStore = stores.getOrPut(directory) {
         if (directory == ScopeDirectories.EXISTING) mainStore
-        else MyObjectBox.builder().androidContext(context).name("wiki-$directory").build()
+        else MyObjectBox.builder().androidContext(context).name("$DATABASE_PREFIX$directory").build()
     }
 
     private fun documentStoreOf(directory: String): FileDocumentStore = documentStores.getOrPut(directory) {
-        val name = if (directory == ScopeDirectories.EXISTING) "automerge" else "automerge-$directory"
+        val name = if (directory == ScopeDirectories.EXISTING) "automerge" else "$COPIES_PREFIX$directory"
         FileDocumentStore(File(context.filesDir, name))
     }
 }
+
+private const val DATABASE_PREFIX = "wiki-"
+private const val COPIES_PREFIX = "automerge-"
 
 private class PreferencesScopeTable(private val preferences: SharedPreferences) : ScopeTable {
     override fun get(key: String): String? = preferences.getString(key, null)

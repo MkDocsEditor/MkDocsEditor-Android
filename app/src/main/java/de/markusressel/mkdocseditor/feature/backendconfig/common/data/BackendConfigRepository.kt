@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.common.data
 
+import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeDocumentSyncManager
 import de.markusressel.mkdocseditor.data.persistence.BackendAuthConfigPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.BackendConfigPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.BackendServerConfigPersistenceManager
@@ -139,8 +140,12 @@ internal class BackendConfigRepository @Inject constructor(
         }
     }
 
+    fun unsyncedPages(config: BackendConfig): Int = wikiScope.unsyncedPages(config.id, config.origin())
+
+    private fun BackendConfig.origin() = serverConfig?.let { AutomergeDocumentSyncManager.originOf(it.domain, it.port) }
+
     fun delete(config: BackendConfig): Boolean {
-        wikiScope.forget(config.id)
+        wikiScope.forget(config.id, config.origin())
         return backendConfigPersistenceManager.standardOperation().remove(config.id)
     }
 

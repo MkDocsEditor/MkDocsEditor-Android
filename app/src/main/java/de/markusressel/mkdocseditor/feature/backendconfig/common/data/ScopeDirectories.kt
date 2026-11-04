@@ -27,12 +27,19 @@ class ScopeDirectories(private val table: ScopeTable) {
         return table[directoryKey(backendId, name)] ?: newDirectory().also { table[directoryKey(backendId, name)] = it }
     }
 
+    /** @return the directories of a server */
+    fun directoriesOf(backendId: Long): List<String> = keysOf(backendId).mapNotNull { table[it] }
+
+    /** @return the directories of all servers */
+    fun all(): Set<String> = table.keys().filter { it.startsWith(DIRECTORY_PREFIX) }.mapNotNull { table[it] }.toSet()
+
     /** Forgets a removed server. @return the directories it used */
     fun forget(backendId: Long): List<String> {
         table.remove(lastKey(backendId))
-        val keys = table.keys().filter { it.startsWith(directoryKey(backendId, "")) }
-        return keys.mapNotNull { key -> table[key].also { table.remove(key) } }
+        return keysOf(backendId).mapNotNull { key -> table[key].also { table.remove(key) } }
     }
+
+    private fun keysOf(backendId: Long) = table.keys().filter { it.startsWith(directoryKey(backendId, "")) }
 
     private fun newDirectory(): String {
         if (table[EXISTING_CLAIMED] == null) {
@@ -45,12 +52,13 @@ class ScopeDirectories(private val table: ScopeTable) {
     }
 
     private fun lastKey(backendId: Long) = "last.$backendId"
-    private fun directoryKey(backendId: Long, account: String) = "directory.$backendId.$account"
+    private fun directoryKey(backendId: Long, account: String) = "$DIRECTORY_PREFIX$backendId.$account"
 
     companion object {
         const val EXISTING = ""
         private const val NO_ACCOUNT = ""
         private const val EXISTING_CLAIMED = "existing"
         private const val NEXT = "next"
+        private const val DIRECTORY_PREFIX = "directory."
     }
 }
