@@ -146,7 +146,26 @@
     <string name="section_entry_resources_count">Resources: %1$s</string>
 
     <string name="document_list_entry_filesize">Size: %1$s</string>
-    <string name="document_list_entry_last_modified">Last modified: %1$s</string>
+    <plurals name="change_age_minutes">
+        <item quantity="one">Changed %1$d minute ago</item>
+        <item quantity="other">Changed %1$d minutes ago</item>
+    </plurals>
+    <plurals name="change_age_hours">
+        <item quantity="one">Changed %1$d hour ago</item>
+        <item quantity="other">Changed %1$d hours ago</item>
+    </plurals>
+    <plurals name="change_age_days">
+        <item quantity="one">Changed %1$d day ago</item>
+        <item quantity="other">Changed %1$d days ago</item>
+    </plurals>
+    <plurals name="change_age_weeks">
+        <item quantity="one">Changed %1$d week ago</item>
+        <item quantity="other">Changed %1$d weeks ago</item>
+    </plurals>
+    <plurals name="change_age_months">
+        <item quantity="one">Changed %1$d month ago</item>
+        <item quantity="other">Changed %1$d months ago</item>
+    </plurals>
 
     <string name="create_document">Create Document</string>
     <string name="create_document_hint">New Document</string>
