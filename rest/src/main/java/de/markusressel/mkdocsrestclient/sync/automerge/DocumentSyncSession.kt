@@ -129,7 +129,9 @@ class DocumentSyncSession(
     /** the server of the copy, when it was written by a session that knows it */
     private var storedOrigin: String? = null
 
-    private var local: LocalCopy? = store.load(documentId)?.let { stored ->
+    // Ids come from the path, so two servers can share one. A copy of another server stays in the store for that server
+    // until this session persists, which keeps it aside (see reconcileWithStore). Its edits must never reach this server.
+    private var local: LocalCopy? = store.load(documentId)?.takeUnless { it.isFromOtherServer(origin) }?.let { stored ->
         storedState = stored.documentState
         storedOrigin = stored.origin
         LocalCopy(

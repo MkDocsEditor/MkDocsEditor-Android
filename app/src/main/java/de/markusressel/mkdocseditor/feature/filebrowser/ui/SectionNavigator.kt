@@ -6,6 +6,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.transform
 
@@ -68,3 +71,9 @@ internal class SectionNavigator(
         val ROOT_ITEM = SectionItem(ROOT_SECTION_ID, "/")
     }
 }
+
+/**
+ * @return the id of each server that replaces another one. The first known server is no switch, which keeps the folder
+ * that a restored screen opens with.
+ */
+internal fun Flow<Long?>.switchesOfServer(): Flow<Long> = filterNotNull().distinctUntilChanged().drop(1)

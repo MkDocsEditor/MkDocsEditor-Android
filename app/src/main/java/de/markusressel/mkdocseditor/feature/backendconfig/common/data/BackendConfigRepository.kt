@@ -137,7 +137,7 @@ internal class BackendConfigRepository @Inject constructor(
     }
 
     fun delete(config: BackendConfig): Boolean {
-        return backendConfigPersistenceManager.standardOperation().remove(config.id)
+        return backendConfigPersistenceManager.remove(config.id)
     }
 
 }

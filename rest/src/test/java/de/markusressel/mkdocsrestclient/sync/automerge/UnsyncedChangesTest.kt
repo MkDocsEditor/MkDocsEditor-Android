@@ -126,4 +126,28 @@ class UnsyncedChangesTest {
         store.keepAside("moved")
         assertEquals(emptySet(), store.unsyncedIds.value)
     }
+
+    @Test
+    fun `unsynced edits never reach another server with the same document id`() {
+        val first = FakeSyncServer("first")
+        val firstSession = session(first)
+        val connection = first.connect(firstSession)
+        first.pump()
+        first.disconnect(connection)
+        assertTrue(firstSession.onLocalTextChanged("first offline"))
+        firstSession.persist()
+
+        val second = FakeSyncServer("second", documentId = first.documentId)
+        second.restartWithLostState("second")
+        val session = DocumentSyncSession(second.documentId, store, Reports(), origin = "server:2")
+        second.connect(session)
+        second.pump()
+
+        assertEquals("second", session.text)
+        assertEquals("second", second.document.text)
+
+        session.persist()
+        assertEquals("server:2", store.load(second.documentId)?.origin)
+        assertEquals(1, store.backups().size, "the edits of the first server stay available")
+    }
 }

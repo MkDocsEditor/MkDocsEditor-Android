@@ -29,6 +29,9 @@ class StoredDocument(
     /** the server this copy syncs with, null in old copies that were not written since */
     val origin: String? = null,
 ) {
+    /** @return true if both servers are known and differ; an old copy without an origin counts as this server's */
+    fun isFromOtherServer(server: String?): Boolean = origin != null && server != null && origin != server
+
     /** true when the copy holds changes the server is not known to have */
     val hasUnsyncedChanges: Boolean
         get() = (heads ?: AutomergeTextDocument.load(documentState).headsHex).toSet() != serverHeads.toSet()

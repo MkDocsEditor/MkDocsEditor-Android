@@ -1,7 +1,7 @@
 # Error handling
 
-How the app tells users that something failed, and why. Status: accepted. The file browser follows it, the other
-screens are still to do (see [Migration](#migration)).
+How the app tells users that something failed, and why. Status: accepted. The screens follow it (see
+[Migration](#migration)).
 
 ## Rules
 
@@ -51,11 +51,11 @@ Done:
   `strings.xml`.
 - `UploadFilesUseCase` and `MoveItemUseCase` no longer show exception text.
 - The server screens: no toasts, and a snackbar for what fails or finishes.
+- The auth screens: failures show inline, also in dialogs, and `toAuthMessage` no longer shows exception text. Toasts
+  there are confirmations or hints before a screen changes.
+- The editor: a search of its code finds no exception text in `SnackbarData` or `EditorBanners`. Not tried on a device.
 
-To do, in this order:
-
-1. Check where the auth screens show their `UiMessage` errors against the table. Their texts are already string
-   resources, not exception text. The editor's snackbars and banners need the same check.
+Nothing is left to migrate.
 
 ## Open questions
 

@@ -42,4 +42,10 @@ class AuthCommonTest {
         assertEquals(R.string.auth_error_http, AuthApiException(500, "internal", "boom").toAuthMessage().resId)
         assertEquals(R.string.auth_error_network, IOException("timeout").toAuthMessage().resId)
     }
+
+    @Test
+    fun `the text of an exception never reaches the user`() {
+        assertEquals(emptyList(), IOException("timeout").toAuthMessage().args)
+        assertEquals(emptyList(), IllegalStateException("internal detail").toAuthMessage().args)
+    }
 }
