@@ -13,14 +13,14 @@ clients show the same thing.
 | File browser | [Entries lack context](#file-browser-entries-lack-context) | Design and UI | Maybe the backend |
 | File browser | [Transitions between sections](#transitions-between-sections) | Design and UI | No |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Feature | Yes, the backend and the web client |
-| App-wide | [Error handling](#error-handling) | Decide on the spec, then UI | No |
+| App-wide | [Error handling](#error-handling) | Move the other screens to the spec | No |
 | App-wide | [Settings](#settings) | Audit, then UI | Maybe KutePreferences |
 | Accounts | [Backend configuration](#backend-configuration) | Redesign and refactor | No |
 | Accounts | [Onboarding](#onboarding) | Feature | No |
 
 Order that fits how they depend on each other (Idea):
 
-- Settle the error handling spec first: the other entries will need to show errors.
+- New screens follow the error handling spec in `docs/error-handling.md`.
 - Do backend configuration before onboarding: onboarding leads into those screens.
 - Do settings after author highlighting: that adds a setting.
 
@@ -45,8 +45,8 @@ Order that fits how they depend on each other (Idea):
 - #121 hides the bar while a local copy is showing (`DocumentSession.showsLoading`). `State.loading` itself is unchanged,
   and without a local copy the bar can still last long.
 - `WebsocketConnectionHandler` now gives up on an upgrade that never gets an answer after 15 s (a proxy without a
-  backend, for example). Not tried against a real proxy. Whether no network or a blocked route also wait long is still
-  to check.
+  backend, for example). `DocumentSession` ends the loading when the connection closes, as far as the code reads. Not
+  tried against a real proxy. Whether no network or a blocked route also wait long is still to check.
 
 **Out-of-date warning**
 
@@ -276,9 +276,8 @@ If notifications get annoying, people turn them off, and the goal is lost.
 
 **State**
 
-- The spec is a proposal in `docs/error-handling.md`, waiting for a decision. Its migration list is what's left to do.
-- #122 keeps `ErrorCard` clear of system bars and cutouts. That wasn't tried on a device with a cutout.
-- The file browser no longer shows raw exception text (`Throwable.userMessage()`).
+- The spec is `docs/error-handling.md`, and its migration list is what's left to do.
+- The file browser follows it: no `ErrorCard` and no raw exception text (`Throwable.userMessage()`).
 
 ## Settings
 

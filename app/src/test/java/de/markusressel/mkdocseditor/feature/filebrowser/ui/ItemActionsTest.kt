@@ -66,7 +66,7 @@ class ItemActionsTest {
 
     private val item = WikiItem.Section(section("s", "a"))
     private val state = MutableStateFlow(UiState())
-    private val messages = mutableListOf<String>()
+    private val messages = mutableListOf<BrowserMessage>()
     private var reloads = 0
 
     private fun actions(
@@ -119,7 +119,7 @@ class ItemActionsTest {
         assertEquals(listOf(true, false), requests.map { it.dryRun })
         assertNull(state.value.currentDialogState)
         assertEquals(1, reloads)
-        assertTrue(messages.single().startsWith("Now at /b/a"))
+        assertTrue((messages.single() as BrowserMessage.Moved).newPath.startsWith("b/a"))
     }
 
     @Test

@@ -1,5 +1,7 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui.compose
 
+import android.content.Context
+import de.markusressel.mkdocseditor.feature.filebrowser.ui.BrowserMessage
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
@@ -72,7 +74,7 @@ object FileBrowserScreen : Screen {
                     }
 
                     is FileBrowserEvent.Toast -> {
-                        Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, event.message.text(context), Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -154,4 +156,11 @@ object FileBrowserScreen : Screen {
     }
 
 
+}
+
+private fun BrowserMessage.text(context: Context): String = when (this) {
+    BrowserMessage.NotAvailableOffline -> context.getString(R.string.document_not_available_offline)
+    BrowserMessage.Downloading -> context.getString(R.string.resource_downloading)
+    BrowserMessage.RenamedWithoutLinks -> context.getString(R.string.renamed_without_links)
+    is BrowserMessage.Moved -> context.resources.getQuantityString(R.plurals.moved_to, documents, newPath, documents)
 }

@@ -1,7 +1,18 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui.compose
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -10,14 +21,10 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -28,10 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.SignInRequiredBanner
-import de.markusressel.mkdocseditor.feature.common.ui.compose.ErrorCard
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
 import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
@@ -49,96 +54,98 @@ internal fun FileBrowserScreenContent(
     uiState: UiState,
     onUiEvent: (UiEvent) -> Unit,
 ) {
-    Box {
-        AnimatedVisibility(
-            modifier = Modifier
-                .zIndex(100F)
-                .fillMaxWidth()
-                .align(Alignment.TopCenter),
-            visible = uiState.error != null,
-            enter = fadeIn(),
-            exit = fadeOut(),
-        ) {
-            ErrorCard(
-                modifier = Modifier
-                    .windowInsetsPadding(WindowInsets.safeDrawing)
-                    .padding(16.dp)
-                    .wrapContentSize(),
-                text = stringResource(uiState.error ?: R.string.unknown_error),
-                onRetry = { onUiEvent(UiEvent.Refresh) },
-                onDismiss = { onUiEvent(UiEvent.DismissError) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val error = uiState.error
+    val errorText = error?.let { stringResource(it.message) }
+    val retryText = stringResource(R.string.retry)
+    LaunchedEffect(error) {
+        if (error == null || errorText == null) return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = errorText,
+            actionLabel = retryText.takeIf { error.canRetry },
+            withDismissAction = true,
+            duration = if (error.canRetry) SnackbarDuration.Long else SnackbarDuration.Short,
+        )
+        onUiEvent(if (result == SnackbarResult.ActionPerformed) UiEvent.Refresh else UiEvent.DismissError)
+    }
+
+    TabContentScaffold(
+        topBar = {
+            Column {
+                MkDocsEditorTopAppBar<TopAppBarAction.FileBrowser>(
+                    canGoBack = false,
+                    title = stringResource(id = R.string.screen_files_title),
+                    actions = listOf(
+                        TopAppBarAction.FileBrowser.Search,
+                        TopAppBarAction.FileBrowser.Profile,
+                    ),
+                    onActionClicked = { action ->
+                        onUiEvent(UiEvent.TopAppBarActionClicked(action))
+                    }
+                )
+
+                if (uiState.loginRequiredBackendId != null) {
+                    SignInRequiredBanner(
+                        onSignInClicked = { onUiEvent(UiEvent.SignInClicked) }
+                    )
+                }
+            }
+
+        },
+        bottomBar = {
+            SectionPath(
+                modifier = Modifier.fillMaxWidth(),
+                path = uiState.currentSectionPath,
+                onSectionClicked = { section -> onUiEvent(UiEvent.PathItemClicked(section)) },
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    floatingActionButton = {
+            ExpandableFab(
+                items = uiState.fabConfig.right,
+                onItemClicked = {
+                    onUiEvent(UiEvent.ExpandableFabItemSelected(item = it))
+                }
             )
         }
+    ) { paddingValues ->
+        val state = rememberPullToRefreshState()
+        val folderScrollStates = rememberSaveableStateHolder()
 
-        TabContentScaffold(
-            topBar = {
-                Column {
-                    MkDocsEditorTopAppBar<TopAppBarAction.FileBrowser>(
-                        canGoBack = false,
-                        title = stringResource(id = R.string.screen_files_title),
-                        actions = listOf(
-                            TopAppBarAction.FileBrowser.Search,
-                            TopAppBarAction.FileBrowser.Profile,
-                        ),
-                        onActionClicked = { action ->
-                            onUiEvent(UiEvent.TopAppBarActionClicked(action))
-                        }
-                    )
-
-                    if (uiState.loginRequiredBackendId != null) {
-                        SignInRequiredBanner(
-                            onSignInClicked = { onUiEvent(UiEvent.SignInClicked) }
-                        )
-                    }
+        Box(
+            Modifier.padding(paddingValues)
+        ) {
+            PullToRefreshBox(
+                modifier = Modifier.align(Alignment.TopCenter),
+                state = state,
+                isRefreshing = uiState.isLoading,
+                onRefresh = {
+                    onUiEvent(UiEvent.Refresh)
                 }
-
-            },
-            bottomBar = {
-                SectionPath(
-                    modifier = Modifier.fillMaxWidth(),
-                    path = uiState.currentSectionPath,
-                    onSectionClicked = { section -> onUiEvent(UiEvent.PathItemClicked(section)) },
-                )
-            },
-            floatingActionButton = {
-                ExpandableFab(
-                    items = uiState.fabConfig.right,
-                    onItemClicked = {
-                        onUiEvent(UiEvent.ExpandableFabItemSelected(item = it))
-                    }
-                )
-            }
-        ) { paddingValues ->
-            val state = rememberPullToRefreshState()
-            val folderScrollStates = rememberSaveableStateHolder()
-
-            Box(
-                Modifier.padding(paddingValues)
             ) {
-                PullToRefreshBox(
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    state = state,
-                    isRefreshing = uiState.isLoading,
-                    onRefresh = {
-                        onUiEvent(UiEvent.Refresh)
-                    }
-                ) {
-                    AnimatedContent(
-                        targetState = uiState.folderContent,
-                        // a refresh of the same folder does not animate
-                        contentKey = { it?.sectionId },
-                        transitionSpec = {
-                            folderTransition(
-                                from = initialState?.sectionId,
-                                to = targetState?.sectionId,
-                                path = uiState.currentSectionPath,
+                AnimatedContent(
+                    targetState = uiState.folderContent,
+                    // a refresh of the same folder does not animate
+                    contentKey = { it?.sectionId },
+                    transitionSpec = {
+                        folderTransition(
+                            from = initialState?.sectionId,
+                            to = targetState?.sectionId,
+                            path = uiState.currentSectionPath,
+                        )
+                    },
+                    label = "folder",
+                ) { folder ->
+                    // each folder keeps its own position. It follows the content and not the path,
+                    // because the content of the last folder stays until the next one has loaded
+                    folderScrollStates.SaveableStateProvider(folder?.sectionId ?: NO_FOLDER) {
+                        val folderError = uiState.folderError.takeIf { folder == null }
+                        if (folderError != null) {
+                            FolderErrorView(
+                                message = stringResource(folderError),
+                                onRetry = { onUiEvent(UiEvent.Refresh) },
                             )
-                        },
-                        label = "folder",
-                    ) { folder ->
-                        // each folder keeps its own position. It follows the content and not the path,
-                        // because the content of the last folder stays until the next one has loaded
-                        folderScrollStates.SaveableStateProvider(folder?.sectionId ?: NO_FOLDER) {
+                        } else {
                             FileBrowserList(
                                 modifier = Modifier.fillMaxSize(),
                                 state = rememberLazyListState(),
@@ -156,6 +163,24 @@ internal fun FileBrowserScreenContent(
                     }
                 }
             }
+        }
+    }
+}
+
+/** Nothing to read here yet, so the failure takes the place of the content. It scrolls, for pull to refresh. */
+@Composable
+private fun FolderErrorView(message: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+    ) {
+        Text(text = message, textAlign = TextAlign.Center)
+        Button(onClick = onRetry) {
+            Text(text = stringResource(R.string.retry))
         }
     }
 }

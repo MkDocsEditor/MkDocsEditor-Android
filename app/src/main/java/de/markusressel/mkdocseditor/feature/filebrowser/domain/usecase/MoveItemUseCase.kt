@@ -1,5 +1,8 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase
 
+import androidx.annotation.StringRes
+import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.common.ui.userMessage
 import com.github.kittinunf.fuel.core.FuelError
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
@@ -26,9 +29,16 @@ sealed interface MoveOutcome {
      * `into-itself`, `root`, `no-change`; [UNSUPPORTED] when the backend is too old for
      * `POST /move/`; null for other errors
      */
-    data class Failed(val status: Int?, val reason: String?, val message: String) : MoveOutcome {
+    data class Failed(
+        val status: Int?,
+        val reason: String?,
+        val message: String,
+        /** shows when the backend sent no message */
+        @param:StringRes val fallback: Int = R.string.unknown_error,
+    ) : MoveOutcome {
         companion object {
             const val UNSUPPORTED = "unsupported"
+            const val FOLDERS_UNAVAILABLE = "folders-unavailable"
         }
     }
 }
@@ -97,7 +107,8 @@ internal class MoveItemUseCase @Inject constructor(
             return MoveOutcome.Failed(
                 status = status,
                 reason = if (error.isUnsupportedEndpoint()) MoveOutcome.Failed.UNSUPPORTED else body?.details?.reason?.takeIf { it.isNotEmpty() },
-                message = body?.message?.takeIf { it.isNotEmpty() } ?: error.message ?: error.toString(),
+                message = body?.message.orEmpty(),
+                fallback = error.userMessage(),
             )
         }
     }

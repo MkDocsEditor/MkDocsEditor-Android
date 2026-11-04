@@ -231,7 +231,8 @@ private fun MoveErrorText(error: MoveOutcome.Failed) {
         "root" -> stringResource(R.string.move_error_root)
         "no-change" -> stringResource(R.string.move_error_no_change)
         MoveOutcome.Failed.UNSUPPORTED -> stringResource(R.string.move_error_unsupported)
-        else -> error.message
+        MoveOutcome.Failed.FOLDERS_UNAVAILABLE -> stringResource(R.string.move_error_folders_unavailable)
+        else -> error.message.ifEmpty { stringResource(error.fallback) }
     }
     Text(
         text = text,
