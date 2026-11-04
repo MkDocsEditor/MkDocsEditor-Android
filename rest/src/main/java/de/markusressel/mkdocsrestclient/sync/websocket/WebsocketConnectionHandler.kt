@@ -129,11 +129,20 @@ class WebsocketConnectionHandler(
     }
 
     companion object {
-        private val defaultClient: OkHttpClient by lazy {
+        private const val UPGRADE_TIMEOUT_MS = 15_000L
+
+        private val defaultClient: OkHttpClient by lazy { newDefaultClient() }
+
+        /**
+         * An open socket can be quiet for a long time, so it has no read timeout. That would also let an upgrade that
+         * connects but never gets an answer wait forever. The call timeout only covers the upgrade: OkHttp ends it once
+         * the socket is open.
+         */
+        internal fun newDefaultClient(upgradeTimeoutMs: Long = UPGRADE_TIMEOUT_MS): OkHttpClient =
             OkHttpClient.Builder()
                 .readTimeout(0, TimeUnit.MILLISECONDS)
                 .connectTimeout(5, TimeUnit.SECONDS)
+                .callTimeout(upgradeTimeoutMs, TimeUnit.MILLISECONDS)
                 .build()
-        }
     }
 }

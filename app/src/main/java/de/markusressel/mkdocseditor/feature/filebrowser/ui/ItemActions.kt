@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui
 
+import de.markusressel.mkdocseditor.feature.common.ui.userMessage
 import com.github.ajalt.timberkt.Timber
 import com.github.kittinunf.fuel.core.FuelError
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
@@ -54,7 +55,7 @@ internal class ItemActions(
                     if ((ex as? FuelError)?.isUnsupportedEndpoint() == true) {
                         it.copy(unsupported = true)
                     } else {
-                        it.copy(error = ex.localizedMessage ?: ex.javaClass.name)
+                        it.copy(error = ex.userMessage())
                     }
                 }
             },

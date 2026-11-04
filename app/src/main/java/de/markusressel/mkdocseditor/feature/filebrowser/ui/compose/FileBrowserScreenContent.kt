@@ -55,7 +55,7 @@ internal fun FileBrowserScreenContent(
                 .zIndex(100F)
                 .fillMaxWidth()
                 .align(Alignment.TopCenter),
-            visible = uiState.error.isNullOrBlank().not(),
+            visible = uiState.error != null,
             enter = fadeIn(),
             exit = fadeOut(),
         ) {
@@ -64,7 +64,7 @@ internal fun FileBrowserScreenContent(
                     .windowInsetsPadding(WindowInsets.safeDrawing)
                     .padding(16.dp)
                     .wrapContentSize(),
-                text = uiState.error ?: "Error",
+                text = stringResource(uiState.error ?: R.string.unknown_error),
                 onRetry = { onUiEvent(UiEvent.Refresh) },
                 onDismiss = { onUiEvent(UiEvent.DismissError) }
             )

@@ -47,6 +47,27 @@ class WebsocketConnectionHandlerTest {
     }
 
     @Test
+    fun `an upgrade that never gets an answer fails`() {
+        // accepts the connection and then stays silent, like a proxy without a backend
+        val silent = ServerSocket(0)
+        val failed = CountDownLatch(1)
+        val handler = WebsocketConnectionHandler(
+            AuthorizationProvider { null },
+            WebsocketConnectionHandler.newDefaultClient(upgradeTimeoutMs = 200),
+        )
+        handler.setListener(object : WebsocketConnectionListener {
+            override fun onOpen() = Unit
+            override fun onMessage(text: String) = Unit
+            override fun onClosed(code: Int?, httpStatus: Int?, throwable: Throwable?) = failed.countDown()
+        })
+
+        silent.use {
+            handler.connect("ws://127.0.0.1:${silent.localPort}/")
+            assertTrue(failed.await(5, TimeUnit.SECONDS))
+        }
+    }
+
+    @Test
     fun `without an authorization the upgrade request has no such header`() {
         val handler = WebsocketConnectionHandler(AuthorizationProvider.NONE)
 

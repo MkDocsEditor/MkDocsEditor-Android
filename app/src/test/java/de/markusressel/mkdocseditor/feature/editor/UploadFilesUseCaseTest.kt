@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor
 
+import de.markusressel.mkdocseditor.R
 import android.app.Application
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -76,7 +77,7 @@ class UploadFilesUseCaseTest {
         val uris = uris("b.png", "c.png", "d.png")
         val result = useCase(tree, page, images, uris, "")
         assertEquals(listOf("![b](images/b.png)"), result.snippets)
-        assertEquals("disk full", result.failure)
+        assertEquals(R.string.unknown_error, result.failure)
         assertEquals(listOf(uris[0]), cleanedUp)
     }
 }

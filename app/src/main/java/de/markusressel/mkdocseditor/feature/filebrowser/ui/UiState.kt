@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui
 
+import androidx.annotation.StringRes
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
@@ -47,7 +48,7 @@ sealed interface DialogState {
     data class Backlinks(
         val item: WikiItem,
         val backlinks: List<BacklinkModel>? = null,
-        val error: String? = null,
+        @param:StringRes val error: Int? = null,
         val unsupported: Boolean = false,
     ) : DialogState
 
@@ -79,7 +80,7 @@ internal data class UiState(
     val currentDialogState: DialogState? = null,
 
     val isLoading: Boolean = false,
-    val error: String? = null,
+    @param:StringRes val error: Int? = null,
 
     /** from the root down to the open folder, starting with the root itself */
     val currentSectionPath: List<SectionItem> = emptyList(),

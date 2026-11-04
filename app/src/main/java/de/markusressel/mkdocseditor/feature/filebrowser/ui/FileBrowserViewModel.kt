@@ -1,5 +1,8 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui
 
+import androidx.annotation.StringRes
+import de.markusressel.mkdocseditor.feature.common.ui.userMessage
+import de.markusressel.mkdocseditor.R
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.serialization.saved
@@ -181,10 +184,13 @@ internal class FileBrowserViewModel @Inject constructor(
 
             is StoreReadResponse.Error.Exception -> {
                 Timber.e(response.error)
-                setError(response.error.localizedMessage ?: response.error.javaClass.name)
+                setError(response.error.userMessage())
             }
 
-            is StoreReadResponse.Error.Message -> setError(response.message)
+            is StoreReadResponse.Error.Message -> {
+                Timber.e(IllegalStateException(response.message))
+                setError(R.string.unknown_error)
+            }
 
             else -> {
                 // handled above
@@ -251,7 +257,7 @@ internal class FileBrowserViewModel @Inject constructor(
         }
     }
 
-    private fun setError(message: String?) {
+    private fun setError(@StringRes message: Int?) {
         _uiState.update { old -> old.copy(isLoading = false, error = message) }
     }
 
@@ -263,7 +269,7 @@ internal class FileBrowserViewModel @Inject constructor(
             throw ex
         } catch (ex: Exception) {
             Timber.e(ex)
-            setError(ex.localizedMessage ?: ex.javaClass.name)
+            setError(ex.userMessage())
         }
     }
 
@@ -346,7 +352,7 @@ internal class FileBrowserViewModel @Inject constructor(
             throw ex
         } catch (ex: Exception) {
             Timber.e(ex)
-            setError("Download failed: ${ex.localizedMessage ?: ex.javaClass.name}")
+            setError(ex.userMessage())
             return
         }
         reportingErrors { shareFileUseCase(result) }
