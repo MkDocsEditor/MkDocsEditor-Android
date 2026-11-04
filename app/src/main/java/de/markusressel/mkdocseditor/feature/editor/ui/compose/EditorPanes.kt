@@ -75,8 +75,9 @@ private val DIVIDER_TOUCH_SIZE = 24.dp
 
 /**
  * The code editor and the rendered page. Both stay in the same place of the composition whatever the mode is: a new
- * editor would lose the focus and close the keyboard. The page stays even without any room, because a new one would
- * be empty until it has loaded, which is longer than the animation that brings it back.
+ * editor would lose the focus and close the keyboard. The page comes up the first time it is shown, because a WebView
+ * takes long to create and an edit mode that opens on its own may never need it. From then on it stays even without any
+ * room, because a new one would be empty until it has loaded, which is longer than the animation that brings it back.
  *
  * @param modifier compose modifiers
  * @param showEditor whether the code editor is shown
@@ -123,6 +124,8 @@ internal fun EditorPanes(
     val share = { if (settledArrangement == arrangement) currentTargetShare else animatedShare.value }
 
     val editorComposed = showEditor || animating
+    var previewComposed by remember { mutableStateOf(showPreview) }
+    if (showPreview) previewComposed = true
     val split = editorComposed && (showPreview || animating)
     // stays the same while the panes move, also when the split goes away
     var lastSideBySide by remember { mutableStateOf(splitMode == SplitMode.Horizontal) }
@@ -135,7 +138,7 @@ internal fun EditorPanes(
         modifier = modifier,
         content = {
             Box { if (editorComposed) editor() }
-            Box { preview() }
+            Box { if (previewComposed) preview() }
             if (split) {
                 SplitDivider(
                     sideBySide = sideBySide,

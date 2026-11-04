@@ -18,11 +18,14 @@ internal class PreviewRenderState {
         rendered = null
     }
 
-    /** A page has loaded its scripts. Each page starts empty, so this always renders, even the same text as before. */
-    fun onPageReady(text: String, render: (String) -> Unit) {
+    /**
+     * A page has loaded its scripts. Each page starts empty, so this renders even the same text as before, unless
+     * nobody sees the page: then the text waits for the next [show].
+     */
+    fun onPageReady(text: String, render: (String) -> Unit, visible: Boolean = true) {
         ready = true
         rendered = null
-        show(text, render)
+        if (visible) show(text, render)
     }
 
     /** Shows the text, unless no page is ready yet or the page shows it already. */
