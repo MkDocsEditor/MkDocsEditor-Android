@@ -98,9 +98,6 @@ internal interface DocumentSessionEnvironment {
     /** @return the current id of a document that may have moved */
     suspend fun followRedirect(documentId: String): String
 
-    /** Not on each call: it sends a request per local copy */
-    suspend fun followAllRedirects()
-
     /**
      * @param onCached called with what the database knows, before the server is asked
      */
@@ -274,22 +271,18 @@ internal class DocumentSession(
             load(documentId, connect = false)
             return
         }
-        if (documentId != null && !environment.offlineMode.value) {
-            if (withContext(environment.ioDispatcher) { !environment.hasLocalCopy(documentId) }) {
-                // a copy held under an old id of this document (moved while the app was
-                // offline) must be re-keyed before the copy is loaded, or its edits would not
-                // show up
-                val currentId = withTimeoutOrNull(REDIRECT_TIMEOUT_MS) {
-                    withContext(environment.ioDispatcher) { environment.followRedirect(documentId) }
-                }
-                if (currentId != null && currentId != documentId) {
-                    _documentId.value = currentId
-                    return
-                }
-            } else {
-                // the copy is here; other moved copies are re-keyed meanwhile (sessions merge
-                // what lands under their id, see DocumentSyncSession.persist)
-                scope.launch(environment.ioDispatcher) { environment.followAllRedirects() }
+        if (documentId != null && !environment.offlineMode.value &&
+            withContext(environment.ioDispatcher) { !environment.hasLocalCopy(documentId) }
+        ) {
+            // a copy held under an old id of this document (moved while the app was
+            // offline) must be re-keyed before the copy is loaded, or its edits would not
+            // show up
+            val currentId = withTimeoutOrNull(REDIRECT_TIMEOUT_MS) {
+                withContext(environment.ioDispatcher) { environment.followRedirect(documentId) }
+            }
+            if (currentId != null && currentId != documentId) {
+                _documentId.value = currentId
+                return
             }
         }
         _state.update { old ->
