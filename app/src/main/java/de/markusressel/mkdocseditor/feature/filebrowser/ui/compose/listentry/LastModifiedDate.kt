@@ -20,7 +20,7 @@ fun LastModifiedDate(
         modifier = modifier,
         text = stringResource(R.string.document_list_entry_last_modified, modtime.formatAsDate()),
         style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onPrimaryContainer,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
