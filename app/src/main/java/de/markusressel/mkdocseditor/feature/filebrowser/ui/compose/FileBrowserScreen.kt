@@ -52,13 +52,13 @@ object FileBrowserScreen : Screen {
             onBack = { viewModel.onUiEvent(UiEvent.NavigateUp) },
         )
 
-        // Runs only on initial composition
         val lifecycleOwner = LocalLifecycleOwner.current
         LaunchedEffect(lifecycleOwner) {
             // only while visible: nothing needs the socket in the background
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.followTreeChanges() }
         }
 
+        // Runs only on initial composition
         LaunchedEffect(Unit) {
             viewModel.events.collectLatest { event ->
                 when (event) {

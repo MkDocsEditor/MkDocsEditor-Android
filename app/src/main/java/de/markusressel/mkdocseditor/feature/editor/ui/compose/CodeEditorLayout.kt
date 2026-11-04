@@ -62,7 +62,7 @@ internal fun CodeEditorLayout(
     val stripWidth = with(LocalDensity.current) { AUTHOR_STRIP_WIDTH.roundToPx() }
     val runs = authorRuns.value
     val authorStrip = if (settings.authorHighlight != AuthorHighlightMode.Off && runs.runs.isNotEmpty()) {
-        remember(runs, palette, stripWidth) {
+        remember(runs, stripWidth) {
             AuthorStripColumn(lineShares(state.text, runs.runs), stripWidth, colorOf)
         }
     } else {

@@ -15,7 +15,6 @@ import de.markusressel.kodeeditor.library.compose.KodeEditorGutterColumn
 import de.markusressel.kodeeditor.library.compose.KodeEditorLayout
 import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRun
 import de.markusressel.mkdocseditor.feature.editor.domain.LineShare
-import kotlin.math.absoluteValue
 
 /** How strong the marker on the text is; the web client uses the same */
 private const val MARKER_ALPHA = 0.14f
@@ -49,7 +48,7 @@ enum class AuthorHighlightMode(val value: String, @param:StringRes val nameRes: 
  * @param knownColors the colors of the known users, by username
  */
 internal fun authorColor(author: String, knownColors: Map<String, String?>): Color =
-    parsePeerColor(knownColors[author]) ?: fallbackPeerColors[author.hashCode().absoluteValue % fallbackPeerColors.size]
+    parsePeerColor(knownColors[author]) ?: fallbackPeerColor(author)
 
 /**
  * A strip for each line. A line with several authors shows each one with its share, from top to bottom.

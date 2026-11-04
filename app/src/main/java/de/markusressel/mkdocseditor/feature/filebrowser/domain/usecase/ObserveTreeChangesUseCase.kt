@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase
 
 import de.markusressel.mkdocseditor.auth.domain.AuthRepository
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.eventsWebsocketUrl
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigFlowUseCase
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocsrestclient.AuthorizationProvider
@@ -30,10 +31,10 @@ internal class ObserveTreeChangesUseCase @Inject constructor(
     ) { config, offline, _ -> config.takeUnless { offline } }
         .flatMapLatest { config ->
             val server = config?.serverConfig ?: return@flatMapLatest emptyFlow()
-            val scheme = if (server.useSsl) "wss" else "ws"
             treeChanges(
-                url = "$scheme://${server.domain}:${server.port}/events/ws/",
+                url = server.eventsWebsocketUrl,
                 authorizationProvider = AuthorizationProvider.bearer { authRepository.token(config.id) },
+                onRefused = { authRepository.onUnauthenticated(config.id) },
             )
         }
 }

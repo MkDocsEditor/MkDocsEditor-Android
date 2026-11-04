@@ -33,7 +33,7 @@ import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesign
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.rememberEditorPalette
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
-import de.markusressel.mkdocseditor.feature.search.domain.toSearchRegex
+import de.markusressel.mkdocseditor.feature.search.domain.SearchQuery
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.feature.theme.documentBackgroundColor
 import de.markusressel.mkdocseditor.feature.theme.resourceBackgroundColor
@@ -109,7 +109,7 @@ internal fun SearchResultRow(
             ) {
                 Text(
                     modifier = Modifier.weight(1f),
-                    text = highlighted(item.name, searchTerm.toSearchRegex().findAll(item.name).map { it.range }.toList()),
+                    text = highlighted(item.name, SearchQuery(searchTerm).matchesIn(item.name)),
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

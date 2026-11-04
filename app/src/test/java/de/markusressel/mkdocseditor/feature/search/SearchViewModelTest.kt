@@ -84,6 +84,15 @@ class SearchViewModelTest {
     }
 
     @Test
+    fun `words of one letter are too short, however many there are`() = runTest {
+        viewModel.onUiEvent(SearchViewModel.UiEvent.SearchInputChanged("a b"))
+        assertTrue(viewModel.uiState.value.isInputTooShort)
+
+        viewModel.onUiEvent(SearchViewModel.UiEvent.SearchInputChanged("a bc"))
+        assertFalse(viewModel.uiState.value.isInputTooShort)
+    }
+
+    @Test
     fun `recent searches are only offered until the input changes`() = runTest {
         RecentSearchStore(keyValues).remember("haft")
         assertTrue(viewModel.uiState.value.showRecentSearches)

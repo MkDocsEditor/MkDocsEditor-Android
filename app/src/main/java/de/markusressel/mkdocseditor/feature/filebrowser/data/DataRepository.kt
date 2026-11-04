@@ -12,6 +12,7 @@ import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.FileBrowserViewModel.Companion.ROOT_SECTION_ID
+import de.markusressel.mkdocseditor.feature.search.domain.SearchQuery
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.networkBoundResource
@@ -61,25 +62,22 @@ class DataRepository @Inject constructor(
      * Find all data that matches the given search
      */
     fun find(searchString: String): List<FoundItem> {
-        val searchRegex =
-            searchString.toRegex(setOf(RegexOption.IGNORE_CASE, RegexOption.LITERAL))
+        val query = SearchQuery(searchString)
 
         // TODO:  this is pretty ugly and time/performance consuming
         //  is it, though?
 
         val sections = sectionPersistenceManager.standardOperation().query {
-            filter { section -> searchRegex.containsMatchIn(section.name) }
+            // the root is not a result, like in the web client: it is where the search starts
+            filter { section -> section.id != ROOT_SECTION_ID && query.matches(section.name) }
         }.find()
 
         val documents = documentPersistenceManager.standardOperation().query {
-            filter { document ->
-                searchRegex.containsMatchIn(document.name)
-                    || searchRegex.containsMatchIn(document.content.target?.text ?: "")
-            }
+            filter { document -> query.matches(document.name, document.content.target?.text ?: "") }
         }.find()
 
         val resources = resourcePersistenceManager.standardOperation().query {
-            filter { resource -> searchRegex.containsMatchIn(resource.name) }
+            filter { resource -> query.matches(resource.name) }
         }.find()
 
         return sections.map { FoundItem(dataFactory.toSectionData(it), it.parentSection.target.folderNames()) } +

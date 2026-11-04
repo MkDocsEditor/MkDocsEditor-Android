@@ -7,6 +7,7 @@ import de.markusressel.mkdocseditor.feature.auth.common.data.ParsedBackendUrl
 import de.markusressel.mkdocseditor.feature.auth.common.data.toAuthMessage
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.baseUrl
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.eventsWebsocketUrl
 import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -27,6 +28,13 @@ class AuthCommonTest {
     fun `builds the base url like the rest client`() {
         assertEquals("https://backend.example.com:443/", BackendServerConfig(domain = "backend.example.com", port = 443, useSsl = true).baseUrl)
         assertEquals("http://example.com:80/api/", BackendServerConfig(domain = "http://example.com/api/", port = 80, useSsl = false).baseUrl)
+    }
+
+    @Test
+    fun `builds the events websocket url below the base url`() {
+        assertEquals("wss://backend.example.com:443/events/ws/", BackendServerConfig(domain = "backend.example.com", port = 443, useSsl = true).eventsWebsocketUrl)
+        assertEquals("ws://192.168.2.20:7413/api/events/ws/", BackendServerConfig(domain = "192.168.2.20/api", port = 7413, useSsl = false).eventsWebsocketUrl)
+        assertEquals("wss://example.com:8443/events/ws/", BackendServerConfig(domain = "https://example.com", port = 8443, useSsl = true).eventsWebsocketUrl)
     }
 
     @Test

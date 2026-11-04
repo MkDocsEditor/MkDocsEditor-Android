@@ -8,6 +8,7 @@ import de.markusressel.mkdocseditor.feature.editor.domain.lineShares
 import de.markusressel.mkdocseditor.feature.editor.domain.toAuthorRuns
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.AuthorHighlightMode
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.authorColor
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.fallbackPeerColors
 import de.markusressel.mkdocsrestclient.reference.AuthorshipModel
 import de.markusressel.mkdocsrestclient.reference.AuthorshipRunModel
 import kotlin.test.Test
@@ -102,5 +103,11 @@ class AuthorRunsTest {
     @Test
     fun `an author has exactly the color of the server`() {
         assertEquals(Color(0xFFE8590C), authorColor("markus", mapOf("markus" to "#e8590c")))
+    }
+
+    @Test
+    fun `a name with the smallest possible hash still gets a color`() {
+        assertEquals(Int.MIN_VALUE, "polygenelubricants".hashCode())
+        assertEquals(fallbackPeerColors.first(), authorColor("polygenelubricants", emptyMap()))
     }
 }

@@ -206,6 +206,9 @@ Keep it small, and useful for the wiki. A home wiki has no need for points or ra
   that much later.
 - `GET /events/ws/` pushes tree changes, and the file browser follows them while visible (`ObserveTreeChangesUseCase`).
   I didn't check whether it could also serve the "What's going on" page live.
+- The events socket ignores `items-moved`. A move in another client drops the offline copy under the old id with the next
+  fetch, and a renamed open folder sends the user to its parent. Any refresh does that today, but it now happens at once.
+- Opening the file browser fetches the tree twice: once for the folder and once after the socket connects.
 - The app has no notification code yet: no `POST_NOTIFICATIONS` permission and no `NotificationChannel`. There is no
   Firebase either.
 - Background work already uses WorkManager (`ScheduleOfflineCacheUpdateUseCase`, `UnsyncedChangesScheduler`).
