@@ -170,6 +170,10 @@ internal class EditorTextController(
         splices.forEach { moveAuthors(it.index, it.deleteCount, it.insert.length) }
     }
 
+    fun onAuthorColorsChanged(colors: Map<String, String?>) {
+        authorColors = authorColors + colors
+    }
+
     fun onPeersChanged(peers: List<RemotePeer>) {
         _peers.value = peers
         authorColors = authorColors + peers.associate { it.username to it.color }

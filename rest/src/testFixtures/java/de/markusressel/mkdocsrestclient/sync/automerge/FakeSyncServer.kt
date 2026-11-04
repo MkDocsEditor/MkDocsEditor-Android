@@ -39,6 +39,9 @@ class FakeSyncServer(
     var epoch: String = "epoch-1"
         private set
 
+    /** the color of each user, by username */
+    val colors = mutableMapOf<String, String>()
+
     val receivedHellos = mutableListOf<HelloMessage>()
     val boundActors = mutableMapOf<String, String>()
 
@@ -161,8 +164,8 @@ class FakeSyncServer(
                         documentState = Base64.getEncoder().encodeToString(document.save()),
                         content = document.text,
                         readOnly = readOnly,
-                        you = UserInfo(username = connection.username, clientId = connection.clientId),
-                        actors = boundActors.map { (actor, user) -> ActorInfo(actor, user) },
+                        you = UserInfo(username = connection.username, clientId = connection.clientId, color = colors[connection.username]),
+                        actors = boundActors.map { (actor, user) -> ActorInfo(actor, user, color = colors[user]) },
                     )
                 )
                 send(

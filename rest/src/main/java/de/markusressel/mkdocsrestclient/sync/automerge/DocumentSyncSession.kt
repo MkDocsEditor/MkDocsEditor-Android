@@ -71,6 +71,9 @@ class DocumentSyncSession(
 ) : EditableTextDocument {
 
     interface Listener {
+        /** @param colors the color of each known user by username, also of those who are not online and of this user */
+        fun onAuthorColorsChanged(colors: Map<String, String?>) {}
+
         /**
          * The whole text changed (first load, or a new epoch). There are no splices
          * to move the selection with.
@@ -254,6 +257,7 @@ class DocumentSyncSession(
             MessageType.PRESENCE_LEAVE -> onPresenceLeave(parse(text))
             MessageType.ACTOR -> parse<ActorMessage>(text).let {
                 actors[it.actorId] = ActorInfo(it.actorId, it.username, it.displayName, it.color)
+                reportAuthorColors()
             }
 
             MessageType.DOCUMENT_RENAMED -> onDocumentRenamed(parse(text))
@@ -413,6 +417,7 @@ class DocumentSyncSession(
 
         you = message.you
         message.actors.forEach { actors[it.actorId] = it }
+        reportAuthorColors()
         if (readOnly != message.readOnly) {
             readOnly = message.readOnly
             listener.onReadOnlyChanged(readOnly)
@@ -421,6 +426,11 @@ class DocumentSyncSession(
         syncState = SyncState()
         flushSync()
         sendPresence()
+    }
+
+    private fun reportAuthorColors() {
+        val colors = actors.values.associate { it.username to it.color }
+        listener.onAuthorColorsChanged(colors + listOfNotNull(you).associate { it.username to it.color })
     }
 
     private fun onSyncRequest(message: SyncRequestMessage) {

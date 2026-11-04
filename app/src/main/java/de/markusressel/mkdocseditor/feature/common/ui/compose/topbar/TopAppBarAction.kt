@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.common.ui.compose.topbar
 
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.AuthorHighlightMode
 import de.markusressel.mkdocseditor.feature.editor.ui.ConnectionIndicator
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.SplitMode
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
@@ -11,6 +12,7 @@ sealed interface TopAppBarAction {
         data class EditorModeAction(val mode: SplitMode?) : CodeEditor
         data class OnlineUsersAction(val remotePeers: List<RemotePeer>) : CodeEditor
         data object PageReferencesAction : CodeEditor
+        data class AuthorHighlightAction(val mode: AuthorHighlightMode) : CodeEditor
         data class ConnectionAction(val indicator: ConnectionIndicator) : CodeEditor
     }
 

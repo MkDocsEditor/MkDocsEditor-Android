@@ -71,7 +71,9 @@ is on permanently. Three modes:
 
 **State**
 
-- Built, using `GET /document/{id}/authorship/`. The setting is under Editor, and the default is strip and marker.
+- Built, using `GET /document/{id}/authorship/`. The setting is under Editor, and the default is strip and marker. A
+  button in the editor switches through the modes.
+- Colors come from the server, as in the web client. Only an author the server names no color for gets a derived one.
 - `AuthorRuns` moves with each edit, in the call that makes it. New text has no author until the backend's next answer,
   about 2 seconds after the text settles, because the app can't tell which actor made a remote change.
 - A strip with several authors on a line shows each one with its share.
@@ -79,8 +81,7 @@ is on permanently. Three modes:
 
 **Open questions**
 
-- Is a toggle in the editor needed as well?
-- Colors of users who were never online during the session fall back to one derived from the username.
+- Cursors of other users still use a color adjusted for contrast, so a dark color can differ from the web client.
 
 ---
 
@@ -119,6 +120,11 @@ which direction to take the animations. Maybe there are widely used patterns we 
 
 Folder changes now use a shared axis on X with a fade, in `FileBrowserScreenContent`. A slow folder animates only when
 its content has loaded. The path chips fade in and out with the same timing (`SectionPath`).
+
+**Known flaw**
+
+Going up from a deeper folder, the last path chip vanishes at once instead of fading out. The chip of the only subfolder
+does fade. Scrolling isn't the cause: delaying it changed nothing.
 
 **Open questions**
 
@@ -198,8 +204,8 @@ Keep it small, and useful for the wiki. A home wiki has no need for points or ra
 - Commits make a natural unit for a change: section 10 of the same doc commits after `git.commitAfterIdle` (10 minutes
   without a change). So one editing session is one entry rather than one per key press, but a notification comes
   that much later.
-- `GET /events/ws/` pushes changes for the file browser, but only while the app has it open. I didn't check whether it
-  could also serve the "What's going on" page live.
+- `GET /events/ws/` pushes tree changes, and the file browser follows them while visible (`ObserveTreeChangesUseCase`).
+  I didn't check whether it could also serve the "What's going on" page live.
 - The app has no notification code yet: no `POST_NOTIFICATIONS` permission and no `NotificationChannel`. There is no
   Firebase either.
 - Background work already uses WorkManager (`ScheduleOfflineCacheUpdateUseCase`, `UnsyncedChangesScheduler`).

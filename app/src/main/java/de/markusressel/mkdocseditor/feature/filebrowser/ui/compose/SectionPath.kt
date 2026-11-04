@@ -1,9 +1,10 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui.compose
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -15,18 +16,19 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
@@ -124,40 +126,23 @@ private fun PathChip(
         animationSpec = tween(FOLDER_ANIMATION_MS),
         label = "chip content color",
     )
-    val padding by animateDpAsState(
-        targetValue = if (isCurrent) 2.dp else 0.dp,
-        animationSpec = tween(FOLDER_ANIMATION_MS),
-        label = "chip padding",
-    )
-    val content: @Composable () -> Unit = {
+    // one layout for both states: the size and the font stay the same, so nothing moves when a chip changes its state
+    Box(
+        modifier = modifier
+            .minimumInteractiveComponentSize()
+            .clip(shape)
+            .background(color)
+            .then(if (isCurrent) Modifier else Modifier.clickable(role = Role.Button) { onClick(section) }),
+    ) {
         Text(
             modifier = Modifier
                 .widthIn(min = 24.dp, max = MAX_CHIP_WIDTH)
                 .padding(horizontal = 8.dp, vertical = 6.dp),
             text = section.name,
+            color = contentColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = if (isCurrent) FontWeight.Bold else null,
-        )
-    }
-
-    if (isCurrent) {
-        Surface(
-            modifier = modifier.padding(padding),
-            shape = shape,
-            color = color,
-            contentColor = contentColor,
-            content = content,
-        )
-    } else {
-        Surface(
-            modifier = modifier.padding(padding),
-            onClick = { onClick(section) },
-            shape = shape,
-            color = color,
-            contentColor = contentColor,
-            content = content,
         )
     }
 }

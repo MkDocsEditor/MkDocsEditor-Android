@@ -114,4 +114,16 @@ class SearchViewModelTest {
     fun `tapping a resource goes to the resource`() = runTest {
         assertClickGoesTo(SearchResultItem.Resource("r", "image"), BusEvent.CodeEditorBusEvent.GoToResource("r"))
     }
+
+    @Test
+    fun `clearing the input offers the recent searches again`() = runTest {
+        RecentSearchStore(keyValues).remember("haft")
+        viewModel.onUiEvent(SearchViewModel.UiEvent.SearchInputChanged("haft und"))
+        assertFalse(viewModel.uiState.value.showRecentSearches)
+
+        viewModel.onUiEvent(SearchViewModel.UiEvent.SearchCleared)
+
+        assertEquals("", viewModel.uiState.value.currentSearchFilter)
+        assertTrue(viewModel.uiState.value.showRecentSearches)
+    }
 }

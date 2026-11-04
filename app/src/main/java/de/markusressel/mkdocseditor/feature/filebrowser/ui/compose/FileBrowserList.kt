@@ -2,6 +2,7 @@ package de.markusressel.mkdocseditor.feature.filebrowser.ui.compose
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.defaultMinSize
@@ -73,37 +74,43 @@ internal fun FileBrowserList(
         }
 
         if (content.sections.isNotEmpty()) {
-            item(key = "sections") { ListHeadline(R.string.file_browser_sections_headline) }
+            item(key = "sections") { ListHeadline(R.string.file_browser_sections_headline, Modifier.animateItem()) }
             items(content.sections, key = { "section-${it.id}" }) { section ->
-                SectionListEntry(item = section, onClick = onSectionClicked, onLongClick = onSectionLongClicked)
+                Box(Modifier.animateItem()) {
+                    SectionListEntry(item = section, onClick = onSectionClicked, onLongClick = onSectionLongClicked)
+                }
             }
         }
 
         if (content.documents.isNotEmpty()) {
-            item(key = "documents") { ListHeadline(R.string.file_browser_documents_headline) }
+            item(key = "documents") { ListHeadline(R.string.file_browser_documents_headline, Modifier.animateItem()) }
             items(content.documents, key = { "document-${it.id}" }) { document ->
-                DocumentListEntry(
-                    item = document,
-                    onClick = onDocumentClicked,
-                    onLongClick = onDocumentLongClicked,
-                    hasUnsyncedChanges = document.id in unsyncedDocumentIds,
-                )
+                Box(Modifier.animateItem()) {
+                    DocumentListEntry(
+                        item = document,
+                        onClick = onDocumentClicked,
+                        onLongClick = onDocumentLongClicked,
+                        hasUnsyncedChanges = document.id in unsyncedDocumentIds,
+                    )
+                }
             }
         }
 
         if (content.resources.isNotEmpty()) {
-            item(key = "resources") { ListHeadline(R.string.file_browser_resources_headline) }
+            item(key = "resources") { ListHeadline(R.string.file_browser_resources_headline, Modifier.animateItem()) }
             items(content.resources, key = { "resource-${it.id}" }) { resource ->
-                ResourceListEntry(item = resource, onClick = onResourceClicked, onLongClick = onResourceLongClicked)
+                Box(Modifier.animateItem()) {
+                    ResourceListEntry(item = resource, onClick = onResourceClicked, onLongClick = onResourceLongClicked)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ListHeadline(@StringRes text: Int) {
+private fun ListHeadline(@StringRes text: Int, modifier: Modifier = Modifier) {
     Text(
-        modifier = Modifier.padding(start = 8.dp, top = 8.dp),
+        modifier = modifier.padding(start = 8.dp, top = 8.dp),
         text = stringResource(id = text),
         style = MaterialTheme.typography.headlineSmall.copy(
             color = MaterialTheme.colorScheme.onSurface

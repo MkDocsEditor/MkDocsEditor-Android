@@ -369,6 +369,10 @@ internal class DocumentSession(
             if (readOnly) host.onReadOnly()
         }
 
+        override fun onAuthorColorsChanged(colors: Map<String, String?>) {
+            text.onAuthorColorsChanged(colors)
+        }
+
         override fun onPeersChanged(peers: List<RemotePeer>) {
             text.onPeersChanged(peers)
         }

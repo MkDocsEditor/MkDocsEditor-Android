@@ -58,7 +58,7 @@ internal fun CodeEditorLayout(
         fontSize = settings.textSize.sp,
     )
     val lineNumbers = rememberLineNumberColumn(textStyle, colors, enabled = true)
-    val colorOf: (String) -> Color = { authorColor(it, authorColors(), palette.background) }
+    val colorOf: (String) -> Color = { authorColor(it, authorColors()) }
     val stripWidth = with(LocalDensity.current) { AUTHOR_STRIP_WIDTH.roundToPx() }
     val runs = authorRuns.value
     val authorStrip = if (settings.authorHighlight != AuthorHighlightMode.Off && runs.runs.isNotEmpty()) {
