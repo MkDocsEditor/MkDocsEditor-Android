@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -97,6 +99,7 @@ internal fun FileBrowserScreenContent(
             }
         ) { paddingValues ->
             val state = rememberPullToRefreshState()
+            val folderScrollStates = rememberSaveableStateHolder()
 
             Box(
                 Modifier.padding(paddingValues)
@@ -109,23 +112,31 @@ internal fun FileBrowserScreenContent(
                         onUiEvent(UiEvent.Refresh)
                     }
                 ) {
-                    FileBrowserList(
-                        modifier = Modifier.fillMaxSize(),
-                        content = uiState.folderContent,
-                        isLoading = uiState.isLoading,
-                        unsyncedDocumentIds = uiState.unsyncedDocumentIds,
-                        onDocumentClicked = { onUiEvent(UiEvent.DocumentClicked(it)) },
-                        onDocumentLongClicked = { onUiEvent(UiEvent.DocumentLongClicked(it)) },
-                        onResourceClicked = { onUiEvent(UiEvent.ResourceClicked(it)) },
-                        onResourceLongClicked = { onUiEvent(UiEvent.ResourceLongClicked(it)) },
-                        onSectionClicked = { onUiEvent(UiEvent.SectionClicked(it)) },
-                        onSectionLongClicked = { onUiEvent(UiEvent.SectionLongClicked(it)) },
-                    )
+                    // each folder keeps its own position. It follows the content and not the path,
+                    // because the content of the last folder stays until the next one has loaded
+                    folderScrollStates.SaveableStateProvider(uiState.folderContent?.sectionId ?: NO_FOLDER) {
+                        FileBrowserList(
+                            modifier = Modifier.fillMaxSize(),
+                            state = rememberLazyListState(),
+                            content = uiState.folderContent,
+                            isLoading = uiState.isLoading,
+                            unsyncedDocumentIds = uiState.unsyncedDocumentIds,
+                            onDocumentClicked = { onUiEvent(UiEvent.DocumentClicked(it)) },
+                            onDocumentLongClicked = { onUiEvent(UiEvent.DocumentLongClicked(it)) },
+                            onResourceClicked = { onUiEvent(UiEvent.ResourceClicked(it)) },
+                            onResourceLongClicked = { onUiEvent(UiEvent.ResourceLongClicked(it)) },
+                            onSectionClicked = { onUiEvent(UiEvent.SectionClicked(it)) },
+                            onSectionLongClicked = { onUiEvent(UiEvent.SectionLongClicked(it)) },
+                        )
+                    }
                 }
             }
         }
     }
 }
+
+/** the scroll state while the content of the folder is unknown, so the state of a folder keeps its position */
+private const val NO_FOLDER = ""
 
 @CombinedPreview
 @Composable
