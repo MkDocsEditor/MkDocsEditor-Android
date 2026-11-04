@@ -83,11 +83,23 @@ class EditorPanesTest {
     }
 
     @Test
+    fun `the page stays without room once it was shown`() {
+        var mode by mutableStateOf(SplitMode.Vertical)
+        composeRule.setContent { Panes(showPreview = mode != SplitMode.Off, mode = mode) }
+        composeRule.onNodeWithTag(PREVIEW).assertExists()
+
+        mode = SplitMode.Off
+
+        // ready for when it comes back
+        composeRule.onNodeWithTag(PREVIEW).assertHeightIsEqualTo(0.dp)
+    }
+
+    @Test
     fun `without a split the editor has the whole space`() {
         composeRule.setContent { Panes(showPreview = false, mode = SplitMode.Off) }
 
-        // without room, but ready for when it comes back
-        composeRule.onNodeWithTag(PREVIEW).assertHeightIsEqualTo(0.dp)
+        // a WebView takes long to create, and it may never be needed
+        composeRule.onNodeWithTag(PREVIEW).assertDoesNotExist()
         composeRule.onNodeWithTag(SPLIT_DIVIDER_TAG).assertDoesNotExist()
         composeRule.onNodeWithTag(EDITOR).assertWidthIsEqualTo(400.dp).assertHeightIsEqualTo(800.dp)
     }

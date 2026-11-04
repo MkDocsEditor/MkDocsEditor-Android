@@ -187,6 +187,29 @@ class EditorScreenStateTest {
     }
 
     @Test
+    fun `the layout of the edit mode is there while it opens`() {
+        show(CodeEditorViewModel.initialUiState(editModeOpening = true))
+
+        composeRule.onNodeWithContentDescription("Bold").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Rendered page hidden, tap to show it below the editor").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Edit").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the toolbar does nothing until the edit mode is open`() {
+        show(CodeEditorViewModel.initialUiState(editModeOpening = true))
+
+        composeRule.onNodeWithContentDescription("Bold").performClick()
+
+        assertEquals(emptyList<CodeEditorViewModel.UiEvent>(), events)
+    }
+
+    @Test
+    fun `an edit mode that does not open is not there from the start`() {
+        assertEquals(CodeEditorViewModel.UiState(), CodeEditorViewModel.initialUiState(editModeOpening = false))
+    }
+
+    @Test
     fun `the editor takes input as soon as the edit mode is open`() {
         var uiState by mutableStateOf(CodeEditorViewModel.UiState(editModeOpening = true))
         composeRule.setContent {

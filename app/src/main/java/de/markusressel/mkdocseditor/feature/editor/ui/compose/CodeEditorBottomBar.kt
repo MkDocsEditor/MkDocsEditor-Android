@@ -77,7 +77,7 @@ internal fun CodeEditorBottomBar(
                 .horizontalScroll(rememberScrollState()),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (!uiState.editModeActive) return@Row
+            if (!uiState.editModeActive && !uiState.editModeOpening) return@Row
             ToolbarButton(Icons.Default.FormatBold, R.string.format_bold) { format(FormatAction.Bold) }
             ToolbarButton(Icons.Default.FormatItalic, R.string.format_italic) { format(FormatAction.Italic) }
             ToolbarButton(Icons.Default.FormatStrikethrough, R.string.format_strikethrough) { format(FormatAction.Strikethrough) }

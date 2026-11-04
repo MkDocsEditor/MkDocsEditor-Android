@@ -123,7 +123,7 @@ internal fun MarkdownPreview(
 
                 @JavascriptInterface
                 fun pageReady() {
-                    mainHandler.post { state.onPageReady(currentText, ::renderMarkdown) }
+                    mainHandler.post { state.onPageReady(currentText, ::renderMarkdown, currentVisible) }
                 }
             }, "MkDocsPreviewBridge")
         }

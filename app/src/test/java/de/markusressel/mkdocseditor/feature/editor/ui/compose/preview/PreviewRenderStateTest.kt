@@ -23,6 +23,15 @@ class PreviewRenderStateTest {
     }
 
     @Test
+    fun `a page nobody sees waits with the text until it is shown`() {
+        state.onPageReady("text", render, visible = false)
+        assertEquals(emptyList<String>(), rendered)
+
+        state.show("text", render)
+        assertEquals(listOf("text"), rendered)
+    }
+
+    @Test
     fun `the same text renders once on the same page`() {
         state.onPageReady("text", render)
         state.show("text", render)
