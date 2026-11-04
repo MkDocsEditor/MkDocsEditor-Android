@@ -15,6 +15,12 @@ jobs:
           java-version: 21
           distribution: temurin
       - uses: gradle/actions/setup-gradle@v6
+      # Robolectric downloads its Android jars from Maven Central on its own, past Gradle and its cache
+      - uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: robolectric-
       - name: Execute unit tests
         run: ./gradlew testDebugUnitTest --stacktrace
   ANDROID_BUILD_APK:
