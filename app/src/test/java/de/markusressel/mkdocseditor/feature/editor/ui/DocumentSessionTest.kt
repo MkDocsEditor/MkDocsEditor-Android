@@ -89,7 +89,7 @@ class DocumentSessionTest {
         var localCopyText: String? = null
         var localCopyInStore = true
         var redirects = mapOf<String, String>()
-        var followedAll = 0
+        var redirectLookups = 0
         var cached: CachedDocument? = null
         var loadAnswer: CompletableDeferred<DocumentLoad>? = null
         var loadCount = 0
@@ -118,9 +118,9 @@ class DocumentSessionTest {
         }
 
         override fun hasLocalCopy(documentId: String) = localCopyInStore
-        override suspend fun followRedirect(documentId: String) = redirects[documentId] ?: documentId
-        override suspend fun followAllRedirects() {
-            followedAll++
+        override suspend fun followRedirect(documentId: String): String {
+            redirectLookups++
+            return redirects[documentId] ?: documentId
         }
 
         override suspend fun loadDocument(documentId: String, onCached: (CachedDocument?) -> Unit): DocumentLoad {
@@ -360,9 +360,9 @@ class DocumentSessionTest {
     }
 
     @Test
-    fun `an existing copy looks for other moved copies on the side`() = test { f ->
+    fun `an existing copy opens without looking for moved copies`() = test { f ->
         f.open()
-        assertEquals(1, f.environment.followedAll)
+        assertEquals(0, f.environment.redirectLookups)
     }
 
     @Test

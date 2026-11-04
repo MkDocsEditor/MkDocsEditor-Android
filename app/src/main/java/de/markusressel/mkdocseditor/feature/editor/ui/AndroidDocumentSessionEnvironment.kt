@@ -66,10 +66,6 @@ internal class AndroidDocumentSessionEnvironment @Inject constructor(
 
     override suspend fun followRedirect(documentId: String) = localCopyRedirects.beforeOpening(documentId)
 
-    override suspend fun followAllRedirects() {
-        localCopyRedirects.followAllIfDue()
-    }
-
     override suspend fun loadDocument(documentId: String, onCached: (CachedDocument?) -> Unit): DocumentLoad {
         val resource = getDocumentUseCase(documentId) { onCached(it?.toCachedDocument()) }
         return DocumentLoad(

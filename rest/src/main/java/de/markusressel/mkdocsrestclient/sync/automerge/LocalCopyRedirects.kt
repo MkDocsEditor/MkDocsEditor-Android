@@ -12,12 +12,10 @@ import timber.log.Timber
  * is re-keyed to the new id before the document is opened again (docs/references.md section 7
  * of the backend). A connected session learns the new id from `document-renamed` instead.
  *
- * @param elapsedMs a clock for the time between two rounds, which only moves forward
  * @param lookup asks the server where the document with an old id is now
  */
 class LocalCopyRedirects(
     private val store: LocalDocumentStore,
-    private val elapsedMs: () -> Long = { System.nanoTime() / 1_000_000 },
     private val lookup: suspend (oldId: String) -> Lookup,
 ) {
 
@@ -35,44 +33,25 @@ class LocalCopyRedirects(
 
     private val mutex = Mutex()
 
-    /** when the server was last asked about every stored copy */
-    private var lastRoundMs: Long? = null
-
     /**
      * Asks the server about every stored copy and re-keys the moved ones. Copies whose
      * documents are gone stay where they are.
      *
      * @return old id to new id of the re-keyed copies
      */
-    suspend fun followAll(): Map<String, String> = mutex.withLock { follow(extraId = null) }
+    suspend fun followAll(): Map<String, String> = follow(extraId = null)
 
     /**
-     * Like [followAll], unless the server was asked a short while ago. Each round is one request
-     * per stored copy, too many to send whenever a document opens. Nothing depends on this round:
-     * opening an id without a copy calls [beforeOpening], and a connected session learns about a
-     * move from the server.
-     *
-     * @return old id to new id of the re-keyed copies
-     */
-    suspend fun followAllIfDue(): Map<String, String> = mutex.withLock {
-        val last = lastRoundMs
-        if (last != null && elapsedMs() - last < MIN_ROUND_INTERVAL_MS) emptyMap() else follow(extraId = null)
-    }
-
-    /**
-     * Call this only while holding [mutex].
-     *
      * @param extraId an id without a stored copy to look up too
      * @return old id to new id of every moved id that was looked up
      */
-    private suspend fun follow(extraId: String?): Map<String, String> {
-        lastRoundMs = elapsedMs()
+    private suspend fun follow(extraId: String?): Map<String, String> = mutex.withLock {
         val ids = store.ids()
         val toLookUp = if (extraId != null && extraId !in ids) ids + extraId else ids
         val answers = coroutineScope {
             toLookUp.map { id -> async { id to safeLookup(id) } }.map { it.await() }
         }
-        return buildMap {
+        buildMap {
             answers.forEach { (oldId, answer) ->
                 if (answer is Lookup.Moved && answer.newId != oldId) {
                     if (oldId in ids) {
@@ -91,8 +70,7 @@ class LocalCopyRedirects(
      *
      * @return the id to open: [documentId], or its new id if it moved
      */
-    suspend fun beforeOpening(documentId: String): String =
-        mutex.withLock { follow(extraId = documentId) }[documentId] ?: documentId
+    suspend fun beforeOpening(documentId: String): String = follow(extraId = documentId)[documentId] ?: documentId
 
     private suspend fun safeLookup(id: String): Lookup = try {
         lookup(id)
@@ -101,5 +79,3 @@ class LocalCopyRedirects(
         Lookup.Unknown
     }
 }
-
-private const val MIN_ROUND_INTERVAL_MS = 5 * 60 * 1000L
