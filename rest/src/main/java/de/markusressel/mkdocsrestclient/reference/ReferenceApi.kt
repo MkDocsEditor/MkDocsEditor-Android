@@ -19,6 +19,9 @@ interface ReferenceApi {
      */
     suspend fun getBacklinks(type: String, id: String): Result<BacklinksModel, FuelError>
 
+    /** who wrote which part of a document */
+    suspend fun getAuthorship(documentId: String): Result<AuthorshipModel, FuelError>
+
     /** the link destination from a document to an item, computed by the backend */
     suspend fun getLink(fromDocumentId: String, toId: String, anchor: String? = null): Result<LinkResultModel, FuelError>
 

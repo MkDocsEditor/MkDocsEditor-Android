@@ -131,6 +131,7 @@ class KutePreferencesHolder @Inject constructor(
                         editorLineWrappingPreference,
                         editorLineNumbersPreference,
                         editorTextSizePreference,
+                        editorAuthorHighlightPreference,
                     )
                 )
             )
@@ -196,6 +197,21 @@ class KutePreferencesHolder @Inject constructor(
             defaultValue = DEFAULT_EDITOR_TEXT_SIZE,
             unit = "sp",
             dataProvider = dataProvider)
+    }
+
+    val editorAuthorHighlightPreference by lazy {
+        KuteSingleSelectStringPreference(context = context,
+            key = R.string.editor_author_highlight_key,
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_accounts),
+            title = context.getString(R.string.editor_author_highlight_title),
+            possibleValues = mapOf(
+                R.string.editor_author_highlight_marker_value to R.string.editor_author_highlight_marker_name,
+                R.string.editor_author_highlight_strip_value to R.string.editor_author_highlight_strip_name,
+                R.string.editor_author_highlight_off_value to R.string.editor_author_highlight_off_name,
+            ),
+            defaultValue = R.string.editor_author_highlight_marker_value,
+            dataProvider = dataProvider,
+            onPreferenceChangedListener = { _, _ -> })
     }
 
     val debugCategory by lazy {

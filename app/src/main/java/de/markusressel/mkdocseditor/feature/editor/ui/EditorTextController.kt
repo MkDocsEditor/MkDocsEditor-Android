@@ -1,5 +1,8 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
+import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRuns
+import de.markusressel.mkdocseditor.feature.editor.domain.toAuthorRuns
+import de.markusressel.mkdocsrestclient.reference.AuthorshipModel
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.TextRange
@@ -28,12 +31,14 @@ import de.markusressel.kodeeditor.library.compose.TextSplice as EditorSplice
  * @param onPeersChanged the other users changed
  * @param onSelectionChanged the user moved the selection
  * @param onEdited an edit that does not come from the user typing in the editor was applied
+ * @param onDocumentChanged the text changed in any way
  */
 internal class EditorTextController(
     private val editModeActive: () -> Boolean,
     private val onPeersChanged: () -> Unit = {},
     private val onSelectionChanged: (TextRange) -> Unit = {},
     private val onEdited: () -> Unit = {},
+    private val onDocumentChanged: () -> Unit = {},
 ) {
     /** what the editor shows */
     val editorState = KodeEditorState()
@@ -61,6 +66,15 @@ internal class EditorTextController(
      * part of a flow: a flow would deliver it a frame after the text it belongs to.
      */
     val peers: State<List<RemotePeer>> = _peers
+
+    private val _authorRuns = mutableStateOf(AuthorRuns())
+
+    /** who wrote what, moved within the call of each edit like [peers]. Empty until the backend told us. */
+    val authorRuns: State<AuthorRuns> = _authorRuns
+
+    /** the colors of the users seen so far, by username. They stay when a user leaves. */
+    var authorColors: Map<String, String?> = emptyMap()
+        private set
 
     /** the text of the document */
     val text: String
@@ -95,6 +109,7 @@ internal class EditorTextController(
         this.document = document
         showInEditor { editorState.setText(document.text.orEmpty(), TextRange.Zero) }
         onPeersChanged(emptyList())
+        forgetAuthors()
     }
 
     /** Disconnects the editor from its document */
@@ -104,10 +119,35 @@ internal class EditorTextController(
     fun showDetachedText(text: String) {
         if (document.text != null) return
         showInEditor { editorState.setText(text) }
+        forgetAuthors()
     }
 
     /** The whole text of the document changed */
-    fun onTextReplaced() = showInEditor { editorState.setText(document.text ?: documentText) }
+    fun onTextReplaced() {
+        showInEditor { editorState.setText(document.text ?: documentText) }
+        forgetAuthors()
+    }
+
+    /** Runs of another state of the text can't be moved, so they only come back from the backend */
+    private fun forgetAuthors() {
+        _authorRuns.value = AuthorRuns()
+        onDocumentChanged()
+    }
+
+    /**
+     * @param model the answer of the backend
+     * @return false if it describes another state than the current one, or does not fit the text
+     */
+    fun showAuthors(model: AuthorshipModel): Boolean {
+        if (document.version?.hasHeads(model.heads) != true) return false
+        _authorRuns.value = model.toAuthorRuns(documentText) ?: return false
+        return true
+    }
+
+    private fun moveAuthors(start: Int, removed: Int, inserted: Int) {
+        _authorRuns.value = _authorRuns.value.applied(start, removed, inserted)
+        onDocumentChanged()
+    }
 
     /**
      * Another user changed the document
@@ -115,17 +155,24 @@ internal class EditorTextController(
      * @param text the text of the document after the change
      * @param splices the change, each one refers to the text after the one before it
      */
-    fun onRemoteChange(text: String, splices: List<TextSplice>) = showInEditor {
-        editorState.applyRemote(splices.map { EditorSplice(it.index, it.deleteCount, it.insert) })
-        // an edit on a wrong base text would change the wrong characters of the document
-        if (editorState.text != text) {
-            Timber.e("The editor differs from the document after a remote change")
-            editorState.setText(text)
+    fun onRemoteChange(text: String, splices: List<TextSplice>) {
+        var fits = true
+        showInEditor {
+            editorState.applyRemote(splices.map { EditorSplice(it.index, it.deleteCount, it.insert) })
+            // an edit on a wrong base text would change the wrong characters of the document
+            if (editorState.text != text) {
+                Timber.e("The editor differs from the document after a remote change")
+                editorState.setText(text)
+                fits = false
+            }
         }
+        if (!fits) return forgetAuthors()
+        splices.forEach { moveAuthors(it.index, it.deleteCount, it.insert.length) }
     }
 
     fun onPeersChanged(peers: List<RemotePeer>) {
         _peers.value = peers
+        authorColors = authorColors + peers.associate { it.username to it.color }
         onPeersChanged()
     }
 
@@ -177,6 +224,7 @@ internal class EditorTextController(
         val applied = version != null && applyToDocument(version, splice)
         if (applied) {
             documentText = editorState.text
+            moveAuthors(splice.start, splice.removedLength, splice.inserted.length)
         } else {
             onTextReplaced()
         }

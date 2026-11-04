@@ -12,6 +12,9 @@ class ReferenceApiImpl(
     override suspend fun getDocumentReferences(documentId: String): Result<DocumentReferencesModel, FuelError> =
         requestManager.doRequest(url = "/document/$documentId/references/", method = Method.GET)
 
+    override suspend fun getAuthorship(documentId: String): Result<AuthorshipModel, FuelError> =
+        requestManager.doRequest(url = "/document/$documentId/authorship/", method = Method.GET)
+
     override suspend fun getBacklinks(type: String, id: String): Result<BacklinksModel, FuelError> =
         requestManager.doRequest(url = "/$type/$id/backlinks/", method = Method.GET)
 

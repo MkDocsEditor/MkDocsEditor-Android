@@ -47,6 +47,14 @@
     <string name="editor_line_wrapping_title">Wrap long lines</string>
     <string name="editor_line_numbers_key" translatable="false">editor_line_numbers</string>
     <string name="editor_line_numbers_title">Show line numbers</string>
+    <string name="editor_author_highlight_key" translatable="false">editor_author_highlight</string>
+    <string name="editor_author_highlight_title">Show who wrote what</string>
+    <string name="editor_author_highlight_marker_value" translatable="false">marker</string>
+    <string name="editor_author_highlight_marker_name">Strip and marker</string>
+    <string name="editor_author_highlight_strip_value" translatable="false">strip</string>
+    <string name="editor_author_highlight_strip_name">Strip next to the line</string>
+    <string name="editor_author_highlight_off_value" translatable="false">off</string>
+    <string name="editor_author_highlight_off_name">Off</string>
     <string name="editor_text_size_key" translatable="false">editor_text_size</string>
     <string name="editor_text_size_title">Text size</string>
     <string name="clear_offline_cache_title">Clear offline cache</string>

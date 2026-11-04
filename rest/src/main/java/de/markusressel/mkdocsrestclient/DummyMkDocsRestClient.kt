@@ -2,6 +2,7 @@
 
 package de.markusressel.mkdocsrestclient
 
+import de.markusressel.mkdocsrestclient.reference.AuthorshipModel
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.result.Result
 import de.markusressel.mkdocsrestclient.document.DocumentModel
@@ -238,6 +239,9 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
     override fun disableLogging() {}
 
     override suspend fun getDocumentReferences(documentId: String): Result<DocumentReferencesModel, FuelError> =
+        Result.error(FuelError.wrap(UnsupportedOperationException("not in the demo")))
+
+    override suspend fun getAuthorship(documentId: String): Result<AuthorshipModel, FuelError> =
         Result.error(FuelError.wrap(UnsupportedOperationException("not in the demo")))
 
     override suspend fun getBacklinks(type: String, id: String): Result<BacklinksModel, FuelError> =

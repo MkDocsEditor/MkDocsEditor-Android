@@ -77,6 +77,8 @@ internal data class CodeEditorScreen(
             uiState = uiState,
             editorState = viewModel.editorState,
             remotePeers = viewModel.editorPeers,
+            authorRuns = viewModel.editorAuthorRuns,
+            authorColors = viewModel::editorAuthorColors,
             onUiEvent = viewModel::onUiEvent,
             previewResourceLoader = viewModel.previewResourceLoader,
         )

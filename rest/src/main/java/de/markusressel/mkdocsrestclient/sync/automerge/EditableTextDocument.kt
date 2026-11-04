@@ -7,6 +7,9 @@ import de.markusressel.mkdocsrestclient.sync.text.TextSplice
  * Every text the editor has ever shown is one of these states.
  */
 class DocumentVersion internal constructor(internal val headsHex: List<String>) {
+    /** @return whether this is the state with these heads, in any order */
+    fun hasHeads(heads: Collection<String>): Boolean = headsHex.toSet() == heads.toSet()
+
     override fun equals(other: Any?): Boolean = other is DocumentVersion && headsHex == other.headsHex
     override fun hashCode(): Int = headsHex.hashCode()
     override fun toString(): String = headsHex.joinToString(",") { it.take(8) }
