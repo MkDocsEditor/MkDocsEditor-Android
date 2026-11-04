@@ -31,8 +31,8 @@ class ReferenceApiImpl(
             timeout = MOVE_TIMEOUT,
         )
 
-    override suspend fun getMoved(oldId: String): Result<MovedModel, FuelError> =
-        requestManager.doRequest(url = "/moved/$oldId/", method = Method.GET)
+    override suspend fun getMoved(oldIds: List<String>): Result<MovedListModel, FuelError> =
+        requestManager.doRequest(url = "/moved/", urlParameters = oldIds.map { "id" to it }, method = Method.GET)
 
     private companion object {
         const val MOVE_TIMEOUT = 60_000

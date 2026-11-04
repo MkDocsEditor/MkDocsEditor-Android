@@ -1,7 +1,5 @@
 package de.markusressel.mkdocsrestclient.sync.automerge
 
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
@@ -12,24 +10,14 @@ import timber.log.Timber
  * is re-keyed to the new id before the document is opened again (docs/references.md section 7
  * of the backend). A connected session learns the new id from `document-renamed` instead.
  *
- * @param lookup asks the server where the document with an old id is now
+ * @param lookup asks the server about at most [MAX_IDS_PER_LOOKUP] ids at once, and returns the
+ * new id of the documents that moved. An id without an answer did not move, or the document is
+ * gone. It throws if there is no answer (offline, server error).
  */
 class LocalCopyRedirects(
     private val store: LocalDocumentStore,
-    private val lookup: suspend (oldId: String) -> Lookup,
+    private val lookup: suspend (oldIds: List<String>) -> Map<String, String>,
 ) {
-
-    /** the answer of the server for an old id */
-    sealed interface Lookup {
-        /** the document moved and has this id now */
-        data class Moved(val newId: String) : Lookup
-
-        /** the id did not move: it is current, or the document is gone */
-        data object NotMoved : Lookup
-
-        /** no answer (offline, server error) */
-        data object Unknown : Lookup
-    }
 
     private val mutex = Mutex()
 
@@ -48,17 +36,15 @@ class LocalCopyRedirects(
     private suspend fun follow(extraId: String?): Map<String, String> = mutex.withLock {
         val ids = store.ids()
         val toLookUp = if (extraId != null && extraId !in ids) ids + extraId else ids
-        val answers = coroutineScope {
-            toLookUp.map { id -> async { id to safeLookup(id) } }.map { it.await() }
-        }
+        val answers = toLookUp.chunked(MAX_IDS_PER_LOOKUP).flatMap { safeLookup(it).toList() }
         buildMap {
-            answers.forEach { (oldId, answer) ->
-                if (answer is Lookup.Moved && answer.newId != oldId) {
+            answers.forEach { (oldId, newId) ->
+                if (newId != oldId) {
                     if (oldId in ids) {
-                        store.move(oldId, answer.newId)
-                        Timber.i("Local copy of $oldId follows the move to ${answer.newId}")
+                        store.move(oldId, newId)
+                        Timber.i("Local copy of $oldId follows the move to $newId")
                     }
-                    put(oldId, answer.newId)
+                    put(oldId, newId)
                 }
             }
         }
@@ -72,10 +58,15 @@ class LocalCopyRedirects(
      */
     suspend fun beforeOpening(documentId: String): String = follow(extraId = documentId)[documentId] ?: documentId
 
-    private suspend fun safeLookup(id: String): Lookup = try {
-        lookup(id)
+    private suspend fun safeLookup(ids: List<String>): Map<String, String> = try {
+        lookup(ids)
     } catch (e: Exception) {
-        Timber.w(e, "Could not look up the moves of $id")
-        Lookup.Unknown
+        Timber.w(e, "Could not look up the moves of ${ids.size} ids")
+        emptyMap()
+    }
+
+    companion object {
+        /** the limit of the server for `GET /moved/` */
+        const val MAX_IDS_PER_LOOKUP = 200
     }
 }

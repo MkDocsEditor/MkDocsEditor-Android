@@ -5,6 +5,7 @@ import de.markusressel.mkdocsrestclient.sync.text.applySplices
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionHandler
 import de.markusressel.mkdocsrestclient.sync.websocket.WebsocketConnectionListener
 import de.markusressel.mkdocsrestclient.reference.MoveResultModel
+import de.markusressel.mkdocsrestclient.reference.MovedListModel
 import de.markusressel.mkdocsrestclient.reference.MovedModel
 import de.markusressel.mkdocsrestclient.toEntity
 import kotlinx.coroutines.runBlocking
@@ -345,16 +346,9 @@ class LiveBackendSyncTest {
                 "POST", "/move/", bobAuth,
                 """{"type":"document","id":"$newId","parent":"$section","name":"page","dryRun":false}""",
             ).toEntity<MoveResultModel>().newId
-            val redirects = LocalCopyRedirects(store) { id ->
-                val request = Request.Builder().url(baseUrl.trimEnd('/') + "/moved/$id/")
-                    .header("Authorization", aliceAuth.authorization).build()
-                http.newCall(request).execute().use { response ->
-                    when (response.code) {
-                        200 -> LocalCopyRedirects.Lookup.Moved(response.body.string().toEntity<MovedModel>().item.id)
-                        404 -> LocalCopyRedirects.Lookup.NotMoved
-                        else -> LocalCopyRedirects.Lookup.Unknown
-                    }
-                }
+            val redirects = LocalCopyRedirects(store) { ids ->
+                val query = ids.joinToString("&") { "id=$it" }
+                get("/moved/?$query", aliceAuth).toEntity<MovedListModel>().moved.associate { it.oldId to it.item.id }
             }
             assertEquals(backId, runBlocking { redirects.beforeOpening(backId) })
             assertEquals(listOf(backId), store.ids())

@@ -102,19 +102,12 @@ class AppModule {
     @Provides
     @Singleton
     fun provideLocalCopyRedirects(store: LocalDocumentStore, restClient: IMkDocsRestClient): LocalCopyRedirects {
-        return LocalCopyRedirects(store) { oldId ->
-            restClient.getMoved(oldId).fold(
-                success = { moved ->
-                    if (moved.item.type == ItemType.DOCUMENT) {
-                        LocalCopyRedirects.Lookup.Moved(moved.item.id)
-                    } else {
-                        LocalCopyRedirects.Lookup.NotMoved
-                    }
+        return LocalCopyRedirects(store) { oldIds ->
+            restClient.getMoved(oldIds).fold(
+                success = { answer ->
+                    answer.moved.filter { it.item.type == ItemType.DOCUMENT }.associate { it.oldId to it.item.id }
                 },
-                failure = { error ->
-                    // 404: the id is current, or the document is gone (its copy stays)
-                    if (error.response.statusCode == 404) LocalCopyRedirects.Lookup.NotMoved else LocalCopyRedirects.Lookup.Unknown
-                },
+                failure = { throw it },
             )
         }
     }
