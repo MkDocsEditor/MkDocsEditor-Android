@@ -6,6 +6,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -56,7 +58,9 @@ class FolderScrollPositionTest {
     }
 
     private fun scrollList(index: Int) {
-        composeRule.onNode(hasScrollToIndexAction()).performScrollToIndex(index)
+        // the path above the list can scroll to an index as well
+        composeRule.onNode(hasScrollToIndexAction().and(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)))
+            .performScrollToIndex(index)
         composeRule.waitForIdle()
     }
 
