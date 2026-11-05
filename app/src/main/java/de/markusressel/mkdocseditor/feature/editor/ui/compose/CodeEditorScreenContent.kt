@@ -91,7 +91,7 @@ internal fun CodeEditorScreenContent(
     val configuration = LocalConfiguration.current
     val splitMode = uiState.splitMode ?: defaultSplitMode(configuration.screenWidthDp, configuration.screenHeightDp)
 
-    val editorShown = uiState.editModeActive || uiState.editModeOpening || uiState.readOnlyEditorShown
+    val editorShown = uiState.editorShown
 
     // at the start of the animation, so the keyboard does not wait for the editor to leave
     val focusManager = LocalFocusManager.current
@@ -132,8 +132,8 @@ internal fun CodeEditorScreenContent(
                         title = uiState.title,
                         actions = listOfNotNull(
                             uiState.connectionIndicator?.let { TopAppBarAction.CodeEditor.ConnectionAction(it) },
-                            TopAppBarAction.CodeEditor.OnlineUsersAction(uiState.remotePeers)
-                                .takeIf { uiState.remotePeers.isNotEmpty() },
+                            (uiState.remotePeers + uiState.ghosts.map { it.asPeer() }).takeIf { it.isNotEmpty() }
+                                ?.let { TopAppBarAction.CodeEditor.OnlineUsersAction(it) },
                             TopAppBarAction.CodeEditor.AuthorHighlightAction(uiState.editorSettings.authorHighlight)
                                 .takeIf { editorShown },
                             TopAppBarAction.CodeEditor.PageReferencesAction,
@@ -213,7 +213,12 @@ internal fun CodeEditorScreenContent(
                             authorRuns = authorRuns,
                             authorColors = authorColors,
                             readOnly = !uiState.editModeActive,
-                            focusRequest = uiState.focusEditorRequest,
+                            jumpRequest = uiState.jumpRequest,
+                            ghosts = uiState.ghosts,
+                            following = uiState.following,
+                            followPauseRequest = uiState.followPauseRequest,
+                            onStopFollowing = { onUiEvent(CodeEditorViewModel.UiEvent.StopFollowingClicked) },
+                            onVisibleRangeChanged = { onUiEvent(CodeEditorViewModel.UiEvent.VisibleRangeChanged(it)) },
                         )
                     },
                     preview = {

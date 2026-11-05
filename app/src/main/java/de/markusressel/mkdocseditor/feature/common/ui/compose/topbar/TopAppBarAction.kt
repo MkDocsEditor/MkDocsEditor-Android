@@ -14,6 +14,7 @@ sealed interface TopAppBarAction {
         /** @param mode the arrangement of the edit mode, null while reading */
         data class EditorModeAction(val mode: SplitMode?) : CodeEditor
         data class OnlineUsersAction(val remotePeers: List<RemotePeer>) : CodeEditor
+        data class FollowUserAction(val accountId: String) : CodeEditor
         data object PageReferencesAction : CodeEditor
         data class AuthorHighlightAction(val mode: AuthorHighlightMode) : CodeEditor
         data class ConnectionAction(val indicator: ConnectionIndicator) : CodeEditor

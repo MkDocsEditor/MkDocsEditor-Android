@@ -52,6 +52,7 @@ class DocumentSessionTest {
             disconnects += reason
         }
 
+        override fun onLocalViewportChanged(top: Int?, bottom: Int?) = Unit
         override fun onLocalSelectionChanged(anchor: Int?, head: Int?) {}
         override fun persistNow() {
             persists++

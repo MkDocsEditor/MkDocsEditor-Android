@@ -10,7 +10,7 @@ clients show the same thing.
 |---|---|---|---|
 | Editor | [Opening a document when the backend is unavailable](#opening-a-document-when-the-backend-is-unavailable) | Bug and small feature | No |
 | Editor | [Author highlighting](#author-highlighting) | Open questions left | No |
-| Editor | [Follow another user](#follow-another-user) | Feature | Yes, the backend and the web client |
+| Editor | [Follow another user](#follow-another-user) | Preview-only readers | Yes, the web client |
 | File browser | [Entries lack context](#file-browser-entries-lack-context) | Design and UI | Maybe the backend |
 | File browser | [Transitions between sections](#transitions-between-sections) | Design and UI | No |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Feature | Yes, the backend and the web client |
@@ -28,36 +28,12 @@ Order that fits how they depend on each other (Idea):
 
 ## Follow another user
 
-**What I want**
+Works in the editor pane. What is left:
 
-- While reading or editing a document, a user can follow the cursor of another user, so the view stays on what they
-  are doing.
-- Manual input like zoom and pan only pauses following for a while, like Google Maps does when you move the map
-  during navigation. Following then resumes by itself.
-- Cursors disappear at once today when a user leaves. Instead a "ghost" of the cursor stays in the document for a
-  certain time. When the ghost disappears, follow mode ends automatically.
-- Opening a share link turns follow mode on for the sender, if the sender is still in the document. If they have left
-  since, the link only goes to their last location and does not turn follow mode on.
-- This must also work in MkDocsEditor-Web.
-
-**Where to start**
-
-- Share links already find the sender: `senderPosition` in `feature/editor/domain/SenderPosition.kt`, called from
-  `CodeEditorViewModel.onOpenedByJoinLink`. It tells a sender in `peers` from one in `lastPositions` only implicitly,
-  and follow mode needs that difference.
-- `lastPositions` of `presence-snapshot` (backend `docs/sync-protocol.md` section 6) keeps the last cursor of an account
-  for 30 days, but only arrives on join. A ghost needs to know about a leave while the document is open, so
-  `presence-leave` may need to carry more, or the client keeps the last selection of a peer itself and starts a timer.
-- KodeEditor only scrolls to the cursor of the local user, and only while it has the focus (`keepCursorVisible` and
-  `CursorFollower`). Following needs a way to scroll to any position without moving the local cursor, plus a callback
-  for manual pan and zoom. That is a change in KodeEditor, where only Markus merges.
-- The preview pane should probably follow as well.
-
-**Questions to decide**
-
-- How long does a ghost stay, and is the time set by the server or by each client?
-- How long does a manual pan or zoom pause following?
-- Does typing by the follower pause or end following?
+- A reader in preview-only mode sends no viewport (`"viewport": null`), so a follower only sees their cursor. Mapping the
+  preview position to the text needs its own PR, in both clients.
+- Not decided yet, so these are only what both clients do for now: following pauses 5 seconds after the last manual
+  movement, and typing by the follower pauses it the same way instead of ending it.
 
 ## Opening a document when the backend is unavailable
 

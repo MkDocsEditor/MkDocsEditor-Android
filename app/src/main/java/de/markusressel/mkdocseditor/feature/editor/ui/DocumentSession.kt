@@ -5,7 +5,8 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendCon
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeDocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
-import de.markusressel.mkdocsrestclient.sync.automerge.RemoteSelection
+import de.markusressel.mkdocsrestclient.sync.automerge.RemoteGhost
+import de.markusressel.mkdocsrestclient.sync.automerge.RemotePosition
 import de.markusressel.mkdocsrestclient.sync.automerge.SyncedDocument
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.CloseCode
 import de.markusressel.mkdocsrestclient.sync.text.TextSplice
@@ -13,6 +14,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -141,6 +143,8 @@ internal class DocumentSession(
         /** there is neither a connection nor a text to show */
         val noOfflineVersion: Boolean = false,
     )
+
+    private var ghostTimers = emptyList<Job>()
 
     private val _state = MutableStateFlow(State())
     val state = _state.asStateFlow()
@@ -378,8 +382,23 @@ internal class DocumentSession(
             text.onPeersChanged(peers)
         }
 
-        override fun onLastPositionsChanged(positions: Map<String, RemoteSelection>) {
+        override fun onLastPositionsChanged(positions: Map<String, RemotePosition>) {
             text.onLastPositionsChanged(positions)
+        }
+
+        override fun onGhostsChanged(ghosts: List<RemoteGhost>) {
+            text.onGhostsChanged(ghosts)
+            ghostTimers.forEach { it.cancel() }
+            ghostTimers = ghosts.map { ghost ->
+                scope.launch {
+                    delay(ghost.remainingMs)
+                    text.removeGhost(ghost.accountId)
+                }
+            }
+        }
+
+        override fun onPresenceKnownChanged(known: Boolean) {
+            text.onPresenceKnownChanged(known)
         }
 
         override fun onDocumentRenamed(oldDocumentId: String, newDocumentId: String) {
@@ -478,6 +497,10 @@ internal class DocumentSession(
 
     fun onLocalSelectionChanged(anchor: Int, head: Int) {
         syncedDocument?.onLocalSelectionChanged(anchor, head)
+    }
+
+    fun onLocalViewportChanged(top: Int?, bottom: Int?) {
+        syncedDocument?.onLocalViewportChanged(top, bottom)
     }
 
     /** Writes the local copy to disk, so no edit is lost if the app gets killed */

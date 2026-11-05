@@ -128,12 +128,15 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
                         )
                     }
 
-                    is TopAppBarAction.CodeEditor.ShareLinkAction, is TopAppBarAction.CodeEditor.ShowInBrowserAction -> Unit
+                    is TopAppBarAction.CodeEditor.ShareLinkAction,
+                    is TopAppBarAction.CodeEditor.ShowInBrowserAction,
+                    is TopAppBarAction.CodeEditor.FollowUserAction -> Unit
 
                     is TopAppBarAction.CodeEditor.OnlineUsersAction -> {
                         OnlineUsersAction(
                             modifier = Modifier.align(Alignment.CenterVertically),
                             remotePeers = action.remotePeers,
+                            onFollowClicked = { onActionClicked(sameKind(TopAppBarAction.CodeEditor.FollowUserAction(it))) },
                         )
                     }
                 }

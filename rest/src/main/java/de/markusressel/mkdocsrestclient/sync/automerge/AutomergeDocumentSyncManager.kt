@@ -169,6 +169,13 @@ class AutomergeDocumentSyncManager(
         }
     }
 
+    override fun onLocalViewportChanged(top: Int?, bottom: Int?) {
+        pendingViewport = top to bottom
+        if (!handler.hasCallbacks(presenceRunnable)) {
+            handler.postDelayed(presenceRunnable, PRESENCE_THROTTLE_MS)
+        }
+    }
+
     /**
      * Writes the local copy to disk now. Call when the app goes to the background.
      */
@@ -190,11 +197,13 @@ class AutomergeDocumentSyncManager(
     }
 
     private var pendingSelection: Pair<Int?, Int?>? = null
+    private var pendingViewport: Pair<Int?, Int?>? = null
 
     private val syncRunnable = Runnable { session.flushSync() }
 
     private val presenceRunnable = Runnable {
         pendingSelection?.let { (anchor, head) -> session.updateLocalSelection(anchor, head) }
+        pendingViewport?.let { (top, bottom) -> session.updateLocalViewport(top, bottom) }
         pendingSelection = null
     }
 

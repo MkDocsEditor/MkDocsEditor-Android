@@ -73,7 +73,24 @@ data class PresenceMessage(
     val actorId: String? = null,
     val accountId: String? = null,
     val lastActiveAt: String? = null,
+    val viewport: ViewportMessage? = null,
     val type: String = MessageType.PRESENCE,
+)
+
+/** What the client sends. Unlike in [PresenceMessage], a null [viewport] goes over the wire: it clears the last one. */
+@JsonClass(generateAdapter = true)
+data class LocalPresenceMessage(
+    val documentId: String,
+    val selections: List<SelectionMessage>,
+    val viewport: ViewportMessage?,
+    val type: String = MessageType.PRESENCE,
+)
+
+/** Cursors of the first and the last visible character */
+@JsonClass(generateAdapter = true)
+data class ViewportMessage(
+    val top: String,
+    val bottom: String,
 )
 
 @JsonClass(generateAdapter = true)
@@ -88,13 +105,24 @@ data class PresenceSnapshotMessage(
 @JsonClass(generateAdapter = true)
 data class LastPositionMessage(
     val accountId: String,
+    val username: String? = null,
+    val displayName: String? = null,
+    val color: String? = null,
     val selections: List<SelectionMessage> = emptyList(),
+    val viewport: ViewportMessage? = null,
+    /** the time left of the ghost of this account, without a ghost there is none */
+    val ghostMs: Long? = null,
 )
 
 @JsonClass(generateAdapter = true)
 data class PresenceLeaveMessage(
     val documentId: String,
     val clientId: String,
+    val accountId: String? = null,
+    val selections: List<SelectionMessage> = emptyList(),
+    val viewport: ViewportMessage? = null,
+    /** the last connection of the account left, its cursor stays this long as a ghost */
+    val ghostMs: Long? = null,
     val type: String = MessageType.PRESENCE_LEAVE,
 )
 

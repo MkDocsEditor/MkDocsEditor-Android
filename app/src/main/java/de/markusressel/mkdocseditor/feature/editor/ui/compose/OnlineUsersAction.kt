@@ -1,5 +1,14 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
+import de.markusressel.mkdocseditor.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -29,6 +38,32 @@ private const val MAX_VISIBLE_USERS = 3
  */
 @Composable
 internal fun OnlineUsersAction(
+    modifier: Modifier = Modifier,
+    remotePeers: List<RemotePeer>,
+    onFollowClicked: (accountId: String) -> Unit = {},
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    Box(modifier = modifier) {
+        OnlineUsersBadges(
+            modifier = Modifier.clickable { menuOpen = true },
+            remotePeers = remotePeers,
+        )
+        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            remotePeers.filter { it.accountId != null }.distinctBy { it.accountId }.forEach { user ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.follow_user, user.name)) },
+                    onClick = {
+                        menuOpen = false
+                        onFollowClicked(requireNotNull(user.accountId))
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OnlineUsersBadges(
     modifier: Modifier = Modifier,
     remotePeers: List<RemotePeer>,
 ) {

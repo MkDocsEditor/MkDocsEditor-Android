@@ -17,6 +17,9 @@ interface SyncedDocument : EditableTextDocument {
 
     fun onLocalSelectionChanged(anchor: Int?, head: Int?)
 
+    /** @param top the first visible character, null if the editor is not visible */
+    fun onLocalViewportChanged(top: Int?, bottom: Int?)
+
     /** Writes the local copy to disk right away */
     fun persistNow()
 

@@ -12,7 +12,10 @@ import de.markusressel.mkdocsrestclient.sync.automerge.protocol.MessageEnvelope
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.MessageType
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.PresenceLeaveMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.PresenceMessage
+import java.util.concurrent.TimeUnit
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.LastPositionMessage
+import de.markusressel.mkdocsrestclient.sync.automerge.protocol.LocalPresenceMessage
+import de.markusressel.mkdocsrestclient.sync.automerge.protocol.ViewportMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.PresenceSnapshotMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.SelectionMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.SyncRequestMessage
@@ -48,6 +51,34 @@ data class RemotePeer(
     val accountId: String? = null,
     /** when this connection last sent its presence, as an ISO instant in UTC */
     val lastActiveAt: String? = null,
+    val viewport: RemoteViewport? = null,
+)
+
+/** The text another user is looking at, as UTF-16 indices of the first and the last visible character */
+data class RemoteViewport(
+    val top: Int,
+    val bottom: Int,
+)
+
+/** Where an account last was in this document */
+data class RemotePosition(
+    val selection: RemoteSelection?,
+    val viewport: RemoteViewport?,
+)
+
+/**
+ * The cursor of an account that has left, which stays for a while
+ *
+ * @param remainingMs how long it stays from now on
+ */
+data class RemoteGhost(
+    val accountId: String,
+    val username: String,
+    val displayName: String?,
+    val color: String?,
+    val selections: List<RemoteSelection>,
+    val viewport: RemoteViewport?,
+    val remainingMs: Long,
 )
 
 /**
@@ -73,6 +104,7 @@ class DocumentSyncSession(
     private val random: SecureRandom = SecureRandom(),
     /** the server this session talks to, stored with the copy */
     private val origin: String? = null,
+    private val now: () -> Long = { TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) },
 ) : EditableTextDocument {
 
     interface Listener {
@@ -96,8 +128,14 @@ class DocumentSyncSession(
 
         fun onPeersChanged(peers: List<RemotePeer>) {}
 
-        /** @param positions where accounts last had a cursor in this document, by account */
-        fun onLastPositionsChanged(positions: Map<String, RemoteSelection>) {}
+        /** @param positions where accounts last were in this document, by account */
+        fun onLastPositionsChanged(positions: Map<String, RemotePosition>) {}
+
+        /** the ghosts changed. Their time runs out without another call, see [RemoteGhost.remainingMs] */
+        fun onGhostsChanged(ghosts: List<RemoteGhost>) {}
+
+        /** @param known whether the server told us who is here, it did not while disconnected or still connecting */
+        fun onPresenceKnownChanged(known: Boolean) {}
 
         /**
          * The local copy changed and should be persisted soon (see [persist])
@@ -124,6 +162,16 @@ class DocumentSyncSession(
         val actorId: String,
         val epoch: String,
         var serverHeads: List<String>,
+    )
+
+    private class Ghost(
+        val accountId: String,
+        val username: String,
+        val displayName: String?,
+        val color: String?,
+        val selections: List<SelectionMessage>,
+        val viewport: ViewportMessage?,
+        val expiresAt: Long,
     )
 
     private class Peer(
@@ -165,6 +213,10 @@ class DocumentSyncSession(
 
     private val peers = linkedMapOf<String, Peer>()
     private var lastPositions = emptyList<LastPositionMessage>()
+    private val ghosts = linkedMapOf<String, Ghost>()
+
+    /** the last visible text set with [updateLocalViewport] */
+    private var localViewport: Pair<Int, Int>? = null
 
     private val actors = mutableMapOf<String, ActorInfo>()
 
@@ -251,6 +303,11 @@ class DocumentSyncSession(
             peers.clear()
             listener.onPeersChanged(emptyList())
         }
+        if (ghosts.isNotEmpty()) {
+            ghosts.clear()
+            notifyGhosts()
+        }
+        listener.onPresenceKnownChanged(false)
     }
 
     /**
@@ -328,6 +385,17 @@ class DocumentSyncSession(
      */
     fun updateLocalSelection(anchor: Int?, head: Int?) {
         localSelection = if (anchor != null && head != null) anchor to head else null
+        sendPresence()
+    }
+
+    /**
+     * Sets the text the user is looking at and sends it to the other users.
+     *
+     * @param top UTF-16 index of the first visible character, or null if the editor is not visible
+     * @param bottom UTF-16 index of the last visible character
+     */
+    fun updateLocalViewport(top: Int?, bottom: Int?) {
+        localViewport = if (top != null && bottom != null) top to bottom else null
         sendPresence()
     }
 
@@ -473,6 +541,8 @@ class DocumentSyncSession(
         val clientId = message.clientId ?: return
         peers[clientId] = Peer(message, resolve(message, previous = peers[clientId]?.resolved))
         notifyPeers()
+        // it is back
+        if (ghosts.remove(message.accountId) != null) notifyGhosts()
     }
 
     private fun onPresenceSnapshot(message: PresenceSnapshotMessage) {
@@ -484,12 +554,67 @@ class DocumentSyncSession(
             peers[clientId] = Peer(presence, resolve(presence, previous = null))
         }
         notifyPeers()
+        ghosts.clear()
+        val online = peers.values.mapNotNull { it.presence.accountId }.toSet()
+        message.lastPositions.filter { it.ghostMs != null && it.accountId !in online }.forEach { position ->
+            ghosts[position.accountId] = Ghost(
+                accountId = position.accountId,
+                username = position.username.orEmpty(),
+                displayName = position.displayName,
+                color = position.color,
+                selections = position.selections,
+                viewport = position.viewport,
+                expiresAt = now() + requireNotNull(position.ghostMs),
+            )
+        }
+        notifyGhosts()
+        listener.onPresenceKnownChanged(true)
     }
 
     private fun onPresenceLeave(message: PresenceLeaveMessage) {
-        if (peers.remove(message.clientId) != null) {
+        val left = peers.remove(message.clientId)
+        if (left != null) {
             notifyPeers()
         }
+        val accountId = message.accountId
+        val ghostMs = message.ghostMs
+        if (accountId != null && ghostMs != null) {
+            ghosts[accountId] = Ghost(
+                accountId = accountId,
+                username = left?.presence?.username.orEmpty(),
+                displayName = left?.presence?.displayName,
+                color = left?.presence?.color,
+                selections = message.selections,
+                viewport = message.viewport,
+                expiresAt = now() + ghostMs,
+            )
+            notifyGhosts()
+        }
+    }
+
+    private fun notifyGhosts() {
+        val time = now()
+        ghosts.values.removeAll { it.expiresAt <= time }
+        listener.onGhostsChanged(
+            ghosts.values.map { ghost ->
+                RemoteGhost(
+                    accountId = ghost.accountId,
+                    username = ghost.username,
+                    displayName = ghost.displayName,
+                    color = ghost.color,
+                    selections = resolve(ghost.selections, previous = null),
+                    viewport = resolve(ghost.viewport),
+                    remainingMs = ghost.expiresAt - time,
+                )
+            }
+        )
+    }
+
+    private fun resolve(viewport: ViewportMessage?): RemoteViewport? {
+        val document = local?.document ?: return null
+        val top = viewport?.let { document.lookupCursor(it.top) } ?: return null
+        val bottom = document.lookupCursor(viewport.bottom) ?: return null
+        return RemoteViewport(top, bottom)
     }
 
     private fun onDocumentRenamed(message: DocumentRenamedMessage) {
@@ -526,9 +651,12 @@ class DocumentSyncSession(
      * Resolves the cursors of a peer. A cursor that cannot be resolved yet (its change
      * has not arrived) keeps its previous position.
      */
-    private fun resolve(presence: PresenceMessage, previous: List<RemoteSelection>?): List<RemoteSelection> {
+    private fun resolve(presence: PresenceMessage, previous: List<RemoteSelection>?): List<RemoteSelection> =
+        resolve(presence.selections, previous)
+
+    private fun resolve(selections: List<SelectionMessage>, previous: List<RemoteSelection>?): List<RemoteSelection> {
         val document = local?.document ?: return emptyList()
-        return presence.selections.mapIndexedNotNull { index, selection ->
+        return selections.mapIndexedNotNull { index, selection ->
             val old = previous?.getOrNull(index)
             val anchor = document.lookupCursor(selection.anchor) ?: old?.anchor
             val head = document.lookupCursor(selection.head) ?: old?.head
@@ -536,22 +664,21 @@ class DocumentSyncSession(
         }
     }
 
-    /** An entry whose cursor cannot be resolved is left out: its text may be deleted by now. */
+    /** A cursor that cannot be resolved is left out: its text may be deleted by now. */
     private fun notifyLastPositions() {
-        val document = local?.document ?: return
-        if (lastPositions.isEmpty()) return
+        if (local == null || lastPositions.isEmpty()) return
         listener.onLastPositionsChanged(
             lastPositions.mapNotNull { position ->
-                val selection = position.selections.firstOrNull() ?: return@mapNotNull null
-                val anchor = document.lookupCursor(selection.anchor) ?: return@mapNotNull null
-                val head = document.lookupCursor(selection.head) ?: return@mapNotNull null
-                position.accountId to RemoteSelection(anchor, head)
+                val selection = resolve(position.selections.take(1), previous = null).firstOrNull()
+                val viewport = resolve(position.viewport)
+                if (selection == null && viewport == null) null else position.accountId to RemotePosition(selection, viewport)
             }.toMap()
         )
     }
 
     private fun resolvePeers() {
         notifyLastPositions()
+        if (ghosts.isNotEmpty()) notifyGhosts()
         if (peers.isEmpty()) {
             return
         }
@@ -570,6 +697,7 @@ class DocumentSyncSession(
                     selections = peer.resolved,
                     accountId = peer.presence.accountId,
                     lastActiveAt = peer.presence.lastActiveAt,
+                    viewport = resolve(peer.presence.viewport),
                 )
             }
         )
@@ -583,7 +711,11 @@ class DocumentSyncSession(
         val selections = localSelection?.let { (anchor, head) ->
             listOf(SelectionMessage(anchor = document.makeCursor(anchor), head = document.makeCursor(head)))
         } ?: emptyList()
-        sendMessage(PresenceMessage(documentId = documentId, selections = selections))
+        val viewport = localViewport?.let { (top, bottom) ->
+            ViewportMessage(top = document.makeCursor(top), bottom = document.makeCursor(bottom))
+        }
+        val message = LocalPresenceMessage(documentId = documentId, selections = selections, viewport = viewport)
+        send?.invoke(moshi.adapter(LocalPresenceMessage::class.java).serializeNulls().toJson(message))
     }
 
     private fun markDirty() {

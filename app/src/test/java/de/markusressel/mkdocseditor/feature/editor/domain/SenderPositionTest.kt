@@ -1,14 +1,19 @@
 package de.markusressel.mkdocseditor.feature.editor.domain
 
+import de.markusressel.mkdocsrestclient.sync.automerge.RemoteGhost
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
+import de.markusressel.mkdocsrestclient.sync.automerge.RemotePosition
 import de.markusressel.mkdocsrestclient.sync.automerge.RemoteSelection
+import de.markusressel.mkdocsrestclient.sync.automerge.RemoteViewport
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class SenderPositionTest {
 
-    private fun peer(account: String?, head: Int?, lastActiveAt: String? = null) = RemotePeer(
+    private fun peer(account: String?, head: Int?, lastActiveAt: String? = null, viewport: RemoteViewport? = null) = RemotePeer(
         clientId = "c",
         username = "u",
         displayName = null,
@@ -16,46 +21,70 @@ class SenderPositionTest {
         selections = listOfNotNull(head?.let { RemoteSelection(it, it) }),
         accountId = account,
         lastActiveAt = lastActiveAt,
+        viewport = viewport,
+    )
+
+    private fun ghost(account: String, head: Int?, viewport: RemoteViewport? = null) = RemoteGhost(
+        accountId = account,
+        username = "u",
+        displayName = null,
+        color = null,
+        selections = listOfNotNull(head?.let { RemoteSelection(it, it) }),
+        viewport = viewport,
+        remainingMs = 1000,
     )
 
     @Test
-    fun `finds the sender among the others`() {
-        assertEquals(7, senderPosition(listOf(peer("other", 1), peer("sender", 7)), emptyMap(), "sender"))
-    }
-
-    @Test
-    fun `takes the connection that moved last`() {
+    fun `follows the connection that moved last`() {
         val peers = listOf(
             peer("sender", 1, "2026-11-05T10:00:00Z"),
             peer("sender", 2, "2026-11-05T10:00:05Z"),
-            peer("sender", 3),
+            peer("other", 9, "2026-11-05T11:00:00Z"),
         )
-        assertEquals(2, senderPosition(peers, emptyMap(), "sender"))
+        assertEquals(FollowTarget.Position(2), followTarget(peers, emptyList(), "sender"))
     }
 
     @Test
-    fun `a connection without a cursor does not count`() {
+    fun `the viewport decides over the cursor`() {
+        val peers = listOf(peer("sender", 1, viewport = RemoteViewport(10, 20)))
+        assertEquals(FollowTarget.Range(10, 20), followTarget(peers, emptyList(), "sender"))
+    }
+
+    @Test
+    fun `a connection without a position is skipped`() {
         val peers = listOf(peer("sender", null, "2026-11-05T11:00:00Z"), peer("sender", 4, "2026-11-05T10:00:00Z"))
-        assertEquals(4, senderPosition(peers, emptyMap(), "sender"))
+        assertEquals(FollowTarget.Position(4), followTarget(peers, emptyList(), "sender"))
     }
 
     @Test
-    fun `no position while the sender is not there`() {
-        assertNull(senderPosition(listOf(peer("other", 1), peer("sender", null)), emptyMap(), "sender"))
+    fun `a ghost is followed until the account is back`() {
+        assertEquals(FollowTarget.Position(5), followTarget(emptyList(), listOf(ghost("sender", 5)), "sender"))
+        assertEquals(
+            FollowTarget.Range(1, 2),
+            followTarget(listOf(peer("sender", null, viewport = RemoteViewport(1, 2))), listOf(ghost("sender", 5)), "sender"),
+        )
     }
 
     @Test
-    fun `a sender who is online wins over where they last were`() {
-        assertEquals(7, senderPosition(listOf(peer("sender", 7)), mapOf("sender" to RemoteSelection(3, 3)), "sender"))
+    fun `nothing to follow without a position`() {
+        assertNull(followTarget(listOf(peer("sender", null)), emptyList(), "sender"))
+    }
+
+    @Test
+    fun `an account counts as present while it is connected or a ghost`() {
+        assertTrue(isPresent(listOf(peer("sender", null)), emptyList(), "sender"))
+        assertTrue(isPresent(emptyList(), listOf(ghost("sender", 1)), "sender"))
+        assertFalse(isPresent(listOf(peer("other", 1)), listOf(ghost("other", 1)), "sender"))
     }
 
     @Test
     fun `a sender who has left is found where they last were`() {
-        assertEquals(3, senderPosition(listOf(peer("other", 1)), mapOf("sender" to RemoteSelection(3, 3)), "sender"))
-    }
-
-    @Test
-    fun `a sender online without a cursor is found where they last were`() {
-        assertEquals(3, senderPosition(listOf(peer("sender", null)), mapOf("sender" to RemoteSelection(3, 3)), "sender"))
+        val positions = mapOf(
+            "cursor" to RemotePosition(RemoteSelection(3, 3), RemoteViewport(1, 2)),
+            "reader" to RemotePosition(null, RemoteViewport(7, 9)),
+        )
+        assertEquals(3, lastSenderPosition(positions, "cursor"))
+        assertEquals(7, lastSenderPosition(positions, "reader"))
+        assertNull(lastSenderPosition(positions, "unknown"))
     }
 }

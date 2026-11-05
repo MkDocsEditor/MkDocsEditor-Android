@@ -83,6 +83,21 @@ class EditorTextControllerTest {
     }
 
     @Test
+    fun `typing counts as a local edit, a remote change does not`() {
+        var localEdits = 0
+        val document = TestDocument("hello")
+        val controller = EditorTextController(editModeActive = { true }, onLocalEdit = { localEdits++ })
+        controller.bind(document)
+        controller.select(5, 5)
+
+        controller.editorState.replaceSelection("!")
+        assertEquals(1, localEdits)
+
+        controller.onRemoteChange("hello! there", listOf(TextSplice(6, 0, " there")))
+        assertEquals(1, localEdits)
+    }
+
+    @Test
     fun `formatting wraps the selection, and counts as an edit`() {
         val document = TestDocument("one two")
         val controller = controller()
