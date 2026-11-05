@@ -15,7 +15,6 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferen
 import de.markusressel.mkdocsrestclient.reference.ReferenceModel
 import androidx.compose.runtime.State
 import de.markusressel.kodeeditor.library.compose.KodeEditorState
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
@@ -40,13 +39,13 @@ import de.markusressel.mkdocseditor.feature.editor.domain.UploadFilesUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.withFixedReference
 import de.markusressel.mkdocseditor.feature.editor.domain.CreateJoinLinkUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
+import de.markusressel.mkdocseditor.feature.editor.data.ClientInstanceId
 import de.markusressel.mkdocseditor.feature.editor.data.LocalCursorColor
 import de.markusressel.mkdocseditor.feature.editor.domain.isPresent
 import de.markusressel.mkdocseditor.feature.editor.domain.joinFollowInstance
 import de.markusressel.mkdocseditor.feature.editor.domain.lastSenderPosition
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.asPeer
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.label
-import de.markusressel.mkdocsrestclient.sync.automerge.newInstanceId
 import de.markusressel.mkdocsrestclient.sync.automerge.RemoteGhost
 import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.event.EventBusManager
@@ -94,12 +93,11 @@ internal class CodeEditorViewModel @Inject constructor(
     private val getAuthorshipUseCase: GetAuthorshipUseCase,
     private val createJoinLinkUseCase: CreateJoinLinkUseCase,
     private val localCursorColor: LocalCursorColor,
-    savedStateHandle: SavedStateHandle,
+    clientInstanceId: ClientInstanceId,
 ) : ViewModel() {
 
-    /** this editor as a client instance: others can keep following it when the process comes back */
-    private val instanceId: String =
-        savedStateHandle[KEY_INSTANCE_ID] ?: newInstanceId().also { savedStateHandle[KEY_INSTANCE_ID] = it }
+    /** this app as a client instance, see [ClientInstanceId] */
+    private val instanceId: String = clientInstanceId.value
 
     private val _uiState = MutableStateFlow(
         initialUiState(
@@ -141,7 +139,10 @@ internal class CodeEditorViewModel @Inject constructor(
     private val editorText = EditorTextController(
         editModeActive = { uiState.value.editModeActive },
         onPeersChanged = ::publishPeers,
-        onSelectionChanged = { session.onLocalSelectionChanged(it.start, it.end) },
+        onSelectionChanged = {
+            session.onLocalSelectionChanged(it.start, it.end)
+            onOwnCursorPlaced()
+        },
         onEdited = { saveEditorState() },
         onLocalEdit = {
             // the user has started on their own work
@@ -630,7 +631,7 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     private suspend fun jumpToSender(from: String, instance: String?) {
-        // a link of this very editor: it is already where the sender is
+        // a link sent from this app: the sender is this user, right here
         if (instance != null && instance == session.instanceIdInUse) return
         session.connectionStatus.first { it?.connected == true }
         val selectionBefore = editorText.selection
@@ -674,6 +675,14 @@ internal class CodeEditorViewModel @Inject constructor(
             stopFollowing()
             showMessage(context.getString(R.string.follow_ended, name))
         }
+    }
+
+    /** the user put the own cursor into the text while following */
+    private fun onOwnCursorPlaced() {
+        if (uiState.value.following == null) return
+        followEnd?.cancel()
+        followEnd = null
+        _uiState.update { it.ownCursorPlaced(offline = sessionEnvironment.offlineMode.value) }
     }
 
     private fun stopFollowing() {
@@ -754,16 +763,7 @@ internal class CodeEditorViewModel @Inject constructor(
      * Called when the user activates the edit mode
      */
     private fun enableEditMode(): Boolean {
-        _uiState.update { old ->
-            old.copy(
-                editModeActive = true,
-                editModeOpening = false,
-                fabConfig = old.fabConfig.copy(
-                    right = listOf(DisableEditModeFabConfig)
-                ),
-                isBottomAppBarVisible = true,
-            )
-        }
+        _uiState.update { it.editing() }
         return true
     }
 
@@ -787,7 +787,6 @@ internal class CodeEditorViewModel @Inject constructor(
     private fun dismissCurrentDialog() = showDialog(null)
 
     companion object {
-        private const val KEY_INSTANCE_ID = "instanceId"
         private const val SAVE_DELAY_MS = 2_000L
 
         /** how long to wait for the sender of a join link to show up, they may have looked away for a moment */
@@ -805,6 +804,24 @@ internal class CodeEditorViewModel @Inject constructor(
          * An edit mode that opens on its own has its whole layout from the first frame, so nothing moves or fades in
          * while the screen slides in and the document loads.
          */
+        /** the edit mode is on */
+        internal fun UiState.editing() = copy(
+            editModeActive = true,
+            editModeOpening = false,
+            fabConfig = fabConfig.copy(right = listOf(DisableEditModeFabConfig)),
+            isBottomAppBarVisible = true,
+        )
+
+        /**
+         * The user put the own cursor into the text while following: they want to work there now, not watch. An editor
+         * that only following opened can't take a cursor, so the edit mode comes on for someone who may edit.
+         */
+        internal fun UiState.ownCursorPlaced(offline: Boolean): UiState {
+            if (following == null) return this
+            val stopped = copy(following = null)
+            return if (!editModeActive && canEdit && !offline) stopped.editing() else stopped
+        }
+
         internal fun initialUiState(editModeOpening: Boolean) = UiState(
             editModeOpening = editModeOpening,
             isBottomAppBarVisible = editModeOpening,
