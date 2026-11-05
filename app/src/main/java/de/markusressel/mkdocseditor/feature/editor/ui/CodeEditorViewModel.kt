@@ -69,7 +69,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -615,6 +614,11 @@ internal class CodeEditorViewModel @Inject constructor(
     fun onOpenedByJoinLink(from: String?, instance: String? = null) {
         if (openedByJoinLink.value) return
         openedByJoinLink.value = true
+        onJoinLinkOpened(from, instance)
+    }
+
+    /** a join link for the document of this editor, opened while the editor is already there; see [onOpenedByJoinLink] */
+    fun onJoinLinkOpened(from: String?, instance: String?) {
         // someone who can only read still gets the editor, because only there the cursor shows where the sender is
         _uiState.update { it.copy(readOnlyEditorShown = true) }
         if (!sessionEnvironment.offlineMode.value && !uiState.value.editModeActive) {
@@ -626,6 +630,8 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     private suspend fun jumpToSender(from: String, instance: String?) {
+        // a link of this very editor: it is already where the sender is
+        if (instance != null && instance == session.instanceIdInUse) return
         session.connectionStatus.first { it?.connected == true }
         val selectionBefore = editorText.selection
         val known = withTimeoutOrNull(SENDER_WAIT_MS) {
@@ -684,14 +690,13 @@ internal class CodeEditorViewModel @Inject constructor(
     private suspend fun publishViewport() {
         combine(visibleRange, uiState.map { it.editorShown }) { range, shown -> range.takeIf { shown } }
             .distinctUntilChanged()
-            .conflate()
+            // every change: the sync manager spreads them out, and sends the newest one along with each cursor
             .collect { range ->
                 if (range == null || range.collapsed) {
                     session.onLocalViewportChanged(null, null)
                 } else {
                     session.onLocalViewportChanged(range.start, range.end - 1)
                 }
-                delay(VIEWPORT_THROTTLE_MS)
             }
     }
 
@@ -789,7 +794,6 @@ internal class CodeEditorViewModel @Inject constructor(
         private const val SENDER_WAIT_MS = 5_000L
 
         /** see docs/sync-protocol.md of the backend, "Viewport" */
-        private const val VIEWPORT_THROTTLE_MS = 500L
 
         internal val DisableEditModeFabConfig = FabConfig.Fab<CodeEditorFabId>(
             id = CodeEditorFabId.DisableEditMode,

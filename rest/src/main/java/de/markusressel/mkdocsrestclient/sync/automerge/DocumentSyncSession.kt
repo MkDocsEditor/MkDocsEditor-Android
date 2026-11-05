@@ -405,8 +405,17 @@ class DocumentSyncSession(
      * @param anchor UTF-16 index where the selection started, or null if the editor has no focus
      * @param head UTF-16 index of the caret
      */
-    fun updateLocalSelection(anchor: Int?, head: Int?) {
-        localSelection = if (anchor != null && head != null) anchor to head else null
+    fun updateLocalSelection(anchor: Int?, head: Int?) = updateLocalPresence(anchor to head, null)
+
+    /**
+     * Sets the cursor and the viewport at once, so that they go out in one message
+     *
+     * @param selection anchor and head, see [updateLocalSelection], null to keep the last one
+     * @param viewport top and bottom, see [updateLocalViewport], null to keep the last one
+     */
+    fun updateLocalPresence(selection: Pair<Int?, Int?>?, viewport: Pair<Int?, Int?>?) {
+        selection?.let { (anchor, head) -> localSelection = if (anchor != null && head != null) anchor to head else null }
+        viewport?.let { (top, bottom) -> localViewport = if (top != null && bottom != null) top to bottom else null }
         sendPresence()
     }
 
@@ -416,10 +425,7 @@ class DocumentSyncSession(
      * @param top UTF-16 index of the first visible character, or null if the editor is not visible
      * @param bottom UTF-16 index of the last visible character
      */
-    fun updateLocalViewport(top: Int?, bottom: Int?) {
-        localViewport = if (top != null && bottom != null) top to bottom else null
-        sendPresence()
-    }
+    fun updateLocalViewport(top: Int?, bottom: Int?) = updateLocalPresence(null, top to bottom)
 
     /** the id other clients know this client by, null if there is none yet */
     val instanceIdInUse: String?
