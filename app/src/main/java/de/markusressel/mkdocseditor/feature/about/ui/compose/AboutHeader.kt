@@ -17,8 +17,14 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
+/**
+ * @param version the version of this build, see [de.markusressel.mkdocseditor.feature.about.data.appVersionText]
+ */
 @Composable
-internal fun AboutHeader(modifier: Modifier = Modifier) {
+internal fun AboutHeader(
+    version: String,
+    modifier: Modifier = Modifier,
+) {
     Card(
         modifier = modifier,
         elevation = CardDefaults.cardElevation(6.dp)
@@ -40,6 +46,12 @@ internal fun AboutHeader(modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
             )
+            Text(
+                modifier = Modifier.padding(top = 4.dp),
+                text = version,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -48,6 +60,6 @@ internal fun AboutHeader(modifier: Modifier = Modifier) {
 @Composable
 private fun AboutHeaderPreview() {
     MkDocsEditorTheme {
-        AboutHeader()
+        AboutHeader(version = "Version 0.1.0 (1234, release)")
     }
 }

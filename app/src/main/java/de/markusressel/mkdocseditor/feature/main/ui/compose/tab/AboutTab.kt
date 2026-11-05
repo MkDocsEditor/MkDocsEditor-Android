@@ -8,7 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
-import de.markusressel.mkdocseditor.feature.about.ui.compose.AboutScreen
+import de.markusressel.mkdocseditor.feature.about.ui.compose.AboutContent
 import de.markusressel.mkdocseditor.feature.main.ui.compose.LocalMainScreenOnBack
 
 object AboutTab : Tab {
@@ -30,7 +30,7 @@ object AboutTab : Tab {
             onBack = onBack,
         )
 
-        AboutScreen(
+        AboutContent(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()

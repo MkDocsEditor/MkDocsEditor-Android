@@ -82,7 +82,8 @@ internal fun MainScreenContent(
                         if (navigationType == NavigationLayoutType.BOTTOM_NAVIGATION) {
                             BottomBar(
                                 selectedNavItem = tabNavigator.current.toNavItem(),
-                                navItems = uiState.bottomBarNavItems,
+                                // a phone has little room: the about page opens from the settings there
+                                navItems = uiState.bottomBarNavItems.filterIsInstance<NavItem.Primary>(),
                                 onItemSelected = { navItem ->
                                     tabNavigator.current = navItem.toTab(
                                         contentType = contentType,

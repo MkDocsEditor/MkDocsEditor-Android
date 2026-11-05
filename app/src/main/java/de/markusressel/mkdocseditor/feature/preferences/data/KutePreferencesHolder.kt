@@ -17,6 +17,7 @@ import de.markusressel.mkdocseditor.application.triggerAppRebirth
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
 import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.event.EventBusManager
+import de.markusressel.mkdocseditor.feature.about.data.appVersionText
 import de.markusressel.mkdocseditor.feature.preferences.domain.LastOfflineCacheUpdatePreferenceItem
 import de.markusressel.mkdocseditor.ui.IconHandler
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -214,6 +215,17 @@ class KutePreferencesHolder @Inject constructor(
             dataProvider = dataProvider,
             onPreferenceChangedListener = { _, _ -> })
     }
+
+    /**
+     * Opens the about page. Its description shows the version, so it can be read off without opening it.
+     */
+    fun aboutAction(onClick: () -> Unit) = KuteAction(
+        key = context.getString(R.string.about_key),
+        icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_info),
+        title = context.getString(R.string.about_title),
+        description = context.appVersionText(),
+        onClick = onClick,
+    )
 
     val debugCategory by lazy {
         KuteCategory(
