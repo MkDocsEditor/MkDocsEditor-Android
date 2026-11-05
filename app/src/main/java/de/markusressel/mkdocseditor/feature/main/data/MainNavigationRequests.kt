@@ -6,12 +6,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.Navigator
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreen
+import de.markusressel.mkdocseditor.feature.join.data.EditorJoin
+import de.markusressel.mkdocseditor.feature.join.data.EditorJoins
 import de.markusressel.mkdocseditor.feature.join.data.PendingJoin
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,6 +55,7 @@ class MainNavigationRequests @Inject constructor() {
     interface Accessor {
         fun mainNavigationRequests(): MainNavigationRequests
         fun pendingJoin(): PendingJoin
+        fun editorJoins(): EditorJoins
     }
 }
 
@@ -59,17 +63,26 @@ class MainNavigationRequests @Inject constructor() {
 @Composable
 internal fun OpenJoinedDocument(navigator: Navigator) {
     val context = LocalContext.current.applicationContext
-    val pendingJoin = remember(context) {
-        EntryPointAccessors.fromApplication(context, MainNavigationRequests.Accessor::class.java).pendingJoin()
-    }
+    val accessor = remember(context) { EntryPointAccessors.fromApplication(context, MainNavigationRequests.Accessor::class.java) }
+    val pendingJoin = remember(accessor) { accessor.pendingJoin() }
     val target by pendingJoin.open.collectAsState()
     LaunchedEffect(target) {
         target?.let {
             pendingJoin.opened()
-            navigator.push(CodeEditorScreen(documentId = it.documentId, joinLink = true, joinFrom = it.from))
+            val open = navigator.items.editorOf(it.documentId)
+            if (open != null) {
+                navigator.popUntil { screen -> screen === open }
+                accessor.editorJoins().hand(EditorJoin(open.key, it.from, it.instance))
+            } else {
+                navigator.push(CodeEditorScreen(documentId = it.documentId, joinLink = true, joinFrom = it.from, joinInstance = it.instance))
+            }
         }
     }
 }
+
+/** @return the editor of [documentId] nearest to the top, null if there is none */
+internal fun List<Screen>.editorOf(documentId: String): CodeEditorScreen? =
+    filterIsInstance<CodeEditorScreen>().lastOrNull { it.documentId == documentId }
 
 @Composable
 fun rememberMainNavigationRequests(): MainNavigationRequests {

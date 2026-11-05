@@ -209,7 +209,7 @@ internal class EditorTextController(
         onPeersChanged()
     }
 
-    fun removeGhost(accountId: String) = onGhostsChanged(ghosts.value.filterNot { it.accountId == accountId })
+    fun removeGhost(instanceId: String) = onGhostsChanged(ghosts.value.filterNot { it.instanceId == instanceId })
 
     fun onPresenceKnownChanged(known: Boolean) {
         _presenceKnown.value = known

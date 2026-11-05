@@ -14,12 +14,15 @@ internal class CreateJoinLinkUseCase @Inject constructor(
     private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
     private val authRepository: AuthRepository,
 ) {
-    /** @return the link, or null if the server does not know its web client */
-    suspend operator fun invoke(documentId: String): String? {
+    /**
+     * @param instanceId the client instance the link should follow
+     * @return the link, or null if the server does not know its web client
+     */
+    suspend operator fun invoke(documentId: String, instanceId: String): String? {
         val backend = getCurrentBackendConfigUseCase()?.toBackendRef() ?: return null
         val clientUrl = authRepository.serverInfo(backend).webClientUrl?.takeIf { it.isNotBlank() } ?: return null
         // a server without accounts has no sender to look for
         val from = if (authRepository.isSignedIn(backend.id)) authRepository.authenticated(backend) { account(it).id } else null
-        return JoinLinkParser.build(clientUrl, documentId, from)
+        return JoinLinkParser.build(clientUrl, documentId, from, instanceId)
     }
 }

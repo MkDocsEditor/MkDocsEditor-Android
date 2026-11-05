@@ -32,15 +32,15 @@ import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 private const val MAX_VISIBLE_USERS = 3
 
 /**
- * Shows the other users in this document as colored circles with their initial
+ * Shows the other client instances in this document as colored circles with the initial of their user
  *
- * @param remotePeers the other users in this document
+ * @param remotePeers the other connections in this document
  */
 @Composable
 internal fun OnlineUsersAction(
     modifier: Modifier = Modifier,
     remotePeers: List<RemotePeer>,
-    onFollowClicked: (accountId: String) -> Unit = {},
+    onFollowClicked: (instanceId: String) -> Unit = {},
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     Box(modifier = modifier) {
@@ -49,12 +49,12 @@ internal fun OnlineUsersAction(
             remotePeers = remotePeers,
         )
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            remotePeers.filter { it.accountId != null }.distinctBy { it.accountId }.forEach { user ->
+            remotePeers.instances().forEach { user ->
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.follow_user, user.name)) },
+                    text = { Text(stringResource(R.string.follow_user, user.label)) },
                     onClick = {
                         menuOpen = false
-                        onFollowClicked(requireNotNull(user.accountId))
+                        onFollowClicked(user.instanceId)
                     },
                 )
             }
@@ -67,8 +67,7 @@ private fun OnlineUsersBadges(
     modifier: Modifier = Modifier,
     remotePeers: List<RemotePeer>,
 ) {
-    // the same user can be connected with multiple clients
-    val users = remotePeers.distinctBy { it.username }
+    val users = remotePeers.instances()
 
     Row(
         modifier = modifier.padding(horizontal = 4.dp),

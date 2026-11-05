@@ -116,7 +116,7 @@ internal class JoinLinkViewModel @Inject constructor(
         if (known != null && (found.info.authDisabled || authRepository.isSignedIn(known.id))) {
             if (requestStore.get()?.backendUrl == found.backendUrl) requestStore.clear()
             backends.select(known)
-            pendingJoin.remember(JoinTarget(known.id, link.documentId, link.from))
+            pendingJoin.remember(JoinTarget(known.id, link.documentId, link.from, link.instance))
             navigation.showFileBrowser()
             _events.send(JoinEvent.Close)
             return
@@ -137,7 +137,7 @@ internal class JoinLinkViewModel @Inject constructor(
         val config = known(found) ?: backends.connect(
             ServerSetup(backendUrl = found.backendUrl, suggestedName = found.displayName, wikiUrl = found.wikiUrl)
         )
-        pendingJoin.remember(JoinTarget(config.id, link.documentId, link.from))
+        pendingJoin.remember(JoinTarget(config.id, link.documentId, link.from, link.instance))
         return config
     }
 

@@ -216,6 +216,7 @@ internal fun CodeEditorScreenContent(
                             jumpRequest = uiState.jumpRequest,
                             ghosts = uiState.ghosts,
                             following = uiState.following,
+                            localColor = uiState.localColor,
                             onStopFollowing = { onUiEvent(CodeEditorViewModel.UiEvent.StopFollowingClicked) },
                             onVisibleRangeChanged = { onUiEvent(CodeEditorViewModel.UiEvent.VisibleRangeChanged(it)) },
                         )
@@ -364,6 +365,7 @@ internal fun MoreAction(
     modifier: Modifier,
     onShareClicked: () -> Unit,
     onShowInBrowserClicked: () -> Unit,
+    onCursorColorClicked: () -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box(modifier = modifier) {
@@ -387,6 +389,13 @@ internal fun MoreAction(
                 onClick = {
                     expanded = false
                     onShowInBrowserClicked()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.cursor_color)) },
+                onClick = {
+                    expanded = false
+                    onCursorColorClicked()
                 },
             )
         }

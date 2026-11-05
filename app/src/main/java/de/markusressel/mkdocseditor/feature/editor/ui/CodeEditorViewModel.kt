@@ -15,6 +15,7 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferen
 import de.markusressel.mkdocsrestclient.reference.ReferenceModel
 import androidx.compose.runtime.State
 import de.markusressel.kodeeditor.library.compose.KodeEditorState
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
@@ -39,10 +40,13 @@ import de.markusressel.mkdocseditor.feature.editor.domain.UploadFilesUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.withFixedReference
 import de.markusressel.mkdocseditor.feature.editor.domain.CreateJoinLinkUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
+import de.markusressel.mkdocseditor.feature.editor.data.LocalCursorColor
 import de.markusressel.mkdocseditor.feature.editor.domain.isPresent
+import de.markusressel.mkdocseditor.feature.editor.domain.joinFollowInstance
 import de.markusressel.mkdocseditor.feature.editor.domain.lastSenderPosition
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.asPeer
-import de.markusressel.mkdocseditor.feature.editor.ui.compose.name
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.label
+import de.markusressel.mkdocsrestclient.sync.automerge.newInstanceId
 import de.markusressel.mkdocsrestclient.sync.automerge.RemoteGhost
 import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.event.EventBusManager
@@ -65,7 +69,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -90,7 +93,13 @@ internal class CodeEditorViewModel @Inject constructor(
     private val context: Context,
     private val getAuthorshipUseCase: GetAuthorshipUseCase,
     private val createJoinLinkUseCase: CreateJoinLinkUseCase,
+    private val localCursorColor: LocalCursorColor,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
+
+    /** this editor as a client instance: others can keep following it when the process comes back */
+    private val instanceId: String =
+        savedStateHandle[KEY_INSTANCE_ID] ?: newInstanceId().also { savedStateHandle[KEY_INSTANCE_ID] = it }
 
     private val _uiState = MutableStateFlow(
         initialUiState(
@@ -174,6 +183,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 saveEditorState()
             }
         },
+        instanceId = instanceId,
     )
 
     init {
@@ -229,6 +239,13 @@ internal class CodeEditorViewModel @Inject constructor(
         session.start()
 
         launch { publishViewport() }
+
+        launch {
+            localCursorColor.color.collect { color ->
+                session.onLocalColorChanged(color)
+                _uiState.update { it.copy(localColor = color) }
+            }
+        }
 
         launch {
             session.editable.collect { editable ->
@@ -403,6 +420,10 @@ internal class CodeEditorViewModel @Inject constructor(
 
                 is UiEvent.SnackbarActionClicked -> onSnackbarAction(event.snackbar)
                 is UiEvent.StopFollowingClicked -> stopFollowing()
+                is UiEvent.CursorColorChosen -> {
+                    localCursorColor.set(event.color)
+                    dismissCurrentDialog()
+                }
                 is UiEvent.VisibleRangeChanged -> onVisibleRangeChanged(event.range)
             }
         }
@@ -470,7 +491,8 @@ internal class CodeEditorViewModel @Inject constructor(
             is TopAppBarAction.CodeEditor.ShowInBrowserAction -> onOpenInBrowserClicked()
             is TopAppBarAction.CodeEditor.ShareLinkAction -> onShareLinkClicked()
             is TopAppBarAction.CodeEditor.MoreAction -> Unit
-            is TopAppBarAction.CodeEditor.FollowUserAction -> startFollowing(action.accountId)
+            is TopAppBarAction.CodeEditor.FollowUserAction -> startFollowing(action.instanceId)
+            is TopAppBarAction.CodeEditor.CursorColorAction -> showDialog(DialogState.CursorColorPicker)
             is TopAppBarAction.CodeEditor.OnlineUsersAction -> Unit
             is TopAppBarAction.CodeEditor.ConnectionAction -> onConnectionIconClicked(action.indicator)
             is TopAppBarAction.CodeEditor.PageReferencesAction -> showPageReferences()
@@ -587,10 +609,16 @@ internal class CodeEditorViewModel @Inject constructor(
      * looks at what the sender is looking at. Only once, so a recreated screen does not move the cursor again.
      *
      * @param from the account of the sender, null if the link names none
+     * @param instance the client instance of the sender to follow, null if the link names none
      */
-    fun onOpenedByJoinLink(from: String?) {
+    fun onOpenedByJoinLink(from: String?, instance: String? = null) {
         if (openedByJoinLink.value) return
         openedByJoinLink.value = true
+        onJoinLinkOpened(from, instance)
+    }
+
+    /** a join link for the document of this editor, opened while the editor is already there; see [onOpenedByJoinLink] */
+    fun onJoinLinkOpened(from: String?, instance: String?) {
         // someone who can only read still gets the editor, because only there the cursor shows where the sender is
         _uiState.update { it.copy(readOnlyEditorShown = true) }
         if (!sessionEnvironment.offlineMode.value && !uiState.value.editModeActive) {
@@ -598,17 +626,20 @@ internal class CodeEditorViewModel @Inject constructor(
                 it.copy(editModeOpening = true, isBottomAppBarVisible = true, fabConfig = FabConfig(right = listOf(DisableEditModeFabConfig)))
             }
         }
-        from?.let { launch { jumpToSender(it) } }
+        from?.let { launch { jumpToSender(it, instance) } }
     }
 
-    private suspend fun jumpToSender(from: String) {
+    private suspend fun jumpToSender(from: String, instance: String?) {
+        // a link of this very editor: it is already where the sender is
+        if (instance != null && instance == session.instanceIdInUse) return
         session.connectionStatus.first { it?.connected == true }
         val selectionBefore = editorText.selection
         val known = withTimeoutOrNull(SENDER_WAIT_MS) {
             snapshotFlow { editorText.presenceKnown.value }.first { it }
         }
-        if (known != null && isPresent(editorPeers.value, editorText.ghosts.value, from)) {
-            startFollowing(from)
+        val followed = if (known != null) joinFollowInstance(editorPeers.value, editorText.ghosts.value, from, instance) else null
+        if (followed != null) {
+            startFollowing(followed)
             return
         }
         // fully away: the link only goes to where they last were
@@ -625,19 +656,19 @@ internal class CodeEditorViewModel @Inject constructor(
         }
     }
 
-    private fun followedName(accountId: String): String =
-        editorPeers.value.firstOrNull { it.accountId == accountId }?.name
-            ?: editorText.ghosts.value.firstOrNull { it.accountId == accountId }?.asPeer()?.name
+    private fun followedName(instanceId: String): String =
+        editorPeers.value.firstOrNull { it.instanceId == instanceId }?.label
+            ?: editorText.ghosts.value.firstOrNull { it.instanceId == instanceId }?.asPeer()?.label
             ?: ""
 
     /** Following ends with the ghost. While disconnected nobody knows who is here, so that doesn't end it. */
-    private fun startFollowing(accountId: String) {
+    private fun startFollowing(instanceId: String) {
         followEnd?.cancel()
         // a reader of the rendered page gets the editor as well, only there the other cursor shows
-        _uiState.update { it.copy(following = Following(accountId, followedName(accountId)), readOnlyEditorShown = true) }
+        _uiState.update { it.copy(following = Following(instanceId, followedName(instanceId)), readOnlyEditorShown = true) }
         followEnd = launch {
             snapshotFlow {
-                editorText.presenceKnown.value && !isPresent(editorPeers.value, editorText.ghosts.value, accountId)
+                editorText.presenceKnown.value && !isPresent(editorPeers.value, editorText.ghosts.value, instanceId)
             }.first { it }
             val name = uiState.value.following?.name.orEmpty()
             stopFollowing()
@@ -659,14 +690,13 @@ internal class CodeEditorViewModel @Inject constructor(
     private suspend fun publishViewport() {
         combine(visibleRange, uiState.map { it.editorShown }) { range, shown -> range.takeIf { shown } }
             .distinctUntilChanged()
-            .conflate()
+            // every change: the sync manager spreads them out, and sends the newest one along with each cursor
             .collect { range ->
                 if (range == null || range.collapsed) {
                     session.onLocalViewportChanged(null, null)
                 } else {
                     session.onLocalViewportChanged(range.start, range.end - 1)
                 }
-                delay(VIEWPORT_THROTTLE_MS)
             }
     }
 
@@ -702,7 +732,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private suspend fun onShareLinkClicked() {
         val documentId = session.documentId.value ?: return
         try {
-            when (val link = createJoinLinkUseCase(documentId)) {
+            when (val link = createJoinLinkUseCase(documentId, session.instanceIdInUse)) {
                 null -> showMessage(context.getString(R.string.share_document_link_unavailable))
                 else -> _navigationEvents.send(NavigationRequest.ShareLink(link))
             }
@@ -757,13 +787,13 @@ internal class CodeEditorViewModel @Inject constructor(
     private fun dismissCurrentDialog() = showDialog(null)
 
     companion object {
+        private const val KEY_INSTANCE_ID = "instanceId"
         private const val SAVE_DELAY_MS = 2_000L
 
         /** how long to wait for the sender of a join link to show up, they may have looked away for a moment */
         private const val SENDER_WAIT_MS = 5_000L
 
         /** see docs/sync-protocol.md of the backend, "Viewport" */
-        private const val VIEWPORT_THROTTLE_MS = 500L
 
         internal val DisableEditModeFabConfig = FabConfig.Fab<CodeEditorFabId>(
             id = CodeEditorFabId.DisableEditMode,
@@ -786,10 +816,13 @@ internal class CodeEditorViewModel @Inject constructor(
     /** A class and not just an index: going to the same place twice has to go there twice */
     internal class JumpRequest(val position: Int)
 
-    data class Following(val accountId: String, val name: String)
+    data class Following(val instanceId: String, val name: String)
 
     data class UiState(
         val currentDialogState: DialogState? = null,
+
+        /** the color of the own cursor chosen for now, null for the color of the account */
+        val localColor: String? = null,
 
         val fabConfig: FabConfig<CodeEditorFabId> = FabConfig(),
 
@@ -873,6 +906,9 @@ internal class CodeEditorViewModel @Inject constructor(
         data class ExpandableFabItemSelected(val item: FabConfig.Fab<CodeEditorFabId>) : UiEvent()
         data class SnackbarActionClicked(val snackbar: SnackbarData) : UiEvent()
         data object StopFollowingClicked : UiEvent()
+
+        /** @param color `#rrggbb`, null for the color of the account */
+        data class CursorColorChosen(val color: String?) : UiEvent()
         data class VisibleRangeChanged(val range: TextRange?) : UiEvent()
 
         data class FormatClicked(val action: FormatAction) : UiEvent()
@@ -938,6 +974,8 @@ internal class CodeEditorViewModel @Inject constructor(
 
         /** the links and files of the page, and the pages that link to it */
         data class PageReferencesPanel(val data: PageReferences = PageReferences()) : DialogState
+
+        data object CursorColorPicker : DialogState
     }
 }
 

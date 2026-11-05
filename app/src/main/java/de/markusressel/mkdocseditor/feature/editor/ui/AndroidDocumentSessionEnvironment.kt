@@ -58,7 +58,8 @@ internal class AndroidDocumentSessionEnvironment @Inject constructor(
         serverConfig: BackendServerConfig,
         backendId: Long,
         listener: AutomergeDocumentSyncManager.Listener,
-    ): SyncedDocument = syncedDocumentFactory.create(documentId, serverConfig, backendId, listener)
+        instanceId: String,
+    ): SyncedDocument = syncedDocumentFactory.create(documentId, serverConfig, backendId, listener, instanceId)
 
     override fun onDocumentOpen(documentId: String?) = openDocuments.set(this, documentId)
 

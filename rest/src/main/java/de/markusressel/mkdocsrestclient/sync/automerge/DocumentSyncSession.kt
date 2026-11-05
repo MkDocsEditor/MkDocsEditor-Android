@@ -52,6 +52,11 @@ data class RemotePeer(
     /** when this connection last sent its presence, as an ISO instant in UTC */
     val lastActiveAt: String? = null,
     val viewport: RemoteViewport? = null,
+    /** the client instance of this connection. A server without instances has none, then each connection is one. */
+    val instanceId: String = clientId,
+    val deviceName: String? = null,
+    /** drawn instead of [color], which stays the color of the account */
+    val instanceColor: String? = null,
 )
 
 /** The text another user is looking at, as UTF-16 indices of the first and the last visible character */
@@ -67,11 +72,12 @@ data class RemotePosition(
 )
 
 /**
- * The cursor of an account that has left, which stays for a while
+ * The cursor of a client instance that has left, which stays for a while
  *
  * @param remainingMs how long it stays from now on
  */
 data class RemoteGhost(
+    val instanceId: String,
     val accountId: String,
     val username: String,
     val displayName: String?,
@@ -79,7 +85,13 @@ data class RemoteGhost(
     val selections: List<RemoteSelection>,
     val viewport: RemoteViewport?,
     val remainingMs: Long,
+    val deviceName: String? = null,
+    val instanceColor: String? = null,
 )
+
+/** A new id of a client instance, which the server expects as 32 lowercase hex characters */
+fun newInstanceId(random: SecureRandom = SecureRandom()): String =
+    ByteArray(16).also { random.nextBytes(it) }.toHex()
 
 /**
  * Client side of the document websocket protocol (version 1, see docs/sync-protocol.md
@@ -105,6 +117,8 @@ class DocumentSyncSession(
     /** the server this session talks to, stored with the copy */
     private val origin: String? = null,
     private val now: () -> Long = { TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) },
+    /** see [newInstanceId] */
+    private val instanceId: String? = null,
 ) : EditableTextDocument {
 
     interface Listener {
@@ -165,6 +179,7 @@ class DocumentSyncSession(
     )
 
     private class Ghost(
+        val instanceId: String,
         val accountId: String,
         val username: String,
         val displayName: String?,
@@ -172,6 +187,8 @@ class DocumentSyncSession(
         val selections: List<SelectionMessage>,
         val viewport: ViewportMessage?,
         val expiresAt: Long,
+        val deviceName: String?,
+        val instanceColor: String?,
     )
 
     private class Peer(
@@ -217,6 +234,9 @@ class DocumentSyncSession(
 
     /** the last visible text set with [updateLocalViewport] */
     private var localViewport: Pair<Int, Int>? = null
+
+    /** the last color set with [updateLocalColor] */
+    private var localColor: String? = null
 
     private val actors = mutableMapOf<String, ActorInfo>()
 
@@ -289,6 +309,8 @@ class DocumentSyncSession(
                 epoch = current?.epoch,
                 ticket = ticket,
                 client = clientName,
+                instanceId = instanceId,
+                instanceColor = localColor,
             )
         )
     }
@@ -383,8 +405,17 @@ class DocumentSyncSession(
      * @param anchor UTF-16 index where the selection started, or null if the editor has no focus
      * @param head UTF-16 index of the caret
      */
-    fun updateLocalSelection(anchor: Int?, head: Int?) {
-        localSelection = if (anchor != null && head != null) anchor to head else null
+    fun updateLocalSelection(anchor: Int?, head: Int?) = updateLocalPresence(anchor to head, null)
+
+    /**
+     * Sets the cursor and the viewport at once, so that they go out in one message
+     *
+     * @param selection anchor and head, see [updateLocalSelection], null to keep the last one
+     * @param viewport top and bottom, see [updateLocalViewport], null to keep the last one
+     */
+    fun updateLocalPresence(selection: Pair<Int?, Int?>?, viewport: Pair<Int?, Int?>?) {
+        selection?.let { (anchor, head) -> localSelection = if (anchor != null && head != null) anchor to head else null }
+        viewport?.let { (top, bottom) -> localViewport = if (top != null && bottom != null) top to bottom else null }
         sendPresence()
     }
 
@@ -394,8 +425,19 @@ class DocumentSyncSession(
      * @param top UTF-16 index of the first visible character, or null if the editor is not visible
      * @param bottom UTF-16 index of the last visible character
      */
-    fun updateLocalViewport(top: Int?, bottom: Int?) {
-        localViewport = if (top != null && bottom != null) top to bottom else null
+    fun updateLocalViewport(top: Int?, bottom: Int?) = updateLocalPresence(null, top to bottom)
+
+    /** the id other clients know this client by, null if there is none yet */
+    val instanceIdInUse: String?
+        get() = you?.instanceId ?: instanceId
+
+    /**
+     * Sets the color the other users see this client in, without changing the color of the account
+     *
+     * @param color `#rrggbb`, or null for the color of the account
+     */
+    fun updateLocalColor(color: String?) {
+        localColor = color
         sendPresence()
     }
 
@@ -542,7 +584,7 @@ class DocumentSyncSession(
         peers[clientId] = Peer(message, resolve(message, previous = peers[clientId]?.resolved))
         notifyPeers()
         // it is back
-        if (ghosts.remove(message.accountId) != null) notifyGhosts()
+        if (ghosts.remove(message.instanceId ?: clientId) != null) notifyGhosts()
     }
 
     private fun onPresenceSnapshot(message: PresenceSnapshotMessage) {
@@ -555,16 +597,18 @@ class DocumentSyncSession(
         }
         notifyPeers()
         ghosts.clear()
-        val online = peers.values.mapNotNull { it.presence.accountId }.toSet()
-        message.lastPositions.filter { it.ghostMs != null && it.accountId !in online }.forEach { position ->
-            ghosts[position.accountId] = Ghost(
-                accountId = position.accountId,
-                username = position.username.orEmpty(),
-                displayName = position.displayName,
-                color = position.color,
-                selections = position.selections,
-                viewport = position.viewport,
-                expiresAt = now() + requireNotNull(position.ghostMs),
+        message.ghosts.forEach { ghost ->
+            ghosts[ghost.instanceId] = Ghost(
+                instanceId = ghost.instanceId,
+                accountId = ghost.accountId,
+                username = ghost.username.orEmpty(),
+                displayName = ghost.displayName,
+                color = ghost.color,
+                selections = ghost.selections,
+                viewport = ghost.viewport,
+                expiresAt = now() + ghost.ghostMs,
+                deviceName = ghost.deviceName,
+                instanceColor = ghost.instanceColor,
             )
         }
         notifyGhosts()
@@ -579,7 +623,9 @@ class DocumentSyncSession(
         val accountId = message.accountId
         val ghostMs = message.ghostMs
         if (accountId != null && ghostMs != null) {
-            ghosts[accountId] = Ghost(
+            val instanceId = message.instanceId ?: left?.presence?.instanceId ?: message.clientId
+            ghosts[instanceId] = Ghost(
+                instanceId = instanceId,
                 accountId = accountId,
                 username = left?.presence?.username.orEmpty(),
                 displayName = left?.presence?.displayName,
@@ -587,6 +633,8 @@ class DocumentSyncSession(
                 selections = message.selections,
                 viewport = message.viewport,
                 expiresAt = now() + ghostMs,
+                deviceName = message.deviceName,
+                instanceColor = message.instanceColor,
             )
             notifyGhosts()
         }
@@ -598,6 +646,7 @@ class DocumentSyncSession(
         listener.onGhostsChanged(
             ghosts.values.map { ghost ->
                 RemoteGhost(
+                    instanceId = ghost.instanceId,
                     accountId = ghost.accountId,
                     username = ghost.username,
                     displayName = ghost.displayName,
@@ -605,6 +654,8 @@ class DocumentSyncSession(
                     selections = resolve(ghost.selections, previous = null),
                     viewport = resolve(ghost.viewport),
                     remainingMs = ghost.expiresAt - time,
+                    deviceName = ghost.deviceName,
+                    instanceColor = ghost.instanceColor,
                 )
             }
         )
@@ -687,8 +738,10 @@ class DocumentSyncSession(
     }
 
     private fun notifyPeers() {
+        val own = instanceIdInUse
         listener.onPeersChanged(
-            peers.values.map { peer ->
+            // an old connection of this client can still be open on a half-open socket
+            peers.values.filter { it.presence.instanceId == null || it.presence.instanceId != own }.map { peer ->
                 RemotePeer(
                     clientId = peer.presence.clientId.orEmpty(),
                     username = peer.presence.username.orEmpty(),
@@ -698,6 +751,9 @@ class DocumentSyncSession(
                     accountId = peer.presence.accountId,
                     lastActiveAt = peer.presence.lastActiveAt,
                     viewport = resolve(peer.presence.viewport),
+                    instanceId = peer.presence.instanceId ?: peer.presence.clientId.orEmpty(),
+                    deviceName = peer.presence.deviceName,
+                    instanceColor = peer.presence.instanceColor,
                 )
             }
         )
@@ -714,7 +770,7 @@ class DocumentSyncSession(
         val viewport = localViewport?.let { (top, bottom) ->
             ViewportMessage(top = document.makeCursor(top), bottom = document.makeCursor(bottom))
         }
-        val message = LocalPresenceMessage(documentId = documentId, selections = selections, viewport = viewport)
+        val message = LocalPresenceMessage(documentId = documentId, selections = selections, viewport = viewport, instanceColor = localColor)
         send?.invoke(moshi.adapter(LocalPresenceMessage::class.java).serializeNulls().toJson(message))
     }
 

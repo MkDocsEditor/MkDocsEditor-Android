@@ -7,6 +7,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import dagger.hilt.android.EntryPointAccessors
+import de.markusressel.mkdocseditor.feature.main.data.MainNavigationRequests
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
@@ -25,11 +28,13 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferen
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.ResourcePickerDialog
 
 internal data class CodeEditorScreen(
-    private val documentId: String,
+    val documentId: String,
     /** opened through a join link, see [CodeEditorViewModel.onOpenedByJoinLink] */
     private val joinLink: Boolean = false,
     /** the account of the one who sent the join link */
     private val joinFrom: String? = null,
+    /** the client instance of the sender to follow */
+    private val joinInstance: String? = null,
 ) : Screen {
 
     /**
@@ -53,7 +58,19 @@ internal data class CodeEditorScreen(
 
         LaunchedEffect(documentId) {
             viewModel.setCurrentDocumentId(documentId)
-            if (joinLink) viewModel.onOpenedByJoinLink(joinFrom)
+            if (joinLink) viewModel.onOpenedByJoinLink(joinFrom, joinInstance)
+        }
+
+        // a later join link for this document comes to this editor, see OpenJoinedDocument
+        val editorJoins = remember(context) {
+            EntryPointAccessors.fromApplication(context.applicationContext, MainNavigationRequests.Accessor::class.java).editorJoins()
+        }
+        val join by editorJoins.request.collectAsState()
+        LaunchedEffect(join) {
+            join?.takeIf { it.screenKey == key }?.let {
+                editorJoins.taken(it)
+                viewModel.onJoinLinkOpened(it.from, it.instance)
+            }
         }
 
         LaunchedEffect(viewModel) {
@@ -129,6 +146,12 @@ internal data class CodeEditorScreen(
                     onDismiss = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.DismissDialog) },
                 )
             }
+
+            is CodeEditorViewModel.DialogState.CursorColorPicker -> CursorColorDialog(
+                current = uiState.localColor,
+                onColorChosen = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.CursorColorChosen(it)) },
+                onDismiss = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.DismissDialog) },
+            )
 
             is CodeEditorViewModel.DialogState.PageReferencesPanel -> if (tree != null && documentId != null) {
                 PageReferencesDialog(

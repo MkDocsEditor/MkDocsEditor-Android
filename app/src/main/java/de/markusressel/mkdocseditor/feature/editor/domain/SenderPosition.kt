@@ -13,23 +13,40 @@ internal sealed interface FollowTarget {
 }
 
 /**
- * The connections of an account, the one that moved last first: it is the one they are using. An ISO instant in UTC sorts
- * by time, and a connection without a time counts as the oldest.
+ * The connections of an instance, the one that moved last first: an old one can linger on a half-open socket. An ISO instant
+ * in UTC sorts by time, and a connection without a time counts as the oldest.
  */
-private fun List<RemotePeer>.ofAccount(accountId: String) =
-    filter { it.accountId == accountId }.sortedByDescending { it.lastActiveAt.orEmpty() }
+private fun List<RemotePeer>.ofInstance(instanceId: String) =
+    filter { it.instanceId == instanceId }.sortedByDescending { it.lastActiveAt.orEmpty() }
 
-/** whether the account is here, which a ghost still counts as */
-internal fun isPresent(peers: List<RemotePeer>, ghosts: List<RemoteGhost>, accountId: String): Boolean =
-    peers.any { it.accountId == accountId } || ghosts.any { it.accountId == accountId }
+/** whether the instance is here, which a ghost still counts as */
+internal fun isPresent(peers: List<RemotePeer>, ghosts: List<RemoteGhost>, instanceId: String): Boolean =
+    peers.any { it.instanceId == instanceId } || ghosts.any { it.instanceId == instanceId }
 
-/** @return null while there is nothing to look at: no connection of the account has a viewport or a cursor */
-internal fun followTarget(peers: List<RemotePeer>, ghosts: List<RemoteGhost>, accountId: String): FollowTarget? {
-    peers.ofAccount(accountId).forEach { peer ->
+/**
+ * Who a join link follows: the instance it names, else the instance of the sender that was active last. A ghost with more
+ * time left has left later.
+ *
+ * @return null if the sender is fully away
+ */
+internal fun joinFollowInstance(
+    peers: List<RemotePeer>,
+    ghosts: List<RemoteGhost>,
+    from: String,
+    instance: String?,
+): String? {
+    if (instance != null && isPresent(peers, ghosts, instance)) return instance
+    return peers.filter { it.accountId == from }.maxByOrNull { it.lastActiveAt.orEmpty() }?.instanceId
+        ?: ghosts.filter { it.accountId == from }.maxByOrNull { it.remainingMs }?.instanceId
+}
+
+/** @return null while there is nothing to look at: no connection of the instance has a viewport or a cursor */
+internal fun followTarget(peers: List<RemotePeer>, ghosts: List<RemoteGhost>, instanceId: String): FollowTarget? {
+    peers.ofInstance(instanceId).forEach { peer ->
         peer.viewport?.let { return FollowTarget.Range(it.top, it.bottom) }
         peer.selections.firstOrNull()?.let { return FollowTarget.Position(it.head) }
     }
-    val ghost = ghosts.firstOrNull { it.accountId == accountId } ?: return null
+    val ghost = ghosts.firstOrNull { it.instanceId == instanceId } ?: return null
     ghost.viewport?.let { return FollowTarget.Range(it.top, it.bottom) }
     return ghost.selections.firstOrNull()?.let { FollowTarget.Position(it.head) }
 }

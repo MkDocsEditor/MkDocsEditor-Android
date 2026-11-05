@@ -53,6 +53,11 @@ class DocumentSessionTest {
         }
 
         override fun onLocalViewportChanged(top: Int?, bottom: Int?) = Unit
+        override val instanceIdInUse: String? = null
+        var localColor: String? = null
+        override fun onLocalColorChanged(color: String?) {
+            localColor = color
+        }
         override fun onLocalSelectionChanged(anchor: Int?, head: Int?) {}
         override fun persistNow() {
             persists++
@@ -83,6 +88,7 @@ class DocumentSessionTest {
         override val sessionChanges = MutableSharedFlow<Long>()
 
         var onCreated: (FakeDocument) -> Unit = {}
+        var lastInstanceId: String? = null
         var signedIn = true
         val unauthenticated = mutableListOf<Long>()
         var backend: BackendConfig? = backendConfig(1)
@@ -108,7 +114,9 @@ class DocumentSessionTest {
             serverConfig: BackendServerConfig,
             backendId: Long,
             listener: AutomergeDocumentSyncManager.Listener,
+            instanceId: String,
         ): SyncedDocument = FakeDocument(documentId, localCopyText, listener).also {
+            lastInstanceId = instanceId
             onCreated(it)
             documents += it
         }
@@ -167,7 +175,7 @@ class DocumentSessionTest {
         val environment = FakeEnvironment(scope)
         val host = FakeHost()
         val text = EditorTextController(editModeActive = { false })
-        val session = DocumentSession(scope.backgroundScope, text, environment, host)
+        val session = DocumentSession(scope.backgroundScope, text, environment, host, instanceId = "instance")
         val document get() = environment.documents.last()
         val fieldText get() = text.text
         val state get() = session.state.value
@@ -190,6 +198,17 @@ class DocumentSessionTest {
         assertTrue(f.state.loading)
         assertEquals("page", f.state.documentId)
         assertEquals(listOf("page"), f.host.treesLoaded)
+    }
+
+    @Test
+    fun `a document opens as the instance of the editor, with the color chosen before`() = test { f ->
+        f.session.onLocalColorChanged("#112233")
+        f.open()
+        assertEquals("instance", f.environment.lastInstanceId)
+        assertEquals("#112233", f.document.localColor)
+
+        f.session.onLocalColorChanged(null)
+        assertNull(f.document.localColor)
     }
 
     @Test

@@ -29,6 +29,18 @@ class JoinLinkParserTest {
     }
 
     @Test
+    fun `a link names the instance to follow`() {
+        val built = JoinLinkParser.build("https://edit.example.com", "doc", "sender", "0f8a")
+        assertEquals("https://edit.example.com/join/doc?from=sender&instance=0f8a", built)
+        assertEquals(JoinLink("https://edit.example.com/", "doc", "sender", "0f8a"), JoinLinkParser.parse(built))
+    }
+
+    @Test
+    fun `a link of an older client has no instance`() {
+        assertNull(JoinLinkParser.parse("https://edit.example.com/join/doc?from=sender")?.instance)
+    }
+
+    @Test
     fun `other links are no join links`() {
         assertNull(JoinLinkParser.parse("https://edit.example.com/invite#mdl_abc"))
         assertNull(JoinLinkParser.parse("https://edit.example.com/join/"))

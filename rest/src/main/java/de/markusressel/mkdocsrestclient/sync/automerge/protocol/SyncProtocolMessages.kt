@@ -37,6 +37,9 @@ data class HelloMessage(
     val epoch: String? = null,
     val ticket: String? = null,
     val client: String? = null,
+    /** stays the same across reconnects, see "Client instances" in docs/sync-protocol.md */
+    val instanceId: String? = null,
+    val instanceColor: String? = null,
     val type: String = MessageType.HELLO,
 )
 
@@ -74,15 +77,20 @@ data class PresenceMessage(
     val accountId: String? = null,
     val lastActiveAt: String? = null,
     val viewport: ViewportMessage? = null,
+    val instanceId: String? = null,
+    val deviceName: String? = null,
+    /** drawn instead of [color], which stays the color of the account */
+    val instanceColor: String? = null,
     val type: String = MessageType.PRESENCE,
 )
 
-/** What the client sends. Unlike in [PresenceMessage], a null [viewport] goes over the wire: it clears the last one. */
+/** What the client sends. Unlike in [PresenceMessage], a null [viewport] or [instanceColor] goes over the wire: it clears the last one. */
 @JsonClass(generateAdapter = true)
 data class LocalPresenceMessage(
     val documentId: String,
     val selections: List<SelectionMessage>,
     val viewport: ViewportMessage?,
+    val instanceColor: String?,
     val type: String = MessageType.PRESENCE,
 )
 
@@ -99,6 +107,8 @@ data class PresenceSnapshotMessage(
     val peers: List<PresenceMessage> = emptyList(),
     /** where accounts last had a cursor, also if they are gone. Servers before this field don't send it. */
     val lastPositions: List<LastPositionMessage> = emptyList(),
+    /** instances that left recently. Servers before this field don't send it. */
+    val ghosts: List<GhostMessage> = emptyList(),
     val type: String = MessageType.PRESENCE_SNAPSHOT,
 )
 
@@ -110,8 +120,21 @@ data class LastPositionMessage(
     val color: String? = null,
     val selections: List<SelectionMessage> = emptyList(),
     val viewport: ViewportMessage? = null,
-    /** the time left of the ghost of this account, without a ghost there is none */
-    val ghostMs: Long? = null,
+)
+
+/** A client instance that left, its cursor stays for [ghostMs] */
+@JsonClass(generateAdapter = true)
+data class GhostMessage(
+    val instanceId: String,
+    val accountId: String,
+    val ghostMs: Long,
+    val username: String? = null,
+    val displayName: String? = null,
+    val color: String? = null,
+    val instanceColor: String? = null,
+    val deviceName: String? = null,
+    val selections: List<SelectionMessage> = emptyList(),
+    val viewport: ViewportMessage? = null,
 )
 
 @JsonClass(generateAdapter = true)
@@ -121,7 +144,10 @@ data class PresenceLeaveMessage(
     val accountId: String? = null,
     val selections: List<SelectionMessage> = emptyList(),
     val viewport: ViewportMessage? = null,
-    /** the last connection of the account left, its cursor stays this long as a ghost */
+    val instanceId: String? = null,
+    val deviceName: String? = null,
+    val instanceColor: String? = null,
+    /** the last connection of the instance left, its cursor stays this long as a ghost */
     val ghostMs: Long? = null,
     val type: String = MessageType.PRESENCE_LEAVE,
 )
@@ -130,6 +156,8 @@ data class PresenceLeaveMessage(
 data class UserInfo(
     val username: String,
     val clientId: String? = null,
+    /** the id in use, the server replaces one that another account has in this document */
+    val instanceId: String? = null,
     val displayName: String? = null,
     val role: String? = null,
     val color: String? = null,

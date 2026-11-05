@@ -308,86 +308,211 @@ class DocumentSyncSessionTest {
     }
 
     @Test
-    fun `a user who leaves stays as a ghost with their name`() {
+    fun `an instance that leaves stays as a ghost with its name and device`() {
         val listener = EditorListener()
         val (server, session) = connectedSession(listener)
         session.onMessage(
-            """{"type":"presence","documentId":"${server.documentId}","clientId":"c1","accountId":"a1","username":"bob",
+            """{"type":"presence","documentId":"${server.documentId}","clientId":"c1","instanceId":"i1","accountId":"a1","username":"bob",
                 "selections":[{"anchor":"end","head":"end"}]}"""
         )
 
         session.onMessage(
-            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1","accountId":"a1",
+            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1","instanceId":"i1","accountId":"a1","deviceName":"Pixel","instanceColor":"#112233",
                 "selections":[{"anchor":"end","head":"end"}],"viewport":{"top":"start","bottom":"end"},"ghostMs":60000}"""
         )
 
         assertTrue(listener.peers.isEmpty())
         val ghost = listener.ghosts.single()
+        assertEquals("i1", ghost.instanceId)
         assertEquals("a1", ghost.accountId)
         assertEquals("bob", ghost.username)
+        assertEquals("Pixel", ghost.deviceName)
+        assertEquals("#112233", ghost.instanceColor)
         assertEquals(listOf(RemoteSelection(3, 3)), ghost.selections)
         assertEquals(RemoteViewport(0, 3), ghost.viewport)
         assertEquals(60000, ghost.remainingMs)
     }
 
     @Test
-    fun `a connection of a user who is still here leaves no ghost`() {
+    fun `a leave without a position leaves no ghost`() {
         val listener = EditorListener()
         val (server, session) = connectedSession(listener)
-        session.onMessage("""{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1"}""")
+        session.onMessage("""{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1","instanceId":"i1"}""")
 
         assertTrue(listener.ghosts.isEmpty())
     }
 
     @Test
-    fun `a ghost ends when the user is back`() {
+    fun `several instances of one account each have a ghost`() {
+        val listener = EditorListener()
+        val (server, session) = connectedSession(listener)
+        listOf("i1", "i2").forEach {
+            session.onMessage(
+                """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c-$it","instanceId":"$it","accountId":"a1","ghostMs":60000}"""
+            )
+        }
+
+        assertEquals(listOf("i1", "i2"), listener.ghosts.map { it.instanceId })
+    }
+
+    @Test
+    fun `a ghost ends when its instance is back, not with another instance of the account`() {
         val listener = EditorListener()
         val (server, session) = connectedSession(listener)
         session.onMessage(
-            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1","accountId":"a1","ghostMs":60000}"""
+            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1","instanceId":"i1","accountId":"a1","ghostMs":60000}"""
         )
         assertEquals(1, listener.ghosts.size)
 
         session.onMessage(
-            """{"type":"presence","documentId":"${server.documentId}","clientId":"c2","accountId":"a1","username":"bob","selections":[]}"""
+            """{"type":"presence","documentId":"${server.documentId}","clientId":"c2","instanceId":"i2","accountId":"a1","username":"bob","selections":[]}"""
         )
+        assertEquals(1, listener.ghosts.size)
 
+        session.onMessage(
+            """{"type":"presence","documentId":"${server.documentId}","clientId":"c3","instanceId":"i1","accountId":"a1","username":"bob","selections":[]}"""
+        )
         assertTrue(listener.ghosts.isEmpty())
     }
 
     @Test
-    fun `the ghosts of a snapshot have their time left, as long as the account is not online`() {
+    fun `the ghosts of a snapshot have their time left`() {
         var time = 1000L
         val listener = EditorListener()
         val (server, session) = connectedSession(listener) { time }
 
         session.onMessage(
             """{"type":"presence-snapshot","documentId":"${server.documentId}",
-                "peers":[{"documentId":"${server.documentId}","clientId":"c1","accountId":"online","username":"o","selections":[]}],
-                "lastPositions":[
-                    {"accountId":"a1","username":"bob","displayName":"Bob","color":"#112233","selections":[],"viewport":{"top":"start","bottom":"end"},"ghostMs":20000},
-                    {"accountId":"online","selections":[],"ghostMs":20000},
-                    {"accountId":"long-gone","selections":[{"anchor":"end","head":"end"}]}
-                ]}"""
+                "peers":[{"documentId":"${server.documentId}","clientId":"c1","instanceId":"i9","accountId":"a1","username":"o","selections":[]}],
+                "lastPositions":[{"accountId":"long-gone","selections":[{"anchor":"end","head":"end"}]}],
+                "ghosts":[{"instanceId":"i1","accountId":"a1","username":"bob","displayName":"Bob","color":"#112233","instanceColor":"#445566","deviceName":"Pixel",
+                    "selections":[],"viewport":{"top":"start","bottom":"end"},"ghostMs":20000}]}"""
         )
 
         val ghost = listener.ghosts.single()
+        assertEquals("i1", ghost.instanceId)
         assertEquals("a1", ghost.accountId)
         assertEquals("Bob", ghost.displayName)
+        assertEquals("#445566", ghost.instanceColor)
+        assertEquals("Pixel", ghost.deviceName)
         assertEquals(20000, ghost.remainingMs)
         assertTrue(listener.presenceKnown)
 
         // a later change must not bring back the time, or an expired ghost
         time += 5000
         session.onMessage(
-            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1","accountId":"online","ghostMs":100}"""
+            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1","instanceId":"i9","accountId":"a1","ghostMs":100}"""
         )
-        assertEquals(15000, listener.ghosts.first { it.accountId == "a1" }.remainingMs)
+        assertEquals(15000, listener.ghosts.first { it.instanceId == "i1" }.remainingMs)
         time += 20000
         session.onMessage(
-            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c2","accountId":"other","ghostMs":100}"""
+            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c2","instanceId":"i2","accountId":"other","ghostMs":100}"""
         )
-        assertEquals(listOf("other"), listener.ghosts.map { it.accountId })
+        assertEquals(listOf("i2"), listener.ghosts.map { it.instanceId })
+    }
+
+    @Test
+    fun `a server without instances makes each connection an instance`() {
+        val listener = EditorListener()
+        val (server, session) = connectedSession(listener)
+
+        session.onMessage(
+            """{"type":"presence","documentId":"${server.documentId}","clientId":"c1","accountId":"a1","username":"bob","selections":[]}"""
+        )
+        assertEquals("c1", listener.peers.single().instanceId)
+
+        session.onMessage(
+            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1","accountId":"a1","ghostMs":60000}"""
+        )
+        assertEquals("c1", listener.ghosts.single().instanceId)
+    }
+
+    @Test
+    fun `the peers carry their instance, device and color`() {
+        val listener = EditorListener()
+        val (server, session) = connectedSession(listener)
+
+        session.onMessage(
+            """{"type":"presence","documentId":"${server.documentId}","clientId":"c1","instanceId":"i1","deviceName":"Pixel","instanceColor":"#112233",
+                "color":"#445566","accountId":"a1","username":"bob","selections":[]}"""
+        )
+
+        val peer = listener.peers.single()
+        assertEquals("i1", peer.instanceId)
+        assertEquals("Pixel", peer.deviceName)
+        assertEquals("#112233", peer.instanceColor)
+        assertEquals("#445566", peer.color)
+    }
+
+    @Test
+    fun `hello names the instance and its color, the same after a reconnect`() {
+        val session = DocumentSyncSession("doc", InMemoryDocumentStore(), EditorListener(), instanceId = "0f".repeat(16))
+        session.updateLocalColor("#112233")
+        val sent = mutableListOf<String>()
+
+        session.onConnected(send = { sent += it })
+        session.onDisconnected()
+        session.onConnected(send = { sent += it })
+
+        assertEquals(2, sent.size)
+        sent.forEach {
+            assertTrue(it.contains("\"instanceId\":\"${"0f".repeat(16)}\""), it)
+            assertTrue(it.contains("\"instanceColor\":\"#112233\""), it)
+        }
+    }
+
+    @Test
+    fun `an old connection of this instance is no peer`() {
+        val listener = EditorListener()
+        val server = FakeSyncServer("abc")
+        val session = DocumentSyncSession(server.documentId, InMemoryDocumentStore(), listener, instanceId = "mine")
+        server.connect(session)
+        server.pump()
+
+        session.onMessage(
+            """{"type":"presence","documentId":"${server.documentId}","clientId":"c1","instanceId":"mine","accountId":"a1","username":"me","selections":[]}"""
+        )
+        assertTrue(listener.peers.isEmpty())
+
+        session.onMessage(
+            """{"type":"presence","documentId":"${server.documentId}","clientId":"c2","instanceId":"other","accountId":"a1","username":"me","selections":[]}"""
+        )
+        assertEquals(listOf("other"), listener.peers.map { it.instanceId })
+    }
+
+    @Test
+    fun `the id the server uses goes before the one asked for`() {
+        val server = FakeSyncServer("abc")
+        server.instanceIdInUse = "c-7"
+        val session = DocumentSyncSession(server.documentId, InMemoryDocumentStore(), EditorListener(), instanceId = "mine")
+        assertEquals("mine", session.instanceIdInUse)
+
+        server.connect(session)
+        server.pump()
+
+        assertEquals("c-7", session.instanceIdInUse)
+    }
+
+    @Test
+    fun `a new instance id is what the server accepts`() {
+        val first = newInstanceId()
+        assertTrue(first.matches(Regex("^[0-9a-f]{32}$")), first)
+        assertNotEquals(first, newInstanceId())
+    }
+
+    @Test
+    fun `a color is sent, and clearing it is an explicit null, because a missing one keeps the last`() {
+        val (server, session) = connectedSession(EditorListener())
+
+        session.updateLocalColor("#112233")
+        server.pump()
+        val set = server.receivedPresences.last()
+        assertTrue(set.contains("\"instanceColor\":\"#112233\""), set)
+
+        session.updateLocalColor(null)
+        server.pump()
+        val cleared = server.receivedPresences.last()
+        assertTrue(cleared.contains("\"instanceColor\":null"), cleared)
     }
 
     @Test
@@ -396,7 +521,7 @@ class DocumentSyncSessionTest {
         val (server, session) = connectedSession(listener)
         assertTrue(listener.presenceKnown)
         session.onMessage(
-            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1","accountId":"a1","ghostMs":60000}"""
+            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1","instanceId":"i1","accountId":"a1","ghostMs":60000}"""
         )
 
         session.onDisconnected()

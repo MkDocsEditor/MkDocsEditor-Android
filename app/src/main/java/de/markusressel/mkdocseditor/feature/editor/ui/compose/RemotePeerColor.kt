@@ -2,6 +2,7 @@ package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.toArgb
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.contrastRatio
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.wcagLuminance
 import de.markusressel.mkdocsrestclient.sync.automerge.RemoteGhost
@@ -57,17 +58,28 @@ internal fun labelTextColorOn(color: Color): Color =
     if (contrastRatio(Color.Black, color) >= contrastRatio(Color.White, color)) Color.Black else Color.White
 
 /**
- * The color of this peer, parsed from its "#RRGGBB" or "#AARRGGBB" color string.
- * Falls back to a color derived from the username, so a user keeps the same color.
+ * The color of this peer, parsed from its "#RRGGBB" or "#AARRGGBB" color string: the one its instance chose, else the one
+ * of its account. Falls back to a color derived from the username, so a user keeps the same color.
  */
 internal val RemotePeer.composeColor: Color
-    get() = parsePeerColor(color) ?: fallbackPeerColor(username)
+    get() = parsePeerColor(instanceColor) ?: parsePeerColor(color) ?: fallbackPeerColor(username)
 
 /**
  * The name to show for this peer
  */
 internal val RemotePeer.name: String
     get() = displayName?.takeIf { it.isNotBlank() } ?: username
+
+/** The name with the device, which tells apart several instances of one person */
+internal val RemotePeer.label: String
+    get() = listOfNotNull(name, deviceName?.takeIf { it.isNotBlank() }).joinToString(" · ")
+
+/** One entry per client instance, with those of one person next to each other */
+internal fun List<RemotePeer>.instances(): List<RemotePeer> =
+    distinctBy { it.instanceId }.sortedWith(compareBy({ it.accountId ?: it.username }, { it.instanceId }))
+
+/** As `#rrggbb`, which is what the server takes */
+internal fun Color.toPeerColorString(): String = "#%06x".format(toArgb() and 0xFFFFFF)
 
 /**
  * Parses a "#RRGGBB" or "#AARRGGBB" color string
@@ -89,11 +101,14 @@ internal fun parsePeerColor(color: String?): Color? {
 
 /** A ghost is shown like a user who is still here */
 internal fun RemoteGhost.asPeer() = RemotePeer(
-    clientId = "ghost-$accountId",
+    clientId = "ghost-$instanceId",
     username = username,
     displayName = displayName,
     color = color,
     selections = selections,
     accountId = accountId,
     viewport = viewport,
+    instanceId = instanceId,
+    deviceName = deviceName,
+    instanceColor = instanceColor,
 )

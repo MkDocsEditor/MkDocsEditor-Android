@@ -70,6 +70,7 @@ internal fun CodeEditorLayout(
     jumpRequest: CodeEditorViewModel.JumpRequest? = null,
     ghosts: List<RemoteGhost> = emptyList(),
     following: CodeEditorViewModel.Following? = null,
+    localColor: String? = null,
     onStopFollowing: () -> Unit = {},
     onVisibleRangeChanged: (TextRange?) -> Unit = {},
 ) {
@@ -82,9 +83,9 @@ internal fun CodeEditorLayout(
     }
 
     // moving the view by hand only pauses following, like in the navigation of a map
-    var followPaused by remember(following?.accountId) { mutableStateOf(false) }
-    var followPauseMs by remember(following?.accountId) { mutableLongStateOf(FOLLOW_PAUSE_MIN_MS) }
-    var followResumedAt by remember(following?.accountId) { mutableStateOf<Long?>(null) }
+    var followPaused by remember(following?.instanceId) { mutableStateOf(false) }
+    var followPauseMs by remember(following?.instanceId) { mutableLongStateOf(FOLLOW_PAUSE_MIN_MS) }
+    var followResumedAt by remember(following?.instanceId) { mutableStateOf<Long?>(null) }
     LaunchedEffect(followPaused, viewState.isUserMovingView) {
         if (followPaused && !viewState.isUserMovingView) {
             delay(followPauseMs)
@@ -92,7 +93,7 @@ internal fun CodeEditorLayout(
             followResumedAt = SystemClock.uptimeMillis()
         }
     }
-    val followTarget = following?.let { followTarget(remotePeers.value, ghosts, it.accountId) }
+    val followTarget = following?.let { followTarget(remotePeers.value, ghosts, it.instanceId) }
     LaunchedEffect(followTarget, followPaused) {
         if (followPaused) return@LaunchedEffect
         when (followTarget) {
@@ -104,6 +105,7 @@ internal fun CodeEditorLayout(
 
     val palette = rememberEditorPalette()
     val colorScheme = remember(palette) { EditorColorScheme(palette) }
+    val ownColor = parsePeerColor(localColor)?.readableOn(palette.background)
     val ruleBook = remember { MkDocsMarkdownRuleBook() }
     val colors = KodeEditorDefaults.editorColors(
         textFieldBackgroundColor = palette.background,
@@ -111,7 +113,7 @@ internal fun CodeEditorLayout(
         lineNumberBackgroundColor = palette.background,
         textFieldColors = KodeTextFieldDefaults.textFieldColors(
             textColor = palette.text,
-            cursorColor = MaterialTheme.colorScheme.primary,
+            cursorColor = ownColor ?: MaterialTheme.colorScheme.primary,
         )
     )
     val textStyle = TextStyle(
@@ -132,8 +134,8 @@ internal fun CodeEditorLayout(
 
     CompositionLocalProvider(
         LocalTextSelectionColors provides TextSelectionColors(
-            handleColor = MaterialTheme.colorScheme.primary,
-            backgroundColor = palette.selection,
+            handleColor = ownColor ?: MaterialTheme.colorScheme.primary,
+            backgroundColor = ownColor?.copy(alpha = 0.3f) ?: palette.selection,
         )
     ) {
         Box(modifier = modifier) {

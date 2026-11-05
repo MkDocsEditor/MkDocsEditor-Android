@@ -27,6 +27,8 @@ class AutomergeDocumentSyncManager(
     documentId: String,
     store: LocalDocumentStore,
     private val listener: Listener,
+    /** stays the same across reconnects, see [newInstanceId] */
+    instanceId: String? = null,
 ) : SyncedDocument {
 
     interface Listener : DocumentSyncSession.Listener {
@@ -53,6 +55,7 @@ class AutomergeDocumentSyncManager(
             }
         },
         origin = origin,
+        instanceId = instanceId,
     )
 
     private val connection = WebsocketConnectionHandler(authorizationProvider)
@@ -85,6 +88,9 @@ class AutomergeDocumentSyncManager(
 
     override val isConnected: Boolean
         get() = connection.isConnected
+
+    override val instanceIdInUse: String?
+        get() = session.instanceIdInUse
 
     val isSyncing: Boolean
         get() = session.isSyncing
@@ -162,19 +168,11 @@ class AutomergeDocumentSyncManager(
      * @param anchor UTF-16 index where the selection started, null if the editor has no focus
      * @param head UTF-16 index of the caret
      */
-    override fun onLocalSelectionChanged(anchor: Int?, head: Int?) {
-        pendingSelection = anchor to head
-        if (!handler.hasCallbacks(presenceRunnable)) {
-            handler.postDelayed(presenceRunnable, PRESENCE_THROTTLE_MS)
-        }
-    }
+    override fun onLocalSelectionChanged(anchor: Int?, head: Int?) = presence.onSelection(anchor, head)
 
-    override fun onLocalViewportChanged(top: Int?, bottom: Int?) {
-        pendingViewport = top to bottom
-        if (!handler.hasCallbacks(presenceRunnable)) {
-            handler.postDelayed(presenceRunnable, PRESENCE_THROTTLE_MS)
-        }
-    }
+    override fun onLocalColorChanged(color: String?) = session.updateLocalColor(color)
+
+    override fun onLocalViewportChanged(top: Int?, bottom: Int?) = presence.onViewport(top, bottom)
 
     /**
      * Writes the local copy to disk now. Call when the app goes to the background.
@@ -196,16 +194,14 @@ class AutomergeDocumentSyncManager(
         handler.removeCallbacksAndMessages(null)
     }
 
-    private var pendingSelection: Pair<Int?, Int?>? = null
-    private var pendingViewport: Pair<Int?, Int?>? = null
+    private val presence = PresenceThrottle(
+        post = { runnable, delayMs -> handler.postDelayed(runnable, delayMs) },
+        cancel = handler::removeCallbacks,
+        isPosted = handler::hasCallbacks,
+        send = session::updateLocalPresence,
+    )
 
     private val syncRunnable = Runnable { session.flushSync() }
-
-    private val presenceRunnable = Runnable {
-        pendingSelection?.let { (anchor, head) -> session.updateLocalSelection(anchor, head) }
-        pendingViewport?.let { (top, bottom) -> session.updateLocalViewport(top, bottom) }
-        pendingSelection = null
-    }
 
     private val persistRunnable = Runnable { persistNow() }
 
@@ -298,9 +294,6 @@ class AutomergeDocumentSyncManager(
 
         /** batch keystrokes into one sync message (protocol: 50 to 100 ms) */
         const val SYNC_BATCH_DELAY_MS = 75L
-
-        /** at most one presence message every 100 ms */
-        const val PRESENCE_THROTTLE_MS = 100L
 
         const val PERSIST_DEBOUNCE_MS = 1000L
 

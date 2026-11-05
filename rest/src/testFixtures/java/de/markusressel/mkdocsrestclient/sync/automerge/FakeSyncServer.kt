@@ -44,6 +44,9 @@ class FakeSyncServer(
 
     val receivedHellos = mutableListOf<HelloMessage>()
 
+    /** the instance id the server says is in use, null to accept what the client asks for */
+    var instanceIdInUse: String? = null
+
     /** as sent: a null field and a missing one mean different things */
     val receivedPresences = mutableListOf<String>()
     val boundActors = mutableMapOf<String, String>()
@@ -167,7 +170,7 @@ class FakeSyncServer(
                         documentState = Base64.getEncoder().encodeToString(document.save()),
                         content = document.text,
                         readOnly = readOnly,
-                        you = UserInfo(username = connection.username, clientId = connection.clientId, color = colors[connection.username]),
+                        you = UserInfo(username = connection.username, clientId = connection.clientId, color = colors[connection.username], instanceId = instanceIdInUse),
                         actors = boundActors.map { (actor, user) -> ActorInfo(actor, user, color = colors[user]) },
                     )
                 )
