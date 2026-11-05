@@ -23,6 +23,7 @@ import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -31,7 +32,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import de.markusressel.kodeeditor.library.compose.rememberKodeEditorViewState
 import de.markusressel.mkdocseditor.R
+import android.os.SystemClock
+import de.markusressel.mkdocseditor.feature.editor.domain.FOLLOW_PAUSE_MIN_MS
 import de.markusressel.mkdocseditor.feature.editor.domain.FollowTarget
+import de.markusressel.mkdocseditor.feature.editor.domain.nextFollowPauseMs
 import de.markusressel.mkdocseditor.feature.editor.domain.followTarget
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
 import de.markusressel.mkdocsrestclient.sync.automerge.RemoteGhost
@@ -66,7 +70,6 @@ internal fun CodeEditorLayout(
     jumpRequest: CodeEditorViewModel.JumpRequest? = null,
     ghosts: List<RemoteGhost> = emptyList(),
     following: CodeEditorViewModel.Following? = null,
-    followPauseRequest: Int = 0,
     onStopFollowing: () -> Unit = {},
     onVisibleRangeChanged: (TextRange?) -> Unit = {},
 ) {
@@ -80,18 +83,13 @@ internal fun CodeEditorLayout(
 
     // moving the view by hand only pauses following, like in the navigation of a map
     var followPaused by remember(following?.accountId) { mutableStateOf(false) }
-    var followerTyping by remember(following?.accountId) { mutableStateOf(false) }
-    LaunchedEffect(followPauseRequest) {
-        if (following != null && followPauseRequest > 0) {
-            followPaused = true
-            followerTyping = true
-        }
-    }
-    LaunchedEffect(followPaused, viewState.isUserMovingView, followPauseRequest) {
+    var followPauseMs by remember(following?.accountId) { mutableLongStateOf(FOLLOW_PAUSE_MIN_MS) }
+    var followResumedAt by remember(following?.accountId) { mutableStateOf<Long?>(null) }
+    LaunchedEffect(followPaused, viewState.isUserMovingView) {
         if (followPaused && !viewState.isUserMovingView) {
-            delay(FOLLOW_RESUME_DELAY_MS)
+            delay(followPauseMs)
             followPaused = false
-            followerTyping = false
+            followResumedAt = SystemClock.uptimeMillis()
         }
     }
     val followTarget = following?.let { followTarget(remotePeers.value, ghosts, it.accountId) }
@@ -143,9 +141,14 @@ internal fun CodeEditorLayout(
             modifier = Modifier.fillMaxSize(),
             state = state,
             viewState = viewState,
-            onUserMovedView = { if (following != null) followPaused = true },
-            // following must not fight the local cursor when an edit of someone else moves it, but the follower sees what they type
-            keepCursorVisible = following == null || followerTyping,
+            onUserMovedView = {
+                if (following != null && !followPaused) {
+                    followPauseMs = nextFollowPauseMs(followPauseMs, followResumedAt?.let { SystemClock.uptimeMillis() - it })
+                    followPaused = true
+                }
+            },
+            // following must not fight the local cursor when an edit of someone else moves it
+            keepCursorVisible = following == null,
             languageRuleBook = ruleBook,
             colorScheme = colorScheme,
             colors = colors,
@@ -208,5 +211,3 @@ internal data class EditorSettings(
 private val NoAuthorRuns: State<AuthorRuns> = mutableStateOf(AuthorRuns())
 private val AUTHOR_STRIP_WIDTH = 3.dp
 private const val GHOST_ALPHA = 0.4f
-/** same in the web client */
-private const val FOLLOW_RESUME_DELAY_MS = 5_000L

@@ -32,8 +32,6 @@ Works in the editor pane. What is left:
 
 - A reader in preview-only mode sends no viewport (`"viewport": null`), so a follower only sees their cursor. Mapping the
   preview position to the text needs its own PR, in both clients.
-- Not decided yet, so these are only what both clients do for now: following pauses 5 seconds after the last manual
-  movement, and typing by the follower pauses it the same way instead of ending it.
 
 ## Opening a document when the backend is unavailable
 

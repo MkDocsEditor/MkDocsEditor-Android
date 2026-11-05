@@ -135,8 +135,8 @@ internal class CodeEditorViewModel @Inject constructor(
         onSelectionChanged = { session.onLocalSelectionChanged(it.start, it.end) },
         onEdited = { saveEditorState() },
         onLocalEdit = {
-            // only pauses following, and only while following does this touch the state with every key
-            if (uiState.value.following != null) _uiState.update { it.copy(followPauseRequest = it.followPauseRequest + 1) }
+            // the user has started on their own work
+            if (uiState.value.following != null) stopFollowing()
         },
         onDocumentChanged = { authorshipRequests.update { it + 1 } },
     )
@@ -845,9 +845,6 @@ internal class CodeEditorViewModel @Inject constructor(
 
         /** whose view the editor follows */
         val following: Following? = null,
-
-        /** counts up with each edit of the follower */
-        val followPauseRequest: Int = 0,
 
         /**
          * Other users in this document, with their resolved cursors and selections
