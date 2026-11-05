@@ -27,6 +27,8 @@ class AutomergeDocumentSyncManager(
     documentId: String,
     store: LocalDocumentStore,
     private val listener: Listener,
+    /** stays the same across reconnects, see [newInstanceId] */
+    instanceId: String? = null,
 ) : SyncedDocument {
 
     interface Listener : DocumentSyncSession.Listener {
@@ -53,6 +55,7 @@ class AutomergeDocumentSyncManager(
             }
         },
         origin = origin,
+        instanceId = instanceId,
     )
 
     private val connection = WebsocketConnectionHandler(authorizationProvider)
@@ -85,6 +88,9 @@ class AutomergeDocumentSyncManager(
 
     override val isConnected: Boolean
         get() = connection.isConnected
+
+    override val instanceIdInUse: String?
+        get() = session.instanceIdInUse
 
     val isSyncing: Boolean
         get() = session.isSyncing
@@ -168,6 +174,8 @@ class AutomergeDocumentSyncManager(
             handler.postDelayed(presenceRunnable, PRESENCE_THROTTLE_MS)
         }
     }
+
+    override fun onLocalColorChanged(color: String?) = session.updateLocalColor(color)
 
     override fun onLocalViewportChanged(top: Int?, bottom: Int?) {
         pendingViewport = top to bottom

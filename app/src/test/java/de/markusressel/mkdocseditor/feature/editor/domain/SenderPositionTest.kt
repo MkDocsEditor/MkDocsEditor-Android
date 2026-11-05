@@ -13,7 +13,14 @@ import kotlin.test.assertTrue
 
 class SenderPositionTest {
 
-    private fun peer(account: String?, head: Int?, lastActiveAt: String? = null, viewport: RemoteViewport? = null) = RemotePeer(
+    /** @param instance the account has one instance unless a test says otherwise */
+    private fun peer(
+        account: String,
+        head: Int?,
+        lastActiveAt: String? = null,
+        viewport: RemoteViewport? = null,
+        instance: String = account,
+    ) = RemotePeer(
         clientId = "c",
         username = "u",
         displayName = null,
@@ -22,20 +29,28 @@ class SenderPositionTest {
         accountId = account,
         lastActiveAt = lastActiveAt,
         viewport = viewport,
+        instanceId = instance,
     )
 
-    private fun ghost(account: String, head: Int?, viewport: RemoteViewport? = null) = RemoteGhost(
+    private fun ghost(
+        account: String,
+        head: Int?,
+        viewport: RemoteViewport? = null,
+        instance: String = account,
+        remainingMs: Long = 1000,
+    ) = RemoteGhost(
+        instanceId = instance,
         accountId = account,
         username = "u",
         displayName = null,
         color = null,
         selections = listOfNotNull(head?.let { RemoteSelection(it, it) }),
         viewport = viewport,
-        remainingMs = 1000,
+        remainingMs = remainingMs,
     )
 
     @Test
-    fun `follows the connection that moved last`() {
+    fun `follows the connection of the instance that moved last`() {
         val peers = listOf(
             peer("sender", 1, "2026-11-05T10:00:00Z"),
             peer("sender", 2, "2026-11-05T10:00:05Z"),
@@ -57,7 +72,7 @@ class SenderPositionTest {
     }
 
     @Test
-    fun `a ghost is followed until the account is back`() {
+    fun `a ghost is followed until the instance is back`() {
         assertEquals(FollowTarget.Position(5), followTarget(emptyList(), listOf(ghost("sender", 5)), "sender"))
         assertEquals(
             FollowTarget.Range(1, 2),
@@ -71,10 +86,51 @@ class SenderPositionTest {
     }
 
     @Test
-    fun `an account counts as present while it is connected or a ghost`() {
+    fun `an instance counts as present while it is connected or a ghost`() {
         assertTrue(isPresent(listOf(peer("sender", null)), emptyList(), "sender"))
         assertTrue(isPresent(emptyList(), listOf(ghost("sender", 1)), "sender"))
         assertFalse(isPresent(listOf(peer("other", 1)), listOf(ghost("other", 1)), "sender"))
+    }
+
+    @Test
+    fun `following stays on one instance of an account`() {
+        val peers = listOf(peer("sender", 1, instance = "phone"), peer("sender", 2, "2026-11-05T11:00:00Z", instance = "laptop"))
+        assertEquals(FollowTarget.Position(1), followTarget(peers, emptyList(), "phone"))
+        assertFalse(isPresent(peers, emptyList(), "tablet"))
+    }
+
+    @Test
+    fun `a join link follows the instance it names, also as a ghost`() {
+        val peers = listOf(peer("sender", 1, "2026-11-05T11:00:00Z", instance = "laptop"))
+        val ghosts = listOf(ghost("sender", 2, instance = "phone"))
+        assertEquals("laptop", joinFollowInstance(peers, ghosts, "sender", "laptop"))
+        assertEquals("phone", joinFollowInstance(peers, ghosts, "sender", "phone"))
+    }
+
+    @Test
+    fun `a join link without its instance follows the one that was active last`() {
+        val peers = listOf(
+            peer("sender", 1, "2026-11-05T10:00:00Z", instance = "old"),
+            peer("sender", 2, "2026-11-05T11:00:00Z", instance = "new"),
+            peer("other", 3, "2026-11-05T12:00:00Z", instance = "other"),
+        )
+        assertEquals("new", joinFollowInstance(peers, emptyList(), "sender", "gone"))
+        assertEquals("new", joinFollowInstance(peers, emptyList(), "sender", null))
+    }
+
+    @Test
+    fun `a connected instance goes before a ghost, and of the ghosts the one that left last`() {
+        val ghosts = listOf(
+            ghost("sender", 1, instance = "earlier", remainingMs = 1000),
+            ghost("sender", 2, instance = "later", remainingMs = 5000),
+        )
+        assertEquals("later", joinFollowInstance(emptyList(), ghosts, "sender", null))
+        assertEquals("laptop", joinFollowInstance(listOf(peer("sender", 1, instance = "laptop")), ghosts, "sender", null))
+    }
+
+    @Test
+    fun `a join link follows nobody when the sender is fully away`() {
+        assertNull(joinFollowInstance(listOf(peer("other", 1)), listOf(ghost("other", 1)), "sender", "phone"))
     }
 
     @Test

@@ -64,7 +64,7 @@ internal fun BoxScope.RemotePeersOverlay(
 
         selections.firstOrNull()?.let { selection ->
             RemotePeerLabel(
-                name = peer.name,
+                name = peer.label,
                 color = color,
                 layout = layout,
                 offset = selection.head,

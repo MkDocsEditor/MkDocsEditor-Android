@@ -15,6 +15,7 @@ data class JoinTarget(
     val backendId: Long,
     val documentId: String,
     val from: String?,
+    val instance: String? = null,
 )
 
 /**
@@ -40,6 +41,7 @@ class PendingJoin internal constructor(
         storage.put(KEY_BACKEND, target.backendId.toString())
         storage.put(KEY_DOCUMENT, target.documentId)
         if (target.from != null) storage.put(KEY_FROM, target.from) else storage.remove(KEY_FROM)
+        if (target.instance != null) storage.put(KEY_INSTANCE, target.instance) else storage.remove(KEY_INSTANCE)
     }
 
     /** the user is signed in to [backendId]: a document remembered for it opens now, one of another server keeps waiting */
@@ -47,8 +49,9 @@ class PendingJoin internal constructor(
         val documentId = storage.get(KEY_DOCUMENT) ?: return
         if (storage.get(KEY_BACKEND)?.toLongOrNull() != backendId) return
         val from = storage.get(KEY_FROM)
+        val instance = storage.get(KEY_INSTANCE)
         forget()
-        _open.value = JoinTarget(backendId, documentId, from)
+        _open.value = JoinTarget(backendId, documentId, from, instance)
     }
 
     /** the file browser has opened the document */
@@ -60,6 +63,7 @@ class PendingJoin internal constructor(
         storage.remove(KEY_BACKEND)
         storage.remove(KEY_DOCUMENT)
         storage.remove(KEY_FROM)
+        storage.remove(KEY_INSTANCE)
     }
 
     private companion object {
@@ -67,5 +71,6 @@ class PendingJoin internal constructor(
         const val KEY_BACKEND = "backend"
         const val KEY_DOCUMENT = "document"
         const val KEY_FROM = "from"
+        const val KEY_INSTANCE = "instance"
     }
 }

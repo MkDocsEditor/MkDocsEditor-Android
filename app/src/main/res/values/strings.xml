@@ -111,6 +111,9 @@
     <string name="following_user_paused">Following %1$s (paused)</string>
     <string name="follow_stop">Stop following</string>
     <string name="follow_ended">%1$s has left, no longer following.</string>
+    <string name="cursor_color">Cursor color</string>
+    <string name="cursor_color_explanation">How you and others see your cursor and selection, until you close the app. Your profile color stays.</string>
+    <string name="cursor_color_reset">Use profile color</string>
     <string name="join_title">Invitation</string>
     <string name="access_request_channel">Access requests</string>
     <string name="access_request_notification_title">Your request for %1$s</string>

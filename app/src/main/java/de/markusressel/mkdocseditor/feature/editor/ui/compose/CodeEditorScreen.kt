@@ -30,6 +30,8 @@ internal data class CodeEditorScreen(
     private val joinLink: Boolean = false,
     /** the account of the one who sent the join link */
     private val joinFrom: String? = null,
+    /** the client instance of the sender to follow */
+    private val joinInstance: String? = null,
 ) : Screen {
 
     /**
@@ -53,7 +55,7 @@ internal data class CodeEditorScreen(
 
         LaunchedEffect(documentId) {
             viewModel.setCurrentDocumentId(documentId)
-            if (joinLink) viewModel.onOpenedByJoinLink(joinFrom)
+            if (joinLink) viewModel.onOpenedByJoinLink(joinFrom, joinInstance)
         }
 
         LaunchedEffect(viewModel) {
@@ -129,6 +131,12 @@ internal data class CodeEditorScreen(
                     onDismiss = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.DismissDialog) },
                 )
             }
+
+            is CodeEditorViewModel.DialogState.CursorColorPicker -> CursorColorDialog(
+                current = uiState.localColor,
+                onColorChosen = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.CursorColorChosen(it)) },
+                onDismiss = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.DismissDialog) },
+            )
 
             is CodeEditorViewModel.DialogState.PageReferencesPanel -> if (tree != null && documentId != null) {
                 PageReferencesDialog(

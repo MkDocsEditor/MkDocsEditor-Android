@@ -91,6 +91,7 @@ internal interface DocumentSessionEnvironment {
         serverConfig: BackendServerConfig,
         backendId: Long,
         listener: AutomergeDocumentSyncManager.Listener,
+        instanceId: String,
     ): SyncedDocument
 
     /** @param documentId the document of this session, null if none */
@@ -119,6 +120,7 @@ internal class DocumentSession(
     private val text: EditorTextController,
     private val environment: DocumentSessionEnvironment,
     private val host: Host,
+    private val instanceId: String,
 ) {
     /** what the session can not decide on its own */
     interface Host {
@@ -217,6 +219,9 @@ internal class DocumentSession(
     }
 
     private var syncedDocument: SyncedDocument? = null
+
+    /** kept here as well, a document that opens later has to start with it */
+    private var localColor: String? = null
 
     /** the backend of the open document */
     var backendId: Long? = null
@@ -328,9 +333,10 @@ internal class DocumentSession(
         backendId = backend.id
 
         val document = withContext(environment.ioDispatcher) {
-            environment.createSyncedDocument(documentId, serverConfig, backend.id, listener(documentId, backend.id))
+            environment.createSyncedDocument(documentId, serverConfig, backend.id, listener(documentId, backend.id), instanceId)
         }
         syncedDocument = document
+        document.onLocalColorChanged(localColor)
         // show the local copy right away, it may hold edits made offline
         text.bind(document)
         localCopyAvailable.value = document.hasLocalCopy
@@ -392,7 +398,7 @@ internal class DocumentSession(
             ghostTimers = ghosts.map { ghost ->
                 scope.launch {
                     delay(ghost.remainingMs)
-                    text.removeGhost(ghost.accountId)
+                    text.removeGhost(ghost.instanceId)
                 }
             }
         }
@@ -501,6 +507,15 @@ internal class DocumentSession(
 
     fun onLocalViewportChanged(top: Int?, bottom: Int?) {
         syncedDocument?.onLocalViewportChanged(top, bottom)
+    }
+
+    /** the id of this editor on the server */
+    val instanceIdInUse: String
+        get() = syncedDocument?.instanceIdInUse ?: instanceId
+
+    fun onLocalColorChanged(color: String?) {
+        localColor = color
+        syncedDocument?.onLocalColorChanged(color)
     }
 
     /** Writes the local copy to disk, so no edit is lost if the app gets killed */

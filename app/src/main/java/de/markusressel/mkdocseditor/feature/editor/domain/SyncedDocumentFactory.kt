@@ -19,6 +19,8 @@ internal class SyncedDocumentFactory @Inject constructor(
         serverConfig: BackendServerConfig,
         backendId: Long,
         listener: AutomergeDocumentSyncManager.Listener,
+        /** only an editor is an instance, a background upload shows up nowhere */
+        instanceId: String? = null,
     ): SyncedDocument = AutomergeDocumentSyncManager(
         websocketBaseUrl = serverConfig.websocketBaseUrl,
         // stored copies carry this, so it has to stay as it is even for an address that isn't clean
@@ -27,5 +29,6 @@ internal class SyncedDocumentFactory @Inject constructor(
         documentId = documentId,
         store = localDocumentStore.pinned(),
         listener = listener,
+        instanceId = instanceId,
     )
 }

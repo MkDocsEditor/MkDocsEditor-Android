@@ -15,7 +15,7 @@ class PendingJoinTest {
         override fun put(key: String, value: String) { values[key] = value }
         override fun remove(key: String) { values.remove(key) }
     }
-    private val target = JoinTarget(1, "doc", "sender")
+    private val target = JoinTarget(1, "doc", "sender", "instance")
 
     @Test
     fun `opens after signing in, also after the process was gone`() {

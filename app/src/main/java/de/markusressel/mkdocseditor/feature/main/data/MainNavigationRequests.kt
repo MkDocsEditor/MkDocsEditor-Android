@@ -66,7 +66,7 @@ internal fun OpenJoinedDocument(navigator: Navigator) {
     LaunchedEffect(target) {
         target?.let {
             pendingJoin.opened()
-            navigator.push(CodeEditorScreen(documentId = it.documentId, joinLink = true, joinFrom = it.from))
+            navigator.push(CodeEditorScreen(documentId = it.documentId, joinLink = true, joinFrom = it.from, joinInstance = it.instance))
         }
     }
 }

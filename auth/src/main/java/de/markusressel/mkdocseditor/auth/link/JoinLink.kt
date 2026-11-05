@@ -5,26 +5,30 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 
 /**
- * An invitation into a document, sent through a messenger: `{clientUrl}/join/{documentId}?from={accountId}`.
+ * An invitation into a document, sent through a messenger: `{clientUrl}/join/{documentId}?from={accountId}&instance={instanceId}`.
  * It holds no secret and grants nothing, access still needs an account. The app and the web client use the same format.
  *
  * @param clientUrl the web client this link points at, with a trailing slash: it names the server
  * @param from the account of the sender, to find where they are when the link is opened
+ * @param instance the client instance of the sender to follow, the sender may have several
  */
 data class JoinLink(
     val clientUrl: String,
     val documentId: String,
     val from: String?,
+    val instance: String? = null,
 )
 
 object JoinLinkParser {
 
     private const val PATH_SEGMENT = "join"
     private const val FROM = "from"
+    private const val INSTANCE = "instance"
 
     /** @return the link for [documentId] on the web client at [clientUrl], with or without a trailing slash */
-    fun build(clientUrl: String, documentId: String, from: String?): String {
-        val query = from?.let { "?$FROM=${encode(it)}" }.orEmpty()
+    fun build(clientUrl: String, documentId: String, from: String?, instance: String? = null): String {
+        val params = listOfNotNull(from?.let { "$FROM=${encode(it)}" }, instance?.let { "$INSTANCE=${encode(it)}" })
+        val query = if (params.isEmpty()) "" else params.joinToString("&", prefix = "?")
         return "${clientUrl.trimEnd('/')}/$PATH_SEGMENT/${encode(documentId)}$query"
     }
 
@@ -43,13 +47,15 @@ object JoinLinkParser {
 
         val port = if (uri.port != -1) ":${uri.port}" else ""
         val prefix = segments.dropLast(2).joinToString("") { "$it/" }
+        val query = uri.rawQuery?.split('&').orEmpty()
+        fun param(name: String) = query.firstOrNull { it.startsWith("$name=") }
+            ?.let { decode(it.removePrefix("$name=")) }
+            ?.takeIf { it.isNotBlank() }
         return JoinLink(
             clientUrl = "${uri.scheme.lowercase()}://${uri.host.lowercase()}$port/$prefix",
             documentId = documentId,
-            from = uri.rawQuery?.split('&')
-                ?.firstOrNull { it.startsWith("$FROM=") }
-                ?.let { decode(it.removePrefix("$FROM=")) }
-                ?.takeIf { it.isNotBlank() },
+            from = param(FROM),
+            instance = param(INSTANCE),
         )
     }
 

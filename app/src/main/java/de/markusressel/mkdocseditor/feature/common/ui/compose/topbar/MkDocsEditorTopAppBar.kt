@@ -125,11 +125,13 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
                             modifier = Modifier.align(Alignment.CenterVertically),
                             onShareClicked = { onActionClicked(sameKind(TopAppBarAction.CodeEditor.ShareLinkAction)) },
                             onShowInBrowserClicked = { onActionClicked(sameKind(TopAppBarAction.CodeEditor.ShowInBrowserAction)) },
+                            onCursorColorClicked = { onActionClicked(sameKind(TopAppBarAction.CodeEditor.CursorColorAction)) },
                         )
                     }
 
                     is TopAppBarAction.CodeEditor.ShareLinkAction,
                     is TopAppBarAction.CodeEditor.ShowInBrowserAction,
+                    is TopAppBarAction.CodeEditor.CursorColorAction,
                     is TopAppBarAction.CodeEditor.FollowUserAction -> Unit
 
                     is TopAppBarAction.CodeEditor.OnlineUsersAction -> {

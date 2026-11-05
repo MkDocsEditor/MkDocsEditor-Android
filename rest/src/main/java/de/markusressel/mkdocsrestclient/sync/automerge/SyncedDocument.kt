@@ -10,6 +10,9 @@ interface SyncedDocument : EditableTextDocument {
     val readOnly: Boolean
     val isConnected: Boolean
 
+    /** the id of this client instance on the server, it can differ from the one this client asked for */
+    val instanceIdInUse: String?
+
     /** Connects (and keeps reconnecting) until [disconnect] is called */
     fun connect()
 
@@ -19,6 +22,9 @@ interface SyncedDocument : EditableTextDocument {
 
     /** @param top the first visible character, null if the editor is not visible */
     fun onLocalViewportChanged(top: Int?, bottom: Int?)
+
+    /** @param color what other users see this client in, `#rrggbb`, null for the color of the account */
+    fun onLocalColorChanged(color: String?)
 
     /** Writes the local copy to disk right away */
     fun persistNow()
