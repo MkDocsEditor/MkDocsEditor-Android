@@ -23,17 +23,19 @@ import kotlin.math.roundToInt
  * @param layout the current text layout of the editor
  * @param remotePeers the other users in this document, resolved against the text of [layout]
  * @param background the editor background; peer colors are adjusted to stay visible on it
+ * @param alpha how much the cursors show, ghosts of users who left are faint
  */
 @Composable
 internal fun BoxScope.RemotePeersOverlay(
     layout: KodeEditorLayout,
     remotePeers: List<RemotePeer>,
     background: Color = MaterialTheme.colorScheme.background,
+    alpha: Float = 1f,
 ) {
     val textLength = layout.text.length
 
     remotePeers.forEach { peer ->
-        val color = peer.composeColor.readableOn(background)
+        val color = peer.composeColor.readableOn(background).copy(alpha = alpha)
         val selections = peer.selections.map {
             it.copy(
                 anchor = it.anchor.coerceIn(0, textLength),

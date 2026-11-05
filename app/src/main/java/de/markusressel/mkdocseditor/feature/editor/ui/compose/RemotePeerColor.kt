@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.contrastRatio
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.wcagLuminance
+import de.markusressel.mkdocsrestclient.sync.automerge.RemoteGhost
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 import kotlin.math.absoluteValue
 
@@ -85,3 +86,14 @@ internal fun parsePeerColor(color: String?): Color? {
         else -> null
     }
 }
+
+/** A ghost is shown like a user who is still here */
+internal fun RemoteGhost.asPeer() = RemotePeer(
+    clientId = "ghost-$accountId",
+    username = username,
+    displayName = displayName,
+    color = color,
+    selections = selections,
+    accountId = accountId,
+    viewport = viewport,
+)

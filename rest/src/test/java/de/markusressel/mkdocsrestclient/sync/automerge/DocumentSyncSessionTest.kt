@@ -18,7 +18,9 @@ class DocumentSyncSessionTest {
      * Records the callbacks and keeps an "editor" text in sync the way the app does
      */
     private class EditorListener : DocumentSyncSession.Listener {
-        var lastPositions = emptyMap<String, RemoteSelection>()
+        var lastPositions = emptyMap<String, RemotePosition>()
+        var ghosts = emptyList<RemoteGhost>()
+        var presenceKnown = false
         var editorText: String? = null
         var peers: List<RemotePeer> = emptyList()
         var readOnly = false
@@ -41,8 +43,16 @@ class DocumentSyncSessionTest {
             this.peers = peers
         }
 
-        override fun onLastPositionsChanged(positions: Map<String, RemoteSelection>) {
+        override fun onLastPositionsChanged(positions: Map<String, RemotePosition>) {
             lastPositions = positions
+        }
+
+        override fun onGhostsChanged(ghosts: List<RemoteGhost>) {
+            this.ghosts = ghosts
+        }
+
+        override fun onPresenceKnownChanged(known: Boolean) {
+            presenceKnown = known
         }
 
         override fun onReadOnlyChanged(readOnly: Boolean) {
@@ -275,11 +285,151 @@ class DocumentSyncSessionTest {
             """{"type":"presence-snapshot","documentId":"${server.documentId}","peers":[],"lastPositions":[
                 {"accountId":"gone","selections":[{"anchor":"end","head":"end"}]},
                 {"accountId":"deleted-text","selections":[{"anchor":"nonsense","head":"nonsense"}]},
-                {"accountId":"empty","selections":[]}
+                {"accountId":"empty","selections":[]},
+                {"accountId":"reader","selections":[],"viewport":{"top":"start","bottom":"end"}}
             ]}"""
         )
 
-        assertEquals(mapOf("gone" to RemoteSelection(3, 3)), listener.lastPositions)
+        assertEquals(
+            mapOf(
+                "gone" to RemotePosition(RemoteSelection(3, 3), null),
+                "reader" to RemotePosition(null, RemoteViewport(0, 3)),
+            ),
+            listener.lastPositions,
+        )
+    }
+
+    private fun connectedSession(listener: EditorListener, now: () -> Long = { 0 }): Pair<FakeSyncServer, DocumentSyncSession> {
+        val server = FakeSyncServer("abc")
+        val session = DocumentSyncSession(server.documentId, InMemoryDocumentStore(), listener, now = now)
+        server.connect(session)
+        server.pump()
+        return server to session
+    }
+
+    @Test
+    fun `a user who leaves stays as a ghost with their name`() {
+        val listener = EditorListener()
+        val (server, session) = connectedSession(listener)
+        session.onMessage(
+            """{"type":"presence","documentId":"${server.documentId}","clientId":"c1","accountId":"a1","username":"bob",
+                "selections":[{"anchor":"end","head":"end"}]}"""
+        )
+
+        session.onMessage(
+            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1","accountId":"a1",
+                "selections":[{"anchor":"end","head":"end"}],"viewport":{"top":"start","bottom":"end"},"ghostMs":60000}"""
+        )
+
+        assertTrue(listener.peers.isEmpty())
+        val ghost = listener.ghosts.single()
+        assertEquals("a1", ghost.accountId)
+        assertEquals("bob", ghost.username)
+        assertEquals(listOf(RemoteSelection(3, 3)), ghost.selections)
+        assertEquals(RemoteViewport(0, 3), ghost.viewport)
+        assertEquals(60000, ghost.remainingMs)
+    }
+
+    @Test
+    fun `a connection of a user who is still here leaves no ghost`() {
+        val listener = EditorListener()
+        val (server, session) = connectedSession(listener)
+        session.onMessage("""{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1"}""")
+
+        assertTrue(listener.ghosts.isEmpty())
+    }
+
+    @Test
+    fun `a ghost ends when the user is back`() {
+        val listener = EditorListener()
+        val (server, session) = connectedSession(listener)
+        session.onMessage(
+            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1","accountId":"a1","ghostMs":60000}"""
+        )
+        assertEquals(1, listener.ghosts.size)
+
+        session.onMessage(
+            """{"type":"presence","documentId":"${server.documentId}","clientId":"c2","accountId":"a1","username":"bob","selections":[]}"""
+        )
+
+        assertTrue(listener.ghosts.isEmpty())
+    }
+
+    @Test
+    fun `the ghosts of a snapshot have their time left, as long as the account is not online`() {
+        var time = 1000L
+        val listener = EditorListener()
+        val (server, session) = connectedSession(listener) { time }
+
+        session.onMessage(
+            """{"type":"presence-snapshot","documentId":"${server.documentId}",
+                "peers":[{"documentId":"${server.documentId}","clientId":"c1","accountId":"online","username":"o","selections":[]}],
+                "lastPositions":[
+                    {"accountId":"a1","username":"bob","displayName":"Bob","color":"#112233","selections":[],"viewport":{"top":"start","bottom":"end"},"ghostMs":20000},
+                    {"accountId":"online","selections":[],"ghostMs":20000},
+                    {"accountId":"long-gone","selections":[{"anchor":"end","head":"end"}]}
+                ]}"""
+        )
+
+        val ghost = listener.ghosts.single()
+        assertEquals("a1", ghost.accountId)
+        assertEquals("Bob", ghost.displayName)
+        assertEquals(20000, ghost.remainingMs)
+        assertTrue(listener.presenceKnown)
+
+        // a later change must not bring back the time, or an expired ghost
+        time += 5000
+        session.onMessage(
+            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1","accountId":"online","ghostMs":100}"""
+        )
+        assertEquals(15000, listener.ghosts.first { it.accountId == "a1" }.remainingMs)
+        time += 20000
+        session.onMessage(
+            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c2","accountId":"other","ghostMs":100}"""
+        )
+        assertEquals(listOf("other"), listener.ghosts.map { it.accountId })
+    }
+
+    @Test
+    fun `presence is not known while disconnected`() {
+        val listener = EditorListener()
+        val (server, session) = connectedSession(listener)
+        assertTrue(listener.presenceKnown)
+        session.onMessage(
+            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1","accountId":"a1","ghostMs":60000}"""
+        )
+
+        session.onDisconnected()
+
+        assertFalse(listener.presenceKnown)
+        assertTrue(listener.ghosts.isEmpty())
+    }
+
+    @Test
+    fun `the viewport reaches other users`() {
+        val server = FakeSyncServer("abc")
+        val aliceListener = EditorListener()
+        server.connect(DocumentSyncSession(server.documentId, InMemoryDocumentStore(), aliceListener), "alice")
+        val bob = DocumentSyncSession(server.documentId, InMemoryDocumentStore(), EditorListener())
+        server.connect(bob, "bob")
+        server.pump()
+
+        bob.updateLocalViewport(1, 2)
+        server.pump()
+
+        assertEquals(RemoteViewport(1, 2), aliceListener.peers.single().viewport)
+    }
+
+    @Test
+    fun `a viewport that goes away is sent as an explicit null, because a missing one keeps the last`() {
+        val listener = EditorListener()
+        val (server, session) = connectedSession(listener)
+
+        session.updateLocalViewport(null, null)
+        server.pump()
+
+        val sent = server.receivedPresences.last()
+        assertTrue(sent.contains("\"viewport\":null"), sent)
     }
 
     @Test

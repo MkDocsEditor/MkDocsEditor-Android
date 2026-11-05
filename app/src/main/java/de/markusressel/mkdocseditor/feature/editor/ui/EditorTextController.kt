@@ -14,7 +14,8 @@ import de.markusressel.mkdocseditor.feature.editor.domain.MarkdownFormatting
 import de.markusressel.mkdocsrestclient.sync.automerge.DocumentVersion
 import de.markusressel.mkdocsrestclient.sync.automerge.EditableTextDocument
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
-import de.markusressel.mkdocsrestclient.sync.automerge.RemoteSelection
+import de.markusressel.mkdocsrestclient.sync.automerge.RemoteGhost
+import de.markusressel.mkdocsrestclient.sync.automerge.RemotePosition
 import de.markusressel.mkdocsrestclient.sync.text.TextSplice
 import timber.log.Timber
 import de.markusressel.kodeeditor.library.compose.TextSplice as EditorSplice
@@ -32,6 +33,7 @@ import de.markusressel.kodeeditor.library.compose.TextSplice as EditorSplice
  * @param onPeersChanged the other users changed
  * @param onSelectionChanged the user moved the selection
  * @param onEdited an edit that does not come from the user typing in the editor was applied
+ * @param onLocalEdit the user changed the text, by typing or with an action
  * @param onDocumentChanged the text changed in any way
  */
 internal class EditorTextController(
@@ -39,6 +41,7 @@ internal class EditorTextController(
     private val onPeersChanged: () -> Unit = {},
     private val onSelectionChanged: (TextRange) -> Unit = {},
     private val onEdited: () -> Unit = {},
+    private val onLocalEdit: () -> Unit = {},
     private val onDocumentChanged: () -> Unit = {},
 ) {
     /** what the editor shows */
@@ -68,10 +71,20 @@ internal class EditorTextController(
      */
     val peers: State<List<RemotePeer>> = _peers
 
-    private val _lastPositions = mutableStateOf(emptyMap<String, RemoteSelection>())
+    private val _lastPositions = mutableStateOf(emptyMap<String, RemotePosition>())
 
-    /** where accounts last had a cursor, by account. Like [peers] this is snapshot state. */
-    val lastPositions: State<Map<String, RemoteSelection>> = _lastPositions
+    /** where accounts last were, by account. Like [peers] this is snapshot state. */
+    val lastPositions: State<Map<String, RemotePosition>> = _lastPositions
+
+    private val _ghosts = mutableStateOf(emptyList<RemoteGhost>())
+
+    /** the cursors of users who have left, for a while. Like [peers] this is snapshot state. */
+    val ghosts: State<List<RemoteGhost>> = _ghosts
+
+    private val _presenceKnown = mutableStateOf(false)
+
+    /** whether [peers] and [ghosts] say who is here. They are empty while disconnected, which says nothing about that. */
+    val presenceKnown: State<Boolean> = _presenceKnown
 
     private val _authorRuns = mutableStateOf(AuthorRuns())
 
@@ -120,6 +133,8 @@ internal class EditorTextController(
         this.document = document
         showInEditor { editorState.setText(document.text.orEmpty(), TextRange.Zero) }
         onPeersChanged(emptyList())
+        onGhostsChanged(emptyList())
+        onPresenceKnownChanged(false)
         forgetAuthors()
     }
 
@@ -185,8 +200,19 @@ internal class EditorTextController(
         _authorColors.value = authorColors + colors
     }
 
-    fun onLastPositionsChanged(positions: Map<String, RemoteSelection>) {
+    fun onLastPositionsChanged(positions: Map<String, RemotePosition>) {
         _lastPositions.value = positions
+    }
+
+    fun onGhostsChanged(ghosts: List<RemoteGhost>) {
+        _ghosts.value = ghosts
+        onPeersChanged()
+    }
+
+    fun removeGhost(accountId: String) = onGhostsChanged(ghosts.value.filterNot { it.accountId == accountId })
+
+    fun onPresenceKnownChanged(known: Boolean) {
+        _presenceKnown.value = known
     }
 
     fun onPeersChanged(peers: List<RemotePeer>) {
@@ -244,6 +270,7 @@ internal class EditorTextController(
         if (applied) {
             documentText = editorState.text
             moveAuthors(splice.start, splice.removedLength, splice.inserted.length)
+            onLocalEdit()
         } else {
             onTextReplaced()
         }

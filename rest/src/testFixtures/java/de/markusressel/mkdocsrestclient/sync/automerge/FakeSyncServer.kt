@@ -43,6 +43,9 @@ class FakeSyncServer(
     val colors = mutableMapOf<String, String>()
 
     val receivedHellos = mutableListOf<HelloMessage>()
+
+    /** as sent: a null field and a missing one mean different things */
+    val receivedPresences = mutableListOf<String>()
     val boundActors = mutableMapOf<String, String>()
 
     inner class Connection(
@@ -193,6 +196,7 @@ class FakeSyncServer(
             }
 
             MessageType.PRESENCE -> {
+                receivedPresences += message
                 val presence = moshi.adapter(PresenceMessage::class.java).fromJson(message)!!.copy(
                     clientId = connection.clientId,
                     username = connection.username,

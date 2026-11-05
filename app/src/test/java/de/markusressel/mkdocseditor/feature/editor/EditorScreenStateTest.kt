@@ -201,7 +201,11 @@ class EditorScreenStateTest {
 
         composeRule.onNodeWithContentDescription("Bold").performClick()
 
-        assertEquals(emptyList<CodeEditorViewModel.UiEvent>(), events)
+        // the editor always reports what it shows
+        assertEquals(
+            emptyList<CodeEditorViewModel.UiEvent>(),
+            events.filterNot { it is CodeEditorViewModel.UiEvent.VisibleRangeChanged },
+        )
     }
 
     @Test

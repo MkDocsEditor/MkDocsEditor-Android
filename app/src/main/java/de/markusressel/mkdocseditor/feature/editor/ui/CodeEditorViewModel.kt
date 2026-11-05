@@ -24,6 +24,7 @@ import de.markusressel.mkdocseditor.R
 import java.io.IOException
 import de.markusressel.mkdocseditor.auth.api.AuthApiException
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.text.TextRange
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.domain.EditorFiles
@@ -38,7 +39,11 @@ import de.markusressel.mkdocseditor.feature.editor.domain.UploadFilesUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.withFixedReference
 import de.markusressel.mkdocseditor.feature.editor.domain.CreateJoinLinkUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
-import de.markusressel.mkdocseditor.feature.editor.domain.senderPosition
+import de.markusressel.mkdocseditor.feature.editor.domain.isPresent
+import de.markusressel.mkdocseditor.feature.editor.domain.lastSenderPosition
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.asPeer
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.name
+import de.markusressel.mkdocsrestclient.sync.automerge.RemoteGhost
 import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.event.EventBusManager
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
@@ -60,6 +65,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -98,6 +104,10 @@ internal class CodeEditorViewModel @Inject constructor(
 
     private val openedByJoinLink = MutableStateFlow(false)
 
+    private val visibleRange = MutableStateFlow<TextRange?>(null)
+
+    private var followEnd: Job? = null
+
     private val _navigationEvents = Channel<NavigationRequest>(Channel.BUFFERED)
     internal val navigationEvents = _navigationEvents.receiveAsFlow()
 
@@ -124,6 +134,10 @@ internal class CodeEditorViewModel @Inject constructor(
         onPeersChanged = ::publishPeers,
         onSelectionChanged = { session.onLocalSelectionChanged(it.start, it.end) },
         onEdited = { saveEditorState() },
+        onLocalEdit = {
+            // only pauses following, and only while following does this touch the state with every key
+            if (uiState.value.following != null) _uiState.update { it.copy(followPauseRequest = it.followPauseRequest + 1) }
+        },
         onDocumentChanged = { authorshipRequests.update { it + 1 } },
     )
 
@@ -213,6 +227,8 @@ internal class CodeEditorViewModel @Inject constructor(
         }
 
         session.start()
+
+        launch { publishViewport() }
 
         launch {
             session.editable.collect { editable ->
@@ -331,7 +347,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
     /** the text stays out of [uiState]: a new state for every keystroke recomposes the whole screen */
     private fun publishPeers() {
-        _uiState.update { old -> old.copy(remotePeers = editorText.peers.value) }
+        _uiState.update { old -> old.copy(remotePeers = editorText.peers.value, ghosts = editorText.ghosts.value) }
     }
 
     private fun showSnackbar(snackbar: SnackbarData?) {
@@ -348,6 +364,8 @@ internal class CodeEditorViewModel @Inject constructor(
                 is UiEvent.TopAppBarActionClicked -> onTopAppBarActionClicked(event.action)
                 is UiEvent.ExpandableFabItemSelected -> when (event.item.id) {
                     CodeEditorFabId.DisableEditMode -> {
+                        // the other cursor only shows in the editor
+                        stopFollowing()
                         _uiState.update { it.copy(readOnlyEditorShown = false) }
                         disableEditMode()
                     }
@@ -384,6 +402,8 @@ internal class CodeEditorViewModel @Inject constructor(
                 is UiEvent.PanelUploadClicked -> showDialog(DialogState.ResourcePicker(editorText.selectedText, imagesOnly = false, startOnUpload = true))
 
                 is UiEvent.SnackbarActionClicked -> onSnackbarAction(event.snackbar)
+                is UiEvent.StopFollowingClicked -> stopFollowing()
+                is UiEvent.VisibleRangeChanged -> onVisibleRangeChanged(event.range)
             }
         }
     }
@@ -450,6 +470,7 @@ internal class CodeEditorViewModel @Inject constructor(
             is TopAppBarAction.CodeEditor.ShowInBrowserAction -> onOpenInBrowserClicked()
             is TopAppBarAction.CodeEditor.ShareLinkAction -> onShareLinkClicked()
             is TopAppBarAction.CodeEditor.MoreAction -> Unit
+            is TopAppBarAction.CodeEditor.FollowUserAction -> startFollowing(action.accountId)
             is TopAppBarAction.CodeEditor.OnlineUsersAction -> Unit
             is TopAppBarAction.CodeEditor.ConnectionAction -> onConnectionIconClicked(action.indicator)
             is TopAppBarAction.CodeEditor.PageReferencesAction -> showPageReferences()
@@ -583,18 +604,70 @@ internal class CodeEditorViewModel @Inject constructor(
     private suspend fun jumpToSender(from: String) {
         session.connectionStatus.first { it?.connected == true }
         val selectionBefore = editorText.selection
+        val known = withTimeoutOrNull(SENDER_WAIT_MS) {
+            snapshotFlow { editorText.presenceKnown.value }.first { it }
+        }
+        if (known != null && isPresent(editorPeers.value, editorText.ghosts.value, from)) {
+            startFollowing(from)
+            return
+        }
+        // fully away: the link only goes to where they last were
         val position = withTimeoutOrNull(SENDER_WAIT_MS) {
-            snapshotFlow { senderPosition(editorPeers.value, editorText.lastPositions.value, from) }.filterNotNull().first()
+            snapshotFlow { lastSenderPosition(editorText.lastPositions.value, from) }.filterNotNull().first()
         }
         // the user has started on their own: don't take the cursor away, and there is nothing to explain
         if (editorText.selection != selectionBefore) return
         if (position != null) {
             editorText.select(position, position)
-            // the editor only scrolls to the cursor while it has the focus
-            _uiState.update { it.copy(focusEditorRequest = it.focusEditorRequest + 1) }
+            _uiState.update { it.copy(jumpRequest = JumpRequest(position)) }
         } else {
             showMessage(context.getString(R.string.join_sender_not_here))
         }
+    }
+
+    private fun followedName(accountId: String): String =
+        editorPeers.value.firstOrNull { it.accountId == accountId }?.name
+            ?: editorText.ghosts.value.firstOrNull { it.accountId == accountId }?.asPeer()?.name
+            ?: ""
+
+    /** Following ends with the ghost. While disconnected nobody knows who is here, so that doesn't end it. */
+    private fun startFollowing(accountId: String) {
+        followEnd?.cancel()
+        // a reader of the rendered page gets the editor as well, only there the other cursor shows
+        _uiState.update { it.copy(following = Following(accountId, followedName(accountId)), readOnlyEditorShown = true) }
+        followEnd = launch {
+            snapshotFlow {
+                editorText.presenceKnown.value && !isPresent(editorPeers.value, editorText.ghosts.value, accountId)
+            }.first { it }
+            val name = uiState.value.following?.name.orEmpty()
+            stopFollowing()
+            showMessage(context.getString(R.string.follow_ended, name))
+        }
+    }
+
+    private fun stopFollowing() {
+        followEnd?.cancel()
+        followEnd = null
+        _uiState.update { it.copy(following = null) }
+    }
+
+    /** what the editor shows now, for other users who follow this one. Null while it is out of sight or not laid out. */
+    internal fun onVisibleRangeChanged(range: TextRange?) {
+        visibleRange.value = range
+    }
+
+    private suspend fun publishViewport() {
+        combine(visibleRange, uiState.map { it.editorShown }) { range, shown -> range.takeIf { shown } }
+            .distinctUntilChanged()
+            .conflate()
+            .collect { range ->
+                if (range == null || range.collapsed) {
+                    session.onLocalViewportChanged(null, null)
+                } else {
+                    session.onLocalViewportChanged(range.start, range.end - 1)
+                }
+                delay(VIEWPORT_THROTTLE_MS)
+            }
     }
 
     /**
@@ -689,6 +762,9 @@ internal class CodeEditorViewModel @Inject constructor(
         /** how long to wait for the sender of a join link to show up, they may have looked away for a moment */
         private const val SENDER_WAIT_MS = 5_000L
 
+        /** see docs/sync-protocol.md of the backend, "Viewport" */
+        private const val VIEWPORT_THROTTLE_MS = 500L
+
         internal val DisableEditModeFabConfig = FabConfig.Fab<CodeEditorFabId>(
             id = CodeEditorFabId.DisableEditMode,
             description = R.string.code_editor_disable_edit_mode,
@@ -706,6 +782,11 @@ internal class CodeEditorViewModel @Inject constructor(
         )
     }
 
+
+    /** A class and not just an index: going to the same place twice has to go there twice */
+    internal class JumpRequest(val position: Int)
+
+    data class Following(val accountId: String, val name: String)
 
     data class UiState(
         val currentDialogState: DialogState? = null,
@@ -757,8 +838,16 @@ internal class CodeEditorViewModel @Inject constructor(
         /** the editor stays when the edit mode ends by itself, see [onOpenedByJoinLink] */
         val readOnlyEditorShown: Boolean = false,
 
-        /** counts up to give the editor the focus */
-        val focusEditorRequest: Int = 0,
+        /** where the editor should go, once */
+        val jumpRequest: JumpRequest? = null,
+
+        val ghosts: List<RemoteGhost> = emptyList(),
+
+        /** whose view the editor follows */
+        val following: Following? = null,
+
+        /** counts up with each edit of the follower */
+        val followPauseRequest: Int = 0,
 
         /**
          * Other users in this document, with their resolved cursors and selections
@@ -774,7 +863,10 @@ internal class CodeEditorViewModel @Inject constructor(
          * There is no connection and no text to show
          */
         val isNoOfflineVersionVisible: Boolean = false,
-    )
+    ) {
+        val editorShown: Boolean
+            get() = editModeActive || editModeOpening || readOnlyEditorShown
+    }
 
     sealed class UiEvent {
         data object DismissDialog : UiEvent()
@@ -783,6 +875,8 @@ internal class CodeEditorViewModel @Inject constructor(
 
         data class ExpandableFabItemSelected(val item: FabConfig.Fab<CodeEditorFabId>) : UiEvent()
         data class SnackbarActionClicked(val snackbar: SnackbarData) : UiEvent()
+        data object StopFollowingClicked : UiEvent()
+        data class VisibleRangeChanged(val range: TextRange?) : UiEvent()
 
         data class FormatClicked(val action: FormatAction) : UiEvent()
         data object InsertLinkClicked : UiEvent()
