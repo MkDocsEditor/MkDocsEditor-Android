@@ -41,13 +41,13 @@ class KutePreferencesHolder @Inject constructor(
 
     val offlineCacheCategory by lazy {
         KuteCategory(
-            key = R.string.category_offline_cache_key,
+            key = context.getString(R.string.category_offline_cache_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_airplane),
             title = context.getString(R.string.category_offline_cache_title),
             description = context.getString(R.string.category_offline_cache_description),
             children = listOf(
                 KuteSection(
-                    key = R.string.section_background_sync_key,
+                    key = context.getString(R.string.section_background_sync_key),
                     title = context.getString(R.string.section_background_sync_title),
                     children = listOf(
                         offlineModePreference,
@@ -61,7 +61,7 @@ class KutePreferencesHolder @Inject constructor(
     }
 
     private val forceOfflineCacheUpdatePreference = KuteAction(
-        key = R.string.action_force_offline_cache_update_key,
+        key = context.getString(R.string.action_force_offline_cache_update_key),
         icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_refresh_sync),
         title = context.getString(R.string.action_force_offline_cache_update_title),
         description = context.getString(R.string.action_force_offline_cache_update_description),
@@ -71,7 +71,7 @@ class KutePreferencesHolder @Inject constructor(
     )
 
     private val clearOfflineCache by lazy {
-        KuteAction(key = R.string.clear_offline_cache_key,
+        KuteAction(key = context.getString(R.string.clear_offline_cache_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_delete),
             title = context.getString(R.string.clear_offline_cache_title),
             description = context.getString(R.string.clear_offline_cache_description),
@@ -83,6 +83,7 @@ class KutePreferencesHolder @Inject constructor(
 
     val lastOfflineCacheUpdate by lazy {
         LastOfflineCacheUpdatePreferenceItem(
+            key = context.getString(R.string.last_offline_cache_update_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_time),
             title = context.getString(R.string.category_offline_cache_title),
             dataProvider = dataProvider,
@@ -91,7 +92,7 @@ class KutePreferencesHolder @Inject constructor(
 
     val themePreference by lazy {
         KuteSingleSelectStringPreference(context = context,
-            key = R.string.theme_key,
+            key = context.getString(R.string.theme_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_colorize),
             title = context.getString(R.string.theme_title),
             possibleValues = mapOf(
@@ -106,7 +107,7 @@ class KutePreferencesHolder @Inject constructor(
     }
 
     val offlineModePreference by lazy {
-        KuteBooleanPreference(key = R.string.offline_mode_key,
+        KuteBooleanPreference(key = context.getString(R.string.offline_mode_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_airplane),
             title = context.getString(R.string.offline_mode_title),
             defaultValue = false,
@@ -118,13 +119,13 @@ class KutePreferencesHolder @Inject constructor(
 
     val uxCategory by lazy {
         KuteCategory(
-            key = R.string.category_ux_key,
+            key = context.getString(R.string.category_ux_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_edit),
             title = context.getString(R.string.category_ux_title),
             description = context.getString(R.string.category_ux_description),
             children = listOf(
                 KuteSection(
-                    key = R.string.section_code_editor_key,
+                    key = context.getString(R.string.section_code_editor_key),
                     title = context.getString(R.string.section_code_editor_title),
                     children = listOf(
                         codeEditorAlwaysOpenEditModePreference,
@@ -140,7 +141,7 @@ class KutePreferencesHolder @Inject constructor(
 
     private val generalUiSection by lazy {
         KuteSection(
-            key = R.string.section_general_ui_key,
+            key = context.getString(R.string.section_general_ui_key),
             title = context.getString(R.string.section_general_ui_title),
             children = listOf(
                 themePreference,
@@ -150,7 +151,7 @@ class KutePreferencesHolder @Inject constructor(
 
     val uiCategory by lazy {
         KuteCategory(
-            key = R.string.category_ui_key,
+            key = context.getString(R.string.category_ui_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_colorize),
             title = context.getString(R.string.category_ui_title),
             description = context.getString(R.string.category_ui_description),
@@ -161,7 +162,7 @@ class KutePreferencesHolder @Inject constructor(
     }
 
     val codeEditorAlwaysOpenEditModePreference by lazy {
-        KuteBooleanPreference(key = R.string.code_editor_always_edit_mode_key,
+        KuteBooleanPreference(key = context.getString(R.string.code_editor_always_edit_mode_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_edit),
             title = context.getString(R.string.code_editor_always_edit_mode_title),
             defaultValue = false,
@@ -171,7 +172,7 @@ class KutePreferencesHolder @Inject constructor(
     }
 
     val editorLineWrappingPreference by lazy {
-        KuteBooleanPreference(key = R.string.editor_line_wrapping_key,
+        KuteBooleanPreference(key = context.getString(R.string.editor_line_wrapping_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_wrap_text),
             title = context.getString(R.string.editor_line_wrapping_title),
             defaultValue = true,
@@ -180,7 +181,7 @@ class KutePreferencesHolder @Inject constructor(
     }
 
     val editorLineNumbersPreference by lazy {
-        KuteBooleanPreference(key = R.string.editor_line_numbers_key,
+        KuteBooleanPreference(key = context.getString(R.string.editor_line_numbers_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_format_list_numbered),
             title = context.getString(R.string.editor_line_numbers_title),
             defaultValue = true,
@@ -189,7 +190,7 @@ class KutePreferencesHolder @Inject constructor(
     }
 
     val editorTextSizePreference by lazy {
-        KuteNumberPreference(key = R.string.editor_text_size_key,
+        KuteNumberPreference(key = context.getString(R.string.editor_text_size_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_format_size),
             title = context.getString(R.string.editor_text_size_title),
             minimum = 10,
@@ -201,7 +202,7 @@ class KutePreferencesHolder @Inject constructor(
 
     val editorAuthorHighlightPreference by lazy {
         KuteSingleSelectStringPreference(context = context,
-            key = R.string.editor_author_highlight_key,
+            key = context.getString(R.string.editor_author_highlight_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_accounts),
             title = context.getString(R.string.editor_author_highlight_title),
             possibleValues = mapOf(
@@ -216,7 +217,7 @@ class KutePreferencesHolder @Inject constructor(
 
     val debugCategory by lazy {
         KuteCategory(
-            key = R.string.category_debug_key,
+            key = context.getString(R.string.category_debug_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_developer_board),
             title = context.getString(R.string.category_debug_title),
             description = context.getString(R.string.category_debug_description),
@@ -229,7 +230,7 @@ class KutePreferencesHolder @Inject constructor(
 
     val debugCommonSection by lazy {
         KuteSection(
-            key = R.string.section_debug_global_key,
+            key = context.getString(R.string.section_debug_global_key),
             title = context.getString(R.string.section_debug_global_title),
             children = listOf(
                 demoMode,
@@ -239,7 +240,7 @@ class KutePreferencesHolder @Inject constructor(
 
     val debugLoggingSection by lazy {
         KuteSection(
-            key = R.string.section_debug_logging_key,
+            key = context.getString(R.string.section_debug_logging_key),
             title = context.getString(R.string.section_debug_logging_title),
             children = listOf(
                 logNetworkRequests,
@@ -248,7 +249,7 @@ class KutePreferencesHolder @Inject constructor(
     }
 
     val demoMode by lazy {
-        KuteBooleanPreference(key = R.string.demo_mode_key,
+        KuteBooleanPreference(key = context.getString(R.string.demo_mode_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_present_to_all),
             title = context.getString(R.string.demo_mode_title),
             defaultValue = false,
@@ -263,7 +264,7 @@ class KutePreferencesHolder @Inject constructor(
     }
 
     val logNetworkRequests by lazy {
-        KuteBooleanPreference(key = R.string.log_network_requests_key,
+        KuteBooleanPreference(key = context.getString(R.string.log_network_requests_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_network),
             title = context.getString(R.string.log_network_requests_title),
             defaultValue = false,

@@ -32,6 +32,8 @@ data class ServerInfo(
     val passkeys: PasskeySupport = PasskeySupport(),
     val loginMethods: List<String> = emptyList(),
     val require2FA: Boolean = false,
+    /** optional API features of this server, see [ServerFeature] */
+    val features: List<String> = emptyList(),
 )
 
 /**
@@ -179,7 +181,56 @@ data class WhoAmI(
 /**
  * Stable error codes of the backend, see docs/auth.md section 10
  */
+object ServerFeature {
+    const val ACCESS_REQUESTS = "access-requests"
+}
+
+/** POST /auth/access-requests/. The token is only shown once. */
+@JsonClass(generateAdapter = true)
+data class AccessRequestCreated(
+    val requestId: String,
+    val token: String,
+    val status: String,
+    val expiresAt: Instant? = null,
+) {
+    override fun toString() = "AccessRequestCreated(requestId=$requestId, status=$status, expiresAt=$expiresAt, token=***)"
+}
+
+object AccessRequestState {
+    const val PENDING = "pending"
+    const val APPROVED = "approved"
+    const val REJECTED = "rejected"
+    const val EXPIRED = "expired"
+}
+
+/** POST /auth/access-requests/status/ */
+@JsonClass(generateAdapter = true)
+data class AccessRequestStatus(
+    val status: String,
+    val inviteToken: String? = null,
+) {
+    override fun toString() = "AccessRequestStatus(status=$status, inviteToken=***)"
+}
+
+/** An entry of GET /admin/access-requests/. Name and message are only claimed by the one who asks. */
+@JsonClass(generateAdapter = true)
+data class AccessRequestInfo(
+    val id: String,
+    val name: String,
+    val message: String? = null,
+    val status: String,
+    val createdAt: Instant? = null,
+    val expiresAt: Instant? = null,
+    val documentId: String? = null,
+    val documentPath: String? = null,
+    val invitedByAccountId: String? = null,
+    val invitedByName: String? = null,
+)
+
 object AuthErrorCode {
+    const val INVALID_ACCESS_REQUEST = "invalid-access-request"
+    const val ACCESS_REQUESTS_DISABLED = "access-requests-disabled"
+    const val TOO_MANY_ACCESS_REQUESTS = "too-many-access-requests"
     const val BAD_REQUEST = "bad-request"
     const val INVALID_USERNAME = "invalid-username"
     const val WEAK_PASSWORD = "weak-password"

@@ -71,6 +71,8 @@ data class PresenceMessage(
     val displayName: String? = null,
     val color: String? = null,
     val actorId: String? = null,
+    val accountId: String? = null,
+    val lastActiveAt: String? = null,
     val type: String = MessageType.PRESENCE,
 )
 
@@ -78,7 +80,15 @@ data class PresenceMessage(
 data class PresenceSnapshotMessage(
     val documentId: String,
     val peers: List<PresenceMessage> = emptyList(),
+    /** where accounts last had a cursor, also if they are gone. Servers before this field don't send it. */
+    val lastPositions: List<LastPositionMessage> = emptyList(),
     val type: String = MessageType.PRESENCE_SNAPSHOT,
+)
+
+@JsonClass(generateAdapter = true)
+data class LastPositionMessage(
+    val accountId: String,
+    val selections: List<SelectionMessage> = emptyList(),
 )
 
 @JsonClass(generateAdapter = true)

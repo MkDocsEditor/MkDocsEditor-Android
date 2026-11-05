@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.SlideTransition
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.FileBrowserScreen
+import de.markusressel.mkdocseditor.feature.main.data.OpenJoinedDocument
 
 @Composable
 internal fun MkDocsEditorListAndDocumentContent(
@@ -13,6 +14,7 @@ internal fun MkDocsEditorListAndDocumentContent(
 ) {
     Row(modifier = modifier) {
         Navigator(FileBrowserScreen) { navigator ->
+            OpenJoinedDocument(navigator)
             SlideTransition(navigator)
         }
 

@@ -5,8 +5,7 @@ import android.graphics.drawable.Drawable
 import de.markusressel.kutepreferences.core.persistence.KutePreferenceDataProvider
 import de.markusressel.kutepreferences.core.preference.KutePreferenceItem
 import de.markusressel.kutepreferences.core.preference.KutePreferenceListItem
-import de.markusressel.kutepreferences.core.search.SearchUtils.containsAnyWord
-import de.markusressel.mkdocseditor.R
+import de.markusressel.kutepreferences.core.search.KuteSearchContent
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -14,6 +13,7 @@ import javax.inject.Singleton
 
 @Singleton
 class LastOfflineCacheUpdatePreferenceItem(
+    override val key: String,
     override val icon: Drawable? = null,
     override val title: String,
     override val dataProvider: KutePreferenceDataProvider,
@@ -21,9 +21,6 @@ class LastOfflineCacheUpdatePreferenceItem(
     override val onClick: (() -> Unit)? = null,
     override val onLongClick: (() -> Unit)? = null,
 ) : KutePreferenceItem<Long>, KutePreferenceListItem {
-
-    override val key: Int
-        get() = R.string.last_offline_cache_update_key
 
     override val persistedValue by lazy { getPersistedValueFlow() }
 
@@ -38,8 +35,8 @@ class LastOfflineCacheUpdatePreferenceItem(
         }
     }
 
-    override fun search(searchTerm: String) =
-        listOf(title, description).containsAnyWord(searchTerm)
+    override val searchContent: KuteSearchContent
+        get() = KuteSearchContent(title = title, description = description)
 
     fun updateToNow() {
         persistValue(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC))

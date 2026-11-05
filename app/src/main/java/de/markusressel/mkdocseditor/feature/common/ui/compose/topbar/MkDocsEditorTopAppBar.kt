@@ -20,7 +20,7 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.OnlineUsersAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.ConnectionAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.AuthorHighlightAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.PageReferencesAction
-import de.markusressel.mkdocseditor.feature.editor.ui.compose.ShowInBrowserAction
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.MoreAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.EditorModeAction
 
 @Composable
@@ -120,12 +120,15 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
                         )
                     }
 
-                    is TopAppBarAction.CodeEditor.ShowInBrowserAction -> {
-                        ShowInBrowserAction(
+                    is TopAppBarAction.CodeEditor.MoreAction -> {
+                        MoreAction(
                             modifier = Modifier.align(Alignment.CenterVertically),
-                            onClick = { onActionClicked(action) }
+                            onShareClicked = { onActionClicked(sameKind(TopAppBarAction.CodeEditor.ShareLinkAction)) },
+                            onShowInBrowserClicked = { onActionClicked(sameKind(TopAppBarAction.CodeEditor.ShowInBrowserAction)) },
                         )
                     }
+
+                    is TopAppBarAction.CodeEditor.ShareLinkAction, is TopAppBarAction.CodeEditor.ShowInBrowserAction -> Unit
 
                     is TopAppBarAction.CodeEditor.OnlineUsersAction -> {
                         OnlineUsersAction(
@@ -143,3 +146,7 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
         )
     )
 }
+
+/** The entries of a menu action are actions of the same kind as the menu itself */
+@Suppress("UNCHECKED_CAST")
+private fun <T : TopAppBarAction> sameKind(action: TopAppBarAction): T = action as T

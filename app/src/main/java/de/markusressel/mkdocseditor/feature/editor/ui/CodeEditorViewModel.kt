@@ -21,6 +21,9 @@ import com.github.ajalt.timberkt.Timber
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.R
+import java.io.IOException
+import de.markusressel.mkdocseditor.auth.api.AuthApiException
+import androidx.compose.runtime.snapshotFlow
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.domain.EditorFiles
@@ -33,7 +36,9 @@ import de.markusressel.mkdocseditor.feature.editor.domain.PreviewLinks
 import de.markusressel.mkdocseditor.feature.editor.domain.PageReferencesLoader
 import de.markusressel.mkdocseditor.feature.editor.domain.UploadFilesUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.withFixedReference
+import de.markusressel.mkdocseditor.feature.editor.domain.CreateJoinLinkUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocumentInBrowserUseCase
+import de.markusressel.mkdocseditor.feature.editor.domain.senderPosition
 import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.event.EventBusManager
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
@@ -54,6 +59,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.Job
@@ -76,6 +83,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private val eventBusManager: EventBusManager,
     private val context: Context,
     private val getAuthorshipUseCase: GetAuthorshipUseCase,
+    private val createJoinLinkUseCase: CreateJoinLinkUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -87,6 +95,8 @@ internal class CodeEditorViewModel @Inject constructor(
     internal val uiState = _uiState.asStateFlow()
 
     private var saveJob: Job? = null
+
+    private val openedByJoinLink = MutableStateFlow(false)
 
     private val _navigationEvents = Channel<NavigationRequest>(Channel.BUFFERED)
     internal val navigationEvents = _navigationEvents.receiveAsFlow()
@@ -227,11 +237,12 @@ internal class CodeEditorViewModel @Inject constructor(
                 session.connectionStatus,
                 session.editable,
                 sessionEnvironment.offlineMode,
-            ) { status, editable, offlineModeEnabled ->
+                openedByJoinLink,
+            ) { status, editable, offlineModeEnabled, _ ->
                 (status?.connected ?: false)
                     && editable
                     && offlineModeEnabled.not()
-                    && preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
+                    && (preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value || openedByJoinLink.value)
             }.distinctUntilChanged().collect {
                 // only opens the edit mode; losing the connection keeps it, because
                 // edits are kept in the local copy and synced on reconnect
@@ -336,7 +347,10 @@ internal class CodeEditorViewModel @Inject constructor(
 
                 is UiEvent.TopAppBarActionClicked -> onTopAppBarActionClicked(event.action)
                 is UiEvent.ExpandableFabItemSelected -> when (event.item.id) {
-                    CodeEditorFabId.DisableEditMode -> disableEditMode()
+                    CodeEditorFabId.DisableEditMode -> {
+                        _uiState.update { it.copy(readOnlyEditorShown = false) }
+                        disableEditMode()
+                    }
                 }
 
                 is UiEvent.FormatClicked -> editorText.applyFormat(event.action)
@@ -434,6 +448,8 @@ internal class CodeEditorViewModel @Inject constructor(
                 else -> _uiState.update { it.copy(splitMode = mode.next()) }
             }
             is TopAppBarAction.CodeEditor.ShowInBrowserAction -> onOpenInBrowserClicked()
+            is TopAppBarAction.CodeEditor.ShareLinkAction -> onShareLinkClicked()
+            is TopAppBarAction.CodeEditor.MoreAction -> Unit
             is TopAppBarAction.CodeEditor.OnlineUsersAction -> Unit
             is TopAppBarAction.CodeEditor.ConnectionAction -> onConnectionIconClicked(action.indicator)
             is TopAppBarAction.CodeEditor.PageReferencesAction -> showPageReferences()
@@ -546,6 +562,42 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     /**
+     * The document was opened through a join link: the invited person is here to edit, whatever the settings say, and
+     * looks at what the sender is looking at. Only once, so a recreated screen does not move the cursor again.
+     *
+     * @param from the account of the sender, null if the link names none
+     */
+    fun onOpenedByJoinLink(from: String?) {
+        if (openedByJoinLink.value) return
+        openedByJoinLink.value = true
+        // someone who can only read still gets the editor, because only there the cursor shows where the sender is
+        _uiState.update { it.copy(readOnlyEditorShown = true) }
+        if (!sessionEnvironment.offlineMode.value && !uiState.value.editModeActive) {
+            _uiState.update {
+                it.copy(editModeOpening = true, isBottomAppBarVisible = true, fabConfig = FabConfig(right = listOf(DisableEditModeFabConfig)))
+            }
+        }
+        from?.let { launch { jumpToSender(it) } }
+    }
+
+    private suspend fun jumpToSender(from: String) {
+        session.connectionStatus.first { it?.connected == true }
+        val selectionBefore = editorText.selection
+        val position = withTimeoutOrNull(SENDER_WAIT_MS) {
+            snapshotFlow { senderPosition(editorPeers.value, editorText.lastPositions.value, from) }.filterNotNull().first()
+        }
+        // the user has started on their own: don't take the cursor away, and there is nothing to explain
+        if (editorText.selection != selectionBefore) return
+        if (position != null) {
+            editorText.select(position, position)
+            // the editor only scrolls to the cursor while it has the focus
+            _uiState.update { it.copy(focusEditorRequest = it.focusEditorRequest + 1) }
+        } else {
+            showMessage(context.getString(R.string.join_sender_not_here))
+        }
+    }
+
+    /**
      * Called when the editor screen is no longer visible.
      * Writes the local copy to disk, so no edit is lost if the app gets killed.
      */
@@ -571,6 +623,22 @@ internal class CodeEditorViewModel @Inject constructor(
         saveJob = launch {
             delay(SAVE_DELAY_MS)
             dataRepository.saveEditorState(documentId = documentId, text = text, selection = selection)
+        }
+    }
+
+    private suspend fun onShareLinkClicked() {
+        val documentId = session.documentId.value ?: return
+        try {
+            when (val link = createJoinLinkUseCase(documentId)) {
+                null -> showMessage(context.getString(R.string.share_document_link_unavailable))
+                else -> _navigationEvents.send(NavigationRequest.ShareLink(link))
+            }
+        } catch (e: IOException) {
+            Timber.w(e) { "Creating the join link failed" }
+            showMessage(context.getString(R.string.share_document_link_failed))
+        } catch (e: AuthApiException) {
+            Timber.w(e) { "Creating the join link failed" }
+            showMessage(context.getString(R.string.share_document_link_failed))
         }
     }
 
@@ -617,6 +685,9 @@ internal class CodeEditorViewModel @Inject constructor(
 
     companion object {
         private const val SAVE_DELAY_MS = 2_000L
+
+        /** how long to wait for the sender of a join link to show up, they may have looked away for a moment */
+        private const val SENDER_WAIT_MS = 5_000L
 
         internal val DisableEditModeFabConfig = FabConfig.Fab<CodeEditorFabId>(
             id = CodeEditorFabId.DisableEditMode,
@@ -683,6 +754,12 @@ internal class CodeEditorViewModel @Inject constructor(
 
         val snackbar: SnackbarData? = null,
 
+        /** the editor stays when the edit mode ends by itself, see [onOpenedByJoinLink] */
+        val readOnlyEditorShown: Boolean = false,
+
+        /** counts up to give the editor the focus */
+        val focusEditorRequest: Int = 0,
+
         /**
          * Other users in this document, with their resolved cursors and selections
          */
@@ -746,6 +823,9 @@ internal class CodeEditorViewModel @Inject constructor(
         data class OpenDocument(val documentId: String) : NavigationRequest
         /** leave the editor, e.g. to show a folder in the file browser */
         data object Close : NavigationRequest
+        data class ShareLink(val link: String) : NavigationRequest {
+            override fun toString() = "ShareLink"
+        }
     }
 
     sealed class CodeEditorFabId {

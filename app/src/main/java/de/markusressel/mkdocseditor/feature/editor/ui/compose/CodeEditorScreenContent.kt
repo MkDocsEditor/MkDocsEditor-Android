@@ -52,6 +52,10 @@ import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesign
 import de.markusressel.kodeeditor.library.compose.KodeEditorListener
 import de.markusressel.kodeeditor.library.compose.KodeEditorState
 import de.markusressel.kodeeditor.library.compose.TextSplice
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
@@ -87,7 +91,7 @@ internal fun CodeEditorScreenContent(
     val configuration = LocalConfiguration.current
     val splitMode = uiState.splitMode ?: defaultSplitMode(configuration.screenWidthDp, configuration.screenHeightDp)
 
-    val editorShown = uiState.editModeActive || uiState.editModeOpening
+    val editorShown = uiState.editModeActive || uiState.editModeOpening || uiState.readOnlyEditorShown
 
     // at the start of the animation, so the keyboard does not wait for the editor to leave
     val focusManager = LocalFocusManager.current
@@ -136,7 +140,7 @@ internal fun CodeEditorScreenContent(
                             // one place for both, so nothing moves when the mode changes
                             TopAppBarAction.CodeEditor.EditorModeAction(splitMode.takeIf { editorShown })
                                 .takeIf { editorShown || uiState.canEdit },
-                            TopAppBarAction.CodeEditor.ShowInBrowserAction
+                            TopAppBarAction.CodeEditor.MoreAction,
                         ),
                         onActionClicked = {
                             onUiEvent(CodeEditorViewModel.UiEvent.TopAppBarActionClicked(it))
@@ -209,6 +213,7 @@ internal fun CodeEditorScreenContent(
                             authorRuns = authorRuns,
                             authorColors = authorColors,
                             readOnly = !uiState.editModeActive,
+                            focusRequest = uiState.focusEditorRequest,
                         )
                     },
                     preview = {
@@ -351,18 +356,36 @@ internal fun PageReferencesAction(
 }
 
 @Composable
-internal fun ShowInBrowserAction(
+internal fun MoreAction(
     modifier: Modifier,
-    onClick: () -> Unit
+    onShareClicked: () -> Unit,
+    onShowInBrowserClicked: () -> Unit,
 ) {
-    IconButton(
-        modifier = modifier,
-        onClick = onClick
-    ) {
-        Image(
-            asset = MaterialDesignIconic.Icon.gmi_open_in_browser,
-            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
-        )
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = modifier) {
+        IconButton(onClick = { expanded = true }) {
+            Image(
+                asset = MaterialDesignIconic.Icon.gmi_more_vert,
+                contentDescription = stringResource(R.string.more_actions),
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.share_document_link)) },
+                onClick = {
+                    expanded = false
+                    onShareClicked()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.open_in_browser)) },
+                onClick = {
+                    expanded = false
+                    onShowInBrowserClicked()
+                },
+            )
+        }
     }
 }
 

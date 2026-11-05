@@ -14,6 +14,7 @@ import de.markusressel.mkdocseditor.feature.editor.domain.MarkdownFormatting
 import de.markusressel.mkdocsrestclient.sync.automerge.DocumentVersion
 import de.markusressel.mkdocsrestclient.sync.automerge.EditableTextDocument
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
+import de.markusressel.mkdocsrestclient.sync.automerge.RemoteSelection
 import de.markusressel.mkdocsrestclient.sync.text.TextSplice
 import timber.log.Timber
 import de.markusressel.kodeeditor.library.compose.TextSplice as EditorSplice
@@ -66,6 +67,11 @@ internal class EditorTextController(
      * part of a flow: a flow would deliver it a frame after the text it belongs to.
      */
     val peers: State<List<RemotePeer>> = _peers
+
+    private val _lastPositions = mutableStateOf(emptyMap<String, RemoteSelection>())
+
+    /** where accounts last had a cursor, by account. Like [peers] this is snapshot state. */
+    val lastPositions: State<Map<String, RemoteSelection>> = _lastPositions
 
     private val _authorRuns = mutableStateOf(AuthorRuns())
 
@@ -177,6 +183,10 @@ internal class EditorTextController(
 
     fun onAuthorColorsChanged(colors: Map<String, String?>) {
         _authorColors.value = authorColors + colors
+    }
+
+    fun onLastPositionsChanged(positions: Map<String, RemoteSelection>) {
+        _lastPositions.value = positions
     }
 
     fun onPeersChanged(peers: List<RemotePeer>) {

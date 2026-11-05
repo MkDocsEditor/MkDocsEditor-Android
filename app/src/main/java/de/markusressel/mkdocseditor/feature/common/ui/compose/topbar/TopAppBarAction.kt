@@ -8,6 +8,9 @@ import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 sealed interface TopAppBarAction {
     sealed interface CodeEditor : TopAppBarAction {
         data object ShowInBrowserAction : CodeEditor
+        data object ShareLinkAction : CodeEditor
+        /** a menu with [ShareLinkAction] and [ShowInBrowserAction], so that a short title still fits */
+        data object MoreAction : CodeEditor
         /** @param mode the arrangement of the edit mode, null while reading */
         data class EditorModeAction(val mode: SplitMode?) : CodeEditor
         data class OnlineUsersAction(val remotePeers: List<RemotePeer>) : CodeEditor

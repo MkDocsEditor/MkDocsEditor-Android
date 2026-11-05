@@ -37,6 +37,11 @@ class OkHttpAuthApi(
     private val revokedAdapter = moshi.adapter(RevokedResponse::class.java)
     private val serverInfoAdapter = moshi.adapter(ServerInfo::class.java)
     private val deviceLinkAdapter = moshi.adapter(DeviceLinkCreated::class.java)
+    private val accessRequestCreatedAdapter = moshi.adapter(AccessRequestCreated::class.java)
+    private val accessRequestStatusAdapter = moshi.adapter(AccessRequestStatus::class.java)
+    private val accessRequestsAdapter = moshi.adapter<List<AccessRequestInfo>>(
+        Types.newParameterizedType(List::class.java, AccessRequestInfo::class.java)
+    )
 
     override suspend fun status(): AuthStatus =
         requireNotNull(http.call("GET", "auth/status/", response = statusAdapter))
@@ -93,6 +98,42 @@ class OkHttpAuthApi(
             put("sessionType", SESSION_TYPE)
             put("deviceName", deviceName)
         }
+
+    override suspend fun createAccessRequest(name: String, message: String?, documentId: String?, invitedBy: String?): AccessRequestCreated =
+        requireNotNull(
+            http.call(
+                "POST",
+                "auth/access-requests/",
+                body = jsonObject {
+                    put("name", name)
+                    put("message", message)
+                    put("documentId", documentId)
+                    put("invitedBy", invitedBy)
+                },
+                response = accessRequestCreatedAdapter,
+            )
+        )
+
+    override suspend fun accessRequestStatus(requestToken: String): AccessRequestStatus = requireNotNull(
+        http.call(
+            "POST",
+            "auth/access-requests/status/",
+            body = jsonObject { put("token", requestToken) },
+            response = accessRequestStatusAdapter,
+        )
+    )
+
+    override suspend fun pendingAccessRequests(token: String): List<AccessRequestInfo> = requireNotNull(
+        http.call("GET", "admin/access-requests/?status=${AccessRequestState.PENDING}", token = token, response = accessRequestsAdapter)
+    )
+
+    override suspend fun approveAccessRequest(token: String, id: String, role: String) {
+        http.call<Unit>("POST", "admin/access-requests/$id/approve/", token = token, body = jsonObject { put("role", role) })
+    }
+
+    override suspend fun rejectAccessRequest(token: String, id: String) {
+        http.call<Unit>("POST", "admin/access-requests/$id/reject/", token = token)
+    }
 
     override suspend fun inspectLink(linkToken: String): LinkInfo = requireNotNull(
         http.call("POST", "auth/link/inspect/", body = jsonObject { put("token", linkToken) }, response = linkAdapter)

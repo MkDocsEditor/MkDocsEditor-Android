@@ -2,4 +2,5 @@
 <!-- Android 11 and older, see data_extraction_rules.xml -->
 <full-backup-content>
     <exclude domain="sharedpref" path="auth_sessions.xml" />
+    <exclude domain="sharedpref" path="access_requests.xml" />
 </full-backup-content>

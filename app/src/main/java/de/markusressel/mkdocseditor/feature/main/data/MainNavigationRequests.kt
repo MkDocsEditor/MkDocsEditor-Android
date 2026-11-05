@@ -1,12 +1,18 @@
 package de.markusressel.mkdocseditor.feature.main.data
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import cafe.adriel.voyager.navigator.Navigator
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreen
+import de.markusressel.mkdocseditor.feature.join.data.PendingJoin
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -45,6 +51,23 @@ class MainNavigationRequests @Inject constructor() {
     @InstallIn(SingletonComponent::class)
     interface Accessor {
         fun mainNavigationRequests(): MainNavigationRequests
+        fun pendingJoin(): PendingJoin
+    }
+}
+
+/** opens the document of a join link in the editors on top of this file browser */
+@Composable
+internal fun OpenJoinedDocument(navigator: Navigator) {
+    val context = LocalContext.current.applicationContext
+    val pendingJoin = remember(context) {
+        EntryPointAccessors.fromApplication(context, MainNavigationRequests.Accessor::class.java).pendingJoin()
+    }
+    val target by pendingJoin.open.collectAsState()
+    LaunchedEffect(target) {
+        target?.let {
+            pendingJoin.opened()
+            navigator.push(CodeEditorScreen(documentId = it.documentId, joinLink = true, joinFrom = it.from))
+        }
     }
 }
 
