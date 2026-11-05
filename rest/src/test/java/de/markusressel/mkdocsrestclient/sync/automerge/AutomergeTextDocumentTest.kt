@@ -138,6 +138,23 @@ class AutomergeTextDocumentTest {
     }
 
     @Test
+    fun `a position inside an emoji at the end gets a cursor at that emoji`() {
+        val doc = AutomergeTextDocument.load(serverDocument("ab😀"))
+
+        // between the two UTF-16 halves of the emoji, as the bottom of a viewport can be
+        val cursor = doc.makeCursor(3)
+
+        assertEquals(2, doc.lookupCursor(cursor))
+    }
+
+    @Test
+    fun `a position inside an emoji in the middle gets a cursor at that emoji`() {
+        val doc = AutomergeTextDocument.load(serverDocument("a😀b"))
+
+        assertEquals(1, doc.lookupCursor(doc.makeCursor(2)))
+    }
+
+    @Test
     fun `an unknown cursor does not resolve`() {
         val local = AutomergeTextDocument.load(serverDocument("abc"))
         val other = AutomergeTextDocument.load(serverDocument("xyz"))
