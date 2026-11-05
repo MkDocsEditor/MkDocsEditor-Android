@@ -764,11 +764,18 @@ class DocumentSyncSession(
         if (syncState == null) {
             return
         }
-        val selections = localSelection?.let { (anchor, head) ->
-            listOf(SelectionMessage(anchor = document.makeCursor(anchor), head = document.makeCursor(head)))
-        } ?: emptyList()
-        val viewport = localViewport?.let { (top, bottom) ->
-            ViewportMessage(top = document.makeCursor(top), bottom = document.makeCursor(bottom))
+        // a cursor runs on a timer, outside of any caller that could catch a failure, so one must not end the app
+        val (selections, viewport) = try {
+            val selections = localSelection?.let { (anchor, head) ->
+                listOf(SelectionMessage(anchor = document.makeCursor(anchor), head = document.makeCursor(head)))
+            } ?: emptyList()
+            val viewport = localViewport?.let { (top, bottom) ->
+                ViewportMessage(top = document.makeCursor(top), bottom = document.makeCursor(bottom))
+            }
+            selections to viewport
+        } catch (e: Exception) {
+            Timber.e(e, "Could not create the cursors of the local presence")
+            return
         }
         val message = LocalPresenceMessage(documentId = documentId, selections = selections, viewport = viewport, instanceColor = localColor)
         send?.invoke(moshi.adapter(LocalPresenceMessage::class.java).serializeNulls().toJson(message))

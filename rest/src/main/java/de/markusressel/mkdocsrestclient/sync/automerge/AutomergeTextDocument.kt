@@ -178,7 +178,12 @@ class AutomergeTextDocument private constructor(
      */
     fun makeCursor(index: Int): String {
         val current = text
-        val clamped = index.coerceIn(0, current.length)
+        var clamped = index.coerceIn(0, current.length)
+        // a position between the two halves of a surrogate pair means that character: counted from there, its first
+        // half would be a code point of its own, and one behind the last character is out of bounds for Automerge
+        if (clamped in 1 until current.length && current[clamped].isLowSurrogate() && current[clamped - 1].isHighSurrogate()) {
+            clamped--
+        }
         if (clamped == current.length) {
             // automerge-java cannot create a cursor behind the last character
             return if (clamped == 0) CURSOR_START else CURSOR_END
