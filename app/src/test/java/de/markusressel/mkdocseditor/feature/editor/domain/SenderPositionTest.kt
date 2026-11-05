@@ -87,4 +87,22 @@ class SenderPositionTest {
         assertEquals(7, lastSenderPosition(positions, "reader"))
         assertNull(lastSenderPosition(positions, "unknown"))
     }
+
+    @Test
+    fun `the first manual move pauses following for the shortest time`() {
+        assertEquals(5_000L, nextFollowPauseMs(FOLLOW_PAUSE_MIN_MS, sinceResumeMs = null))
+    }
+
+    @Test
+    fun `moving again right after the resume doubles the pause up to a limit`() {
+        assertEquals(10_000L, nextFollowPauseMs(5_000L, sinceResumeMs = 2_000L))
+        assertEquals(20_000L, nextFollowPauseMs(10_000L, sinceResumeMs = 9_999L))
+        assertEquals(40_000L, nextFollowPauseMs(20_000L, sinceResumeMs = 0L))
+        assertEquals(40_000L, nextFollowPauseMs(40_000L, sinceResumeMs = 0L))
+    }
+
+    @Test
+    fun `moving long after the resume starts over`() {
+        assertEquals(5_000L, nextFollowPauseMs(40_000L, sinceResumeMs = 10_000L))
+    }
 }

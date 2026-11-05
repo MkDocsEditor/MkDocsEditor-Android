@@ -216,7 +216,6 @@ internal fun CodeEditorScreenContent(
                             jumpRequest = uiState.jumpRequest,
                             ghosts = uiState.ghosts,
                             following = uiState.following,
-                            followPauseRequest = uiState.followPauseRequest,
                             onStopFollowing = { onUiEvent(CodeEditorViewModel.UiEvent.StopFollowingClicked) },
                             onVisibleRangeChanged = { onUiEvent(CodeEditorViewModel.UiEvent.VisibleRangeChanged(it)) },
                         )

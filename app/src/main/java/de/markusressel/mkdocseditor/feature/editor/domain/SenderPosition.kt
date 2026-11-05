@@ -41,3 +41,22 @@ internal fun followTarget(peers: List<RemotePeer>, ghosts: List<RemoteGhost>, ac
  */
 internal fun lastSenderPosition(lastPositions: Map<String, RemotePosition>, from: String): Int? =
     lastPositions[from]?.let { it.selection?.head ?: it.viewport?.top }
+
+/** Same in the web client */
+internal const val FOLLOW_PAUSE_MIN_MS = 5_000L
+private const val FOLLOW_PAUSE_MAX_MS = 40_000L
+private const val FOLLOW_RESUME_SETTLE_MS = 10_000L
+
+/**
+ * How long a manual move pauses following. A move right after following resumed means the resume came too early, so the
+ * pause gets longer each time.
+ *
+ * @param currentMs the pause of the last manual move
+ * @param sinceResumeMs how long following has been running again, null if it never paused
+ */
+internal fun nextFollowPauseMs(currentMs: Long, sinceResumeMs: Long?): Long =
+    if (sinceResumeMs != null && sinceResumeMs < FOLLOW_RESUME_SETTLE_MS) {
+        (currentMs * 2).coerceAtMost(FOLLOW_PAUSE_MAX_MS)
+    } else {
+        FOLLOW_PAUSE_MIN_MS
+    }
