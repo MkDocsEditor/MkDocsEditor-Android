@@ -30,6 +30,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
+import de.markusressel.kodeeditor.library.compose.KodeEditorViewState
 import de.markusressel.kodeeditor.library.compose.rememberKodeEditorViewState
 import de.markusressel.mkdocseditor.R
 import android.os.SystemClock
@@ -40,6 +41,7 @@ import de.markusressel.mkdocseditor.feature.editor.domain.followTarget
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
 import de.markusressel.mkdocsrestclient.sync.automerge.RemoteGhost
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -95,13 +97,21 @@ internal fun CodeEditorLayout(
     }
     val followTarget = following?.let { followTarget(remotePeers.value, ghosts, it.instanceId) }
     LaunchedEffect(followTarget, followPaused) {
-        if (followPaused) return@LaunchedEffect
-        when (followTarget) {
-            is FollowTarget.Range -> viewState.scrollToRange(followTarget.top, followTarget.bottom + 1)
-            is FollowTarget.Position -> viewState.scrollToPosition(followTarget.position)
-            null -> Unit
+        if (followPaused || followTarget == null) return@LaunchedEffect
+        if (viewState.visibleRange != null) {
+            viewState.scrollTo(followTarget, animate = true)
+            return@LaunchedEffect
+        }
+        // an editor that following has just opened grows in its first layouts, and they move its view back to the top
+        withTimeoutOrNull(OPENING_SETTLE_MS) {
+            snapshotFlow { viewState.visibleRange }.collect { visible ->
+                if (!viewState.isUserMovingView && (visible == null || !followTarget.isIn(visible))) {
+                    viewState.scrollTo(followTarget, animate = false)
+                }
+            }
         }
     }
+
 
     val palette = rememberEditorPalette()
     val colorScheme = remember(palette) { EditorColorScheme(palette) }
@@ -193,6 +203,16 @@ internal fun CodeEditorLayout(
     }
 }
 
+private fun FollowTarget.isIn(visible: TextRange): Boolean = when (this) {
+    is FollowTarget.Range -> (top + bottom) / 2 in visible.start..visible.end
+    is FollowTarget.Position -> position in visible.start..visible.end
+}
+
+private suspend fun KodeEditorViewState.scrollTo(target: FollowTarget, animate: Boolean): Boolean = when (target) {
+    is FollowTarget.Range -> scrollToRange(target.top, target.bottom + 1, animate)
+    is FollowTarget.Position -> scrollToPosition(target.position, animate)
+}
+
 /**
  * The editor palette that matches the app theme (not only the system setting)
  */
@@ -213,3 +233,4 @@ internal data class EditorSettings(
 private val NoAuthorRuns: State<AuthorRuns> = mutableStateOf(AuthorRuns())
 private val AUTHOR_STRIP_WIDTH = 3.dp
 private const val GHOST_ALPHA = 0.4f
+private const val OPENING_SETTLE_MS = 1_000L
