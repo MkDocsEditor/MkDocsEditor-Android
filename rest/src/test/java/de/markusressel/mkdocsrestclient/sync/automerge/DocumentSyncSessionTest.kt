@@ -18,6 +18,7 @@ class DocumentSyncSessionTest {
      * Records the callbacks and keeps an "editor" text in sync the way the app does
      */
     private class EditorListener : DocumentSyncSession.Listener {
+        var lastPositions = emptyMap<String, RemoteSelection>()
         var editorText: String? = null
         var peers: List<RemotePeer> = emptyList()
         var readOnly = false
@@ -38,6 +39,10 @@ class DocumentSyncSessionTest {
 
         override fun onPeersChanged(peers: List<RemotePeer>) {
             this.peers = peers
+        }
+
+        override fun onLastPositionsChanged(positions: Map<String, RemoteSelection>) {
+            lastPositions = positions
         }
 
         override fun onReadOnlyChanged(readOnly: Boolean) {
@@ -256,6 +261,25 @@ class DocumentSyncSessionTest {
         server.pump()
 
         assertEquals(listOf(RemoteSelection(1, 1)), listener.peers.single().selections)
+    }
+
+    @Test
+    fun `last positions of a snapshot are resolved and unknown cursors left out`() {
+        val server = FakeSyncServer("abc")
+        val listener = EditorListener()
+        val session = DocumentSyncSession(server.documentId, InMemoryDocumentStore(), listener)
+        server.connect(session)
+        server.pump()
+
+        session.onMessage(
+            """{"type":"presence-snapshot","documentId":"${server.documentId}","peers":[],"lastPositions":[
+                {"accountId":"gone","selections":[{"anchor":"end","head":"end"}]},
+                {"accountId":"deleted-text","selections":[{"anchor":"nonsense","head":"nonsense"}]},
+                {"accountId":"empty","selections":[]}
+            ]}"""
+        )
+
+        assertEquals(mapOf("gone" to RemoteSelection(3, 3)), listener.lastPositions)
     }
 
     @Test

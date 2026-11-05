@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -7,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -24,6 +26,10 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.ResourcePic
 
 internal data class CodeEditorScreen(
     private val documentId: String,
+    /** opened through a join link, see [CodeEditorViewModel.onOpenedByJoinLink] */
+    private val joinLink: Boolean = false,
+    /** the account of the one who sent the join link */
+    private val joinFrom: String? = null,
 ) : Screen {
 
     /**
@@ -35,6 +41,7 @@ internal data class CodeEditorScreen(
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val context = LocalContext.current
 
         val viewModel = getViewModel<CodeEditorViewModel>()
         val uiState by viewModel.uiState.collectAsState()
@@ -46,6 +53,7 @@ internal data class CodeEditorScreen(
 
         LaunchedEffect(documentId) {
             viewModel.setCurrentDocumentId(documentId)
+            if (joinLink) viewModel.onOpenedByJoinLink(joinFrom)
         }
 
         LaunchedEffect(viewModel) {
@@ -58,6 +66,11 @@ internal data class CodeEditorScreen(
                         navigator.push(CodeEditorScreen(documentId = request.documentId))
 
                     is CodeEditorViewModel.NavigationRequest.Close -> navigator.pop()
+
+                    is CodeEditorViewModel.NavigationRequest.ShareLink -> {
+                        val intent = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, request.link)
+                        context.startActivity(Intent.createChooser(intent, null))
+                    }
                 }
             }
         }

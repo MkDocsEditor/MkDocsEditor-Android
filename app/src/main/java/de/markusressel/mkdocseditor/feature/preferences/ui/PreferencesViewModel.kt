@@ -4,7 +4,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.kutepreferences.core.KuteNavigator
-import de.markusressel.kutepreferences.ui.views.KuteStyleManager
 import de.markusressel.kutepreferences.ui.vm.KutePreferencesViewModel
 import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
@@ -23,23 +22,13 @@ internal class PreferencesViewModel @Inject constructor(
 ) {
 
     init {
-        KuteStyleManager.registerTypeHook { listItem ->
-            when (listItem) {
-                is LastOfflineCacheUpdatePreferenceItem -> {
-                    val value by preferencesHolder.lastOfflineCacheUpdate.persistedValue.collectAsState()
-                    val isUpdating by isOfflineCacheUpdateInProgressUseCase().collectAsState()
-                    LastOfflineCacheUpdatePreferenceItemView(
-                        lastUpdate = preferencesHolder.lastOfflineCacheUpdate.createDescription(
-                            value
-                        ),
-                        isUpdating = isUpdating
-                    )
-                    true
-                }
-
-                else -> false
-            }
-
+        registry.register<LastOfflineCacheUpdatePreferenceItem> {
+            val value by preferencesHolder.lastOfflineCacheUpdate.persistedValue.collectAsState()
+            val isUpdating by isOfflineCacheUpdateInProgressUseCase().collectAsState()
+            LastOfflineCacheUpdatePreferenceItemView(
+                lastUpdate = preferencesHolder.lastOfflineCacheUpdate.createDescription(value),
+                isUpdating = isUpdating
+            )
         }
 
         initPreferencesTree(

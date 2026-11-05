@@ -6,6 +6,7 @@ import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigFlowUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetInitialTabUseCase
+import de.markusressel.mkdocseditor.feature.join.data.PendingJoin
 import de.markusressel.mkdocseditor.feature.main.data.MainNavigationRequests
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,6 +49,7 @@ internal class MainViewModel @Inject constructor(
     private val getInitialTabUseCase: GetInitialTabUseCase,
     private val getCurrentBackendConfigFlowUseCase: GetCurrentBackendConfigFlowUseCase,
     private val mainNavigationRequests: MainNavigationRequests,
+    private val pendingJoin: PendingJoin,
 ) : ViewModel() {
 
     private val _uiState = runBlocking {
@@ -75,8 +77,11 @@ internal class MainViewModel @Inject constructor(
         launch {
             mainNavigationRequests.showFileBrowser.collect {
                 // the nav items must include the file browser before it is selected
-                getCurrentBackendConfigFlowUseCase().first()?.let { config -> updateNavItems(config) }
+                val config = getCurrentBackendConfigFlowUseCase().first()
+                config?.let { updateNavItems(it) }
                 _uiState.update { old -> old.copy(fileBrowserRequest = old.fileBrowserRequest + 1) }
+                // signed in now: this is the moment a join link was waiting for
+                config?.let { pendingJoin.release(it.id) }
             }
         }
     }

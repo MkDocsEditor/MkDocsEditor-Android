@@ -17,6 +17,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.auth.account.ui.AccountViewModel
+import de.markusressel.mkdocseditor.feature.join.ui.compose.AccessRequestsScreen
 import de.markusressel.mkdocseditor.feature.auth.account.ui.AccountViewModel.AccountEvent
 import de.markusressel.mkdocseditor.feature.auth.account.ui.AccountViewModel.UiEvent
 import de.markusressel.mkdocseditor.feature.auth.common.data.PickedCredential
@@ -117,6 +118,7 @@ data class AccountScreen(
                 val intent = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
                 context.startActivity(Intent.createChooser(intent, null))
             },
+            onAccessRequestsClicked = { navigator.push(AccessRequestsScreen(backendId)) },
         )
     }
 }

@@ -11,6 +11,7 @@ import dagger.hilt.components.SingletonComponent
 import de.markusressel.mkdocseditor.auth.api.AuthApiFactory
 import de.markusressel.mkdocseditor.auth.api.OkHttpAuthApi
 import de.markusressel.mkdocseditor.auth.domain.AuthRepository
+import de.markusressel.mkdocseditor.auth.token.AccessRequestStore
 import de.markusressel.mkdocseditor.auth.token.AesGcmTokenCipher
 import de.markusressel.mkdocseditor.auth.token.AndroidKeystoreKey
 import de.markusressel.mkdocseditor.auth.token.EncryptedTokenStore
@@ -34,6 +35,10 @@ object AuthModule {
 
     private const val KEY_ALIAS = "mkdocseditor_auth_sessions"
 
+    /** like the sessions, this can not be decrypted on another device */
+    const val ACCESS_REQUEST_PREFERENCES_NAME = "access_requests"
+    private const val ACCESS_REQUEST_KEY_ALIAS = "mkdocseditor_access_requests"
+
     @Provides
     @Singleton
     fun provideTokenStore(@ApplicationContext context: Context): TokenStore {
@@ -44,6 +49,15 @@ object AuthModule {
             cipher = AesGcmTokenCipher { AndroidKeystoreKey.getOrCreate(KEY_ALIAS) },
         )
     }
+
+    @Provides
+    @Singleton
+    fun provideAccessRequestStore(@ApplicationContext context: Context) = AccessRequestStore(
+        storage = SharedPreferencesKeyValueStore(
+            context.getSharedPreferences(ACCESS_REQUEST_PREFERENCES_NAME, Context.MODE_PRIVATE)
+        ),
+        cipher = AesGcmTokenCipher { AndroidKeystoreKey.getOrCreate(ACCESS_REQUEST_KEY_ALIAS) },
+    )
 
     /** the HTTP client of the account endpoints and of server discovery */
     private val authClient: OkHttpClient by lazy {

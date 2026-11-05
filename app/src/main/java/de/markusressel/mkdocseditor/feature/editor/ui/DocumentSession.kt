@@ -5,6 +5,7 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendCon
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeDocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
+import de.markusressel.mkdocsrestclient.sync.automerge.RemoteSelection
 import de.markusressel.mkdocsrestclient.sync.automerge.SyncedDocument
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.CloseCode
 import de.markusressel.mkdocsrestclient.sync.text.TextSplice
@@ -375,6 +376,10 @@ internal class DocumentSession(
 
         override fun onPeersChanged(peers: List<RemotePeer>) {
             text.onPeersChanged(peers)
+        }
+
+        override fun onLastPositionsChanged(positions: Map<String, RemoteSelection>) {
+            text.onLastPositionsChanged(positions)
         }
 
         override fun onDocumentRenamed(oldDocumentId: String, newDocumentId: String) {

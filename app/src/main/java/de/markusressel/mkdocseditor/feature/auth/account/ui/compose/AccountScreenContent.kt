@@ -78,6 +78,7 @@ internal fun AccountScreenContent(
     onBackClicked: () -> Unit,
     onOpenUri: (String) -> Boolean,
     onShareText: (String) -> Unit,
+    onAccessRequestsClicked: () -> Unit,
 ) {
     TabContentScaffold(
         topBar = {
@@ -122,6 +123,9 @@ internal fun AccountScreenContent(
                 PasskeySection(uiState.passkeys, uiState.loading, onUiEvent)
                 SessionSection(uiState.sessions, uiState.loading, onUiEvent)
                 if (account.role == ROLE_ADMIN) {
+                    OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = onAccessRequestsClicked) {
+                        Text(stringResource(R.string.access_requests_open))
+                    }
                     AdminSection(onOpenUri)
                 }
             }
@@ -634,6 +638,7 @@ private fun AccountScreenContentPreview() {
             onBackClicked = {},
             onOpenUri = { true },
             onShareText = {},
+            onAccessRequestsClicked = {},
         )
     }
 }

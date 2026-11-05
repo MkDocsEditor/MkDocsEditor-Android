@@ -52,6 +52,8 @@ private fun AuthApiException.toAuthMessage(): UiMessage = when (code) {
     AuthErrorCode.ACCOUNT_DISABLED -> UiMessage(R.string.auth_error_account_disabled)
     AuthErrorCode.RATE_LIMITED -> UiMessage(R.string.auth_error_rate_limited, listOf(retryAfterSeconds ?: 60L))
     AuthErrorCode.INVALID_LINK -> UiMessage(R.string.auth_error_invalid_link)
+    AuthErrorCode.ACCESS_REQUESTS_DISABLED -> UiMessage(R.string.join_error_requests_disabled)
+    AuthErrorCode.TOO_MANY_ACCESS_REQUESTS -> UiMessage(R.string.join_error_too_many_requests)
     AuthErrorCode.USERNAME_TAKEN -> UiMessage(R.string.auth_error_username_taken)
     AuthErrorCode.INVALID_USERNAME -> UiMessage(R.string.auth_error_invalid_username)
     AuthErrorCode.WEAK_PASSWORD -> when (details["reason"]) {

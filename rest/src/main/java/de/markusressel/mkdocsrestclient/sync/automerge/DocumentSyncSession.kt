@@ -12,6 +12,7 @@ import de.markusressel.mkdocsrestclient.sync.automerge.protocol.MessageEnvelope
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.MessageType
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.PresenceLeaveMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.PresenceMessage
+import de.markusressel.mkdocsrestclient.sync.automerge.protocol.LastPositionMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.PresenceSnapshotMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.SelectionMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.SyncRequestMessage
@@ -43,6 +44,10 @@ data class RemotePeer(
     val displayName: String?,
     val color: String?,
     val selections: List<RemoteSelection>,
+    /** the stable id of the account, usernames can change */
+    val accountId: String? = null,
+    /** when this connection last sent its presence, as an ISO instant in UTC */
+    val lastActiveAt: String? = null,
 )
 
 /**
@@ -90,6 +95,9 @@ class DocumentSyncSession(
         fun onReadOnlyChanged(readOnly: Boolean) {}
 
         fun onPeersChanged(peers: List<RemotePeer>) {}
+
+        /** @param positions where accounts last had a cursor in this document, by account */
+        fun onLastPositionsChanged(positions: Map<String, RemoteSelection>) {}
 
         /**
          * The local copy changed and should be persisted soon (see [persist])
@@ -156,6 +164,7 @@ class DocumentSyncSession(
     private var dirty = false
 
     private val peers = linkedMapOf<String, Peer>()
+    private var lastPositions = emptyList<LastPositionMessage>()
 
     private val actors = mutableMapOf<String, ActorInfo>()
 
@@ -467,6 +476,8 @@ class DocumentSyncSession(
     }
 
     private fun onPresenceSnapshot(message: PresenceSnapshotMessage) {
+        lastPositions = message.lastPositions
+        notifyLastPositions()
         peers.clear()
         message.peers.forEach { presence ->
             val clientId = presence.clientId ?: return@forEach
@@ -525,7 +536,22 @@ class DocumentSyncSession(
         }
     }
 
+    /** An entry whose cursor cannot be resolved is left out: its text may be deleted by now. */
+    private fun notifyLastPositions() {
+        val document = local?.document ?: return
+        if (lastPositions.isEmpty()) return
+        listener.onLastPositionsChanged(
+            lastPositions.mapNotNull { position ->
+                val selection = position.selections.firstOrNull() ?: return@mapNotNull null
+                val anchor = document.lookupCursor(selection.anchor) ?: return@mapNotNull null
+                val head = document.lookupCursor(selection.head) ?: return@mapNotNull null
+                position.accountId to RemoteSelection(anchor, head)
+            }.toMap()
+        )
+    }
+
     private fun resolvePeers() {
+        notifyLastPositions()
         if (peers.isEmpty()) {
             return
         }
@@ -542,6 +568,8 @@ class DocumentSyncSession(
                     displayName = peer.presence.displayName,
                     color = peer.presence.color,
                     selections = peer.resolved,
+                    accountId = peer.presence.accountId,
+                    lastActiveAt = peer.presence.lastActiveAt,
                 )
             }
         )

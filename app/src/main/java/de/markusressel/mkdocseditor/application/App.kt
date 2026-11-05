@@ -18,6 +18,7 @@ import de.markusressel.mkdocseditor.network.domain.ScheduleOfflineCacheUpdateUse
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import de.markusressel.mkdocseditor.service.AccessRequestsWorker
 import de.markusressel.mkdocseditor.service.UnsyncedChangesScheduler
 import javax.inject.Inject
 
@@ -76,6 +77,8 @@ class App : Application(), Configuration.Provider {
         initOfflineMode()
 
         unsyncedChangesScheduler.start(MainScope())
+
+        AccessRequestsWorker.schedule(this)
     }
 
     private fun listenToEvents() {

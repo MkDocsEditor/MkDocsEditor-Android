@@ -13,6 +13,9 @@ import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,7 +43,12 @@ internal fun CodeEditorLayout(
     settings: EditorSettings = EditorSettings(),
     authorRuns: State<AuthorRuns> = NoAuthorRuns,
     authorColors: () -> Map<String, String?> = { emptyMap() },
+    focusRequest: Int = 0,
 ) {
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(focusRequest) {
+        if (focusRequest > 0) focusRequester.requestFocus()
+    }
     val palette = rememberEditorPalette()
     val colorScheme = remember(palette) { EditorColorScheme(palette) }
     val ruleBook = remember { MkDocsMarkdownRuleBook() }
@@ -76,7 +84,7 @@ internal fun CodeEditorLayout(
         )
     ) {
         KodeEditor(
-            modifier = modifier,
+            modifier = modifier.focusRequester(focusRequester),
             state = state,
             languageRuleBook = ruleBook,
             colorScheme = colorScheme,

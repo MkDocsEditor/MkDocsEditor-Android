@@ -14,6 +14,9 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.SlideTransition
 import de.markusressel.mkdocseditor.auth.link.AuthLinkParser
 import de.markusressel.mkdocseditor.auth.link.ConnectLinkParser
+import de.markusressel.mkdocseditor.auth.link.JoinLinkParser
+import de.markusressel.mkdocseditor.feature.join.ui.compose.AccessRequestsScreen
+import de.markusressel.mkdocseditor.feature.join.ui.compose.JoinLinkScreen
 import de.markusressel.mkdocseditor.feature.auth.onboarding.ui.compose.ConnectLinkScreen
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.LocalAuthFlowExit
 import de.markusressel.mkdocseditor.feature.auth.link.ui.PendingAuthLinkViewModel
@@ -56,7 +59,12 @@ private fun AuthLinkFlow(link: String, onExit: () -> Unit) {
     CompositionLocalProvider(LocalAuthFlowExit provides onExit) {
         Surface(modifier = Modifier.fillMaxSize()) {
             key(link) {
-                val first = if (ConnectLinkParser.isConnectLink(link)) ConnectLinkScreen(link) else AuthLinkScreen(linkText = link)
+                val first = when {
+                    link.startsWith(ACCESS_REQUESTS_OF_BACKEND) -> AccessRequestsScreen(link.removePrefix(ACCESS_REQUESTS_OF_BACKEND).toLong())
+                    ConnectLinkParser.isConnectLink(link) -> ConnectLinkScreen(link)
+                    JoinLinkParser.parse(link) != null -> JoinLinkScreen(link)
+                    else -> AuthLinkScreen(linkText = link)
+                }
                 Navigator(first) { navigator ->
                     SlideTransition(navigator)
                 }
@@ -64,6 +72,9 @@ private fun AuthLinkFlow(link: String, onExit: () -> Unit) {
         }
     }
 }
+
+/** not a link: what [PendingAuthLinkViewModel] keeps for the list of access requests of a server */
+private const val ACCESS_REQUESTS_OF_BACKEND = "access-requests:"
 
 @AndroidEntryPoint
 class MainActivityCompose : AppCompatActivity() {
@@ -127,9 +138,15 @@ class MainActivityCompose : AppCompatActivity() {
     }
 
     private fun handleAuthLink(intent: Intent?) {
+        val adminOf = intent?.getLongExtra(EXTRA_ACCESS_REQUESTS_OF_BACKEND, -1L) ?: -1L
+        if (adminOf >= 0) {
+            intent?.removeExtra(EXTRA_ACCESS_REQUESTS_OF_BACKEND)
+            pendingAuthLink.open("$ACCESS_REQUESTS_OF_BACKEND$adminOf")
+            return
+        }
         if (intent?.action != Intent.ACTION_VIEW) return
         val data = intent.dataString ?: return
-        if (AuthLinkParser.parse(data) != null || ConnectLinkParser.isConnectLink(data)) {
+        if (AuthLinkParser.parse(data) != null || ConnectLinkParser.isConnectLink(data) || JoinLinkParser.parse(data) != null) {
             pendingAuthLink.open(data)
         }
         // the link token must not stay in the intent (recents, recreation)
@@ -153,4 +170,8 @@ class MainActivityCompose : AppCompatActivity() {
         }
     }
 
+    companion object {
+        /** from the notification about new access requests: the server whose list to show */
+        const val EXTRA_ACCESS_REQUESTS_OF_BACKEND = "access_requests_of_backend"
+    }
 }

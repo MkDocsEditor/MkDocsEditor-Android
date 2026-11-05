@@ -4,6 +4,7 @@
 
     <!-- needed to connect to the server -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- needed to react to connection changes -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -53,6 +54,8 @@
                 <data android:path="/invite" />
                 <data android:path="/reset" />
                 <data android:path="/connect" />
+                <!-- an invitation into a document, also opened by the web client without the app -->
+                <data android:pathPrefix="/join/" />
             </intent-filter>
 
             <!-- fallback: mkdocseditor://invite#mdl_…, mkdocseditor://connect#<payload> -->

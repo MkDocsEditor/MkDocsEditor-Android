@@ -27,6 +27,11 @@ interface AuthApi {
 
     suspend fun login(username: String, password: String, deviceName: String): LoginResponse
 
+    /** asks the admin for access, without an account */
+    suspend fun createAccessRequest(name: String, message: String?, documentId: String?, invitedBy: String?): AccessRequestCreated
+
+    suspend fun accessRequestStatus(requestToken: String): AccessRequestStatus
+
     /**
      * Second step of a password login: a TOTP [code] or a [recoveryCode]
      */
@@ -83,6 +88,15 @@ interface AuthApi {
     suspend fun beginReauthPasskey(token: String): PasskeyCeremony
 
     suspend fun finishReauthPasskey(token: String, ceremonyId: String, credentialJson: String): Instant?
+
+    // admin
+
+    suspend fun pendingAccessRequests(token: String): List<AccessRequestInfo>
+
+    /** creates an invite with [role], which the person gets through [accessRequestStatus] */
+    suspend fun approveAccessRequest(token: String, id: String, role: String)
+
+    suspend fun rejectAccessRequest(token: String, id: String)
 
     // account
 

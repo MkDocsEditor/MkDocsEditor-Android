@@ -2,6 +2,10 @@ package de.markusressel.mkdocseditor.auth
 
 import de.markusressel.mkdocseditor.auth.api.AccountInfo
 import de.markusressel.mkdocseditor.auth.api.AccountUpdate
+import de.markusressel.mkdocseditor.auth.api.AccessRequestCreated
+import de.markusressel.mkdocseditor.auth.api.AccessRequestInfo
+import de.markusressel.mkdocseditor.auth.api.AccessRequestState
+import de.markusressel.mkdocseditor.auth.api.AccessRequestStatus
 import de.markusressel.mkdocseditor.auth.api.AuthApi
 import de.markusressel.mkdocseditor.auth.api.AuthStatus
 import de.markusressel.mkdocseditor.auth.api.LinkInfo
@@ -47,6 +51,27 @@ open class FakeAuthApi : AuthApi {
     var ceremony = PasskeyCeremony("cer", """{"challenge":"abc"}""")
     var onBeginAddPasskey: () -> PasskeyCeremony = { ceremony }
     var onFinishAddPasskey: (String?) -> PasskeyInfo = { name -> PasskeyInfo("new", name ?: "Passkey") }
+
+    var onCreateAccessRequest: (String) -> AccessRequestCreated = { error("unexpected access request") }
+    var accessRequestStatus = AccessRequestStatus(status = AccessRequestState.PENDING)
+    var pendingAccessRequests = emptyList<AccessRequestInfo>()
+
+    override suspend fun createAccessRequest(name: String, message: String?, documentId: String?, invitedBy: String?): AccessRequestCreated {
+        calls += "createAccessRequest:$name:$message:$documentId:$invitedBy"
+        return onCreateAccessRequest(name)
+    }
+
+    override suspend fun accessRequestStatus(requestToken: String) = accessRequestStatus.also { calls += "accessRequestStatus" }
+
+    override suspend fun pendingAccessRequests(token: String) = pendingAccessRequests.also { calls += "pendingAccessRequests" }
+
+    override suspend fun approveAccessRequest(token: String, id: String, role: String) {
+        calls += "approveAccessRequest:$id:$role"
+    }
+
+    override suspend fun rejectAccessRequest(token: String, id: String) {
+        calls += "rejectAccessRequest:$id"
+    }
 
     override suspend fun status(): AuthStatus = status.also { calls += "status" }
 
