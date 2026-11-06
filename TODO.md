@@ -12,7 +12,7 @@ clients show the same thing.
 | Editor | [Author highlighting](#author-highlighting) | Open questions left | No |
 | Editor | [Follow another user](#follow-another-user) | Preview-only readers | Yes, the web client |
 | File browser | [Entries lack context](#file-browser-entries-lack-context) | Design and UI | Maybe the backend |
-| File browser | [Transitions between sections](#transitions-between-sections) | Design and UI | No |
+| File browser | [Transitions between sections](#transitions-between-sections) | Path chips during the back gesture | No |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Feature | Yes, the backend and the web client |
 | App-wide | [Sync indicator](#sync-indicator) | Small feature | No |
 | App-wide | [Settings](#settings) | Few candidates left | Maybe KutePreferences |
@@ -119,20 +119,10 @@ is on permanently. Three modes:
 
 ## Transitions between sections
 
-**What I want**
+Folders change with a shared axis, and the back gesture previews the parent folder. What is left:
 
-We have no transitions when entering or exiting a section in the file browser, which looks a bit jarring. I'm not sure
-which direction to take the animations. Maybe there are widely used patterns we can adopt.
-
-**State**
-
-Folder changes now use a shared axis on X with a fade, in `FileBrowserScreenContent`. A slow folder animates only when
-its content has loaded. The path chips fade in and out with the same timing (`SectionPath`).
-
-**Open questions**
-
-- Should the back gesture preview the parent folder (predictive back)? That needs a `PredictiveBackHandler` and the
-  parent's content on hand, so it's more work.
+- The path chips do not follow the back gesture. They change once it is released, so the last chip only starts to fade
+  out then.
 
 ---
 

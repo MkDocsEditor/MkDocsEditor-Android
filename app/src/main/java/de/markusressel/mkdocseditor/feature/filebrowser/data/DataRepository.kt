@@ -103,7 +103,7 @@ class DataRepository @Inject constructor(
         reader = { sectionId ->
             // null tells the store that there is nothing yet: without it get() waits forever on an empty cache,
             // and a folder that is gone from the server never finishes loading
-            sectionPersistenceManager.findByIdFlow(sectionId).map { it?.let(dataFactory::toSectionData) }
+            observeStoredSection(sectionId)
         },
         writer = { key, entity ->
             // NOTE: this always stores the whole tree
@@ -283,6 +283,10 @@ class DataRepository @Inject constructor(
             .map { SectionItem(id = it.id, name = it.name) }
             .toList()
             .asReversed()
+
+    /** @return the stored copy of a section and each change of it, null while there is none. Never asks the server. */
+    fun observeStoredSection(sectionId: String): Flow<SectionData?> =
+        sectionPersistenceManager.findByIdFlow(sectionId).map { it?.let(dataFactory::toSectionData) }
 
     /** @return a flow with a value at the start and whenever the sections in the database change */
     fun observeSectionChanges(sectionId: String): Flow<Unit> =
