@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.auth.domain
 
+import de.markusressel.mkdocseditor.auth.api.AccountRole
 import de.markusressel.mkdocseditor.auth.api.AuthApi
 import de.markusressel.mkdocseditor.auth.api.AuthApiException
 import de.markusressel.mkdocseditor.auth.api.AuthApiFactory
@@ -11,7 +12,9 @@ import de.markusressel.mkdocseditor.auth.api.LoginResponse
 import de.markusressel.mkdocseditor.auth.api.PasskeyCeremony
 import de.markusressel.mkdocseditor.auth.api.UserInfo
 import de.markusressel.mkdocseditor.auth.link.AuthLink
+import de.markusressel.mkdocseditor.auth.token.AccountRoleStore
 import de.markusressel.mkdocseditor.auth.token.AuthSession
+import de.markusressel.mkdocseditor.auth.token.MemoryKeyValueStore
 import de.markusressel.mkdocseditor.auth.token.TokenStore
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
@@ -84,12 +87,14 @@ class NotSignedInException(val backendId: Long) : IOException("not signed in")
  * touched here.
  *
  * @param deviceName sent at login, so the session list on the server shows this device
+ * @param roleStore the last known role of each signed-in account
  */
 class AuthRepository(
     private val tokenStore: TokenStore,
     private val apiFactory: AuthApiFactory,
     private val deviceName: String,
     private val clock: () -> Instant = Instant::now,
+    private val roleStore: AccountRoleStore = AccountRoleStore(MemoryKeyValueStore()),
 ) {
 
     private val apis = mutableMapOf<String, AuthApi>()
@@ -138,6 +143,27 @@ class AuthRepository(
     fun token(backendId: Long): String? = session(backendId)?.token
 
     fun isSignedIn(backendId: Long): Boolean = session(backendId) != null
+
+    /**
+     * @return the last known role of the signed-in account, see [AccountRole], null when signed out or unknown
+     */
+    fun role(backendId: Long): String? {
+        val session = session(backendId) ?: return null
+        return roleStore.get(backendId, session.username)
+    }
+
+    /**
+     * Asks the server for the role of the signed-in account and remembers it
+     *
+     * @throws NotSignedInException without session
+     */
+    suspend fun refreshRole(backend: BackendRef): String {
+        val session = session(backend.id) ?: throw NotSignedInException(backend.id)
+        val role = authenticated(backend) { account(it).role }
+        // the account may have changed while the server answered
+        if (session(backend.id)?.username == session.username) roleStore.put(backend.id, session.username, role)
+        return role
+    }
 
     /**
      * Called when the server rejected the session (HTTP 401 `unauthenticated`, websocket close 4001)
@@ -233,6 +259,7 @@ class AuthRepository(
     suspend fun signOut(backend: BackendRef) {
         val token = tokenStore.get(backend.id)?.token
         tokenStore.remove(backend.id)
+        roleStore.remove(backend.id)
         if (token != null) {
             try {
                 api(backend).logout(token)
@@ -248,6 +275,7 @@ class AuthRepository(
      */
     fun forget(backendId: Long) {
         tokenStore.remove(backendId)
+        roleStore.remove(backendId)
     }
 
     /**
@@ -279,12 +307,16 @@ class AuthRepository(
                 val token = response.token
                     ?: throw IOException("the server did not return a bearer token (status ${response.status})")
                 _loginRequired.update { it - backend.id }
+                val username = response.user?.username.orEmpty()
+                // before the session, so whoever reacts to the new session finds the role
+                val role = response.user?.role
+                if (role != null) roleStore.put(backend.id, username, role) else roleStore.remove(backend.id)
                 tokenStore.put(
                     backend.id,
                     AuthSession(
                         token = token,
                         expiresAt = response.session?.expiresAt,
-                        username = response.user?.username.orEmpty(),
+                        username = username,
                     )
                 )
                 LoginOutcome.SignedIn(

@@ -214,14 +214,19 @@ class InMemoryTokenStore : TokenStore {
     }
 }
 
-fun okResponse(token: String = "mds_token", username: String = "markus", secondFactorSetupRequired: Boolean = false) =
+fun okResponse(
+    token: String = "mds_token",
+    username: String = "markus",
+    secondFactorSetupRequired: Boolean = false,
+    role: String = "editor",
+) =
     LoginResponse(
         status = "ok",
         user = de.markusressel.mkdocseditor.auth.api.UserInfo(
             id = "id1",
             username = username,
             displayName = username.replaceFirstChar(Char::uppercase),
-            role = "editor",
+            role = role,
             secondFactorSetupRequired = secondFactorSetupRequired,
         ),
         session = SessionInfo(id = "s1", expiresAt = Instant.parse("2030-01-01T00:00:00Z")),

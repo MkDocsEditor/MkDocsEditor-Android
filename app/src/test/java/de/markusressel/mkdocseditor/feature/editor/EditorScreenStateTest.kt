@@ -103,6 +103,13 @@ class EditorScreenStateTest {
     }
 
     @Test
+    fun `a page without an offline version offers to ask the server again`() {
+        show(CodeEditorViewModel.UiState(isNoOfflineVersionVisible = true))
+        composeRule.onNodeWithText("Retry").performClick()
+        assertEquals(listOf<CodeEditorViewModel.UiEvent>(CodeEditorViewModel.UiEvent.RetryOpeningClicked), events)
+    }
+
+    @Test
     fun `no notice without a reason`() {
         show(CodeEditorViewModel.UiState())
         composeRule.onNodeWithText("deleted on the server", substring = true).assertDoesNotExist()

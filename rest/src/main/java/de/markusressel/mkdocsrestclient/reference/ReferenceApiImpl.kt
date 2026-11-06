@@ -35,9 +35,16 @@ class ReferenceApiImpl(
         )
 
     override suspend fun getMoved(oldIds: List<String>): Result<MovedListModel, FuelError> =
-        requestManager.doRequest(url = "/moved/", urlParameters = oldIds.map { "id" to it }, method = Method.GET)
+        requestManager.doRequest(
+            url = "/moved/",
+            urlParameters = oldIds.map { "id" to it },
+            method = Method.GET,
+            // opening a document waits for this answer, and a coroutine timeout can not end a blocking request
+            readTimeout = MOVED_READ_TIMEOUT,
+        )
 
     private companion object {
         const val MOVE_TIMEOUT = 60_000
+        const val MOVED_READ_TIMEOUT = 3_000
     }
 }

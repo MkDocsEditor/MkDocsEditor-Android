@@ -76,6 +76,7 @@ sealed interface DialogState {
      * @param unavailable the pins could not be loaded (older backend, no connection)
      * @param forbidden the last change was refused: only editors and admins pin for everyone
      * @param working true while a change runs
+     * @param mayPinForEveryone false for a reader, who only pins for themselves
      */
     data class Pin(
         val item: WikiItem,
@@ -83,6 +84,7 @@ sealed interface DialogState {
         val unavailable: Boolean = false,
         val forbidden: Boolean = false,
         val working: Boolean = false,
+        val mayPinForEveryone: Boolean = true,
     ) : DialogState {
         fun isPinned(scope: PinScope): Boolean? {
             val pins = pins ?: return null
@@ -124,10 +126,20 @@ internal data class UiState(
     /** null until it is known what is in the open folder */
     val folderContent: FolderContent? = null,
 
+    /** the stored content of the folder above the open one, for the back gesture */
+    val parentFolderContent: FolderContent? = null,
+
     /** the selected backend, when its server rejected the session; the cached data stays visible */
     val loginRequiredBackendId: Long? = null,
 ) {
     val canGoUp: Boolean get() = currentSectionPath.size > 1
+
+    /**
+     * What the back gesture shows while it is dragged, null to show nothing. Right after the folder changed, the content
+     * of the former parent may still be there, and must not pass as the new one.
+     */
+    val parentPreview: FolderContent?
+        get() = parentFolderContent?.takeIf { it.sectionId == currentSectionPath.getOrNull(currentSectionPath.lastIndex - 1)?.id }
 
     /** nothing can be created in a folder that is not known */
     val fabConfig: FabConfig<FileBrowserFabId> get() = if (folderContent == null) FabConfig() else CreateItemsFabConfig

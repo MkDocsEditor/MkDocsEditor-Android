@@ -137,13 +137,18 @@ private fun PinDialog(
                         PinSwitch(R.string.pin_for_me, state.isPinned(PinScope.Personal), !state.working) {
                             onPinChanged(PinScope.Personal, it)
                         }
-                        PinSwitch(R.string.pin_for_everyone, state.isPinned(PinScope.Family), !state.working) {
+                        // a reader still sees whether the page is pinned for everyone
+                        PinSwitch(
+                            R.string.pin_for_everyone,
+                            state.isPinned(PinScope.Family),
+                            !state.working && state.mayPinForEveryone,
+                        ) {
                             onPinChanged(PinScope.Family, it)
                         }
-                        if (state.forbidden) {
+                        if (state.forbidden || !state.mayPinForEveryone) {
                             Text(
                                 text = stringResource(R.string.pin_for_everyone_forbidden),
-                                color = MaterialTheme.colorScheme.error,
+                                color = if (state.forbidden) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }

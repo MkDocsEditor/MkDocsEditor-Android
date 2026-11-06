@@ -1,7 +1,6 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui.compose
 
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.Lifecycle
@@ -36,11 +35,6 @@ object FileBrowserScreen : Screen {
 
         val viewModel = getViewModel<FileBrowserViewModel>()
         val uiState by viewModel.uiState.collectAsState()
-
-        BackHandler(
-            enabled = uiState.canGoUp,
-            onBack = { viewModel.onUiEvent(UiEvent.NavigateUp) },
-        )
 
         val lifecycleOwner = LocalLifecycleOwner.current
         LaunchedEffect(lifecycleOwner) {
