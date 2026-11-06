@@ -59,6 +59,39 @@ internal fun labelTextColorOn(color: Color): Color =
     if (contrastRatio(Color.Black, color) >= contrastRatio(Color.White, color)) Color.Black else Color.White
 
 /**
+ * The colors of the cursor of another user. The flag with the name and the profile picture, and the selection, use the
+ * exact profile color, as the web client does. Only the thin caret line is adjusted, so it stays visible on the background.
+ *
+ * @param flagOutline a thin halo around the flag, only when its color is too close to the background, null otherwise
+ */
+internal data class PeerCursorColors(
+    val flag: Color,
+    val flagText: Color,
+    val flagOutline: Color?,
+    val caret: Color,
+)
+
+/** How much of the editor text color the halo around a flag takes */
+private const val FLAG_OUTLINE_ALPHA = 0.5f
+
+/**
+ * @param background the editor background
+ * @param foreground the editor text color, for the halo around a flag that would vanish on [background]
+ * @param alpha how much the cursor shows, ghosts of users who left are faint
+ */
+internal fun peerCursorColors(color: Color, background: Color, foreground: Color, alpha: Float = 1f): PeerCursorColors {
+    val exact = color.copy(alpha = 1f)
+    // the hue stays, and the shape stays visible: WCAG 1.4.11 asks 3:1 for graphical objects
+    val needsOutline = contrastRatio(exact, background) < MIN_PEER_COLOR_CONTRAST
+    return PeerCursorColors(
+        flag = exact.copy(alpha = alpha),
+        flagText = labelTextColorOn(exact),
+        flagOutline = if (needsOutline) foreground.copy(alpha = FLAG_OUTLINE_ALPHA * alpha) else null,
+        caret = exact.readableOn(background).copy(alpha = alpha),
+    )
+}
+
+/**
  * The color of this peer, parsed from its "#RRGGBB" or "#AARRGGBB" color string: the one its instance chose, else the one
  * of its account. Falls back to a color derived from the username, so a user keeps the same color.
  */

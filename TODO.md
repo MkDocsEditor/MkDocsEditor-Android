@@ -8,15 +8,10 @@ clients show the same thing.
 
 | Area | Entry | Kind of work | Needs another repo |
 |---|---|---|---|
-| Editor | [Opening a document when the backend is unavailable](#opening-a-document-when-the-backend-is-unavailable) | Bug and small feature | No |
-| Editor | [Author highlighting](#author-highlighting) | Open questions left | No |
 | Editor | [Follow another user](#follow-another-user) | Preview-only readers | Yes, the web client |
-| File browser | [Entries lack context](#file-browser-entries-lack-context) | Design and UI | Maybe the backend |
-| File browser | [Transitions between sections](#transitions-between-sections) | Design and UI | No |
+| File browser | [Transitions between sections](#transitions-between-sections) | Path chips during the back gesture | No |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Push, better summaries | Yes, the backend and the web client |
-| App-wide | [Sync indicator](#sync-indicator) | Small feature | No |
-| App-wide | [Settings](#settings) | Few candidates left | Maybe KutePreferences |
-| Accounts | [Onboarding](#onboarding) | Optional feature tour | No |
+| App-wide | [Settings](#settings) | Card color left | Maybe KutePreferences |
 
 Order that fits how they depend on each other (Idea):
 
@@ -33,98 +28,16 @@ Works in the editor pane. What is left:
 - A reader in preview-only mode sends no viewport (`"viewport": null`), so a follower only sees their cursor. Mapping the
   preview position to the text needs its own PR, in both clients.
 
-## Opening a document when the backend is unavailable
-
-**What I want**
-
-- Today a loading bar shows for a very long time. That is irritating, because the document can still be read
-  when an offline copy is available.
-- Showing the connection state is good, but it should be less distracting, at least when we already have a
-  relatively up-to-date local copy to show and work with.
-
-**Where to start**
-
-- The bar is `LOADING_INDICATOR_TAG` in `CodeEditorScreenContent`, driven by `DocumentSession.State.loading`.
-- #121 hides the bar while a local copy is showing (`DocumentSession.showsLoading`). `State.loading` itself is unchanged,
-  and without a local copy the bar can still last long.
-- Tried on an emulator on 2026-11-04, with the server down and in airplane mode. With a local copy the page opens at once
-  without a bar. Without one, a banner says the page isn't on this device yet, within 3 seconds.
-- `WebsocketConnectionHandler` gives up on an upgrade that never gets an answer after 15 s. A blocked route and a real
-  proxy are not tried.
-
-**Decided**
-
-- No warning for a copy that has been out of date for long (Markus, 2026-11-06): it isn't clear what would count as too
-  long, and it may not be worth having at all.
-
-## Author highlighting
-
-**What I want**
-
-CodiMD can show who wrote which character, per line and within a line. I want the same, fitting our current UI and
-what KodeEditor offers right now. It should be possible to turn it on and off, because it might be overwhelming if it
-is on permanently. Three modes:
-
-- a colored vertical strip for each line in the editor gutter
-- that strip plus a slight background highlight, like a marker, on the text itself
-- nothing
-
-**State**
-
-- Built, using `GET /document/{id}/authorship/`. The setting is under Editor, and the default is strip and marker. A
-  button in the editor switches through the modes.
-- Colors come from the server, as in the web client. Only an author the server names no color for gets a derived one.
-- `AuthorRuns` moves with each edit, in the call that makes it. New text has no author until the backend's next answer,
-  about 2 seconds after the text settles, because the app can't tell which actor made a remote change.
-- A strip with several authors on a line shows each one with its share.
-- Offline shows nothing, and nothing stores the runs.
-
-**Open questions**
-
-- Cursors of other users still use a color adjusted for contrast, so a dark color can differ from the web client.
-
 ---
 
 # File browser
 
-## File browser entries lack context
-
-**What I want**
-
-- There is not much information to decide which folder might be interesting and why. I like how minimalistic it is,
-  but the lack of context feels like bad UX.
-
-**Where to start**
-
-- `listentry/SectionListEntry.kt`, `DocumentListEntry.kt` and `ResourceListEntry.kt` in `feature/filebrowser/ui/compose`.
-- Names use `onSurface`, and everything below them `onSurfaceVariant`.
-- A folder shows its name, counts and last change in its subtree (`SectionData.lastChange`). A document shows its name,
-  size and last change. Changes read as relative time, and aren't shown after a year (`LastModifiedDate.kt`).
-- The API also has `path` and `index` on sections, plus `mimeType` and `thumbnail` on resources. I didn't check which
-  of these the app already stores.
-- Tests: `DocumentListEntryTest`, `FolderScrollPositionTest`.
-
-**Open questions**
-
-- Does the last changed date give enough context? Further ideas: who changed it, the first line of its index page, names
-  of the newest documents. These may need backend or data work.
-
 ## Transitions between sections
 
-**What I want**
+Folders change with a shared axis, and the back gesture previews the parent folder. What is left:
 
-We have no transitions when entering or exiting a section in the file browser, which looks a bit jarring. I'm not sure
-which direction to take the animations. Maybe there are widely used patterns we can adopt.
-
-**State**
-
-Folder changes now use a shared axis on X with a fade, in `FileBrowserScreenContent`. A slow folder animates only when
-its content has loaded. The path chips fade in and out with the same timing (`SectionPath`).
-
-**Open questions**
-
-- Should the back gesture preview the parent folder (predictive back)? That needs a `PredictiveBackHandler` and the
-  parent's content on hand, so it's more work.
+- The path chips do not follow the back gesture. They change once it is released, so the last chip only starts to fade
+  out then.
 
 ---
 
@@ -173,15 +86,13 @@ a network and enough battery, it reads `GET /feed/` of the selected server while
 pages pinned for everyone or for the user, and to pages the user edited, give one notification per page ("Anna and Ben
 changed Shopping", with the headings of the summary), grouped per server. Edits without an account (`External change`)
 don't notify. Tapping one opens the page in the editor. A mark per server and account keeps a change from notifying
-twice; the first check only sets it. The setting is under Notifications and on by default; the dashboard asks for the
+twice; the first check only sets it, and runs right after signing in. The setting is under Notifications and on by default; the dashboard asks for the
 permission once, turning the setting on asks again, and the setting says when Android blocks the notifications.
 
 **What is left**
 
-1. Push instead of polling: FCM, UnifiedPush or ntfy, see below. To be discussed with Markus first.
+1. Push, decided below. The polling stays as the fallback.
 2. Better summaries, if the simple ones aren't enough.
-3. The app shows "Pin for everyone" to readers too, and only says no after the server refused: it doesn't know the
-   role of the account without asking the server.
 
 **Gamification (Idea)**
 
@@ -209,15 +120,16 @@ Keep it small, and useful for the wiki. A home wiki has no need for points or ra
 - Opening the file browser fetches the tree twice: once for the folder and once after the socket connects.
 - Web client: `DocumentView` and its history are the place to look for what can be reused. I didn't check this in detail.
 
-**Getting notifications to the phone**
+**Push (decided, Markus, 2026-11-06)**
 
-| Way | For | Against |
-|---|---|---|
-| Periodic WorkManager check | No new infrastructure, works with a self-hosted server | At best every 15 minutes, and Android may delay it |
-| UnifiedPush or ntfy | Fast, no Google | Family devices need a distributor app, the backend has to send pushes |
-| Firebase Cloud Messaging | Fast and reliable | Adds Google and a Firebase project to an open source, self-hosted app, and the backend has to send pushes |
-
-The periodic check is built, once an hour. Push needs the backend to send something, so it is a separate decision.
+- UnifiedPush, with the self-hosted ntfy server at `https://ntfy.markusressel.de` as the distributor. It is reachable on
+  the LAN and over the family VPN, allows anonymous use, and only topics starting with `up`.
+- The app registers with UnifiedPush and gives its endpoint to the backend. The backend sends Web Push to that endpoint
+  (RFC 8030, encrypted with RFC 8291, VAPID from RFC 8292).
+- The WorkManager polling stays as the fallback, for example without a distributor app or while ntfy can't be reached.
+- The backend push contract (registering the endpoint, the VAPID key, what a push holds) is still being defined in the
+  backend. The app part waits for it.
+- No Firebase.
 
 **Summaries**
 
@@ -249,27 +161,6 @@ If notifications get annoying, people turn them off, and the goal is lost.
 
 # App-wide
 
-## Sync indicator
-
-**What I want**
-
-A small "synced" indicator, maybe global or on every relevant top-level page, that says how long ago the last check with
-the backend was, and whether that might affect anything. Really minimal, and it has to fit into the rest of the design.
-
-**State**
-
-The file browser shows it below its title ("Synced 3 hours ago", "Not connected · Synced 3 hours ago"). It counts file
-browser loads only, and `SyncStatusStore` remembers the time per server.
-
-**Decided**
-
-- The file browser and the dashboard show it, the backend page doesn't (Markus, 2026-11-06). Both count only their own
-  loads.
-
-**Open questions**
-
-- Should document syncs count as an answer from the backend?
-
 ## Settings
 
 **What I want**
@@ -287,43 +178,3 @@ browser loads only, and `SyncStatusStore` remembers the time per server.
   numbers and text size.
 - The category cards are flat, using `KutePreferencesTheme` colors. `Category.kt` in KutePreferences hardcodes its
   container color, which KutePreferences would have to change.
-
-**Candidates left (Idea)**
-
-- connect automatically: `connectsAutomatically` follows "always open in edit mode" today
-- default split mode: the window size decides today, and that seems fine
-
----
-
-# Accounts
-
-## Backend configuration
-
-**What I want**
-
-Both the code and the UI deserve a rework. It has everything we need, but it looks clunky and crammed, and doesn't
-behave very elegantly. Redesign the UX and UI, and the code of the UI layer.
-
-**State**
-
-Reworked. The edit screen has one address field instead of host, port and SSL, and the rarely needed fields are under
-"Advanced". A new server still starts in `ConnectServerScreen`. Not tried on a device yet.
-
-## Onboarding
-
-**What I want**
-
-- We don't have one, and we should.
-- Point to the web login as an easy way to get started, and explain that an admin has to give out invite links.
-- It could also show off the features of the app. That's low priority. If we do it, keep it succinct but visually
-  pleasing (fancy animations would be awesome).
-
-**State**
-
-The first start shows a short welcome and the hint about invite links above `ConnectServerScreen`'s QR code and address
-field. It shows whenever no server exists, so nothing needs storing. There is no link to a web client, because its
-address is only known once a server is.
-
-**Left to do**
-
-- A feature tour, if we want one.

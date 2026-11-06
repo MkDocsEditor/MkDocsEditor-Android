@@ -8,7 +8,10 @@ import de.markusressel.mkdocseditor.auth.api.LoginResponse
 import de.markusressel.mkdocseditor.auth.link.AuthLink
 import de.markusressel.mkdocseditor.auth.link.LinkKind
 import de.markusressel.mkdocseditor.auth.okResponse
+import de.markusressel.mkdocseditor.auth.api.AccountInfo
+import de.markusressel.mkdocseditor.auth.token.AccountRoleStore
 import de.markusressel.mkdocseditor.auth.token.AuthSession
+import de.markusressel.mkdocseditor.auth.token.MemoryKeyValueStore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -183,5 +186,63 @@ class AuthRepositoryTest {
         api.onLogin = { _, _ -> okResponse() }
         repository.login(backend, "markus", "pw")
         assertTrue(repository.loginRequired.value.isEmpty())
+    }
+
+    private fun account(role: String) = AccountInfo(id = "id1", username = "markus", displayName = "Markus", role = role)
+
+    @Test
+    fun `the role of the login is remembered without asking the server`() = runTest {
+        api.onLogin = { _, _ -> okResponse(role = "reader") }
+        repository.login(backend, "markus", "pw")
+        api.calls.clear()
+
+        assertEquals("reader", repository.role(7))
+        assertTrue(api.calls.isEmpty())
+    }
+
+    @Test
+    fun `the role is unknown for a session from before roles were stored`() {
+        store.put(7, AuthSession("mds_t", null, "markus"))
+        assertNull(repository.role(7))
+    }
+
+    @Test
+    fun `a refreshed role replaces the stored one`() = runTest {
+        api.onLogin = { _, _ -> okResponse(role = "reader") }
+        repository.login(backend, "markus", "pw")
+        api.onAccount = { account("editor") }
+
+        assertEquals("editor", repository.refreshRole(backend))
+        assertEquals("editor", repository.role(7))
+    }
+
+    @Test
+    fun `a role belongs to the account it was stored for`() = runTest {
+        api.onLogin = { _, _ -> okResponse(role = "admin") }
+        repository.login(backend, "markus", "pw")
+        store.put(7, AuthSession("mds_other", null, "anna"))
+
+        assertNull(repository.role(7))
+    }
+
+    @Test
+    fun `signed out, there is no role`() = runTest {
+        api.onLogin = { _, _ -> okResponse(role = "admin") }
+        repository.login(backend, "markus", "pw")
+        repository.signOut(backend)
+
+        assertNull(repository.role(7))
+        assertFailsWith<NotSignedInException> { repository.refreshRole(backend) }
+    }
+
+    @Test
+    fun `the role survives a restart`() = runTest {
+        val storage = MemoryKeyValueStore()
+        api.onLogin = { _, _ -> okResponse(role = "reader") }
+        AuthRepository(store, { api }, deviceName = "Pixel 8", roleStore = AccountRoleStore(storage)).login(backend, "markus", "pw")
+
+        val restarted = AuthRepository(store, { api }, deviceName = "Pixel 8", roleStore = AccountRoleStore(storage))
+
+        assertEquals("reader", restarted.role(7))
     }
 }

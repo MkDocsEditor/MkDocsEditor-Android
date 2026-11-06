@@ -119,4 +119,9 @@ class FolderScrollPositionTest {
 
     @Test
     fun `going up does not go deeper`() = assertFalse(opensDeeper(from = "b", to = "a", path = path))
+
+    @Test
+    fun `the parent that the back gesture shows does not go deeper`() =
+        // the path still ends at the open folder while the gesture is dragged
+        assertFalse(opensDeeper(from = "a", to = "root", path = path))
 }
