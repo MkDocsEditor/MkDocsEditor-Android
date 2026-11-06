@@ -52,6 +52,9 @@ interface DocumentApi {
     /**
      * Delete an existing document
      */
-    suspend fun deleteDocument(id: String): Result<String, FuelError>
+    /**
+     * @param force also while clients are connected to it, without it the server answers 409
+     */
+    suspend fun deleteDocument(id: String, force: Boolean = false): Result<String, FuelError>
 
 }

@@ -20,6 +20,7 @@ package de.markusressel.mkdocsrestclient.section
 
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Method
+import de.markusressel.mkdocsrestclient.forceParameter
 import com.github.kittinunf.result.Result
 import de.markusressel.mkdocsrestclient.RequestManager
 
@@ -66,8 +67,8 @@ class SectionApiImpl(
         )
     }
 
-    override suspend fun deleteSection(id: String): Result<String, FuelError> {
-        return requestManager.doRequest(url = "/section/$id/", method = Method.DELETE)
+    override suspend fun deleteSection(id: String, force: Boolean): Result<String, FuelError> {
+        return requestManager.doRequest(url = "/section/$id/", urlParameters = forceParameter(force), method = Method.DELETE)
     }
 
 }

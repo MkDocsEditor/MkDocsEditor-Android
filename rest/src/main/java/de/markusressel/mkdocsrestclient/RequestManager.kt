@@ -287,3 +287,6 @@ class RequestManager(
     }
 
 }
+
+/** `force=true` deletes an item also while clients are connected to it */
+internal fun forceParameter(force: Boolean): List<Pair<String, Any?>> = if (force) listOf("force" to "true") else emptyList()

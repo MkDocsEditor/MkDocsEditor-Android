@@ -136,7 +136,7 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
         )
     }
 
-    override suspend fun deleteSection(id: String): Result<String, FuelError> {
+    override suspend fun deleteSection(id: String, force: Boolean): Result<String, FuelError> {
         return Result.success("")
     }
 
@@ -188,7 +188,7 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
         )
     }
 
-    override suspend fun deleteDocument(id: String): Result<String, FuelError> {
+    override suspend fun deleteDocument(id: String, force: Boolean): Result<String, FuelError> {
         return Result.success("")
     }
 

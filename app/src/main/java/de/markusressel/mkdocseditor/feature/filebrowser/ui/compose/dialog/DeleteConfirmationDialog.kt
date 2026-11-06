@@ -27,6 +27,8 @@ import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 fun DeleteConfirmationDialog(
     title: String,
     message: AnnotatedString,
+    confirmText: String = stringResource(R.string.delete),
+    working: Boolean = false,
     onConfirmClicked: () -> Unit,
     onDismissRequest: () -> Unit
 ) {
@@ -65,9 +67,10 @@ fun DeleteConfirmationDialog(
                     )
 
                     TextButton(
+                        enabled = !working,
                         onClick = { onConfirmClicked() },
                         content = {
-                            Text(stringResource(id = R.string.delete))
+                            Text(confirmText)
                         }
                     )
                 }

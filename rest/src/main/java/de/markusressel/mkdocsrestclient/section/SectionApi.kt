@@ -52,6 +52,9 @@ interface SectionApi {
     /**
      * Deletes an ENTIRE section
      */
-    suspend fun deleteSection(id: String): Result<String, FuelError>
+    /**
+     * @param force also while clients are connected to a document in it, without it the server answers 409
+     */
+    suspend fun deleteSection(id: String, force: Boolean = false): Result<String, FuelError>
 
 }
