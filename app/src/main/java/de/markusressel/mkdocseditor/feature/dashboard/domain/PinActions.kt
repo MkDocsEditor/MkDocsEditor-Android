@@ -12,6 +12,7 @@ import javax.inject.Inject
 internal class PinActions @Inject constructor(
     private val restClient: IMkDocsRestClient,
     private val setPin: SetPinUseCase,
+    val familyPermission: FamilyPinPermission,
 ) {
     /** @return the pins, null when they could not be loaded */
     suspend fun current(): PinsModel? = restClient.getPins().fold(

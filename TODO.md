@@ -172,8 +172,6 @@ setting and the sync indicator. It shows what is stored at once, also offline, a
 
 1. Notifications, which are "there are new entries in the feed".
 2. Better summaries, if the simple ones aren't enough.
-3. The app shows "Pin for everyone" to readers too, and only says no after the server refused: it doesn't know the
-   role of the account without asking the server.
 
 **Gamification (Idea)**
 
@@ -295,18 +293,6 @@ browser loads only, and `SyncStatusStore` remembers the time per server.
 ---
 
 # Accounts
-
-## Backend configuration
-
-**What I want**
-
-Both the code and the UI deserve a rework. It has everything we need, but it looks clunky and crammed, and doesn't
-behave very elegantly. Redesign the UX and UI, and the code of the UI layer.
-
-**State**
-
-Reworked. The edit screen has one address field instead of host, port and SSL, and the rarely needed fields are under
-"Advanced". A new server still starts in `ConnectServerScreen`. Not tried on a device yet.
 
 ## Onboarding
 

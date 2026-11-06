@@ -2,6 +2,7 @@ package de.markusressel.mkdocseditor.auth.token
 
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Minimal string key/value storage, so the token store can be tested without Android
@@ -20,4 +21,19 @@ class SharedPreferencesKeyValueStore(
     override fun put(key: String, value: String) = preferences.edit { putString(key, value) }
 
     override fun remove(key: String) = preferences.edit { remove(key) }
+}
+
+/** Keeps the values only until the process ends */
+class MemoryKeyValueStore : KeyValueStore {
+    private val values = ConcurrentHashMap<String, String>()
+
+    override fun get(key: String): String? = values[key]
+
+    override fun put(key: String, value: String) {
+        values[key] = value
+    }
+
+    override fun remove(key: String) {
+        values.remove(key)
+    }
 }

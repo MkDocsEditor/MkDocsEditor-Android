@@ -61,9 +61,15 @@ internal class ItemActions(
 
     private suspend fun showPins(item: WikiItem) {
         val pins = pins ?: return
-        showDialog(DialogState.Pin(item))
+        val known = pins.familyPermission.known()
+        showDialog(DialogState.Pin(item, mayPinForEveryone = known != false))
         val current = pins.current()
         updatePinDialog(item) { it.copy(pins = current, unavailable = current == null) }
+        // asked only once per account, later dialogs use the stored role
+        if (known == null && current != null) {
+            val allowed = pins.familyPermission.refresh()
+            updatePinDialog(item) { it.copy(mayPinForEveryone = allowed != false) }
+        }
     }
 
     /**
@@ -87,6 +93,11 @@ internal class ItemActions(
                 is PinOutcome.Changed -> it.copy(working = false, pins = outcome.pins)
                 PinOutcome.Forbidden -> it.copy(working = false, forbidden = true)
             }
+        }
+        if (outcome == PinOutcome.Forbidden) {
+            // the role changed since it was stored, or was not known
+            val allowed = pins.familyPermission.refresh()
+            updatePinDialog(dialog.item) { it.copy(mayPinForEveryone = allowed != false) }
         }
     }
 

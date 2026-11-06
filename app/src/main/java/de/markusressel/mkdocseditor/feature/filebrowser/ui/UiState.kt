@@ -76,6 +76,7 @@ sealed interface DialogState {
      * @param unavailable the pins could not be loaded (older backend, no connection)
      * @param forbidden the last change was refused: only editors and admins pin for everyone
      * @param working true while a change runs
+     * @param mayPinForEveryone false for a reader, who only pins for themselves
      */
     data class Pin(
         val item: WikiItem,
@@ -83,6 +84,7 @@ sealed interface DialogState {
         val unavailable: Boolean = false,
         val forbidden: Boolean = false,
         val working: Boolean = false,
+        val mayPinForEveryone: Boolean = true,
     ) : DialogState {
         fun isPinned(scope: PinScope): Boolean? {
             val pins = pins ?: return null
