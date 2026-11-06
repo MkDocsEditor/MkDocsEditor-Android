@@ -8,3 +8,25 @@ body {
   padding: 12px 16px 48px;
   overflow-wrap: break-word;
 }
+
+/*
+ * A page embedded in a scrolling column (the home page on the dashboard): the app makes it as high as
+ * its content, and the column scrolls. So the page never scrolls itself, and everything wraps to its width.
+ */
+html.embedded, html.embedded body { overflow: hidden; }
+html.embedded body {
+  padding-bottom: 12px;
+  overflow-wrap: anywhere;
+}
+html.embedded .markdown-preview * { max-width: 100%; box-sizing: border-box; }
+html.embedded .markdown-preview pre {
+  overflow: visible;
+  white-space: pre-wrap;
+}
+html.embedded .markdown-preview pre code { white-space: inherit; }
+html.embedded .markdown-preview table {
+  display: table;
+  overflow: visible;
+}
+html.embedded .markdown-preview th, html.embedded .markdown-preview td { overflow-wrap: anywhere; }
+html.embedded .markdown-preview img, html.embedded .markdown-preview video { height: auto; }

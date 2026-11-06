@@ -218,9 +218,10 @@
       scheduleReport()
       // a preview without its own scrolling grows with its content, so the app needs the height
       if (bridge && bridge.contentHeight) {
+        // the whole body with its padding, unrounded: the app rounds up, so not a pixel is left to scroll
         var style = window.getComputedStyle(document.body)
-        var height = content.offsetTop + content.offsetHeight + parseFloat(style.marginBottom || '0')
-        bridge.contentHeight(Math.ceil(height))
+        var height = document.body.getBoundingClientRect().bottom + window.scrollY + parseFloat(style.marginBottom || '0')
+        bridge.contentHeight(height)
       }
     }).observe(content)
   }

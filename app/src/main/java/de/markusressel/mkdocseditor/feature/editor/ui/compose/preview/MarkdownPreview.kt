@@ -31,6 +31,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import com.github.ajalt.timberkt.Timber
 import java.io.ByteArrayInputStream
+import kotlin.math.ceil
 
 /**
  * Loads the files of the wiki that the preview shows (images), by their wiki path
@@ -54,7 +55,8 @@ fun interface PreviewResourceLoader {
  * @param resourceLoader loads the wiki files that the page asks for
  * @param onLinkClicked called with the target of a clicked link, as written in the markdown
  * @param onContentHeight with it, the page tells the height of its content in CSS pixels (dp), for a preview that
- * doesn't scroll itself but grows with its content. Zooming is off then.
+ * doesn't scroll itself but grows with its content, inside a column that scrolls. The page then wraps everything to
+ * its width, never scrolls, and can't be zoomed, so that every drag goes to the column.
  * @param syncedLine the source line the page should show at its top, read in a snapshot, so that the page moves along
  * when it changes. Null leaves the page where it is.
  * @param onScrolled called when the page scrolls, also when the app scrolls it, or when its content moves
@@ -108,6 +110,11 @@ internal fun MarkdownPreview(
             settings.builtInZoomControls = !growsWithContent
             // only the pinch, without the buttons on top of the page
             settings.displayZoomControls = false
+            if (growsWithContent) {
+                overScrollMode = View.OVER_SCROLL_NEVER
+                isVerticalScrollBarEnabled = false
+                isHorizontalScrollBarEnabled = false
+            }
             webViewClient = object : WebViewClient() {
                 override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
                     val url = request.url
@@ -140,8 +147,8 @@ internal fun MarkdownPreview(
                 }
 
                 @JavascriptInterface
-                fun contentHeight(height: Int) {
-                    mainHandler.post { currentOnContentHeight?.invoke(height) }
+                fun contentHeight(height: Double) {
+                    mainHandler.post { currentOnContentHeight?.invoke(contentHeightDp(height)) }
                 }
 
                 @JavascriptInterface
@@ -174,7 +181,7 @@ internal fun MarkdownPreview(
         state.onPageLoading()
         webView.loadDataWithBaseURL(
             PreviewPage.baseUrl(sectionPath),
-            PreviewPage.html(theme),
+            PreviewPage.html(theme, embedded = growsWithContent),
             "text/html",
             "utf-8",
             null,
@@ -200,6 +207,12 @@ internal fun MarkdownPreview(
 
     AndroidView(modifier = modifier, factory = { webView })
 }
+
+/**
+ * Rounds up, so that the view is never a fraction of a pixel lower than the page: that fraction would let the page
+ * scroll itself and take drags from the column around it
+ */
+internal fun contentHeightDp(cssPixels: Double): Int = ceil(cssPixels).toInt()
 
 private fun WebView.scrollToLine(line: Double, smooth: Boolean) {
     // the page may still be loading, and then catches up when it is ready
