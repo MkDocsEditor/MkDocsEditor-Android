@@ -10,7 +10,7 @@ clients show the same thing.
 |---|---|---|---|
 | File browser | [Transitions between sections](#transitions-between-sections) | Path chips during the back gesture | No |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Push, better summaries | Yes, the backend and the web client |
-| App-wide | [Settings](#settings) | Card color left | Maybe KutePreferences |
+| App-wide | [Settings](#settings) | About row and top bar | No |
 | App-wide | [Download progress outside the file browser](#download-progress-outside-the-file-browser) | Small feature | No |
 
 Order that fits how they depend on each other (Idea):
@@ -152,20 +152,12 @@ If notifications get annoying, people turn them off, and the goal is lost.
 
 ## Settings
 
-**What I want**
+**What I want (Idea)**
 
-- The settings are very rudimentary. Keep the library.
-- Expand the options: check all our features and decide which behaviors deserve a setting, then categorize them
-  properly.
-- Rework the styling. It looks similar to the rest of the app, but doesn't fully fit.
-- Changing [KutePreferences](https://github.com/markusressel/KutePreferences) is fine if needed. It's my own project,
-  and it can adapt to more use cases.
-
-**State**
-
-- Categories are Local copies, Editor and Appearance. The editor has line wrapping, line numbers and text size.
-- The category cards are flat, using `KutePreferencesTheme` colors. `Category.kt` in KutePreferences hardcodes its
-  container color, which KutePreferences would have to change.
+- The About entry on the top level is a plain row next to the category cards. It could be a card too, or sit in a
+  section of its own.
+- The settings have no top bar with a title, unlike the file browser and the dashboard, only the search field of
+  KutePreferences.
 
 ## Download progress outside the file browser
 

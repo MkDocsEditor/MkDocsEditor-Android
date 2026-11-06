@@ -22,6 +22,7 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.data.WikiScope
 import de.markusressel.mkdocseditor.feature.auth.common.data.AndroidCredentialClient
 import de.markusressel.mkdocseditor.feature.auth.common.data.CredentialClient
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
+import de.markusressel.mkdocseditor.feature.theme.domain.ApplicationNightMode
 import de.markusressel.mkdocseditor.auth.domain.AuthRepository
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.BackendManager
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.createSelectedBackendRestClient
@@ -68,6 +69,11 @@ class AppModule {
     @Singleton
     fun provideUiModeManager(context: Context): UiModeManager =
         (context.getSystemService(Context.UI_MODE_SERVICE) as UiModeManager)
+
+    @Provides
+    @Singleton
+    internal fun provideApplicationNightMode(uiModeManager: UiModeManager): ApplicationNightMode =
+        ApplicationNightMode(uiModeManager::setApplicationNightMode)
 
     @Provides
     @Singleton

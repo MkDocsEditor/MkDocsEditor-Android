@@ -26,6 +26,7 @@
 
     <string name="theme_title">Theme</string>
 
+    <string name="theme_system_value_name">Like the system</string>
     <string name="theme_dark_value_name">Dark</string>
     <string name="theme_light_value_name">Light</string>
 
@@ -66,9 +67,12 @@
     <string name="clear_offline_cache_description">Removes all locally cached documents.</string>
 
     <string name="last_offline_cache_update_key" translatable="false">last_offline_cache_update_key</string>
+    <string name="last_offline_cache_update_title">Last offline cache update</string>
+    <string name="last_offline_cache_update_running">Updating…</string>
 
     <string name="theme_light_value">0</string>
     <string name="theme_dark_value">1</string>
+    <string name="theme_system_value" translatable="false">2</string>
     <string-array name="theme_values">
         <item>@string/theme_light_value</item>
         <item>@string/theme_dark_value</item>
