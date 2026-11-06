@@ -11,6 +11,7 @@ import de.markusressel.mkdocseditor.feature.main.data.MainNavigationRequests
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
@@ -84,6 +85,13 @@ internal class MainViewModel @Inject constructor(
                 _uiState.update { old -> old.copy(fileBrowserRequest = old.fileBrowserRequest + 1) }
                 // signed in now: this is the moment a join link was waiting for
                 config?.let { pendingJoin.release(it.id) }
+            }
+        }
+        launch {
+            // a document from a notification opens on top of the file browser
+            mainNavigationRequests.documentToOpen.filterNotNull().collect {
+                getCurrentBackendConfigFlowUseCase().first()?.let { config -> updateNavItems(config) }
+                _uiState.update { old -> old.copy(fileBrowserRequest = old.fileBrowserRequest + 1) }
             }
         }
     }

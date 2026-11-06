@@ -65,6 +65,26 @@ class MainNavigationRequests @Inject constructor() {
         _sectionToShow.compareAndSet(sectionId, null)
     }
 
+    private val _documentToOpen = MutableStateFlow<DocumentRequest?>(null)
+
+    /**
+     * A document for the file browser to open, from a notification. A state, because the app may just be starting,
+     * and neither the main screen nor the file browser exist yet.
+     */
+    val documentToOpen: StateFlow<DocumentRequest?> = _documentToOpen.asStateFlow()
+
+    /** opens [documentId] in the editor, on top of the file browser */
+    fun openDocument(documentId: String) {
+        _documentToOpen.value = DocumentRequest(documentId)
+    }
+
+    fun documentOpened(request: DocumentRequest) {
+        _documentToOpen.compareAndSet(request, null)
+    }
+
+    /** not a data class: the same document asked for twice is two requests */
+    class DocumentRequest(val documentId: String)
+
     @EntryPoint
     @InstallIn(SingletonComponent::class)
     interface Accessor {
@@ -91,6 +111,21 @@ internal fun OpenJoinedDocument(navigator: Navigator) {
             } else {
                 navigator.push(CodeEditorScreen(documentId = it.documentId, joinLink = true, joinFrom = it.from, joinInstance = it.instance))
             }
+        }
+    }
+}
+
+/** opens the document of a notification in the editors on top of this file browser */
+@Composable
+internal fun OpenRequestedDocument(navigator: Navigator) {
+    val requests = rememberMainNavigationRequests()
+    val request by requests.documentToOpen.collectAsState()
+    LaunchedEffect(request) {
+        request?.let {
+            requests.documentOpened(it)
+            val open = navigator.items.editorOf(it.documentId)
+            if (open != null) navigator.popUntil { screen -> screen === open }
+            else navigator.push(CodeEditorScreen(documentId = it.documentId))
         }
     }
 }
