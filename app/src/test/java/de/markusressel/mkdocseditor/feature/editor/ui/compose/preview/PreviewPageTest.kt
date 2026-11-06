@@ -5,6 +5,7 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.EditorPa
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -71,5 +72,23 @@ class PreviewPageTest {
         )
 
         assertTrue(html.contains("class=\"markdown-preview\""))
+    }
+
+    @Test
+    fun `only an embedded page is marked so that it never scrolls itself`() {
+        val theme = PreviewTheme(EditorPalette.Light, onSurface = Color.Black, primary = Color.Green, error = Color.Red, dark = false)
+
+        assertTrue(PreviewPage.html(theme, embedded = true).contains("<html class=\"${PreviewPage.EMBEDDED_CLASS}\">"))
+        assertFalse(PreviewPage.html(theme).contains(PreviewPage.EMBEDDED_CLASS))
+
+        val css = File("src/main/assets/preview/preview.css").readText()
+        assertTrue(css.contains("html.${PreviewPage.EMBEDDED_CLASS}, html.${PreviewPage.EMBEDDED_CLASS} body { overflow: hidden; }"))
+    }
+
+    @Test
+    fun `the height of an embedded page is rounded up`() {
+        assertEquals(301, contentHeightDp(300.2))
+        assertEquals(301, contentHeightDp(300.7))
+        assertEquals(300, contentHeightDp(300.0))
     }
 }

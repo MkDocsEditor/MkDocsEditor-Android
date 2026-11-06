@@ -28,5 +28,11 @@ html.embedded .markdown-preview table {
   display: table;
   overflow: visible;
 }
-html.embedded .markdown-preview th, html.embedded .markdown-preview td { overflow-wrap: anywhere; }
+html.embedded .markdown-preview th, html.embedded .markdown-preview td {
+  padding: 4px 8px;
+  overflow-wrap: break-word;
+}
+/* too wide even with its words wrapped (preview.js): then the words break too */
+html.embedded .markdown-preview table.preview-table-squeezed th,
+html.embedded .markdown-preview table.preview-table-squeezed td { overflow-wrap: anywhere; }
 html.embedded .markdown-preview img, html.embedded .markdown-preview video { height: auto; }

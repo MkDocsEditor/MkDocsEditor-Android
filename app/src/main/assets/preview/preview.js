@@ -7,6 +7,22 @@
   'use strict'
 
   var bridge = window.MkDocsPreviewBridge
+  // grows with its content in a scrolling column of the app, and never scrolls itself (preview.css)
+  var embedded = document.documentElement.classList.contains('embedded')
+
+  /** an embedded page can't scroll sideways, so a table that is too wide with its words wrapped breaks them too */
+  function fitTables() {
+    if (!embedded) return
+    var content = document.getElementById('content')
+    var tables = content.querySelectorAll('table')
+    for (var i = 0; i < tables.length; i++) {
+      var table = tables[i]
+      table.classList.remove('preview-table-squeezed')
+      if (table.getBoundingClientRect().width > content.getBoundingClientRect().width + 0.5) {
+        table.classList.add('preview-table-squeezed')
+      }
+    }
+  }
 
   document.addEventListener('click', function (event) {
     var anchor = event.target.closest && event.target.closest('a')
@@ -181,6 +197,7 @@
     scheduleReport()
   }, { passive: true })
   window.addEventListener('resize', function () {
+    fitTables()
     scrollToSyncLine(false)
     scheduleReport()
   })
@@ -193,6 +210,7 @@
       } catch (e) {
         content.textContent = String(e)
       }
+      fitTables()
       blocks = null
       lineCount = source.split('\n').length
       scrollToSyncLine(false)
