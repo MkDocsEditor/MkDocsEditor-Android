@@ -14,6 +14,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import de.markusressel.mkdocseditor.feature.common.ui.compose.STILL_WORKING_TAG
+import de.markusressel.mkdocseditor.feature.common.ui.compose.TAKES_LONG_AFTER_MS
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTreeTest.Companion.doc
@@ -68,6 +70,17 @@ class MoveDialogsTest {
                 onDismissRequest = {},
             )
         }
+    }
+
+    @Test
+    fun `a move that takes long says that the server is still working on it`() {
+        composeRule.mainClock.autoAdvance = false
+        moveDialog(DialogState.Move(item = setup, renameOnly = true, tree = tree, working = true))
+
+        composeRule.mainClock.advanceTimeBy(TAKES_LONG_AFTER_MS - 1_000)
+        composeRule.onNodeWithTag(STILL_WORKING_TAG).assertDoesNotExist()
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.onNodeWithTag(STILL_WORKING_TAG).assertExists()
     }
 
     @Test

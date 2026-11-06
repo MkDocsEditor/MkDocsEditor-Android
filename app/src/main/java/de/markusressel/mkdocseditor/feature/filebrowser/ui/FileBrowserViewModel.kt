@@ -48,6 +48,8 @@ import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.UploadRes
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocsrestclient.sync.automerge.LocalDocumentStore
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -64,7 +66,11 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import de.markusressel.mkdocseditor.feature.common.data.TransferProgress
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 import org.mobilenativefoundation.store.store5.impl.extensions.fresh
 import javax.inject.Inject
@@ -133,6 +139,10 @@ internal class FileBrowserViewModel @Inject constructor(
 
     /** waits for the file picker; the file goes to the folder that was open when the upload started */
     private var pendingUpload: Job? = null
+
+    /** the upload or download that shows its progress */
+    @Volatile
+    private var shownTransferJob: Job? = null
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun followParentFolder() = launch {
@@ -269,6 +279,7 @@ internal class FileBrowserViewModel @Inject constructor(
         launch {
             when (event) {
                 is UiEvent.DismissError -> setError(null)
+                is UiEvent.CancelTransfer -> shownTransferJob?.cancel()
                 is UiEvent.Refresh -> {
                     refreshRequestedByUser = reloadRequests.value + 1
                     reload()
@@ -430,9 +441,11 @@ internal class FileBrowserViewModel @Inject constructor(
         pendingUpload = launch {
             val uri = eventBusManager.observe<BusEvent.FeatureEvent.FilePickerEvent.FilePickerResult>().first().uri
                 ?: return@launch
-            reportingErrors {
-                uploadResourceUseCase(sectionId, uri)
-                reload()
+            transfer { onProgress ->
+                reportingErrors {
+                    uploadResourceUseCase(sectionId, uri, onProgress)
+                    reload()
+                }
             }
         }
         _events.send(FileBrowserEvent.OpenResourceSelection)
@@ -450,17 +463,47 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private suspend fun onResourceClicked(entity: ResourceData) {
-        val result = try {
-            _events.send(FileBrowserEvent.Toast(BrowserMessage.Downloading))
-            downloadResourceUseCase.invoke(entity.id, entity.name)
-        } catch (ex: CancellationException) {
-            throw ex
-        } catch (ex: Exception) {
-            Timber.e(ex)
-            setError(ex.userMessage())
-            return
-        }
+        val result = transfer { onProgress ->
+            try {
+                downloadResourceUseCase.invoke(entity.id, entity.name, onProgress)
+            } catch (ex: CancellationException) {
+                throw ex
+            } catch (ex: Exception) {
+                Timber.e(ex)
+                setError(ex.userMessage())
+                null
+            }
+        } ?: return
         reportingErrors { shareFileUseCase(result) }
+    }
+
+    /**
+     * Runs an upload or download that shows its progress, and that the user can cancel. Cancelling only ends the
+     * transfer, not the caller. Several can run, the screen shows the one that reported last.
+     *
+     * @return the result, null when it was cancelled
+     */
+    private suspend fun <T> transfer(block: suspend (onProgress: (TransferProgress) -> Unit) -> T): T? {
+        var shownId: Long? = null
+        lateinit var job: Deferred<T>
+        // lazy: the first progress comes before the network, and must find the job
+        job = viewModelScope.async(start = CoroutineStart.LAZY) {
+            block { progress ->
+                shownId = progress.id
+                shownTransferJob = job
+                _uiState.update { old -> old.copy(transfer = progress) }
+            }
+        }
+        return try {
+            job.await()
+        } catch (e: CancellationException) {
+            // the caller goes on, unless it was cancelled itself
+            currentCoroutineContext().ensureActive()
+            null
+        } finally {
+            if (shownTransferJob === job) shownTransferJob = null
+            _uiState.update { old -> if (old.transfer?.id == shownId) old.copy(transfer = null) else old }
+        }
     }
 
     companion object {
@@ -472,6 +515,9 @@ internal class FileBrowserViewModel @Inject constructor(
 internal sealed class UiEvent {
     data object DismissError : UiEvent()
     data object Refresh : UiEvent()
+
+    /** stops the upload or download that shows its progress */
+    data object CancelTransfer : UiEvent()
 
     data class DocumentClicked(val item: DocumentData) : UiEvent()
     data class DocumentLongClicked(val item: DocumentData) : UiEvent()

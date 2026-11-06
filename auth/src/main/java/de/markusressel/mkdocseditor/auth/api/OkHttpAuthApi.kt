@@ -11,14 +11,19 @@ import java.time.Instant
 
 /**
  * [AuthApi] over OkHttp
+ *
+ * @param quickClient for the lookups that screens and background checks run on their own, so a server that does not
+ * answer them does not keep anything waiting (`RequestKind.Quick` of the REST client)
  */
 class OkHttpAuthApi(
     baseUrl: String,
     client: OkHttpClient,
+    quickClient: OkHttpClient = client,
 ) : AuthApi {
 
     private val http = AuthHttp(baseUrl, client, authMoshi())
     private val moshi = http.moshi
+    private val quickHttp = AuthHttp(baseUrl, quickClient, moshi)
 
     private val statusAdapter = moshi.adapter(AuthStatus::class.java)
     private val loginAdapter = moshi.adapter(LoginResponse::class.java)
@@ -49,7 +54,7 @@ class OkHttpAuthApi(
         requireNotNull(http.call("GET", "auth/status/", response = statusAdapter))
 
     override suspend fun serverInfo(): ServerInfo =
-        requireNotNull(http.call("GET", "server-info/", response = serverInfoAdapter))
+        requireNotNull(quickHttp.call("GET", "server-info/", response = serverInfoAdapter))
 
     override suspend fun redeemDeviceLink(token: String, username: String?, deviceName: String) =
         loginCall("auth/device-link/redeem/") {

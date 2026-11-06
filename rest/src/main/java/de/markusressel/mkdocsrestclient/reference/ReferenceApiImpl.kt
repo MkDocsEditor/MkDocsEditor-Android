@@ -3,6 +3,7 @@ package de.markusressel.mkdocsrestclient.reference
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Method
 import com.github.kittinunf.result.Result
+import de.markusressel.mkdocsrestclient.RequestKind
 import de.markusressel.mkdocsrestclient.RequestManager
 
 class ReferenceApiImpl(
@@ -30,8 +31,8 @@ class ReferenceApiImpl(
             url = "/move/",
             method = Method.POST,
             jsonData = request,
-            // a move rewrites every document that links to the item
-            timeout = MOVE_TIMEOUT,
+            // a move rewrites every document that links to the item, also its dry run reads them all
+            kind = RequestKind.LongAction,
         )
 
     override suspend fun getMoved(oldIds: List<String>): Result<MovedListModel, FuelError> =
@@ -40,11 +41,6 @@ class ReferenceApiImpl(
             urlParameters = oldIds.map { "id" to it },
             method = Method.GET,
             // opening a document waits for this answer, and a coroutine timeout can not end a blocking request
-            readTimeout = MOVED_READ_TIMEOUT,
+            kind = RequestKind.Quick,
         )
-
-    private companion object {
-        const val MOVE_TIMEOUT = 60_000
-        const val MOVED_READ_TIMEOUT = 3_000
-    }
 }

@@ -32,6 +32,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.common.data.TransferProgress
+import de.markusressel.mkdocseditor.feature.common.ui.compose.TransferProgressBar
 import de.markusressel.mkdocseditor.feature.editor.domain.PickerMarkdown
 import de.markusressel.mkdocseditor.feature.filebrowser.data.ResourceKind
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
@@ -56,6 +58,8 @@ fun interface PhotoUriFactory {
  * @param selection the selected text, which becomes the alt text
  * @param imagesOnly whether the wiki tab starts with only images listed
  * @param uploading true while an upload runs
+ * @param uploadProgress how far the upload of the current file is, null before it starts
+ * @param onCancelUpload ends the upload, nothing is inserted then
  * @param onUpload uploads files into a section and inserts the Markdown for them
  */
 @Composable
@@ -71,6 +75,8 @@ internal fun ResourcePickerDialog(
     onUpload: (sectionId: String, uris: List<Uri>, altText: String) -> Unit,
     onDismiss: () -> Unit,
     startOnUpload: Boolean = false,
+    uploadProgress: TransferProgress? = null,
+    onCancelUpload: (() -> Unit)? = null,
 ) {
     val document = tree.documentById(documentId) ?: return
     val fromPath = tree.pathOf(WikiItem.Document(document))
@@ -186,7 +192,11 @@ internal fun ResourcePickerDialog(
                         }
                     }
                     if (uploading) {
-                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth().testTag("upload-progress"))
+                        if (uploadProgress != null) {
+                            TransferProgressBar(progress = uploadProgress, onCancel = onCancelUpload)
+                        } else {
+                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().testTag("upload-progress"))
+                        }
                     }
                     Text(
                         text = stringResource(R.string.resource_picker_choose_folder),

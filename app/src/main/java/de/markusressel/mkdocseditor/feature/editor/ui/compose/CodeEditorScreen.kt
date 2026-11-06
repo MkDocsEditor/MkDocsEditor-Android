@@ -152,6 +152,8 @@ internal data class CodeEditorScreen(
                     imagesOnly = dialogState.imagesOnly,
                     startOnUpload = dialogState.startOnUpload,
                     uploading = uiState.uploading,
+                    uploadProgress = uiState.uploadProgress,
+                    onCancelUpload = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.CancelUploadClicked) },
                     thumbnailLoader = viewModel.thumbnailLoader,
                     photoUriFactory = viewModel.photoUriFactory,
                     onInsert = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.InsertMarkdown(it)) },

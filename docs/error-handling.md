@@ -38,6 +38,26 @@ system bars without extra work.
   short confirmation that has no scaffold nearby ("Link copied").
 - **Dialogs for failures.** They block the screen for something the user often can't change.
 
+## Unreachable server and long actions
+
+There is no offline mode to switch on. Editing works without a connection, and the app never makes the user wait for a
+server that doesn't answer. `RequestKind` in `RequestManager` holds the timeouts:
+
+| Kind | For | Gives up after |
+|---|---|---|
+| Quick | Reads a screen shows or that run in the background: tree, page, dashboard, pins, feed, server info, lookups | 3 s for the connection, 3 s for the answer |
+| Long action | Anything that changes the wiki: move and its dry run, rename, delete, create, pin | 3 s for the connection, 10 minutes for the answer |
+| Transfer | Uploads and downloads | 3 s for the connection, 60 s without data |
+
+- A real error fails at once with every kind: an HTTP error, a refused or reset connection, no network, a server that
+  doesn't take the connection.
+- A quick read that times out counts as an unreachable server. The stored copy stays, and the next try comes later. The
+  sync connection keeps trying in the background, with backoff.
+- A long action never fails for taking long. Its dialog shows that it is working, and after 5 s it says that the server
+  is still working on it. Closing the dialog doesn't stop the server: the end still shows, as a message, and a dialog
+  opened in the meantime stays open.
+- A transfer shows the bytes so far of the whole file, and can be cancelled. It only times out when no data moves.
+
 ## Web client
 
 The kinds and their places apply to MkDocsEditor-Web too, with the same wording where possible. Texts stay in each

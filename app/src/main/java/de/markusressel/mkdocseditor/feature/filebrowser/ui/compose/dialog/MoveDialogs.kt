@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.common.ui.compose.StillWorkingNote
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PickerScaffold
 import de.markusressel.mkdocseditor.feature.filebrowser.data.SectionData
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
@@ -140,6 +141,7 @@ internal fun MoveDialog(
         Column(modifier = Modifier.fillMaxSize()) {
             if (state.working) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth().testTag("move-working"))
+                StillWorkingNote(working = true, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             }
             val preview = state.preview
             if (preview == null) {

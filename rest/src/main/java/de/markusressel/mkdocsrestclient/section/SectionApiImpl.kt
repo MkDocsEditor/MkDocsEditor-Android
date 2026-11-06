@@ -22,6 +22,7 @@ import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Method
 import de.markusressel.mkdocsrestclient.forceParameter
 import com.github.kittinunf.result.Result
+import de.markusressel.mkdocsrestclient.RequestKind
 import de.markusressel.mkdocsrestclient.RequestManager
 
 /**
@@ -68,7 +69,13 @@ class SectionApiImpl(
     }
 
     override suspend fun deleteSection(id: String, force: Boolean): Result<String, FuelError> {
-        return requestManager.doRequest(url = "/section/$id/", urlParameters = forceParameter(force), method = Method.DELETE)
+        // with many files in it, the server takes a while
+        return requestManager.doRequest(
+            url = "/section/$id/",
+            urlParameters = forceParameter(force),
+            method = Method.DELETE,
+            kind = RequestKind.LongAction,
+        )
     }
 
 }

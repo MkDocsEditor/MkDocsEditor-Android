@@ -22,6 +22,7 @@ import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Method
 import de.markusressel.mkdocsrestclient.forceParameter
 import com.github.kittinunf.result.Result
+import de.markusressel.mkdocsrestclient.RequestKind
 import de.markusressel.mkdocsrestclient.RequestManager
 
 /**
@@ -73,7 +74,12 @@ class DocumentApiImpl(
     }
 
     override suspend fun deleteDocument(id: String, force: Boolean): Result<String, FuelError> {
-        return requestManager.doRequest(url = "/document/$id/", urlParameters = forceParameter(force), method = Method.DELETE)
+        return requestManager.doRequest(
+            url = "/document/$id/",
+            urlParameters = forceParameter(force),
+            method = Method.DELETE,
+            kind = RequestKind.LongAction,
+        )
     }
 
 }

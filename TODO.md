@@ -15,6 +15,7 @@ clients show the same thing.
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Feature | Yes, the backend and the web client |
 | App-wide | [Sync indicator](#sync-indicator) | Small feature | No |
 | App-wide | [Settings](#settings) | Few candidates left | Maybe KutePreferences |
+| App-wide | [Download progress outside the file browser](#download-progress-outside-the-file-browser) | Small feature | No |
 | Accounts | [Onboarding](#onboarding) | Optional feature tour | No |
 
 Order that fits how they depend on each other (Idea):
@@ -245,15 +246,19 @@ browser loads only, and `SyncStatusStore` remembers the time per server.
 
 **State**
 
-- Categories are Offline, Editor and Appearance. Offline mode has its setting, and the editor has line wrapping, line
-  numbers and text size.
+- Categories are Local copies, Editor and Appearance. The editor has line wrapping, line numbers and text size.
 - The category cards are flat, using `KutePreferencesTheme` colors. `Category.kt` in KutePreferences hardcodes its
   container color, which KutePreferences would have to change.
 
 **Candidates left (Idea)**
 
-- connect automatically: `connectsAutomatically` follows "always open in edit mode" today
 - default split mode: the window size decides today, and that seems fine
+
+## Download progress outside the file browser
+
+Uploads and downloads in the file browser, and uploads of the image picker, show their bytes and can be cancelled. A
+file opened from the dashboard, from a link in the preview, or for the preview itself still downloads without
+progress. `DownloadResourceUseCase` already reports it; those screens need a place for `TransferProgressBar`.
 
 ---
 

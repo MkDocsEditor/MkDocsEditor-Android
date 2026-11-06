@@ -37,7 +37,7 @@ private const val INDICATOR_DELAY_MS = 2_000L
 
 /**
  * How long opening a document without a local copy waits for the server. A server that is down answers at once,
- * but one that hangs, or a proxy in front of it, only fails after the timeouts of the requests (15 s).
+ * but one that hangs, or a proxy in front of it, only fails after the timeouts: the websocket upgrade gives up after 15 s.
  */
 internal const val OPENING_TIMEOUT_MS = 3_000L
 

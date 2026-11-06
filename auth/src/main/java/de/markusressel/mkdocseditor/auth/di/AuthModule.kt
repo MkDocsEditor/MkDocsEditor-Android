@@ -72,9 +72,17 @@ object AuthModule {
             .build()
     }
 
+    /** server info: the same timeouts as `RequestKind.Quick` of the REST client */
+    private val quickClient: OkHttpClient by lazy {
+        authClient.newBuilder()
+            .connectTimeout(3, TimeUnit.SECONDS)
+            .readTimeout(3, TimeUnit.SECONDS)
+            .build()
+    }
+
     @Provides
     @Singleton
-    fun provideAuthApiFactory(): AuthApiFactory = AuthApiFactory { baseUrl -> OkHttpAuthApi(baseUrl, authClient) }
+    fun provideAuthApiFactory(): AuthApiFactory = AuthApiFactory { baseUrl -> OkHttpAuthApi(baseUrl, authClient, quickClient) }
 
     @Provides
     @Singleton

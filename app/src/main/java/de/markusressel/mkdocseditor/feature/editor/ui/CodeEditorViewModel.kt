@@ -86,6 +86,11 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import de.markusressel.mkdocseditor.feature.common.data.TransferProgress
 import javax.inject.Inject
 
 @HiltViewModel
@@ -132,6 +137,9 @@ internal class CodeEditorViewModel @Inject constructor(
     private val visibleRange = MutableStateFlow<TextRange?>(null)
 
     private var followEnd: Job? = null
+
+    /** the upload of the image picker; cancelling it ends the upload, and nothing is inserted */
+    private var uploadJob: Job? = null
 
     private val _navigationEvents = Channel<NavigationRequest>(Channel.BUFFERED)
     internal val navigationEvents = _navigationEvents.receiveAsFlow()
@@ -459,6 +467,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 }
 
                 is UiEvent.UploadFiles -> uploadFiles(event.sectionId, event.uris, event.altText)
+                is UiEvent.CancelUploadClicked -> uploadJob?.cancel()
 
                 is UiEvent.PreviewLinkClicked -> onPreviewLinkClicked(event.href)
                 is UiEvent.SplitRatioChanged -> _uiState.update { it.copy(splitRatio = event.ratio) }
@@ -510,10 +519,22 @@ internal class CodeEditorViewModel @Inject constructor(
         val document = tree.documentById(session.documentId.value ?: return) ?: return
         val section = tree.section(sectionId) ?: return
         _uiState.update { old -> old.copy(uploading = true) }
+        // lazy: the job is known before it reports progress
+        val job = viewModelScope.async(start = CoroutineStart.LAZY) {
+            uploadFilesUseCase(tree, document, section, uris, altText) { progress ->
+                _uiState.update { old -> old.copy(uploadProgress = progress) }
+            }
+        }
+        uploadJob = job
         val result = try {
-            uploadFilesUseCase(tree, document, section, uris, altText)
+            job.await()
+        } catch (e: CancellationException) {
+            // only the upload was cancelled, the editor goes on
+            currentCoroutineContext().ensureActive()
+            return
         } finally {
-            _uiState.update { old -> old.copy(uploading = false) }
+            if (uploadJob === job) uploadJob = null
+            _uiState.update { old -> old.copy(uploading = false, uploadProgress = null) }
         }
         result.failure?.let { showMessage(context.getString(R.string.upload_failed, context.getString(it))) }
         if (result.snippets.isEmpty()) return
@@ -941,6 +962,9 @@ internal class CodeEditorViewModel @Inject constructor(
         /** true while files from the image picker are uploaded */
         val uploading: Boolean = false,
 
+        /** how far the upload of the current file is, null before it starts */
+        val uploadProgress: TransferProgress? = null,
+
         /**
          * Indicates whether the CodeEditor is in "edit" mode or not
          */
@@ -1037,6 +1061,7 @@ internal class CodeEditorViewModel @Inject constructor(
         data class InsertMarkdown(val markdown: String) : UiEvent()
 
         data class UploadFiles(val sectionId: String, val uris: List<Uri>, val altText: String) : UiEvent()
+        data object CancelUploadClicked : UiEvent()
 
         data class PreviewLinkClicked(val href: String) : UiEvent()
         data class SplitRatioChanged(val ratio: Float) : UiEvent()
