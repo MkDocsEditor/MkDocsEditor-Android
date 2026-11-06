@@ -182,6 +182,13 @@ data class WhoAmI(
     val sessionId: String? = null,
 )
 
+/** roles of an account, see docs/auth.md of MkDocsEditor-Backend */
+object AccountRole {
+    const val ADMIN = "admin"
+    const val EDITOR = "editor"
+    const val READER = "reader"
+}
+
 /**
  * Stable error codes of the backend, see docs/auth.md section 10
  */
