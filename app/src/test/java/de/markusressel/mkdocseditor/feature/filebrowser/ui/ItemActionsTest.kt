@@ -5,6 +5,16 @@ import com.github.kittinunf.fuel.core.HttpException
 import com.github.kittinunf.fuel.core.Response
 import com.github.kittinunf.fuel.core.requests.DefaultBody
 import com.github.kittinunf.result.Result as FuelResult
+import de.markusressel.mkdocseditor.auth.FakeAuthApi
+import de.markusressel.mkdocseditor.auth.InMemoryTokenStore
+import de.markusressel.mkdocseditor.auth.api.AccountInfo
+import de.markusressel.mkdocseditor.auth.domain.AuthRepository
+import de.markusressel.mkdocseditor.auth.okResponse
+import de.markusressel.mkdocseditor.auth.token.AuthSession
+import de.markusressel.mkdocseditor.feature.auth.FakeAuthBackends
+import de.markusressel.mkdocseditor.feature.auth.backendConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.toBackendRef
+import de.markusressel.mkdocseditor.feature.dashboard.domain.FamilyPinPermission
 import de.markusressel.mkdocseditor.feature.dashboard.domain.PinActions
 import de.markusressel.mkdocseditor.feature.dashboard.domain.SetPinUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.data.DocumentData
@@ -34,10 +44,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import java.io.ByteArrayInputStream
+import java.io.IOException
 import java.net.URL
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -104,9 +116,34 @@ class ItemActionsTest {
             deleteItem = { item, force -> deletes += item.id to force; delete(force) },
             ownConnection = ownConnection,
             onDeleted = { deleted += it },
-            pins = pinClient?.let { PinActions(it, SetPinUseCase(it)) },
+            pins = pinClient?.let { PinActions(it, SetPinUseCase(it), FamilyPinPermission(authRepository, backends)) },
         )
     }
+
+    private val authApi = FakeAuthApi()
+    private val tokens = InMemoryTokenStore()
+    private val authRepository = AuthRepository(tokens, { authApi }, deviceName = "Pixel 8")
+    private val backend = backendConfig(7)
+    private val backends = FakeAuthBackends(backend).apply { selectedId = backend.id }
+
+    /** what the server answers to GET /account/, null when it can not be reached */
+    private var serverRole: String? = null
+
+    /** @param role the role the login answered with, null for a session from before roles were stored */
+    private suspend fun signIn(role: String?) {
+        if (role == null) {
+            tokens.put(backend.id, AuthSession(token = "mds_token", expiresAt = null, username = "anna"))
+        } else {
+            authApi.onLogin = { _, _ -> okResponse(username = "anna", role = role) }
+            authRepository.login(requireNotNull(backend.toBackendRef()), "anna", "pw")
+        }
+        authApi.onAccount = {
+            AccountInfo(id = "a1", username = "anna", displayName = "Anna", role = serverRole ?: throw IOException("offline"))
+        }
+        authApi.calls.clear()
+    }
+
+    private val accountRequests get() = authApi.calls.count { it.startsWith("account:") }
 
     /** pins of a server where this account may only pin for itself */
     private inner class PinServer(private val mayPinForEveryone: Boolean) : IMkDocsRestClient by DummyMkDocsRestClient() {
@@ -171,6 +208,73 @@ class ItemActionsTest {
         actions.setPinned(PinScope.Personal, pinned = true)
         assertEquals(false, pinDialog.forbidden)
         assertEquals(true, pinDialog.isPinned(PinScope.Personal))
+    }
+
+    @Test
+    fun `a reader sees the switch for everyone disabled, without asking the server`() = runTest {
+        signIn(role = "reader")
+        val actions = actions(pinClient = PinServer(mayPinForEveryone = false))
+
+        actions.onActionClicked(page, ItemAction.Pin)
+
+        assertFalse(pinDialog.mayPinForEveryone)
+        assertEquals(false, pinDialog.isPinned(PinScope.Family))
+        assertEquals(0, accountRequests)
+    }
+
+    @Test
+    fun `an editor may pin for everyone`() = runTest {
+        signIn(role = "editor")
+        val actions = actions(pinClient = PinServer(mayPinForEveryone = true))
+
+        actions.onActionClicked(page, ItemAction.Pin)
+
+        assertTrue(pinDialog.mayPinForEveryone)
+        assertEquals(0, accountRequests)
+    }
+
+    @Test
+    fun `an unknown role is asked for once and then remembered`() = runTest {
+        signIn(role = null)
+        serverRole = "reader"
+        val actions = actions(pinClient = PinServer(mayPinForEveryone = false))
+
+        actions.onActionClicked(page, ItemAction.Pin)
+        assertFalse(pinDialog.mayPinForEveryone)
+
+        actions.dismiss()
+        serverRole = null
+        actions.onActionClicked(page, ItemAction.Pin)
+        assertFalse(pinDialog.mayPinForEveryone)
+        assertEquals(1, accountRequests)
+    }
+
+    @Test
+    fun `with an unknown role and no answer the switch stays, and the server decides`() = runTest {
+        signIn(role = null)
+        val actions = actions(pinClient = PinServer(mayPinForEveryone = false))
+
+        actions.onActionClicked(page, ItemAction.Pin)
+        assertTrue(pinDialog.mayPinForEveryone)
+
+        actions.setPinned(PinScope.Family, pinned = true)
+        assertTrue(pinDialog.forbidden)
+        assertTrue(pinDialog.mayPinForEveryone)
+    }
+
+    @Test
+    fun `a refused pin for everyone learns the new role`() = runTest {
+        signIn(role = "editor")
+        serverRole = "reader"
+        val actions = actions(pinClient = PinServer(mayPinForEveryone = false))
+        actions.onActionClicked(page, ItemAction.Pin)
+        assertTrue(pinDialog.mayPinForEveryone)
+
+        actions.setPinned(PinScope.Family, pinned = true)
+
+        assertTrue(pinDialog.forbidden)
+        assertFalse(pinDialog.mayPinForEveryone)
+        assertEquals("reader", authRepository.role(backend.id))
     }
 
     @Test

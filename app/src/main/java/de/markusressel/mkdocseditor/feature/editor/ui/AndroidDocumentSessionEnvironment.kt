@@ -8,9 +8,7 @@ import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocuments
 import de.markusressel.mkdocseditor.feature.editor.domain.SyncedDocumentFactory
 import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
-import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.NetworkManager
-import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.network.newValues
 import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeDocumentSyncManager
 import de.markusressel.mkdocsrestclient.sync.automerge.LocalCopyRedirects
@@ -27,8 +25,6 @@ internal class AndroidDocumentSessionEnvironment @Inject constructor(
     private val getDocumentUseCase: GetDocumentUseCase,
     private val getCurrentBackendConfigUseCase: GetCurrentBackendConfigUseCase,
     private val authRepository: AuthRepository,
-    private val preferencesHolder: KutePreferencesHolder,
-    isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val localDocumentStore: LocalDocumentStore,
     private val localCopyRedirects: LocalCopyRedirects,
     networkManager: NetworkManager,
@@ -38,12 +34,7 @@ internal class AndroidDocumentSessionEnvironment @Inject constructor(
 
     override val ioDispatcher = Dispatchers.IO
 
-    override val offlineMode = isOfflineModeEnabledFlowUseCase()
-
     override val networkChanges = networkManager.defaultNetwork.newValues().map { }
-
-    override val connectsAutomatically: Boolean
-        get() = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value
 
     override val sessionChanges = authRepository.sessionChanges
 

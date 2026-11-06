@@ -11,7 +11,7 @@ clients show the same thing.
 | Editor | [Author highlighting](#author-highlighting) | Open questions left | No |
 | Editor | [Follow another user](#follow-another-user) | Preview-only readers | Yes, the web client |
 | File browser | [Entries lack context](#file-browser-entries-lack-context) | Design and UI | Maybe the backend |
-| File browser | [Transitions between sections](#transitions-between-sections) | Design and UI | No |
+| File browser | [Transitions between sections](#transitions-between-sections) | Path chips during the back gesture | No |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Feature | Yes, the backend and the web client |
 | App-wide | [Sync indicator](#sync-indicator) | Small feature | No |
 | App-wide | [Settings](#settings) | Few candidates left | Maybe KutePreferences |
@@ -86,20 +86,10 @@ is on permanently. Three modes:
 
 ## Transitions between sections
 
-**What I want**
+Folders change with a shared axis, and the back gesture previews the parent folder. What is left:
 
-We have no transitions when entering or exiting a section in the file browser, which looks a bit jarring. I'm not sure
-which direction to take the animations. Maybe there are widely used patterns we can adopt.
-
-**State**
-
-Folder changes now use a shared axis on X with a fade, in `FileBrowserScreenContent`. A slow folder animates only when
-its content has loaded. The path chips fade in and out with the same timing (`SectionPath`).
-
-**Open questions**
-
-- Should the back gesture preview the parent folder (predictive back)? That needs a `PredictiveBackHandler` and the
-  parent's content on hand, so it's more work.
+- The path chips do not follow the back gesture. They change once it is released, so the last chip only starts to fade
+  out then.
 
 ---
 
@@ -147,8 +137,6 @@ setting and the sync indicator. It shows what is stored at once, also offline, a
 
 1. Notifications, which are "there are new entries in the feed".
 2. Better summaries, if the simple ones aren't enough.
-3. The app shows "Pin for everyone" to readers too, and only says no after the server refused: it doesn't know the
-   role of the account without asking the server.
 
 **Gamification (Idea)**
 
@@ -270,18 +258,6 @@ browser loads only, and `SyncStatusStore` remembers the time per server.
 ---
 
 # Accounts
-
-## Backend configuration
-
-**What I want**
-
-Both the code and the UI deserve a rework. It has everything we need, but it looks clunky and crammed, and doesn't
-behave very elegantly. Redesign the UX and UI, and the code of the UI layer.
-
-**State**
-
-Reworked. The edit screen has one address field instead of host, port and SSL, and the rarely needed fields are under
-"Advanced". A new server still starts in `ConnectServerScreen`. Not tried on a device yet.
 
 ## Onboarding
 
