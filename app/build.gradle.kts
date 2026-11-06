@@ -273,6 +273,9 @@ dependencies {
     implementation(libs.coil.network.okhttp)
     implementation(libs.okhttp)
 
+    // Color of the profile, the same picker as in KutePreferences
+    implementation(libs.godaddy.colorpicker)
+
     // WebView
     implementation(libs.androidx.webkit)
 
