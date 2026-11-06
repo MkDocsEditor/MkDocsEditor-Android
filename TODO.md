@@ -8,7 +8,6 @@ clients show the same thing.
 
 | Area | Entry | Kind of work | Needs another repo |
 |---|---|---|---|
-| Editor | [Opening a document when the backend is unavailable](#opening-a-document-when-the-backend-is-unavailable) | Bug and small feature | No |
 | Editor | [Author highlighting](#author-highlighting) | Open questions left | No |
 | Editor | [Follow another user](#follow-another-user) | Preview-only readers | Yes, the web client |
 | File browser | [Entries lack context](#file-browser-entries-lack-context) | Design and UI | Maybe the backend |
@@ -32,30 +31,6 @@ Works in the editor pane. What is left:
 
 - A reader in preview-only mode sends no viewport (`"viewport": null`), so a follower only sees their cursor. Mapping the
   preview position to the text needs its own PR, in both clients.
-
-## Opening a document when the backend is unavailable
-
-**What I want**
-
-- Today a loading bar shows for a very long time. That is irritating, because the document can still be read
-  when an offline copy is available.
-- Showing the connection state is good, but it should be less distracting, at least when we already have a
-  relatively up-to-date local copy to show and work with.
-
-**Where to start**
-
-- The bar is `LOADING_INDICATOR_TAG` in `CodeEditorScreenContent`, driven by `DocumentSession.State.loading`.
-- #121 hides the bar while a local copy is showing (`DocumentSession.showsLoading`). `State.loading` itself is unchanged,
-  and without a local copy the bar can still last long.
-- Tried on an emulator on 2026-11-04, with the server down and in airplane mode. With a local copy the page opens at once
-  without a bar. Without one, a banner says the page isn't on this device yet, within 3 seconds.
-- `WebsocketConnectionHandler` gives up on an upgrade that never gets an answer after 15 s. A blocked route and a real
-  proxy are not tried.
-
-**Decided**
-
-- No warning for a copy that has been out of date for long (Markus, 2026-11-06): it isn't clear what would count as too
-  long, and it may not be worth having at all.
 
 ## Author highlighting
 
