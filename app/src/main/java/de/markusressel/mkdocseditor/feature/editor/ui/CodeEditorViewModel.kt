@@ -31,6 +31,7 @@ import de.markusressel.kodeeditor.library.compose.KodeEditorState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
+import de.markusressel.mkdocseditor.feature.editor.domain.localViewport
 import kotlinx.coroutines.CancellationException
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -131,6 +132,9 @@ internal class CodeEditorViewModel @Inject constructor(
     private val openedByJoinLink = MutableStateFlow(false)
 
     private val visibleRange = MutableStateFlow<TextRange?>(null)
+
+    /** the source lines the rendered page shows, null while it has no room */
+    private val previewLines = MutableStateFlow<IntRange?>(null)
 
     private var followEnd: Job? = null
 
@@ -489,6 +493,7 @@ internal class CodeEditorViewModel @Inject constructor(
                     dismissCurrentDialog()
                 }
                 is UiEvent.VisibleRangeChanged -> onVisibleRangeChanged(event.range)
+                is UiEvent.PreviewLinesChanged -> previewLines.value = event.lines
             }
         }
     }
@@ -776,16 +781,12 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     private suspend fun publishViewport() {
-        combine(visibleRange, uiState.map { it.editorShown }) { range, shown -> range.takeIf { shown } }
+        combine(visibleRange, previewLines, uiState.map { it.editorShown }.distinctUntilChanged()) { range, lines, shown ->
+            localViewport(editorShown = shown, editorRange = range, previewLines = lines, text = editorText.text)
+        }
             .distinctUntilChanged()
             // every change: the sync manager spreads them out, and sends the newest one along with each cursor
-            .collect { range ->
-                if (range == null || range.collapsed) {
-                    session.onLocalViewportChanged(null, null)
-                } else {
-                    session.onLocalViewportChanged(range.start, range.end - 1)
-                }
-            }
+            .collect { viewport -> session.onLocalViewportChanged(viewport?.first, viewport?.second) }
     }
 
     /**
@@ -1018,6 +1019,9 @@ internal class CodeEditorViewModel @Inject constructor(
         /** @param color `#rrggbb`, null for the color of the account */
         data class CursorColorChosen(val color: String?) : UiEvent()
         data class VisibleRangeChanged(val range: TextRange?) : UiEvent()
+
+        /** @param lines the 0-based source lines the rendered page shows, null while it has no room */
+        data class PreviewLinesChanged(val lines: IntRange?) : UiEvent()
 
         data class FormatClicked(val action: FormatAction) : UiEvent()
         data object InsertLinkClicked : UiEvent()

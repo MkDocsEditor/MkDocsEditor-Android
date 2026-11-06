@@ -10,7 +10,6 @@ clients show the same thing.
 |---|---|---|---|
 | Editor | [Opening a document when the backend is unavailable](#opening-a-document-when-the-backend-is-unavailable) | Bug and small feature | No |
 | Editor | [Author highlighting](#author-highlighting) | Open questions left | No |
-| Editor | [Follow another user](#follow-another-user) | Preview-only readers | Yes, the web client |
 | File browser | [Entries lack context](#file-browser-entries-lack-context) | Design and UI | Maybe the backend |
 | File browser | [Transitions between sections](#transitions-between-sections) | Design and UI | No |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Feature | Yes, the backend and the web client |
@@ -25,13 +24,6 @@ Order that fits how they depend on each other (Idea):
 ---
 
 # Editor
-
-## Follow another user
-
-Works in the editor pane. What is left:
-
-- A reader in preview-only mode sends no viewport (`"viewport": null`), so a follower only sees their cursor. Mapping the
-  preview position to the text needs its own PR, in both clients.
 
 ## Opening a document when the backend is unavailable
 

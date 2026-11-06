@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
 import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRuns
+import de.markusressel.mkdocseditor.feature.editor.domain.visibleSourceLines
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -93,6 +94,10 @@ internal fun CodeEditorScreenContent(
     val splitMode = uiState.splitMode ?: defaultSplitMode(configuration.screenWidthDp, configuration.screenHeightDp)
 
     val editorShown = uiState.editorShown
+    val previewShown = !editorShown || splitMode != SplitMode.Off
+
+    val scrollSync = remember(editorState) { ScrollSync { editorState.text } }
+    SideEffect { scrollSync.active = editorShown && previewShown }
 
     // at the start of the animation, so the keyboard does not wait for the editor to leave
     val focusManager = LocalFocusManager.current
@@ -107,7 +112,10 @@ internal fun CodeEditorScreenContent(
 
     DisposableEffect(editorState) {
         val listener = object : KodeEditorListener {
-            override fun onLocalEdit(splice: TextSplice) = chrome.onTextEdited()
+            override fun onLocalEdit(splice: TextSplice) {
+                chrome.onTextEdited()
+                scrollSync.onEditorDriving()
+            }
         }
         editorState.addListener(listener)
         onDispose { editorState.removeListener(listener) }
@@ -193,7 +201,7 @@ internal fun CodeEditorScreenContent(
                     modifier = Modifier.weight(1f),
                     showEditor = editorShown,
                     // reading shows the page; editing shows it only if the user or a wide window wants it
-                    showPreview = !editorShown || splitMode != SplitMode.Off,
+                    showPreview = previewShown,
                     splitMode = splitMode,
                     ratio = uiState.splitRatio,
                     onRatioChange = { onUiEvent(CodeEditorViewModel.UiEvent.SplitRatioChanged(it)) },
@@ -213,16 +221,22 @@ internal fun CodeEditorScreenContent(
                             localColor = uiState.localColor,
                             onStopFollowing = { onUiEvent(CodeEditorViewModel.UiEvent.StopFollowingClicked) },
                             onVisibleRangeChanged = { onUiEvent(CodeEditorViewModel.UiEvent.VisibleRangeChanged(it)) },
+                            scrollSync = scrollSync,
                         )
                     },
                     preview = {
                         MarkdownPreview(
                             modifier = Modifier.fillMaxSize(),
-                            visible = !editorShown || splitMode != SplitMode.Off,
+                            visible = previewShown,
                             text = editorState.text,
                             sectionPath = uiState.previewSectionPath,
                             resourceLoader = previewResourceLoader,
                             onLinkClicked = { onUiEvent(CodeEditorViewModel.UiEvent.PreviewLinkClicked(it)) },
+                            syncedLine = { scrollSync.previewLine },
+                            onScrolled = { scroll ->
+                                scrollSync.onPreviewScrolled(scroll)
+                                onUiEvent(CodeEditorViewModel.UiEvent.PreviewLinesChanged(visibleSourceLines(scroll)))
+                            },
                         )
                     },
                 )
