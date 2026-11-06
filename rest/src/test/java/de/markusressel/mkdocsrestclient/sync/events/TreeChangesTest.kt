@@ -20,8 +20,7 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.assertNull
 
 private const val WEBSOCKET_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 private const val TIMEOUT_MS = 5_000L
@@ -138,15 +137,17 @@ class TreeChangesTest {
     }
 
     @Test
-    fun `only a tree change counts as a change`() {
-        assertTrue(isTreeChanged("""{"type":"tree-changed"}"""))
-        assertFalse(isTreeChanged("""{"type":"heartbeat"}"""))
-        assertFalse(isTreeChanged("""{"type":"online","documents":[]}"""))
+    fun `only the change messages count as changes`() {
+        assertEquals(ServerEvent.TreeChanged, serverEventOf("""{"type":"tree-changed"}"""))
+        assertEquals(ServerEvent.PinsChanged, serverEventOf("""{"type":"pins-changed"}"""))
+        assertEquals(ServerEvent.FeedChanged, serverEventOf("""{"type":"feed-changed"}"""))
+        assertNull(serverEventOf("""{"type":"heartbeat"}"""))
+        assertNull(serverEventOf("""{"type":"online","documents":[]}"""))
     }
 
     @Test
     fun `an unreadable message is no change`() {
-        assertFalse(isTreeChanged("not json"))
+        assertNull(serverEventOf("not json"))
     }
 
     @Test

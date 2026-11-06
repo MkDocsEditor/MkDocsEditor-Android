@@ -125,6 +125,7 @@ internal data class CodeEditorScreen(
             onBacklinkClicked = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.ItemBacklinkClicked(it)) },
             onDeleteConfirmed = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.ItemDeleteConfirmed) },
             onDismissRequest = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.ItemDialogDismissed) },
+            onPinChanged = { scope, pinned -> viewModel.onUiEvent(CodeEditorViewModel.UiEvent.ItemPinChanged(scope, pinned)) },
         )
 
         val tree by viewModel.pickerTree.collectAsState()

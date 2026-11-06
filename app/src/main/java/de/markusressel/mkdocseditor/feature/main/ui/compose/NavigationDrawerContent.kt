@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
@@ -108,8 +110,9 @@ private fun DrawerNavItem(
             modifier = Modifier
                 .size(32.dp),
             imageVector = when (item) {
-                is NavItem.BackendSelection -> Icons.Default.Home
-                is NavItem.FileBrowser -> Icons.Default.Home
+                is NavItem.BackendSelection -> Icons.Default.Cloud
+                is NavItem.Dashboard -> Icons.Default.Home
+                is NavItem.FileBrowser -> Icons.AutoMirrored.Filled.List
                 is NavItem.Settings -> Icons.Default.Settings
                 is NavItem.About -> Icons.Default.Info
             },
@@ -123,6 +126,7 @@ private fun DrawerNavItem(
             text = stringResource(
                 id = when (item) {
                     is NavItem.BackendSelection -> R.string.bottom_navigation_backend_selection
+                    is NavItem.Dashboard -> R.string.bottom_navigation_item_dashboard
                     is NavItem.FileBrowser -> R.string.bottom_navigation_item_files
                     is NavItem.Settings -> R.string.bottom_navigation_item_settings
                     is NavItem.About -> R.string.bottom_navigation_item_about

@@ -161,28 +161,19 @@ or next to it.
 - It is the start page by default. A setting switches the start back to the file list.
 - Family pins can be set and removed by admins and editors. Personal pins by every account, for itself.
 
-**Order**
+**State**
 
-1. Backend: the pins API and a feed of changes across all documents. Clients: the dashboard with the `index` page and
-   the setting, which need no backend work.
-2. Pins and the feed on the dashboard, in both clients.
-3. Notifications, which are "there are new entries in the feed".
-4. Better summaries, if the simple ones aren't enough.
+The dashboard ("What's going on") is built in the app (`feature/dashboard`), the web client and the backend
+(`docs/dashboard.md` there): the `index` page, family and personal pins, the feed of changes with paging, the start page
+setting and the sync indicator. It shows what is stored at once, also offline, and follows `pins-changed` and
+`feed-changed` while visible. Pages are pinned from their dialog in the file list and from the editor menu.
 
-**The page**
+**What is left**
 
-- App: the start tab comes from `GetInitialTabUseCase` (`NavItem.FileBrowser` today), and the bottom bar from
-  `MainViewModel`. A new `NavItem` and a new `feature/` folder would hold the page.
-- Web: `/` is `SectionView` (`src/router/index.ts`), so the default page changes there too.
-- It must open instantly and work offline: show what is stored, and update it in the background.
-- The file list stays one tap away, and a setting makes it the start page instead.
-
-**Pinned pages**
-
-- Store pins on the backend, so they are the same in the app and the web client.
-- Two kinds, decided: pins for the whole family, which admins and editors set, and personal pins.
-- A pinned page must be available offline, so the app should keep a local copy of it.
-- Pins must follow a document that moves. Ids change on a move, see `LocalCopyRedirects`.
+1. Notifications, which are "there are new entries in the feed".
+2. Better summaries, if the simple ones aren't enough.
+3. The app shows "Pin for everyone" to readers too, and only says no after the server refused: it doesn't know the
+   role of the account without asking the server.
 
 **Gamification (Idea)**
 
@@ -203,8 +194,8 @@ Keep it small, and useful for the wiki. A home wiki has no need for points or ra
 - Commits make a natural unit for a change: section 10 of the same doc commits after `git.commitAfterIdle` (10 minutes
   without a change). So one editing session is one entry rather than one per key press, but a notification comes
   that much later.
-- `GET /events/ws/` pushes tree changes, and the file browser follows them while visible (`ObserveTreeChangesUseCase`).
-  I didn't check whether it could also serve the "What's going on" page live.
+- `GET /events/ws/` pushes tree, pin and feed changes; the file browser and the dashboard follow them while visible
+  (`ObserveServerEventsUseCase`).
 - The events socket ignores `items-moved`. A move in another client drops the offline copy under the old id with the next
   fetch, and a renamed open folder sends the user to its parent. Any refresh does that today, but it now happens at once.
 - Opening the file browser fetches the tree twice: once for the folder and once after the socket connects.
@@ -271,8 +262,8 @@ browser loads only, and `SyncStatusStore` remembers the time per server.
 
 **Decided**
 
-- The file browser and the dashboard show it, the backend page doesn't (Markus, 2026-11-06). The dashboard gets it
-  when it is built.
+- The file browser and the dashboard show it, the backend page doesn't (Markus, 2026-11-06). Both count only their own
+  loads.
 
 **Open questions**
 

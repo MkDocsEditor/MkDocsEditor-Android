@@ -18,6 +18,7 @@ sealed interface TopAppBarAction {
         data object MenuDivider : CodeEditor
         data object RenameAction : CodeEditor
         data object MoveAction : CodeEditor
+        data object PinAction : CodeEditor
         data object DeleteAction : CodeEditor
         /** @param mode the arrangement of the edit mode, null while reading */
         data class EditorModeAction(val mode: SplitMode?) : CodeEditor

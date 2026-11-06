@@ -5,6 +5,7 @@ sealed class NavItem {
     sealed class Secondary : NavItem()
 
     data object BackendSelection : Primary()
+    data object Dashboard : Primary()
     data object FileBrowser : Primary()
     data object Settings : Primary()
 
