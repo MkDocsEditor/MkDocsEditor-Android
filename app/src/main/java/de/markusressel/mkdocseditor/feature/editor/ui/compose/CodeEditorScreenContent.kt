@@ -343,15 +343,13 @@ internal fun ConnectionAction(
             asset = when (indicator) {
                 ConnectionIndicator.Connected -> MaterialDesignIconic.Icon.gmi_cloud_done
                 ConnectionIndicator.UnsyncedChanges -> MaterialDesignIconic.Icon.gmi_cloud_upload
-                ConnectionIndicator.NotConnected,
-                ConnectionIndicator.OfflineMode -> MaterialDesignIconic.Icon.gmi_cloud_off
+                ConnectionIndicator.NotConnected -> MaterialDesignIconic.Icon.gmi_cloud_off
             },
             contentDescription = stringResource(
                 when (indicator) {
                     ConnectionIndicator.Connected -> R.string.connection_connected
                     ConnectionIndicator.UnsyncedChanges -> R.string.unsynced_changes
-                    ConnectionIndicator.NotConnected,
-                    ConnectionIndicator.OfflineMode -> R.string.connection_not_connected
+                    ConnectionIndicator.NotConnected -> R.string.connection_not_connected
                 }
             ),
             // the one state the user may want to know about

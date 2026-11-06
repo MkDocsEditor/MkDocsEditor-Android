@@ -44,10 +44,10 @@ import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.LoadWikiT
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.MoveItemUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ShareFileUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.UploadResourceUseCase
-import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocsrestclient.sync.automerge.LocalDocumentStore
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,6 +60,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 import org.mobilenativefoundation.store.store5.impl.extensions.fresh
 import javax.inject.Inject
@@ -79,7 +80,6 @@ internal class FileBrowserViewModel @Inject constructor(
     private val observeServerEventsUseCase: ObserveServerEventsUseCase,
     deleteItemUseCase: DeleteItemUseCase,
     pinActions: PinActions,
-    private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val uploadResourceUseCase: UploadResourceUseCase,
     private val downloadResourceUseCase: DownloadResourceUseCase,
     private val findParentSectionOfDocumentUseCase: FindParentSectionOfDocumentUseCase,
@@ -423,7 +423,10 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     private suspend fun onDocumentClicked(entity: DocumentData) {
-        if (isOfflineModeEnabledFlowUseCase().value && entity.isOfflineAvailable.not()) {
+        // while the server can't be reached, a page without a copy on this device has nothing to show
+        if (uiState.value.lastSyncFailed && !entity.isOfflineAvailable &&
+            withContext(Dispatchers.IO) { !localDocumentStore.contains(entity.id) }
+        ) {
             _events.send(FileBrowserEvent.Toast(BrowserMessage.NotAvailableOffline))
             return
         }

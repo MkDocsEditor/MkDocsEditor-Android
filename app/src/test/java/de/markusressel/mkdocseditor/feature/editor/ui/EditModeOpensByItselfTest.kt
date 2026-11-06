@@ -10,13 +10,12 @@ class EditModeOpensByItselfTest {
     /** Before, it waited for the connection, and a server that did not answer turned it into the page after 15 s */
     @Test
     fun `a local copy opens the edit mode without waiting for the server`() {
-        assertTrue(editModeOpensByItself(editable = true, offlineMode = false, wanted = true))
+        assertTrue(editModeOpensByItself(editable = true, wanted = true))
     }
 
     @Test
-    fun `it stays closed when nothing can be edited, in the offline mode, or when the user does not want it`() {
-        assertFalse(editModeOpensByItself(editable = false, offlineMode = false, wanted = true))
-        assertFalse(editModeOpensByItself(editable = true, offlineMode = true, wanted = true))
-        assertFalse(editModeOpensByItself(editable = true, offlineMode = false, wanted = false))
+    fun `it stays closed when nothing can be edited, or when the user does not want it`() {
+        assertFalse(editModeOpensByItself(editable = false, wanted = true))
+        assertFalse(editModeOpensByItself(editable = true, wanted = false))
     }
 }

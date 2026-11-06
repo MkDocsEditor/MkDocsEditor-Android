@@ -120,8 +120,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(
         initialUiState(
-            editModeOpening = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value &&
-                !sessionEnvironment.offlineMode.value,
+            editModeOpening = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value,
         )
     )
     internal val uiState = _uiState.asStateFlow()
@@ -305,12 +304,10 @@ internal class CodeEditorViewModel @Inject constructor(
         launch {
             combine(
                 session.editable,
-                sessionEnvironment.offlineMode,
                 openedByJoinLink,
-            ) { editable, offlineModeEnabled, _ ->
+            ) { editable, _ ->
                 editModeOpensByItself(
                     editable = editable,
-                    offlineMode = offlineModeEnabled,
                     wanted = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value || openedByJoinLink.value,
                 )
             }.distinctUntilChanged().collect {
@@ -587,18 +584,16 @@ internal class CodeEditorViewModel @Inject constructor(
 
     /** says what the state means, and does not wait for the next try to connect */
     private fun onConnectionIconClicked(indicator: ConnectionIndicator) {
-        val offlineMode = sessionEnvironment.offlineMode.value
         showMessage(
             context.getString(
                 when {
-                    offlineMode -> R.string.connection_offline_mode_info
                     indicator == ConnectionIndicator.Connected -> R.string.connection_connected_info
                     indicator == ConnectionIndicator.UnsyncedChanges -> R.string.connection_unsynced_changes_info
                     else -> R.string.connection_not_connected_info
                 }
             )
         )
-        if (!offlineMode && session.connectionStatus.value?.connected != true) session.reconnect()
+        if (session.connectionStatus.value?.connected != true) session.reconnect()
     }
 
     /** opens the references panel and loads its data */
@@ -702,7 +697,7 @@ internal class CodeEditorViewModel @Inject constructor(
     fun onJoinLinkOpened(from: String?, instance: String?) {
         // someone who can only read still gets the editor, because only there the cursor shows where the sender is
         _uiState.update { it.copy(readOnlyEditorShown = true) }
-        if (!sessionEnvironment.offlineMode.value && !uiState.value.editModeActive) {
+        if (!uiState.value.editModeActive) {
             _uiState.update {
                 it.copy(editModeOpening = true, isBottomAppBarVisible = true, fabConfig = FabConfig(right = listOf(DisableEditModeFabConfig)))
             }
@@ -762,7 +757,7 @@ internal class CodeEditorViewModel @Inject constructor(
         if (uiState.value.following == null) return
         followEnd?.cancel()
         followEnd = null
-        _uiState.update { it.ownCursorPlaced(offline = sessionEnvironment.offlineMode.value) }
+        _uiState.update { it.ownCursorPlaced() }
     }
 
     private fun stopFollowing() {
@@ -880,8 +875,8 @@ internal class CodeEditorViewModel @Inject constructor(
          *
          * @param wanted the user always wants the edit mode, or a join link asks for it
          */
-        internal fun editModeOpensByItself(editable: Boolean, offlineMode: Boolean, wanted: Boolean): Boolean =
-            editable && !offlineMode && wanted
+        internal fun editModeOpensByItself(editable: Boolean, wanted: Boolean): Boolean =
+            editable && wanted
 
         internal val DisableEditModeFabConfig = FabConfig.Fab<CodeEditorFabId>(
             id = CodeEditorFabId.DisableEditMode,
@@ -905,10 +900,10 @@ internal class CodeEditorViewModel @Inject constructor(
          * The user put the own cursor into the text while following: they want to work there now, not watch. An editor
          * that only following opened can't take a cursor, so the edit mode comes on for someone who may edit.
          */
-        internal fun UiState.ownCursorPlaced(offline: Boolean): UiState {
+        internal fun UiState.ownCursorPlaced(): UiState {
             if (following == null) return this
             val stopped = copy(following = null)
-            return if (!editModeActive && canEdit && !offline) stopped.editing() else stopped
+            return if (!editModeActive && canEdit) stopped.editing() else stopped
         }
 
         internal fun initialUiState(editModeOpening: Boolean) = UiState(

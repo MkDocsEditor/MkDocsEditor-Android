@@ -18,11 +18,6 @@ sealed interface BusEvent {
      */
     sealed interface SettingsEvent : BusEvent {
         /**
-         * Event that indicates a state change of the "Offline Mode" setting
-         */
-        data class OfflineModeChangedEvent(val enabled: Boolean) : BusEvent
-
-        /**
          * Indicates the request to immediately schedule an update of the offline cache
          */
         data object ScheduleOfflineCacheUpdateRequestEvent : BusEvent

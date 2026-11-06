@@ -27,7 +27,6 @@ import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DownloadResourceUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ShareFileUseCase
 import de.markusressel.mkdocseditor.feature.main.data.MainNavigationRequests
-import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocsrestclient.dashboard.DashboardSnapshotModel
 import de.markusressel.mkdocsrestclient.dashboard.FeedEntryModel
 import de.markusressel.mkdocsrestclient.dashboard.PinModel
@@ -59,7 +58,6 @@ internal class DashboardViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val getCurrentBackendConfigFlowUseCase: GetCurrentBackendConfigFlowUseCase,
     private val observeServerEventsUseCase: ObserveServerEventsUseCase,
-    private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val authRepository: AuthRepository,
     private val dashboardStore: DashboardStore,
     private val syncStatusStore: SyncStatusStore,
@@ -150,7 +148,6 @@ internal class DashboardViewModel @Inject constructor(
     }
 
     private suspend fun refreshAll(userAsked: Boolean = false) {
-        if (isOfflineModeEnabledFlowUseCase().value) return
         _uiState.update { it.copy(loading = userAsked) }
         refreshDashboard()
         refreshHomePage()
