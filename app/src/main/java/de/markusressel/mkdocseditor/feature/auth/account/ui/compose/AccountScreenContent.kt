@@ -208,13 +208,11 @@ private fun ProfileSection(
             label = { Text(stringResource(R.string.account_email)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
         )
-        OutlinedTextField(
+        ProfileColorField(
             modifier = Modifier.fillMaxWidth(),
             value = uiState.color,
+            fallback = fallbackPeerColor(account.username),
             onValueChange = { onUiEvent(UiEvent.ColorChanged(it)) },
-            singleLine = true,
-            label = { Text(stringResource(R.string.account_color)) },
-            supportingText = { Text(stringResource(R.string.account_color_hint)) },
         )
         Button(
             enabled = !uiState.loading,

@@ -199,6 +199,7 @@ objectbox-linux = { module = "io.objectbox:objectbox-linux", version.ref = "obje
 objectbox-gradle-plugin = { group = "io.objectbox", name = "objectbox-gradle-plugin", version.ref = "objectboxVersion" }
 
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+godaddy-colorpicker = { module = "com.godaddy.android.colorpicker:compose-color-picker", version = "0.7.0" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver3", version.ref = "okhttp" }
