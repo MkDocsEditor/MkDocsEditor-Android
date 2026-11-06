@@ -97,10 +97,12 @@ class KutePreferencesHolder @Inject constructor(
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_colorize),
             title = context.getString(R.string.theme_title),
             possibleValues = mapOf(
+                R.string.theme_system_value to R.string.theme_system_value_name,
                 R.string.theme_dark_value to R.string.theme_dark_value_name,
                 R.string.theme_light_value to R.string.theme_light_value_name
             ),
-            defaultValue = R.string.theme_dark_value,
+            // the app followed the system before this setting did anything
+            defaultValue = R.string.theme_system_value,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { old, new ->
                 eventBusManager.send(BusEvent.SettingsEvent.ThemeChangedEvent(new))

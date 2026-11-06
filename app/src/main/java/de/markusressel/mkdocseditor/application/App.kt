@@ -17,6 +17,7 @@ import de.markusressel.mkdocseditor.event.subscribe
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.MigrateBackendBasicAuthUseCase
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
+import de.markusressel.mkdocseditor.feature.theme.domain.ApplyThemeUseCase
 import de.markusressel.mkdocseditor.network.domain.ScheduleOfflineCacheUpdateUseCase
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import kotlinx.coroutines.MainScope
@@ -63,6 +64,9 @@ class App : Application(), Configuration.Provider, SingletonImageLoader.Factory 
     @Inject
     internal lateinit var imageLoader: Provider<ImageLoader>
 
+    @Inject
+    internal lateinit var applyThemeUseCase: ApplyThemeUseCase
+
     // AsyncImage uses this one, which knows how to load profile pictures
     override fun newImageLoader(context: PlatformContext): ImageLoader = imageLoader.get()
 
@@ -92,6 +96,11 @@ class App : Application(), Configuration.Provider, SingletonImageLoader.Factory 
     }
 
     private fun listenToEvents() {
+        eventBusManager.observe<BusEvent.SettingsEvent.ThemeChangedEvent>()
+            .subscribe { event -> applyThemeUseCase(event.theme) }
+        // also when the default or an older value was never applied
+        applyThemeUseCase(preferencesHolder.themePreference.persistedValue.value)
+
         eventBusManager.observe<BusEvent.SettingsEvent.ScheduleOfflineCacheUpdateRequestEvent>()
             .subscribe { event ->
                 runCatching {
