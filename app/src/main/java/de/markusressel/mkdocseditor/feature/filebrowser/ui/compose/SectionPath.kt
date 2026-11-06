@@ -3,6 +3,8 @@ package de.markusressel.mkdocseditor.feature.filebrowser.ui.compose
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -21,6 +24,7 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,7 +60,9 @@ internal fun SectionPath(
 ) {
     val listState = rememberLazyListState()
     LaunchedEffect(path) {
-        if (path.size > 1) listState.animateScrollToItem(path.lastIndex - 1)
+        // the list shows the new path from the next frame on
+        withFrameNanos {}
+        listState.scrollToEnd()
     }
 
     Row(
@@ -105,6 +111,27 @@ internal fun SectionPath(
             }
         }
     }
+}
+
+/**
+ * Scrolls until the last item ends at the end of the viewport. Not with [LazyListState.animateScrollToItem]: while that
+ * runs, the list skips its item animations, so a chip that was removed in the meantime vanishes instead of fading out.
+ */
+private suspend fun LazyListState.scrollToEnd() {
+    val last = layoutInfo.totalItemsCount - 1
+    if (last < 0 || !canScrollForward) return
+    // an item is only measured once it reaches into the viewport, and a new one starts right behind its end
+    if (layoutInfo.visibleItemsInfo.none { it.index == last }) scrollBy(1F)
+    val item = layoutInfo.visibleItemsInfo.firstOrNull { it.index == last }
+    if (item == null) {
+        // several new folders at once, too far for an animation
+        scrollToItem(last)
+        return
+    }
+    animateScrollBy(
+        value = (item.offset + item.size - layoutInfo.viewportEndOffset).toFloat(),
+        animationSpec = tween(FOLDER_ANIMATION_MS),
+    )
 }
 
 @Composable
