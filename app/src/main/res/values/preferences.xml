@@ -68,6 +68,8 @@
     <string name="clear_offline_cache_description">Removes all locally cached documents.</string>
 
     <string name="last_offline_cache_update_key" translatable="false">last_offline_cache_update_key</string>
+    <string name="last_offline_cache_update_title">Last offline cache update</string>
+    <string name="last_offline_cache_update_running">Updating…</string>
 
     <string name="theme_light_value">0</string>
     <string name="theme_dark_value">1</string>

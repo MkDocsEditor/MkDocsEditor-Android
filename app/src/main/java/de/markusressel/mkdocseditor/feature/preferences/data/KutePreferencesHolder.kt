@@ -86,7 +86,7 @@ class KutePreferencesHolder @Inject constructor(
         LastOfflineCacheUpdatePreferenceItem(
             key = context.getString(R.string.last_offline_cache_update_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_time),
-            title = context.getString(R.string.category_offline_cache_title),
+            title = context.getString(R.string.last_offline_cache_update_title),
             dataProvider = dataProvider,
         )
     }
