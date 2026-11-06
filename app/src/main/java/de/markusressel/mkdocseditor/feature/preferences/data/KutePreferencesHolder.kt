@@ -53,7 +53,6 @@ class KutePreferencesHolder @Inject constructor(
                     key = context.getString(R.string.section_background_sync_key),
                     title = context.getString(R.string.section_background_sync_title),
                     children = listOf(
-                        offlineModePreference,
                         lastOfflineCacheUpdate,
                         forceOfflineCacheUpdatePreference,
                         clearOfflineCache
@@ -124,17 +123,6 @@ class KutePreferencesHolder @Inject constructor(
             defaultValue = R.string.start_page_dashboard_value,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { _, _ -> })
-    }
-
-    val offlineModePreference by lazy {
-        KuteBooleanPreference(key = context.getString(R.string.offline_mode_key),
-            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_airplane),
-            title = context.getString(R.string.offline_mode_title),
-            defaultValue = false,
-            dataProvider = dataProvider,
-            onPreferenceChangedListener = { old, new ->
-                eventBusManager.send(BusEvent.SettingsEvent.OfflineModeChangedEvent(new))
-            })
     }
 
     val notificationsCategory by lazy {

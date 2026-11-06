@@ -28,7 +28,6 @@ import de.markusressel.mkdocseditor.feature.notifications.domain.WikiChangesNoti
 import de.markusressel.mkdocseditor.feature.notifications.domain.WikiChangesServer
 import de.markusressel.mkdocseditor.feature.notifications.ui.AndroidWikiChangesNotifier
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
-import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import java.util.concurrent.TimeUnit
 
 /**
@@ -41,13 +40,10 @@ internal class WikiChangesWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val checkWikiChanges: CheckWikiChangesUseCase,
     private val preferencesHolder: KutePreferencesHolder,
-    private val isOfflineModeEnabled: IsOfflineModeEnabledFlowUseCase,
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
         if (!preferencesHolder.wikiChangeNotificationsPreference.persistedValue.value) return Result.success()
-        // offline mode means no requests
-        if (isOfflineModeEnabled().value) return Result.success()
         return if (checkWikiChanges()) Result.success() else Result.retry()
     }
 

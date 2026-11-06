@@ -11,6 +11,9 @@ import de.markusressel.mkdocseditor.feature.filebrowser.data.SectionData
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
+import de.markusressel.mkdocseditor.feature.common.data.TransferProgress
+import de.markusressel.mkdocseditor.feature.common.data.percentSteps
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -29,21 +32,32 @@ internal data class UploadResult(
  * creates the Markdown for them, relative to the document
  */
 internal class UploadFilesUseCase(
-    private val upload: suspend (sectionId: String, name: String, content: ByteArray) -> Unit,
+    private val upload: suspend (
+        sectionId: String,
+        name: String,
+        content: ByteArray,
+        onProgress: (doneBytes: Long, totalBytes: Long) -> Unit,
+    ) -> Unit,
     private val source: UploadSource,
 ) {
     @Inject
     constructor(restClient: IMkDocsRestClient, files: EditorFiles) : this(
-        { sectionId, name, content -> restClient.uploadResource(sectionId, name, content).get() },
+        { sectionId, name, content, onProgress -> restClient.uploadResource(sectionId, name, content, onProgress).get() },
         files,
     )
 
+    /**
+     * Cancelling the coroutine ends the upload, and nothing is inserted
+     *
+     * @param onProgress how far the upload of the current file is, on a network thread
+     */
     suspend operator fun invoke(
         tree: WikiTree,
         document: DocumentData,
         section: SectionData,
         uris: List<Uri>,
         altText: String,
+        onProgress: (TransferProgress) -> Unit = {},
     ): UploadResult {
         val created = mutableListOf<String>()
         var failure: Int? = null
@@ -55,10 +69,16 @@ internal class UploadFilesUseCase(
                     PickerMarkdown.sanitizeFileName(displayName),
                 )
                 val content = withContext(Dispatchers.Default) { shrinkImage(name, bytes) }
-                upload(section.id, name, content)
+                val progress = TransferProgress.start(name, upload = true)
+                onProgress(progress)
+                upload(section.id, name, content, percentSteps { done, total ->
+                    onProgress(progress.copy(doneBytes = done, totalBytes = total))
+                })
                 created += name
                 source.onUploaded(uri)
             }
+        } catch (ex: CancellationException) {
+            throw ex
         } catch (ex: Exception) {
             Timber.e(ex) { "Upload failed" }
             failure = ex.userMessage()

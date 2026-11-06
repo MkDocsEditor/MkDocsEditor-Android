@@ -177,7 +177,7 @@ private fun PinSwitch(@StringRes label: Int, checked: Boolean?, enabled: Boolean
 
 internal fun BrowserMessage.text(context: Context): String = when (this) {
     BrowserMessage.NotAvailableOffline -> context.getString(R.string.document_not_available_offline)
-    BrowserMessage.Downloading -> context.getString(R.string.resource_downloading)
     BrowserMessage.RenamedWithoutLinks -> context.getString(R.string.renamed_without_links)
     is BrowserMessage.Moved -> context.resources.getQuantityString(R.plurals.moved_to, documents, newPath, documents)
+    is BrowserMessage.MoveFailed -> context.getString(R.string.move_failed_later, name, context.getString(reason))
 }

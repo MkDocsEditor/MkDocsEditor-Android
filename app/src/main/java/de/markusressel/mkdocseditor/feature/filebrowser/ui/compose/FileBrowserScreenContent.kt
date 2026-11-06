@@ -57,6 +57,7 @@ import de.markusressel.mkdocseditor.feature.filebrowser.data.SectionData
 import de.markusressel.mkdocseditor.feature.filebrowser.data.SectionItem
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.UiEvent
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.UiState
+import de.markusressel.mkdocseditor.feature.common.ui.compose.TransferProgressBar
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
@@ -107,11 +108,16 @@ internal fun FileBrowserScreenContent(
 
         },
         bottomBar = {
-            SectionPath(
-                modifier = Modifier.fillMaxWidth(),
-                path = uiState.currentSectionPath,
-                onSectionClicked = { section -> onUiEvent(UiEvent.PathItemClicked(section)) },
-            )
+            Column {
+                uiState.transfer?.let { transfer ->
+                    TransferProgressBar(progress = transfer, onCancel = { onUiEvent(UiEvent.CancelTransfer) })
+                }
+                SectionPath(
+                    modifier = Modifier.fillMaxWidth(),
+                    path = uiState.currentSectionPath,
+                    onSectionClicked = { section -> onUiEvent(UiEvent.PathItemClicked(section)) },
+                )
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     floatingActionButton = {

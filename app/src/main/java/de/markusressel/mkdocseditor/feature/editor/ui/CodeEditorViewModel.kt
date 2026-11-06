@@ -87,6 +87,11 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import de.markusressel.mkdocseditor.feature.common.data.TransferProgress
 import javax.inject.Inject
 
 @HiltViewModel
@@ -121,8 +126,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(
         initialUiState(
-            editModeOpening = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value &&
-                !sessionEnvironment.offlineMode.value,
+            editModeOpening = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value,
         )
     )
     internal val uiState = _uiState.asStateFlow()
@@ -137,6 +141,9 @@ internal class CodeEditorViewModel @Inject constructor(
     private val previewLines = MutableStateFlow<IntRange?>(null)
 
     private var followEnd: Job? = null
+
+    /** the upload of the image picker; cancelling it ends the upload, and nothing is inserted */
+    private var uploadJob: Job? = null
 
     private val _navigationEvents = Channel<NavigationRequest>(Channel.BUFFERED)
     internal val navigationEvents = _navigationEvents.receiveAsFlow()
@@ -309,12 +316,10 @@ internal class CodeEditorViewModel @Inject constructor(
         launch {
             combine(
                 session.editable,
-                sessionEnvironment.offlineMode,
                 openedByJoinLink,
-            ) { editable, offlineModeEnabled, _ ->
+            ) { editable, _ ->
                 editModeOpensByItself(
                     editable = editable,
-                    offlineMode = offlineModeEnabled,
                     wanted = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value || openedByJoinLink.value,
                 )
             }.distinctUntilChanged().collect {
@@ -466,6 +471,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 }
 
                 is UiEvent.UploadFiles -> uploadFiles(event.sectionId, event.uris, event.altText)
+                is UiEvent.CancelUploadClicked -> uploadJob?.cancel()
 
                 is UiEvent.PreviewLinkClicked -> onPreviewLinkClicked(event.href)
                 is UiEvent.SplitRatioChanged -> _uiState.update { it.copy(splitRatio = event.ratio) }
@@ -518,10 +524,22 @@ internal class CodeEditorViewModel @Inject constructor(
         val document = tree.documentById(session.documentId.value ?: return) ?: return
         val section = tree.section(sectionId) ?: return
         _uiState.update { old -> old.copy(uploading = true) }
+        // lazy: the job is known before it reports progress
+        val job = viewModelScope.async(start = CoroutineStart.LAZY) {
+            uploadFilesUseCase(tree, document, section, uris, altText) { progress ->
+                _uiState.update { old -> old.copy(uploadProgress = progress) }
+            }
+        }
+        uploadJob = job
         val result = try {
-            uploadFilesUseCase(tree, document, section, uris, altText)
+            job.await()
+        } catch (e: CancellationException) {
+            // only the upload was cancelled, the editor goes on
+            currentCoroutineContext().ensureActive()
+            return
         } finally {
-            _uiState.update { old -> old.copy(uploading = false) }
+            if (uploadJob === job) uploadJob = null
+            _uiState.update { old -> old.copy(uploading = false, uploadProgress = null) }
         }
         result.failure?.let { showMessage(context.getString(R.string.upload_failed, context.getString(it))) }
         if (result.snippets.isEmpty()) return
@@ -592,18 +610,16 @@ internal class CodeEditorViewModel @Inject constructor(
 
     /** says what the state means, and does not wait for the next try to connect */
     private fun onConnectionIconClicked(indicator: ConnectionIndicator) {
-        val offlineMode = sessionEnvironment.offlineMode.value
         showMessage(
             context.getString(
                 when {
-                    offlineMode -> R.string.connection_offline_mode_info
                     indicator == ConnectionIndicator.Connected -> R.string.connection_connected_info
                     indicator == ConnectionIndicator.UnsyncedChanges -> R.string.connection_unsynced_changes_info
                     else -> R.string.connection_not_connected_info
                 }
             )
         )
-        if (!offlineMode && session.connectionStatus.value?.connected != true) session.reconnect()
+        if (session.connectionStatus.value?.connected != true) session.reconnect()
     }
 
     /** opens the references panel and loads its data */
@@ -707,7 +723,7 @@ internal class CodeEditorViewModel @Inject constructor(
     fun onJoinLinkOpened(from: String?, instance: String?) {
         // someone who can only read still gets the editor, because only there the cursor shows where the sender is
         _uiState.update { it.copy(readOnlyEditorShown = true) }
-        if (!sessionEnvironment.offlineMode.value && !uiState.value.editModeActive) {
+        if (!uiState.value.editModeActive) {
             _uiState.update {
                 it.copy(editModeOpening = true, isBottomAppBarVisible = true, fabConfig = FabConfig(right = listOf(DisableEditModeFabConfig)))
             }
@@ -767,7 +783,7 @@ internal class CodeEditorViewModel @Inject constructor(
         if (uiState.value.following == null) return
         followEnd?.cancel()
         followEnd = null
-        _uiState.update { it.ownCursorPlaced(offline = sessionEnvironment.offlineMode.value) }
+        _uiState.update { it.ownCursorPlaced() }
     }
 
     private fun stopFollowing() {
@@ -881,8 +897,8 @@ internal class CodeEditorViewModel @Inject constructor(
          *
          * @param wanted the user always wants the edit mode, or a join link asks for it
          */
-        internal fun editModeOpensByItself(editable: Boolean, offlineMode: Boolean, wanted: Boolean): Boolean =
-            editable && !offlineMode && wanted
+        internal fun editModeOpensByItself(editable: Boolean, wanted: Boolean): Boolean =
+            editable && wanted
 
         internal val DisableEditModeFabConfig = FabConfig.Fab<CodeEditorFabId>(
             id = CodeEditorFabId.DisableEditMode,
@@ -906,10 +922,10 @@ internal class CodeEditorViewModel @Inject constructor(
          * The user put the own cursor into the text while following: they want to work there now, not watch. An editor
          * that only following opened can't take a cursor, so the edit mode comes on for someone who may edit.
          */
-        internal fun UiState.ownCursorPlaced(offline: Boolean): UiState {
+        internal fun UiState.ownCursorPlaced(): UiState {
             if (following == null) return this
             val stopped = copy(following = null)
-            return if (!editModeActive && canEdit && !offline) stopped.editing() else stopped
+            return if (!editModeActive && canEdit) stopped.editing() else stopped
         }
 
         internal fun initialUiState(editModeOpening: Boolean) = UiState(
@@ -946,6 +962,9 @@ internal class CodeEditorViewModel @Inject constructor(
 
         /** true while files from the image picker are uploaded */
         val uploading: Boolean = false,
+
+        /** how far the upload of the current file is, null before it starts */
+        val uploadProgress: TransferProgress? = null,
 
         /**
          * Indicates whether the CodeEditor is in "edit" mode or not
@@ -1046,6 +1065,7 @@ internal class CodeEditorViewModel @Inject constructor(
         data class InsertMarkdown(val markdown: String) : UiEvent()
 
         data class UploadFiles(val sectionId: String, val uris: List<Uri>, val altText: String) : UiEvent()
+        data object CancelUploadClicked : UiEvent()
 
         data class PreviewLinkClicked(val href: String) : UiEvent()
         data class SplitRatioChanged(val ratio: Float) : UiEvent()

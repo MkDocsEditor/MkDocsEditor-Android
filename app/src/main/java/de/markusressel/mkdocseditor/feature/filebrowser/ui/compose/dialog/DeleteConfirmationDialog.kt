@@ -9,19 +9,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.aghajari.compose.text.fromHtml
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.common.ui.compose.StillWorkingNote
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
+
+internal const val DELETE_WORKING_TAG = "delete-working"
 
 @Composable
 fun DeleteConfirmationDialog(
@@ -55,6 +60,12 @@ fun DeleteConfirmationDialog(
                     text = message,
                     style = MaterialTheme.typography.bodyMedium
                 )
+
+                // a folder with many files takes the server a while
+                if (working) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth().testTag(DELETE_WORKING_TAG))
+                    StillWorkingNote(working = true, changesWiki = true)
+                }
 
                 Row {
                     Spacer(modifier = Modifier.weight(1f))

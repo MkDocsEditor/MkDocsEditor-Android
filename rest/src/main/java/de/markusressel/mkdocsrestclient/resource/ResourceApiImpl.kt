@@ -21,6 +21,7 @@ package de.markusressel.mkdocsrestclient.resource
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Method
 import com.github.kittinunf.result.Result
+import de.markusressel.mkdocsrestclient.RequestKind
 import de.markusressel.mkdocsrestclient.RequestManager
 
 /**
@@ -40,13 +41,17 @@ class ResourceApiImpl(
     override suspend fun uploadResource(
         parentId: String,
         name: String,
-        content: ByteArray
+        content: ByteArray,
+        onProgress: (doneBytes: Long, totalBytes: Long) -> Unit,
     ): Result<String, FuelError> {
-        return requestManager.upload("/resource/$parentId/$name/", content)
+        return requestManager.upload("/resource/$parentId/$name/", content, fileName = name, onProgress = onProgress)
     }
 
-    override suspend fun downloadResource(id: String): Result<ByteArray, FuelError> {
-        return requestManager.download("/resource/$id/content/")
+    override suspend fun downloadResource(
+        id: String,
+        onProgress: (doneBytes: Long, totalBytes: Long) -> Unit,
+    ): Result<ByteArray, FuelError> {
+        return requestManager.download("/resource/$id/content/", onProgress)
     }
 
     override suspend fun renameResource(
@@ -61,7 +66,7 @@ class ResourceApiImpl(
     }
 
     override suspend fun deleteResource(id: String): Result<String, FuelError> {
-        return requestManager.doRequest(url = "/resource/$id/", method = Method.DELETE)
+        return requestManager.doRequest(url = "/resource/$id/", method = Method.DELETE, kind = RequestKind.LongAction)
     }
 
 }

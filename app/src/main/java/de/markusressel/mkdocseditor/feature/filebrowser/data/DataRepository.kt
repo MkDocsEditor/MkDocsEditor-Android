@@ -13,7 +13,6 @@ import de.markusressel.mkdocseditor.data.persistence.entity.ResourceEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.SectionEntity
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.FileBrowserViewModel.Companion.ROOT_SECTION_ID
 import de.markusressel.mkdocseditor.feature.search.domain.SearchQuery
-import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.util.networkBoundResource
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
@@ -35,7 +34,6 @@ import javax.inject.Singleton
 
 @Singleton
 class DataRepository @Inject constructor(
-    private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val restClient: IMkDocsRestClient,
     private val sectionPersistenceManager: SectionPersistenceManager,
     private val documentPersistenceManager: DocumentPersistenceManager,
@@ -176,9 +174,6 @@ class DataRepository @Inject constructor(
                 }
             )
         },
-        shouldFetch = {
-            isOfflineModeEnabledFlowUseCase().value.not()
-        }
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -200,9 +195,6 @@ class DataRepository @Inject constructor(
                 }
             )
         },
-        shouldFetch = {
-            isOfflineModeEnabledFlowUseCase().value.not()
-        }
     )
 
     suspend fun createNewSection(sectionName: String, parentSectionId: String) {

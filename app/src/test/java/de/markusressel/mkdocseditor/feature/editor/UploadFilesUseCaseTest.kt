@@ -7,13 +7,17 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.markusressel.mkdocseditor.feature.editor.domain.UploadFilesUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.UploadSource
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
+import de.markusressel.mkdocseditor.feature.common.data.TransferProgress
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(application = Application::class, sdk = [36])
@@ -27,9 +31,10 @@ class UploadFilesUseCaseTest {
     private val uploaded = mutableListOf<String>()
     private val cleanedUp = mutableListOf<Uri>()
     private var failOn: String? = null
+    private var cancelOn: String? = null
 
     private val source = object : UploadSource {
-        override fun read(uri: Uri) = uri.lastPathSegment!! to byteArrayOf(1)
+        override fun read(uri: Uri) = uri.lastPathSegment!! to ByteArray(4)
 
         override fun onUploaded(uri: Uri) {
             cleanedUp += uri
@@ -37,8 +42,11 @@ class UploadFilesUseCaseTest {
     }
 
     private val useCase = UploadFilesUseCase(
-        upload = { sectionId, name, _ ->
+        upload = { sectionId, name, content, onProgress ->
             if (name == failOn) throw IOException("disk full")
+            if (name == cancelOn) throw CancellationException("cancelled")
+            onProgress(content.size / 2L, content.size.toLong())
+            onProgress(content.size.toLong(), content.size.toLong())
             uploaded += "$sectionId/$name"
         },
         source = source,
@@ -79,5 +87,25 @@ class UploadFilesUseCaseTest {
         assertEquals(listOf("![b](images/b.png)"), result.snippets)
         assertEquals(R.string.unknown_error, result.failure)
         assertEquals(listOf(uris[0]), cleanedUp)
+    }
+
+    @Test
+    fun `each file reports how far its upload is`() = runTest {
+        val reported = mutableListOf<TransferProgress>()
+        useCase(tree, page, images, uris("b.png", "c.pdf"), "", onProgress = { reported += it })
+
+        assertEquals(listOf("b.png", "c.pdf"), reported.map { it.name }.distinct())
+        assertEquals(listOf(0L, 2L, 4L), reported.filter { it.name == "c.pdf" }.map { it.doneBytes })
+        assertEquals(1f, reported.last().fraction)
+        assertTrue(reported.all { it.upload })
+    }
+
+    @Test
+    fun `a cancelled upload is no failure, it ends the upload`() = runTest {
+        cancelOn = "c.png"
+        assertFailsWith<CancellationException> {
+            useCase(tree, page, images, uris("b.png", "c.png"), "")
+        }
+        assertEquals(listOf("images/b.png"), uploaded)
     }
 }

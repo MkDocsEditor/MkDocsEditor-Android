@@ -6,6 +6,7 @@ import java.util.Date
 import androidx.annotation.StringRes
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.common.data.TransferProgress
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.MoveOutcome
@@ -131,6 +132,9 @@ internal data class UiState(
 
     /** the selected backend, when its server rejected the session; the cached data stays visible */
     val loginRequiredBackendId: Long? = null,
+
+    /** the upload or download that runs */
+    val transfer: TransferProgress? = null,
 ) {
     val canGoUp: Boolean get() = currentSectionPath.size > 1
 
@@ -198,7 +202,9 @@ internal fun placeOfLoadFailure(contentShown: Boolean, userAsked: Boolean): Load
 /** A short confirmation or hint, turned into text by the screen */
 internal sealed interface BrowserMessage {
     data object NotAvailableOffline : BrowserMessage
-    data object Downloading : BrowserMessage
     data object RenamedWithoutLinks : BrowserMessage
     data class Moved(val newPath: String, val documents: Int) : BrowserMessage
+
+    /** a move failed after its dialog was closed */
+    data class MoveFailed(val name: String, @param:StringRes val reason: Int) : BrowserMessage
 }

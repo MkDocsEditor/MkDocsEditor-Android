@@ -151,12 +151,12 @@ internal class ItemActions(
         val outcome = try {
             deleteItem(dialog.item, ownConnection || dialog.openElsewhere)
         } catch (e: Exception) {
-            showDialog(null)
+            closeDeleteDialog(dialog.item)
             throw e
         }
         when (outcome) {
             DeleteOutcome.Deleted -> {
-                showDialog(null)
+                closeDeleteDialog(dialog.item)
                 onDeleted(dialog.item)
                 reload()
             }
@@ -198,15 +198,31 @@ internal class ItemActions(
         val dialog = state.value as? DialogState.Move ?: return
         val preview = dialog.preview ?: return
         updateMoveDialog { it.copy(working = true, error = null) }
+        // the user may close the dialog while the server works: the move goes on, and its end still shows
         when (val outcome = moveItem(dialog.item, preview.parentId, preview.name, dryRun = false)) {
             is MoveOutcome.Done -> {
-                showDialog(null)
+                closeMoveDialog(dialog.item)
                 showMessage(BrowserMessage.Moved(outcome.result.newPath, outcome.result.documents.size))
                 reload()
             }
 
-            is MoveOutcome.Failed -> updateMoveDialog { it.copy(working = false, error = outcome) }
+            is MoveOutcome.Failed -> if (isMoveDialogOpen(dialog.item)) {
+                updateMoveDialog { it.copy(working = false, error = outcome) }
+            } else {
+                showMessage(BrowserMessage.MoveFailed(dialog.item.name, outcome.fallback))
+            }
         }
+    }
+
+    private fun isMoveDialogOpen(item: WikiItem) = (state.value as? DialogState.Move)?.item?.id == item.id
+
+    /** another dialog, opened while the server worked, stays */
+    private fun closeMoveDialog(item: WikiItem) = state.update { old ->
+        if (old is DialogState.Move && old.item.id == item.id) null else old
+    }
+
+    private fun closeDeleteDialog(item: WikiItem) = state.update { old ->
+        if (old is DialogState.DeleteConfirmation && old.item.id == item.id) null else old
     }
 
     fun backToTarget() = updateMoveDialog { it.copy(preview = null, error = null) }
