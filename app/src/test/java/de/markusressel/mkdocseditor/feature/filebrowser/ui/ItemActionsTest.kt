@@ -8,6 +8,7 @@ import com.github.kittinunf.result.Result as FuelResult
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTreeTest.Companion.section
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DeleteOutcome
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.LoadWikiTreeUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.MoveItemUseCase
 import de.markusressel.mkdocsrestclient.DummyMkDocsRestClient
@@ -28,6 +29,7 @@ import java.io.ByteArrayInputStream
 import java.net.URL
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -68,26 +70,80 @@ class ItemActionsTest {
     private val state = MutableStateFlow(UiState())
     private val messages = mutableListOf<BrowserMessage>()
     private var reloads = 0
+    private val deletes = mutableListOf<Pair<String, Boolean>>()
+    private val deleted = mutableListOf<WikiItem>()
 
     private fun actions(
         move: suspend (MoveRequestModel) -> FuelResult<MoveResultModel, FuelError> = { FuelResult.success(moveResult) },
         backlinks: suspend (WikiItem) -> Result<List<BacklinkModel>> = { Result.success(emptyList()) },
         tree: suspend () -> WikiTree? = { WikiTree(section("root", "root")) },
+        delete: (force: Boolean) -> DeleteOutcome = { DeleteOutcome.Deleted },
+        ownConnection: Boolean = false,
     ): ItemActions {
         val client = object : IMkDocsRestClient by DummyMkDocsRestClient() {
             override suspend fun move(request: MoveRequestModel) = move(request)
         }
         return ItemActions(
-            state = state,
+            state = DialogSlot({ state.value.currentDialogState }) { change ->
+                state.update { it.copy(currentDialogState = change(it.currentDialogState)) }
+            },
             moveItem = MoveItemUseCase(client, NoStore),
             getBacklinks = backlinks,
             loadTree = tree,
             showMessage = { messages += it },
             reload = { reloads++ },
+            deleteItem = { item, force -> deletes += item.id to force; delete(force) },
+            ownConnection = ownConnection,
+            onDeleted = { deleted += it },
         )
     }
 
     private val moveDialog get() = assertIs<DialogState.Move>(state.value.currentDialogState)
+    private val deleteDialog get() = assertIs<DialogState.DeleteConfirmation>(state.value.currentDialogState)
+
+    @Test
+    fun `a page open elsewhere is deleted only after a second confirmation`() = runTest {
+        val actions = actions(delete = { force -> if (force) DeleteOutcome.Deleted else DeleteOutcome.InUse })
+        actions.onActionClicked(item, ItemAction.Delete)
+
+        actions.applyDelete()
+        assertTrue(deleteDialog.openElsewhere)
+        assertEquals(false, deleteDialog.working)
+        assertTrue(deleted.isEmpty())
+
+        actions.applyDelete()
+        assertEquals(listOf("s" to false, "s" to true), deletes)
+        assertNull(state.value.currentDialogState)
+        assertEquals(listOf<WikiItem>(item), deleted)
+        assertEquals(1, reloads)
+    }
+
+    @Test
+    fun `the editor of the page deletes it with force, it is open there itself`() = runTest {
+        val actions = actions(ownConnection = true)
+        actions.onActionClicked(item, ItemAction.Delete, openElsewhere = false)
+        assertEquals(false, deleteDialog.openElsewhere)
+
+        actions.applyDelete()
+        assertEquals(listOf("s" to true), deletes)
+        assertEquals(listOf<WikiItem>(item), deleted)
+    }
+
+    @Test
+    fun `the editor says up front that others have the page open`() = runTest {
+        actions(ownConnection = true).onActionClicked(item, ItemAction.Delete, openElsewhere = true)
+        assertTrue(deleteDialog.openElsewhere)
+    }
+
+    @Test
+    fun `a failed delete closes the dialog and reports the error`() = runTest {
+        val actions = actions(delete = { throw IllegalStateException("down") })
+        actions.onActionClicked(item, ItemAction.Delete)
+
+        assertFailsWith<IllegalStateException> { actions.applyDelete() }
+        assertNull(state.value.currentDialogState)
+        assertTrue(deleted.isEmpty())
+    }
 
     @Test
     fun `moving loads the folders to choose from`() = runTest {

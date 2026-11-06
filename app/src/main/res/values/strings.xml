@@ -263,6 +263,10 @@
     <string name="delete_resource_confirmation_title">Delete resource?</string>
     <string name="delete_resource_confirmation_message">Deleting a resource removes it <b>permanently</b> for everyone on this backend.</string>
 
+    <string name="delete_document_open_elsewhere">Someone has this page open right now. They keep their copy, but can no longer save it here.</string>
+    <string name="delete_section_open_elsewhere">Someone has a page in this folder open right now. They keep their copy, but can no longer save it here.</string>
+    <string name="delete_anyway">Delete anyway</string>
+    <string name="item_actions_page_unknown">This page is not known on the server, so it cannot be renamed, moved or deleted here.</string>
     <string name="delete_used_by_loading">Checking which pages link here…</string>
     <string name="delete_used_by_none">No page links here.</string>
     <plurals name="delete_used_by_count">

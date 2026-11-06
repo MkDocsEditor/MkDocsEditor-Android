@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
+import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.ItemDialogs
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
@@ -111,6 +112,19 @@ internal data class CodeEditorScreen(
             authorColors = viewModel::editorAuthorColors,
             onUiEvent = viewModel::onUiEvent,
             previewResourceLoader = viewModel.previewResourceLoader,
+        )
+
+        ItemDialogs(
+            dialogState = uiState.itemDialog,
+            onAction = { item, action -> viewModel.onUiEvent(CodeEditorViewModel.UiEvent.ItemActionClicked(item, action)) },
+            onMovePreview = { parentId, name ->
+                viewModel.onUiEvent(CodeEditorViewModel.UiEvent.ItemMovePreviewRequested(parentId, name))
+            },
+            onMoveBack = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.ItemMoveBackClicked) },
+            onMoveApply = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.ItemMoveApplyClicked) },
+            onBacklinkClicked = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.ItemBacklinkClicked(it)) },
+            onDeleteConfirmed = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.ItemDeleteConfirmed) },
+            onDismissRequest = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.ItemDialogDismissed) },
         )
 
         val tree by viewModel.pickerTree.collectAsState()

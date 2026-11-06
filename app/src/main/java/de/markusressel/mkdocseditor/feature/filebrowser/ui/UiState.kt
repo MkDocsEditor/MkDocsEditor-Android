@@ -56,11 +56,15 @@ sealed interface DialogState {
     /**
      * @param usedBy how many references to the item exist, null while unknown
      * @param usedByUnavailable the count could not be loaded (older backend, no connection)
+     * @param openElsewhere someone has the item open right now, confirming deletes it anyway
+     * @param working true while the delete runs
      */
     data class DeleteConfirmation(
         val item: WikiItem,
         val usedBy: Int? = null,
         val usedByUnavailable: Boolean = false,
+        val openElsewhere: Boolean = false,
+        val working: Boolean = false,
     ) : DialogState
 }
 

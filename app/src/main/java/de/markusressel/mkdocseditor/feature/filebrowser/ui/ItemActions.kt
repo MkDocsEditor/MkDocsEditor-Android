@@ -9,27 +9,47 @@ import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.MoveItemU
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.MoveOutcome
 import de.markusressel.mkdocsrestclient.reference.BacklinkModel
 import de.markusressel.mkdocsrestclient.reference.isUnsupportedEndpoint
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DeleteOutcome
+
+/**
+ * Where a screen keeps the dialog of [ItemActions]
+ */
+internal class DialogSlot(
+    private val read: () -> DialogState?,
+    private val write: ((DialogState?) -> DialogState?) -> Unit,
+) {
+    val value: DialogState? get() = read()
+
+    fun update(change: (DialogState?) -> DialogState?) = write(change)
+}
 
 /**
  * The dialogs for one item: rename, move, what links to it, delete. A late answer of the server only goes into the dialog
- * it belongs to.
+ * it belongs to. The file browser and the editor both use them.
+ *
+ * @param deleteItem deletes an item, `force` also while someone has it open
+ * @param ownConnection the screen is connected to the item itself (the editor of a page), so the server would always
+ * count it as open: the dialog then says whether others have it open, and deletes with force
+ * @param onDeleted after the item is gone
  */
 internal class ItemActions(
-    private val state: MutableStateFlow<UiState>,
+    private val state: DialogSlot,
     private val moveItem: MoveItemUseCase,
     private val getBacklinks: suspend (WikiItem) -> Result<List<BacklinkModel>>,
     private val loadTree: suspend () -> WikiTree?,
     private val showMessage: suspend (BrowserMessage) -> Unit,
     private val reload: () -> Unit,
+    private val deleteItem: suspend (WikiItem, force: Boolean) -> DeleteOutcome,
+    private val ownConnection: Boolean = false,
+    private val onDeleted: suspend (WikiItem) -> Unit = {},
 ) {
-    suspend fun onActionClicked(item: WikiItem, action: ItemAction) {
+    /** @param openElsewhere the screen knows that others have [item] open right now */
+    suspend fun onActionClicked(item: WikiItem, action: ItemAction, openElsewhere: Boolean = false) {
         when (action) {
             ItemAction.Rename -> showDialog(DialogState.Move(item = item, renameOnly = true))
             ItemAction.Move -> startMove(item)
             ItemAction.UsedBy -> showBacklinks(item)
-            ItemAction.Delete -> confirmDelete(item)
+            ItemAction.Delete -> confirmDelete(item, openElsewhere)
         }
     }
 
@@ -62,22 +82,44 @@ internal class ItemActions(
         )
     }
 
-    private suspend fun confirmDelete(item: WikiItem) {
-        showDialog(DialogState.DeleteConfirmation(item))
+    private suspend fun confirmDelete(item: WikiItem, openElsewhere: Boolean = false) {
+        showDialog(DialogState.DeleteConfirmation(item, openElsewhere = openElsewhere))
         val list = getBacklinks(item).getOrNull()
         // references from inside a section are deleted with it
         val count = list?.count { !it.internal }
-        state.update { old ->
-            val dialog = old.currentDialogState
-            if (dialog is DialogState.DeleteConfirmation && dialog.item.id == item.id) {
-                old.copy(currentDialogState = dialog.copy(usedBy = count, usedByUnavailable = list == null))
-            } else old
+        updateDeleteDialog(item) { it.copy(usedBy = count, usedByUnavailable = list == null) }
+    }
+
+    /**
+     * Deletes the item of the confirmation. When someone has it open, the dialog says so first, and the next
+     * confirmation deletes it anyway.
+     *
+     * @throws Exception when the server fails, the dialog is closed then
+     */
+    suspend fun applyDelete() {
+        val dialog = state.value as? DialogState.DeleteConfirmation ?: return
+        if (dialog.working) return
+        updateDeleteDialog(dialog.item) { it.copy(working = true) }
+        val outcome = try {
+            deleteItem(dialog.item, ownConnection || dialog.openElsewhere)
+        } catch (e: Exception) {
+            showDialog(null)
+            throw e
+        }
+        when (outcome) {
+            DeleteOutcome.Deleted -> {
+                showDialog(null)
+                onDeleted(dialog.item)
+                reload()
+            }
+
+            DeleteOutcome.InUse -> updateDeleteDialog(dialog.item) { it.copy(working = false, openElsewhere = true) }
         }
     }
 
     /** a dry run: [parentId] null renames in place, [name] null keeps the name */
     suspend fun previewMove(parentId: String?, name: String?) {
-        val dialog = state.value.currentDialogState as? DialogState.Move ?: return
+        val dialog = state.value as? DialogState.Move ?: return
         updateMoveDialog { it.copy(working = true, error = null) }
         when (val outcome = moveItem(dialog.item, parentId, name, dryRun = true)) {
             is MoveOutcome.Done -> updateMoveDialog {
@@ -105,7 +147,7 @@ internal class ItemActions(
     }
 
     suspend fun applyMove() {
-        val dialog = state.value.currentDialogState as? DialogState.Move ?: return
+        val dialog = state.value as? DialogState.Move ?: return
         val preview = dialog.preview ?: return
         updateMoveDialog { it.copy(working = true, error = null) }
         when (val outcome = moveItem(dialog.item, preview.parentId, preview.name, dryRun = false)) {
@@ -121,16 +163,21 @@ internal class ItemActions(
 
     fun backToTarget() = updateMoveDialog { it.copy(preview = null, error = null) }
 
-    private fun showDialog(dialog: DialogState?) = state.update { it.copy(currentDialogState = dialog) }
+    fun dismiss() = showDialog(null)
+
+    private fun showDialog(dialog: DialogState?) = state.update { dialog }
 
     private fun updateMoveDialog(update: (DialogState.Move) -> DialogState.Move) = state.update { old ->
-        val dialog = old.currentDialogState
-        if (dialog is DialogState.Move) old.copy(currentDialogState = update(dialog)) else old
+        if (old is DialogState.Move) update(old) else old
     }
 
     private fun updateBacklinksDialog(item: WikiItem, update: (DialogState.Backlinks) -> DialogState.Backlinks) =
         state.update { old ->
-            val dialog = old.currentDialogState
-            if (dialog is DialogState.Backlinks && dialog.item.id == item.id) old.copy(currentDialogState = update(dialog)) else old
+            if (old is DialogState.Backlinks && old.item.id == item.id) update(old) else old
+        }
+
+    private fun updateDeleteDialog(item: WikiItem, update: (DialogState.DeleteConfirmation) -> DialogState.DeleteConfirmation) =
+        state.update { old ->
+            if (old is DialogState.DeleteConfirmation && old.item.id == item.id) update(old) else old
         }
 }

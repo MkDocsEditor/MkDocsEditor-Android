@@ -1,5 +1,16 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
+import de.markusressel.mkdocseditor.feature.common.ui.userMessage
+import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DeleteItemUseCase
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.GetBacklinksUseCase
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.LoadWikiTreeUseCase
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.MoveItemUseCase
+import de.markusressel.mkdocseditor.feature.filebrowser.ui.DialogSlot
+import de.markusressel.mkdocseditor.feature.filebrowser.ui.ItemAction
+import de.markusressel.mkdocseditor.feature.filebrowser.ui.ItemActions
+import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.text
+import de.markusressel.mkdocseditor.feature.filebrowser.ui.DialogState as FileBrowserDialogState
 import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRuns
 import de.markusressel.mkdocseditor.feature.editor.domain.GetAuthorshipUseCase
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.AuthorHighlightMode
@@ -18,6 +29,7 @@ import de.markusressel.kodeeditor.library.compose.KodeEditorState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
+import kotlinx.coroutines.CancellationException
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.mkdocseditor.R
@@ -94,6 +106,10 @@ internal class CodeEditorViewModel @Inject constructor(
     private val createJoinLinkUseCase: CreateJoinLinkUseCase,
     private val localCursorColor: LocalCursorColor,
     clientInstanceId: ClientInstanceId,
+    moveItemUseCase: MoveItemUseCase,
+    getBacklinksUseCase: GetBacklinksUseCase,
+    loadWikiTreeUseCase: LoadWikiTreeUseCase,
+    deleteItemUseCase: DeleteItemUseCase,
 ) : ViewModel() {
 
     /** this app as a client instance, see [ClientInstanceId] */
@@ -117,6 +133,22 @@ internal class CodeEditorViewModel @Inject constructor(
 
     private val _navigationEvents = Channel<NavigationRequest>(Channel.BUFFERED)
     internal val navigationEvents = _navigationEvents.receiveAsFlow()
+
+    /** rename, move and delete of this page, the same dialogs as in the file browser */
+    private val itemActions = ItemActions(
+        state = DialogSlot({ _uiState.value.itemDialog }) { change ->
+            _uiState.update { it.copy(itemDialog = change(it.itemDialog)) }
+        },
+        moveItem = moveItemUseCase,
+        getBacklinks = { getBacklinksUseCase(it) },
+        loadTree = { loadWikiTreeUseCase() },
+        showMessage = { showMessage(it.text(context)) },
+        // the page follows a move through its connection, the tree is for the pickers and the preview
+        reload = { launch { uiState.value.documentId?.let { refreshWikiTree(it) } } },
+        deleteItem = { item, force -> deleteItemUseCase(item, force) },
+        ownConnection = true,
+        onDeleted = { _navigationEvents.send(NavigationRequest.Close) },
+    )
 
     /** the wiki tree, for the link and image pickers */
     internal val pickerTree = wikiTreeHolder.tree
@@ -378,6 +410,25 @@ internal class CodeEditorViewModel @Inject constructor(
         launch {
             when (event) {
                 is UiEvent.DismissDialog -> dismissCurrentDialog()
+                is UiEvent.ItemActionClicked -> itemActions.onActionClicked(
+                    event.item, event.action, openElsewhere = uiState.value.remotePeers.isNotEmpty(),
+                )
+                is UiEvent.ItemMovePreviewRequested -> itemActions.previewMove(event.parentId, event.name)
+                is UiEvent.ItemMoveBackClicked -> itemActions.backToTarget()
+                is UiEvent.ItemMoveApplyClicked -> itemActions.applyMove()
+                is UiEvent.ItemBacklinkClicked -> {
+                    itemActions.dismiss()
+                    _navigationEvents.send(NavigationRequest.OpenDocument(event.documentId))
+                }
+                is UiEvent.ItemDeleteConfirmed -> try {
+                    itemActions.applyDelete()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.e(e)
+                    showMessage(context.getString(e.userMessage()))
+                }
+                is UiEvent.ItemDialogDismissed -> itemActions.dismiss()
 
                 is UiEvent.TopAppBarActionClicked -> onTopAppBarActionClicked(event.action)
                 is UiEvent.ExpandableFabItemSelected -> when (event.item.id) {
@@ -491,7 +542,11 @@ internal class CodeEditorViewModel @Inject constructor(
             }
             is TopAppBarAction.CodeEditor.ShowInBrowserAction -> onOpenInBrowserClicked()
             is TopAppBarAction.CodeEditor.ShareLinkAction -> onShareLinkClicked()
-            is TopAppBarAction.CodeEditor.MoreAction -> Unit
+            is TopAppBarAction.CodeEditor.MoreAction,
+            is TopAppBarAction.CodeEditor.MenuDivider -> Unit
+            is TopAppBarAction.CodeEditor.RenameAction -> onItemAction(ItemAction.Rename)
+            is TopAppBarAction.CodeEditor.MoveAction -> onItemAction(ItemAction.Move)
+            is TopAppBarAction.CodeEditor.DeleteAction -> onItemAction(ItemAction.Delete)
             is TopAppBarAction.CodeEditor.FollowUserAction -> startFollowing(action.instanceId)
             is TopAppBarAction.CodeEditor.CursorColorAction -> showDialog(DialogState.CursorColorPicker)
             is TopAppBarAction.CodeEditor.OnlineUsersAction -> Unit
@@ -503,6 +558,17 @@ internal class CodeEditorViewModel @Inject constructor(
                 showMessage(context.getString(R.string.editor_author_highlight_changed, context.getString(next.nameRes)))
             }
         }
+    }
+
+    private suspend fun onItemAction(action: ItemAction) {
+        val documentId = uiState.value.documentId ?: return
+        val document = (wikiTreeHolder.tree.value ?: wikiTreeHolder.load(documentId))?.documentById(documentId)
+        if (document == null) {
+            showMessage(context.getString(R.string.item_actions_page_unknown))
+            return
+        }
+        // the server counts this editor as well, so only the others say whether the page is open elsewhere
+        itemActions.onActionClicked(WikiItem.Document(document), action, openElsewhere = uiState.value.remotePeers.isNotEmpty())
     }
 
     /** says what the state means, and does not wait for the next try to connect */
@@ -838,6 +904,9 @@ internal class CodeEditorViewModel @Inject constructor(
     data class UiState(
         val currentDialogState: DialogState? = null,
 
+        /** rename, move or delete of this page, see [ItemActions] */
+        val itemDialog: FileBrowserDialogState? = null,
+
         /** the color of the own cursor chosen for now, null for the color of the account */
         val localColor: String? = null,
 
@@ -917,6 +986,14 @@ internal class CodeEditorViewModel @Inject constructor(
 
     sealed class UiEvent {
         data object DismissDialog : UiEvent()
+
+        data class ItemActionClicked(val item: WikiItem, val action: ItemAction) : UiEvent()
+        data class ItemMovePreviewRequested(val parentId: String?, val name: String?) : UiEvent()
+        data object ItemMoveBackClicked : UiEvent()
+        data object ItemMoveApplyClicked : UiEvent()
+        data class ItemBacklinkClicked(val documentId: String) : UiEvent()
+        data object ItemDeleteConfirmed : UiEvent()
+        data object ItemDialogDismissed : UiEvent()
 
         data class TopAppBarActionClicked(val action: TopAppBarAction.CodeEditor) : UiEvent()
 

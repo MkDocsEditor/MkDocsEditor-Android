@@ -30,9 +30,7 @@ import de.markusressel.mkdocseditor.feature.filebrowser.data.toFolderContent
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ComputePathToSectionUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.CreateNewDocumentUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.CreateNewSectionUseCase
-import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DeleteDocumentUseCase
-import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DeleteResourceUseCase
-import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DeleteSectionUseCase
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DeleteItemUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DownloadResourceUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.FindParentSectionOfDocumentUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.FindParentSectionOfResourceUseCase
@@ -75,9 +73,7 @@ internal class FileBrowserViewModel @Inject constructor(
     loadWikiTreeUseCase: LoadWikiTreeUseCase,
     private val dataRepository: DataRepository,
     private val observeTreeChangesUseCase: ObserveTreeChangesUseCase,
-    private val deleteDocumentUseCase: DeleteDocumentUseCase,
-    private val deleteResourceUseCase: DeleteResourceUseCase,
-    private val deleteSectionUseCase: DeleteSectionUseCase,
+    deleteItemUseCase: DeleteItemUseCase,
     private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val uploadResourceUseCase: UploadResourceUseCase,
     private val downloadResourceUseCase: DownloadResourceUseCase,
@@ -106,12 +102,15 @@ internal class FileBrowserViewModel @Inject constructor(
     )
 
     private val itemActions = ItemActions(
-        state = _uiState,
+        state = DialogSlot({ _uiState.value.currentDialogState }) { change ->
+            _uiState.update { it.copy(currentDialogState = change(it.currentDialogState)) }
+        },
         moveItem = moveItemUseCase,
         getBacklinks = { getBacklinksUseCase(it) },
         loadTree = { loadWikiTreeUseCase() },
         showMessage = { _events.send(FileBrowserEvent.Toast(it)) },
         reload = ::reload,
+        deleteItem = { item, force -> deleteItemUseCase(item, force) },
     )
 
     /** every new value loads the open folder again */
@@ -286,12 +285,9 @@ internal class FileBrowserViewModel @Inject constructor(
                     _events.send(FileBrowserEvent.OpenDocumentEditor(event.documentId))
                 }
 
-                is UiEvent.DeleteConfirmed -> {
-                    showDialog(null)
-                    deleteItem(event.item)
-                }
+                is UiEvent.DeleteConfirmed -> reportingErrors { itemActions.applyDelete() }
 
-                is UiEvent.DismissDialog -> showDialog(null)
+                is UiEvent.DismissDialog -> itemActions.dismiss()
 
                 is UiEvent.TopAppBarActionClicked -> onTopAppBarActionClicked(event.action)
             }
@@ -372,15 +368,6 @@ internal class FileBrowserViewModel @Inject constructor(
                 _events.send(FileBrowserEvent.OpenDocumentEditor(newDocumentId))
             }
         }
-    }
-
-    private suspend fun deleteItem(item: WikiItem) = reportingErrors {
-        when (item) {
-            is WikiItem.Document -> deleteDocumentUseCase(item.id)
-            is WikiItem.Section -> deleteSectionUseCase(item.id)
-            is WikiItem.Resource -> deleteResourceUseCase(item.id)
-        }
-        reload()
     }
 
     /**
@@ -474,7 +461,7 @@ internal sealed class UiEvent {
 
     data class BacklinkClicked(val documentId: String) : UiEvent()
 
-    data class DeleteConfirmed(val item: WikiItem) : UiEvent()
+    data object DeleteConfirmed : UiEvent()
 
     data class TopAppBarActionClicked(val action: TopAppBarAction.FileBrowser) : UiEvent()
 
