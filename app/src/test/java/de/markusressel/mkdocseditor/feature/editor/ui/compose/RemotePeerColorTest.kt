@@ -6,6 +6,7 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.contrast
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -73,6 +74,40 @@ class RemotePeerColorTest {
         (fallbackPeerColors).forEach {
             assertTrue(contrastRatio(labelTextColorOn(it), it) >= 4.5, "label on $it")
         }
+    }
+
+    @Test
+    fun `the flag shows the exact profile color, only the caret is adjusted for contrast`() {
+        val dark = Color(0xFF1A1C18)
+        val background = EditorPalette.Dark.background
+        val colors = peerCursorColors(dark, background, EditorPalette.Dark.text)
+
+        assertEquals(dark, colors.flag)
+        assertEquals(Color.White, colors.flagText)
+        assertNotEquals(dark, colors.caret)
+        assertTrue(contrastRatio(colors.caret, background) >= 3.0)
+    }
+
+    @Test
+    fun `the text on the flag stays readable`() {
+        assertEquals(Color.Black, peerCursorColors(Color(0xFFFDFDF5), EditorPalette.Light.background, EditorPalette.Light.text).flagText)
+        assertEquals(Color.White, peerCursorColors(Color(0xFF000080), EditorPalette.Dark.background, EditorPalette.Dark.text).flagText)
+    }
+
+    @Test
+    fun `a ghost is faint, in the same colors`() {
+        val colors = peerCursorColors(Color(0xFF3D8FE0), EditorPalette.Dark.background, EditorPalette.Dark.text, alpha = 0.4f)
+        assertEquals(Color(0xFF3D8FE0).copy(alpha = 0.4f), colors.flag)
+        assertEquals(0.4f, colors.caret.alpha)
+    }
+
+    @Test
+    fun `a flag gets an outline only when its color is too close to the editor background`() {
+        val palette = EditorPalette.Dark
+        assertNull(peerCursorColors(Color(0xFF3D8FE0), palette.background, palette.text).flagOutline)
+
+        val outline = peerCursorColors(Color(0xFF1A1C18), palette.background, palette.text).flagOutline
+        assertEquals(palette.text.copy(alpha = 0.5f), outline)
     }
 
     private fun peer(
