@@ -40,6 +40,8 @@ internal class PreferencesViewModel @Inject constructor(
             val value by preferencesHolder.lastOfflineCacheUpdate.persistedValue.collectAsState()
             val isUpdating by isOfflineCacheUpdateInProgressUseCase().collectAsState()
             LastOfflineCacheUpdatePreferenceItemView(
+                title = preferencesHolder.lastOfflineCacheUpdate.title,
+                icon = preferencesHolder.lastOfflineCacheUpdate.icon,
                 lastUpdate = preferencesHolder.lastOfflineCacheUpdate.createDescription(value),
                 isUpdating = isUpdating
             )
