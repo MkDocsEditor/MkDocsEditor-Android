@@ -10,8 +10,8 @@ class PreviewPositionsTest {
     // lines: 0 "# Title", 1 "", 2 "One", 3 "two", 4 "", 5 "- a", 6 "- b", 7 "", 8 "End"
     private val text = "# Title\n\nOne\ntwo\n\n- a\n- b\n\nEnd"
 
-    private fun scroll(vararg blocks: PreviewBlock, height: Float = 100f, scrollY: Float = 50f, atTop: Boolean = false) =
-        PreviewScroll(blocks.toList(), height, scrollY, atTop = atTop, atBottom = false, byUser = true)
+    private fun scroll(vararg blocks: PreviewBlock, height: Float = 100f) =
+        PreviewScroll(blocks.toList(), height, scrollY = 50f, scrollHeight = 1000f, byUser = true)
 
     @Test
     fun `the lines go from the first block whose top is visible to the last block whose bottom is visible`() {
@@ -107,41 +107,13 @@ class PreviewPositionsTest {
     }
 
     @Test
-    fun `the top line lies between the tops of the blocks around the top of the view`() {
-        val scroll = scroll(
-            PreviewBlock(line = 2, top = -20f, bottom = 30f),
-            PreviewBlock(line = 2, top = -20f, bottom = 0f),
-            PreviewBlock(line = 6, top = 20f, bottom = 60f),
-        )
-
-        // half way from the block at line 2 to the one at line 6
-        assertEquals(4.0, topSourceLine(scroll, lineCountOf(text)))
-    }
-
-    @Test
-    fun `at the top of the page the top line is the first one`() {
-        val scroll = scroll(PreviewBlock(line = 2, top = 12f, bottom = 30f), scrollY = 0f, atTop = true)
-
-        assertEquals(0.0, topSourceLine(scroll, lineCountOf(text)))
-    }
-
-    @Test
-    fun `inside the last block the top line goes on to the end of the text`() {
-        val scroll = scroll(PreviewBlock(line = 5, top = -50f, bottom = 50f))
-
-        // half of the block, which goes from line 5 to the end at line 9
-        assertEquals(7.0, topSourceLine(scroll, lineCountOf(text)))
-    }
-
-    @Test
-    fun `a line with a fraction is a part of the way through it, and back`() {
+    fun `a line with a fraction is a part of the way through it`() {
         val start = text.indexOf("One")
 
-        assertEquals(start, positionOfLine(text, 2.0))
         // "One\n" has four characters
-        assertEquals(start + 2, positionOfLine(text, 2.5))
         assertEquals(2.5, lineOfPosition(text, start + 2))
-        assertEquals(0, positionOfLine(text, -1.0))
-        assertEquals(text.length, positionOfLine(text, 99.0))
+        assertEquals(0.0, lineOfPosition(text, -1))
+        // the empty line behind the last line break
+        assertEquals(9.0, lineOfPosition(text + "\n", text.length + 1))
     }
 }

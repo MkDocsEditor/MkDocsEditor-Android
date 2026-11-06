@@ -98,7 +98,7 @@ internal fun CodeEditorScreenContent(
     val editorShown = uiState.editorShown
     val previewShown = !editorShown || splitMode != SplitMode.Off
 
-    val scrollSync = remember(editorState) { ScrollSync { editorState.text } }
+    val scrollSync = remember(editorState) { ScrollSync(text = { editorState.text }) }
     SideEffect { scrollSync.active = editorShown && previewShown }
 
     // at the start of the animation, so the keyboard does not wait for the editor to leave
@@ -116,7 +116,7 @@ internal fun CodeEditorScreenContent(
         val listener = object : KodeEditorListener {
             override fun onLocalEdit(splice: TextSplice) {
                 chrome.onTextEdited()
-                scrollSync.onEditorDriving()
+                scrollSync.onLocalEdit()
             }
         }
         editorState.addListener(listener)
@@ -234,7 +234,8 @@ internal fun CodeEditorScreenContent(
                             sectionPath = uiState.previewSectionPath,
                             resourceLoader = previewResourceLoader,
                             onLinkClicked = { onUiEvent(CodeEditorViewModel.UiEvent.PreviewLinkClicked(it)) },
-                            syncedLine = { scrollSync.previewLine },
+                            syncTarget = { scrollSync.previewTarget },
+                            onLayout = scrollSync::onPreviewLayout,
                             onScrolled = { scroll ->
                                 scrollSync.onPreviewScrolled(scroll)
                                 onUiEvent(CodeEditorViewModel.UiEvent.PreviewLinesChanged(visibleSourceLines(scroll)))
