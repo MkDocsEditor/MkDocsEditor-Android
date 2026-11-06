@@ -67,6 +67,8 @@ data class UserInfo(
     val displayName: String,
     val role: String,
     val color: String? = null,
+    /** version of the profile picture, null without one, see [avatarPath] */
+    val avatar: String? = null,
     val secondFactorSetupRequired: Boolean = false,
     /** number of registered passkeys, sent by newer backends */
     val passkeyCount: Int? = null,
@@ -128,6 +130,8 @@ data class AccountInfo(
     val displayName: String,
     val role: String,
     val color: String? = null,
+    /** version of the profile picture, null without one, see [avatarPath] */
+    val avatar: String? = null,
     val email: String? = null,
     val createdAt: Instant? = null,
     val hasPassword: Boolean = false,
@@ -183,6 +187,7 @@ data class WhoAmI(
  */
 object ServerFeature {
     const val ACCESS_REQUESTS = "access-requests"
+    const val AVATARS = "avatars"
 }
 
 /** POST /auth/access-requests/. The token is only shown once. */
@@ -254,3 +259,13 @@ object AuthErrorCode {
     const val RATE_LIMITED = "rate-limited"
     const val CONFLICT = "conflict"
 }
+
+/**
+ * Where a profile picture is, relative to the backend URL. The path changes with every new picture,
+ * so it can be cached for good.
+ *
+ * @param accountId the stable id of the account
+ * @param avatar the version of its picture, as the account or the presence sends it
+ */
+fun avatarPath(accountId: String, avatar: String): String =
+    "avatars/${java.net.URLEncoder.encode(accountId, Charsets.UTF_8)}/${java.net.URLEncoder.encode(avatar, Charsets.UTF_8)}/"

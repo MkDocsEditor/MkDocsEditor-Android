@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -62,6 +63,10 @@ import de.markusressel.mkdocseditor.feature.auth.account.ui.AccountViewModel.UiE
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.OneTimeCodeField
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.PasswordField
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.QrCode
+import de.markusressel.mkdocseditor.feature.avatar.data.Avatar
+import de.markusressel.mkdocseditor.feature.avatar.ui.compose.UserAvatar
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.fallbackPeerColor
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.parsePeerColor
 import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
@@ -79,6 +84,7 @@ internal fun AccountScreenContent(
     onOpenUri: (String) -> Boolean,
     onShareText: (String) -> Unit,
     onAccessRequestsClicked: () -> Unit,
+    onPickAvatarClicked: () -> Unit = {},
 ) {
     TabContentScaffold(
         topBar = {
@@ -118,7 +124,7 @@ internal fun AccountScreenContent(
                 PasskeyReminderCard(uiState.loading, onUiEvent)
             }
             if (account != null) {
-                ProfileSection(uiState, account, onUiEvent)
+                ProfileSection(uiState, account, onUiEvent, onPickAvatarClicked)
                 SecuritySection(account, onUiEvent)
                 PasskeySection(uiState.passkeys, uiState.loading, onUiEvent)
                 SessionSection(uiState.sessions, uiState.loading, onUiEvent)
@@ -172,8 +178,16 @@ private fun PasskeyReminderCard(loading: Boolean, onUiEvent: (UiEvent) -> Unit) 
 }
 
 @Composable
-private fun ProfileSection(uiState: AccountViewModel.UiState, account: AccountInfo, onUiEvent: (UiEvent) -> Unit) {
+private fun ProfileSection(
+    uiState: AccountViewModel.UiState,
+    account: AccountInfo,
+    onUiEvent: (UiEvent) -> Unit,
+    onPickAvatarClicked: () -> Unit,
+) {
     SectionCard(title = stringResource(R.string.account_profile)) {
+        if (uiState.avatarsSupported) {
+            AvatarRow(uiState, account, onUiEvent, onPickAvatarClicked)
+        }
         Text(
             text = stringResource(R.string.auth_signed_in_as, "${account.username} (${uiState.backendName})"),
             style = MaterialTheme.typography.bodyMedium,
@@ -207,6 +221,41 @@ private fun ProfileSection(uiState: AccountViewModel.UiState, account: AccountIn
             onClick = { onUiEvent(UiEvent.SaveProfileClicked) },
         ) {
             Text(stringResource(R.string.account_save_profile))
+        }
+    }
+}
+
+@Composable
+private fun AvatarRow(
+    uiState: AccountViewModel.UiState,
+    account: AccountInfo,
+    onUiEvent: (UiEvent) -> Unit,
+    onPickAvatarClicked: () -> Unit,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        UserAvatar(
+            modifier = Modifier.size(64.dp),
+            name = account.displayName,
+            color = parsePeerColor(account.color) ?: fallbackPeerColor(account.username),
+            avatar = Avatar.of(account.id, account.avatar, uiState.backendId),
+            textStyle = MaterialTheme.typography.headlineSmall,
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(enabled = !uiState.loading, onClick = onPickAvatarClicked) {
+                Text(
+                    stringResource(
+                        if (account.avatar == null) R.string.account_avatar_add else R.string.account_avatar_change
+                    )
+                )
+            }
+            if (account.avatar != null) {
+                TextButton(enabled = !uiState.loading, onClick = { onUiEvent(UiEvent.RemoveAvatarClicked) }) {
+                    Text(stringResource(R.string.account_avatar_remove))
+                }
+            }
         }
     }
 }

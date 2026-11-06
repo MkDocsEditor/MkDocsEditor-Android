@@ -155,6 +155,16 @@ open class FakeAuthApi : AuthApi {
         return onAccount(token)
     }
 
+    override suspend fun uploadAvatar(token: String, image: ByteArray, contentType: String): AccountInfo {
+        calls += "uploadAvatar:$contentType:${image.size}"
+        return onAccount(token)
+    }
+
+    override suspend fun deleteAvatar(token: String): AccountInfo {
+        calls += "deleteAvatar"
+        return onAccount(token)
+    }
+
     override suspend fun changePassword(token: String, currentPassword: String?, newPassword: String) {
         calls += "changePassword"
         onChangePassword(currentPassword, newPassword)

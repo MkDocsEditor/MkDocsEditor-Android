@@ -81,6 +81,8 @@ data class PresenceMessage(
     val deviceName: String? = null,
     /** drawn instead of [color], which stays the color of the account */
     val instanceColor: String? = null,
+    /** version of the profile picture of the account, null without one */
+    val avatar: String? = null,
     val type: String = MessageType.PRESENCE,
 )
 
@@ -135,6 +137,7 @@ data class GhostMessage(
     val deviceName: String? = null,
     val selections: List<SelectionMessage> = emptyList(),
     val viewport: ViewportMessage? = null,
+    val avatar: String? = null,
 )
 
 @JsonClass(generateAdapter = true)
@@ -149,6 +152,7 @@ data class PresenceLeaveMessage(
     val instanceColor: String? = null,
     /** the last connection of the instance left, its cursor stays this long as a ghost */
     val ghostMs: Long? = null,
+    val avatar: String? = null,
     val type: String = MessageType.PRESENCE_LEAVE,
 )
 

@@ -9,6 +9,7 @@ import de.markusressel.mkdocseditor.auth.api.AuthApi
 import de.markusressel.mkdocseditor.auth.api.AuthApiException
 import de.markusressel.mkdocseditor.auth.api.AuthErrorCode
 import de.markusressel.mkdocseditor.auth.api.PasskeyInfo
+import de.markusressel.mkdocseditor.auth.api.ServerFeature
 import de.markusressel.mkdocseditor.auth.api.SessionInfo
 import de.markusressel.mkdocseditor.auth.api.TotpEnrollment
 import de.markusressel.mkdocseditor.auth.domain.AuthRepository
@@ -16,6 +17,7 @@ import de.markusressel.mkdocseditor.auth.domain.BackendRef
 import de.markusressel.mkdocseditor.auth.domain.NotSignedInException
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.auth.common.data.AuthBackends
+import de.markusressel.mkdocseditor.feature.avatar.data.AvatarImageEncoder
 import de.markusressel.mkdocseditor.feature.auth.common.data.CredentialClient
 import de.markusressel.mkdocseditor.feature.auth.common.data.UiMessage
 import de.markusressel.mkdocseditor.feature.auth.common.data.toAuthMessage
@@ -44,6 +46,7 @@ internal class AccountViewModel @Inject constructor(
     internal val credentialClient: CredentialClient,
     private val passkeyPromptStore: PasskeyPromptStore,
     private val credentialProviders: CredentialProviders,
+    private val avatarImageEncoder: AvatarImageEncoder,
 ) : ViewModel() {
 
     /** for tests */
@@ -74,7 +77,7 @@ internal class AccountViewModel @Inject constructor(
                 return@launch
             }
             backend = ref
-            _uiState.update { it.copy(backendName = config.name) }
+            _uiState.update { it.copy(backendId = config.id, backendName = config.name) }
             reload()
         }
     }
@@ -88,6 +91,11 @@ internal class AccountViewModel @Inject constructor(
                 is UiEvent.EmailChanged -> _uiState.update { it.copy(email = event.text) }
                 is UiEvent.ColorChanged -> _uiState.update { it.copy(color = event.color) }
                 is UiEvent.SaveProfileClicked -> saveProfile()
+                is UiEvent.AvatarPicked -> uploadAvatar(event.uri)
+                is UiEvent.RemoveAvatarClicked -> runLoading {
+                    val updated = call { deleteAvatar(it) }
+                    _uiState.update { it.copy(account = updated) }
+                }
 
                 is UiEvent.ChangePasswordClicked -> showDialog(Dialog.ChangePassword())
                 is UiEvent.ChangePasswordInput -> updateDialog<Dialog.ChangePassword> {
@@ -165,9 +173,11 @@ internal class AccountViewModel @Inject constructor(
             val passkeys = call { passkeys(it) }
             val sessions = call { sessions(it) }
             val showReminder = passkeyReminderDue(passkeys)
+            val avatarsSupported = avatarsSupported()
             _uiState.update {
                 it.copy(
                     showPasskeyReminder = showReminder,
+                    avatarsSupported = avatarsSupported,
                     account = account,
                     passkeys = passkeys,
                     sessions = sessions.sortedByDescending { session -> session.current },
@@ -197,6 +207,25 @@ internal class AccountViewModel @Inject constructor(
             passkeysEnabled = passkeysEnabled,
             hasUsablePasskey = PasskeyPromptPolicy.hasUsablePasskey(passkeys, state.registeredHere, credentialProviders::isInstalled),
         )
+    }
+
+    /** older servers have no profile pictures */
+    private suspend fun avatarsSupported(): Boolean {
+        val ref = backend ?: return false
+        return try {
+            ServerFeature.AVATARS in authRepository.serverInfo(ref).features
+        } catch (e: Exception) {
+            Timber.w(e, "Could not read the server features")
+            false
+        }
+    }
+
+    private suspend fun uploadAvatar(uri: String) {
+        runLoading {
+            val image = avatarImageEncoder.encode(uri)
+            val updated = call { uploadAvatar(it, image, AvatarImageEncoder.CONTENT_TYPE) }
+            _uiState.update { it.copy(account = updated) }
+        }
     }
 
     private suspend fun saveProfile() {
@@ -488,6 +517,7 @@ internal class AccountViewModel @Inject constructor(
     }
 
     internal data class UiState(
+        val backendId: Long? = null,
         val backendName: String = "",
         val account: AccountInfo? = null,
         val passkeys: List<PasskeyInfo> = emptyList(),
@@ -498,6 +528,8 @@ internal class AccountViewModel @Inject constructor(
         val dialog: Dialog? = null,
         /** suggest a passkey again, after "Later" on the step after sign-in */
         val showPasskeyReminder: Boolean = false,
+        /** the server takes profile pictures */
+        val avatarsSupported: Boolean = false,
         val loading: Boolean = false,
         val error: UiMessage? = null,
         val info: UiMessage? = null,
@@ -510,6 +542,10 @@ internal class AccountViewModel @Inject constructor(
         data class EmailChanged(val text: String) : UiEvent
         data class ColorChanged(val color: String) : UiEvent
         data object SaveProfileClicked : UiEvent
+
+        /** @param uri the content URI of the picked picture */
+        data class AvatarPicked(val uri: String) : UiEvent
+        data object RemoveAvatarClicked : UiEvent
         data object ChangePasswordClicked : UiEvent
         data class ChangePasswordInput(val current: String, val new: String, val confirmation: String) : UiEvent {
             override fun toString() = "ChangePasswordInput"

@@ -57,6 +57,8 @@ data class RemotePeer(
     val deviceName: String? = null,
     /** drawn instead of [color], which stays the color of the account */
     val instanceColor: String? = null,
+    /** version of the profile picture of [accountId], null without one */
+    val avatar: String? = null,
 )
 
 /** The text another user is looking at, as UTF-16 indices of the first and the last visible character */
@@ -87,6 +89,7 @@ data class RemoteGhost(
     val remainingMs: Long,
     val deviceName: String? = null,
     val instanceColor: String? = null,
+    val avatar: String? = null,
 )
 
 /** A new id of a client instance, which the server expects as 32 lowercase hex characters */
@@ -189,6 +192,7 @@ class DocumentSyncSession(
         val expiresAt: Long,
         val deviceName: String?,
         val instanceColor: String?,
+        val avatar: String?,
     )
 
     private class Peer(
@@ -609,6 +613,7 @@ class DocumentSyncSession(
                 expiresAt = now() + ghost.ghostMs,
                 deviceName = ghost.deviceName,
                 instanceColor = ghost.instanceColor,
+                avatar = ghost.avatar,
             )
         }
         notifyGhosts()
@@ -635,6 +640,7 @@ class DocumentSyncSession(
                 expiresAt = now() + ghostMs,
                 deviceName = message.deviceName,
                 instanceColor = message.instanceColor,
+                avatar = message.avatar ?: left?.presence?.avatar,
             )
             notifyGhosts()
         }
@@ -656,6 +662,7 @@ class DocumentSyncSession(
                     remainingMs = ghost.expiresAt - time,
                     deviceName = ghost.deviceName,
                     instanceColor = ghost.instanceColor,
+                    avatar = ghost.avatar,
                 )
             }
         )
@@ -754,6 +761,7 @@ class DocumentSyncSession(
                     instanceId = peer.presence.instanceId ?: peer.presence.clientId.orEmpty(),
                     deviceName = peer.presence.deviceName,
                     instanceColor = peer.presence.instanceColor,
+                    avatar = peer.presence.avatar,
                 )
             }
         )

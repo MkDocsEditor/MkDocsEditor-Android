@@ -23,8 +23,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
+import de.markusressel.mkdocseditor.feature.avatar.ui.compose.UserAvatar
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
@@ -75,11 +75,11 @@ private fun OnlineUsersBadges(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         users.take(MAX_VISIBLE_USERS).forEach { user ->
-            val color = user.composeColor
-            OnlineUserBadge(
-                text = user.name.take(1).uppercase(),
-                color = color,
-                textColor = if (color.luminance() > 0.5f) Color.Black else Color.White,
+            UserAvatar(
+                modifier = Modifier.badge(),
+                name = user.name,
+                color = user.composeColor,
+                avatar = user.avatarModel,
             )
         }
 
@@ -101,9 +101,7 @@ private fun OnlineUserBadge(
 ) {
     Box(
         modifier = Modifier
-            .size(28.dp)
-            .border(2.dp, MaterialTheme.colorScheme.primaryContainer, CircleShape)
-            .padding(1.dp)
+            .badge()
             .background(color, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
@@ -114,6 +112,13 @@ private fun OnlineUserBadge(
         )
     }
 }
+
+/** the ring keeps overlapping badges apart */
+@Composable
+private fun Modifier.badge() = this
+    .size(28.dp)
+    .border(2.dp, MaterialTheme.colorScheme.primaryContainer, CircleShape)
+    .padding(1.dp)
 
 @CombinedPreview
 @Composable

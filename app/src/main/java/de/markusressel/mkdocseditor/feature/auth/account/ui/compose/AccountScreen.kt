@@ -4,6 +4,9 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -42,6 +45,10 @@ data class AccountScreen(
 
         val viewModel = getViewModel<AccountViewModel>()
         val uiState by viewModel.uiState.collectAsState()
+
+        val pickAvatar = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            uri?.let { viewModel.onUiEvent(UiEvent.AvatarPicked(it.toString())) }
+        }
 
         LaunchedEffect(viewModel, backendId) {
             viewModel.initialize(backendId)
@@ -119,6 +126,9 @@ data class AccountScreen(
                 context.startActivity(Intent.createChooser(intent, null))
             },
             onAccessRequestsClicked = { navigator.push(AccessRequestsScreen(backendId)) },
+            onPickAvatarClicked = {
+                pickAvatar.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            },
         )
     }
 }
