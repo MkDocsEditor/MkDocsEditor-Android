@@ -5,7 +5,10 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -50,6 +53,7 @@ internal class WikiChangesWorker @AssistedInject constructor(
 
     companion object {
         internal const val WORK_NAME = "check-wiki-changes"
+        internal const val NOW_WORK_NAME = "check-wiki-changes-now"
         private const val INTERVAL_MINUTES = 60L
         private const val FLEX_MINUTES = 20L
 
@@ -69,6 +73,19 @@ internal class WikiChangesWorker @AssistedInject constructor(
 
         fun cancel(context: Context) {
             WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+            WorkManager.getInstance(context).cancelUniqueWork(NOW_WORK_NAME)
+        }
+
+        /**
+         * Checks once, as soon as there is a network. After signing in this sets the seen mark at once, instead of
+         * an hour later, so changes from then on notify.
+         */
+        fun checkNow(context: Context) {
+            val request = OneTimeWorkRequestBuilder<WikiChangesWorker>()
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+                .build()
+            WorkManager.getInstance(context).enqueueUniqueWork(NOW_WORK_NAME, ExistingWorkPolicy.REPLACE, request)
         }
     }
 }

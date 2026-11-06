@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -61,5 +62,34 @@ class WikiChangesWorkerTest {
         WikiChangesWorker.cancel(context)
 
         assertEquals(WorkInfo.State.CANCELLED, work().single().state)
+    }
+
+    private fun checkNowWork() = workManager.getWorkInfosForUniqueWork(WikiChangesWorker.NOW_WORK_NAME).get()
+
+    @Test
+    fun `the check after signing in runs at once, with a network`() {
+        WikiChangesWorker.checkNow(context)
+
+        val work = checkNowWork().single()
+        assertNull(work.periodicityInfo)
+        assertEquals(0L, work.initialDelayMillis)
+        assertEquals(NetworkType.CONNECTED, work.constraints.requiredNetworkType)
+    }
+
+    @Test
+    fun `signing in twice quickly gives one check`() {
+        WikiChangesWorker.checkNow(context)
+        WikiChangesWorker.checkNow(context)
+
+        assertEquals(1, checkNowWork().count { !it.state.isFinished })
+    }
+
+    @Test
+    fun `turning notifications off also stops a pending check after signing in`() {
+        WikiChangesWorker.checkNow(context)
+
+        WikiChangesWorker.cancel(context)
+
+        assertTrue(checkNowWork().all { it.state == WorkInfo.State.CANCELLED })
     }
 }
