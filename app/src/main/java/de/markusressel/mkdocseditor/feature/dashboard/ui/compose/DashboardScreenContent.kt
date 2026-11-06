@@ -209,8 +209,8 @@ private fun ColumnScope.PinsAndFeed(uiState: UiState, onUiEvent: (UiEvent) -> Un
             SectionTitle(R.string.dashboard_pins_family)
             Hint(R.string.dashboard_pins_empty)
         }
-        PinSection(R.string.dashboard_pins_family, PinScope.Family, uiState.familyPins, onUiEvent)
-        PinSection(R.string.dashboard_pins_personal, PinScope.Personal, uiState.personalPins, onUiEvent)
+        PinSection(R.string.dashboard_pins_family, PinScope.Family, uiState.familyPins, uiState.mayPinForEveryone, onUiEvent)
+        PinSection(R.string.dashboard_pins_personal, PinScope.Personal, uiState.personalPins, mayUnpin = true, onUiEvent)
     }
     if (uiState.feedSupported) {
         SectionTitle(R.string.dashboard_feed_title)
@@ -237,6 +237,7 @@ private fun ColumnScope.PinSection(
     title: Int,
     scope: PinScope,
     pins: List<PinModel>,
+    mayUnpin: Boolean,
     onUiEvent: (UiEvent) -> Unit,
 ) {
     if (pins.isEmpty()) return
@@ -250,10 +251,14 @@ private fun ColumnScope.PinSection(
             supportingContent = folderOf(pin.path)?.let { folder ->
                 { Text(folder, maxLines = 1, overflow = TextOverflow.Ellipsis) }
             },
-            trailingContent = {
-                IconButton(onClick = { onUiEvent(UiEvent.UnpinClicked(scope, pin)) }) {
-                    Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.dashboard_unpin))
+            trailingContent = if (mayUnpin) {
+                {
+                    IconButton(onClick = { onUiEvent(UiEvent.UnpinClicked(scope, pin)) }) {
+                        Icon(Icons.Outlined.Close, contentDescription = stringResource(R.string.dashboard_unpin))
+                    }
                 }
+            } else {
+                null
             },
         )
     }

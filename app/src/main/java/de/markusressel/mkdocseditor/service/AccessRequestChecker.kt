@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.service
 
 import de.markusressel.mkdocseditor.auth.api.AccessRequestState
+import de.markusressel.mkdocseditor.auth.api.AccountRole
 import de.markusressel.mkdocseditor.auth.api.AuthApiException
 import de.markusressel.mkdocseditor.auth.api.AuthErrorCode
 import de.markusressel.mkdocseditor.auth.api.ServerFeature
@@ -81,8 +82,7 @@ internal class AccessRequestChecker @Inject constructor(
         if (!authRepository.isSignedIn(backend.id)) return true
         return try {
             if (ServerFeature.ACCESS_REQUESTS !in authRepository.serverInfo(backend).features) return true
-            val role = authRepository.authenticated(backend) { account(it).role }
-            if (role != ROLE_ADMIN) return true
+            if (authRepository.refreshRole(backend) != AccountRole.ADMIN) return true
             val pending = authRepository.authenticated(backend) { pendingAccessRequests(it) }.map { it.id }.toSet()
             val known = seen.get(backend.id)
             if ((pending - known).isNotEmpty()) notifier.onNewRequests(backend.id, name, pending.size)
@@ -94,9 +94,5 @@ internal class AccessRequestChecker @Inject constructor(
         } catch (_: IOException) {
             false
         }
-    }
-
-    private companion object {
-        const val ROLE_ADMIN = "admin"
     }
 }

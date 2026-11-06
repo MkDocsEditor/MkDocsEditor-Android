@@ -13,6 +13,7 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurre
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.ObserveServerEventsUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.dashboard.data.DashboardStore
+import de.markusressel.mkdocseditor.feature.dashboard.domain.FamilyPinPermission
 import de.markusressel.mkdocseditor.feature.dashboard.domain.LoadDashboardUseCase
 import de.markusressel.mkdocseditor.feature.dashboard.domain.LoadHomePageUseCase
 import de.markusressel.mkdocseditor.feature.dashboard.domain.PinOutcome
@@ -39,9 +40,13 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -66,6 +71,7 @@ internal class DashboardViewModel @Inject constructor(
     private val loadDashboardUseCase: LoadDashboardUseCase,
     private val loadHomePageUseCase: LoadHomePageUseCase,
     private val setPinUseCase: SetPinUseCase,
+    private val familyPinPermission: FamilyPinPermission,
     private val wikiTreeHolder: WikiTreeHolder,
     private val localDocumentStore: LocalDocumentStore,
     private val externalLinkOpener: ExternalLinkOpener,
@@ -93,6 +99,16 @@ internal class DashboardViewModel @Inject constructor(
                 config ?: return@collect
                 showStored(config)
                 refreshAll()
+            }
+        }
+        launch {
+            // also a sync of the editor or the file browser, while this screen is in the back stack
+            getCurrentBackendConfigFlowUseCase().distinctUntilChanged { old, new -> old?.id == new?.id }.collectLatest { config ->
+                config ?: return@collectLatest
+                // the stored time is in the state already, see above
+                syncStatusStore.lastSyncFlow(config.id).drop(1).collect { lastSync ->
+                    _uiState.update { it.copy(lastSync = lastSync, lastSyncFailed = false) }
+                }
             }
         }
     }
@@ -132,6 +148,7 @@ internal class DashboardViewModel @Inject constructor(
     private suspend fun showStored(config: BackendConfig) {
         val snapshot = withContext(Dispatchers.IO) { dashboardStore.load(config.id, username(config)) }
         snapshot?.let { show(it.pins, it.feed.entries, it.feed.next) }
+        showFamilyPinPermission(familyPinPermission.known())
         wikiTreeHolder.loadStored()?.let { showStoredHomePage(it) }
     }
 
@@ -152,8 +169,12 @@ internal class DashboardViewModel @Inject constructor(
     private suspend fun refreshAll(userAsked: Boolean = false) {
         if (isOfflineModeEnabledFlowUseCase().value) return
         _uiState.update { it.copy(loading = userAsked) }
-        refreshDashboard()
-        refreshHomePage()
+        coroutineScope {
+            // once per connection, not with every change of the pins
+            launch { showFamilyPinPermission(familyPinPermission.refresh()) }
+            refreshDashboard()
+            refreshHomePage()
+        }
         _uiState.update { it.copy(loading = false) }
     }
 
@@ -255,9 +276,16 @@ internal class DashboardViewModel @Inject constructor(
         }
         when (outcome) {
             is PinOutcome.Changed -> _uiState.update { it.copy(familyPins = outcome.pins.family, personalPins = outcome.pins.personal) }
-            PinOutcome.Forbidden -> _events.send(DashboardEvent.Toast(context.getString(R.string.pin_for_everyone_forbidden)))
+            PinOutcome.Forbidden -> {
+                _events.send(DashboardEvent.Toast(context.getString(R.string.pin_for_everyone_forbidden)))
+                // the role changed since it was stored, or was not known
+                showFamilyPinPermission(familyPinPermission.refresh())
+            }
         }
     }
+
+    /** an unknown role keeps the buttons, and the server decides */
+    private fun showFamilyPinPermission(allowed: Boolean?) = _uiState.update { it.copy(mayPinForEveryone = allowed != false) }
 
     /** links of the home page open like those in the preview of the editor */
     private suspend fun onLinkClicked(href: String) {
@@ -307,6 +335,7 @@ internal class DashboardViewModel @Inject constructor(
      * @param loading the user asked for a refresh and it still runs
      * @param lastSync when the server last answered
      * @param lastSyncFailed the server did not answer the last time
+     * @param mayPinForEveryone false for a reader, who can not remove the pins for everyone
      */
     data class UiState(
         val homePage: HomePageState? = null,
@@ -320,6 +349,7 @@ internal class DashboardViewModel @Inject constructor(
         val loading: Boolean = false,
         val lastSync: Date? = null,
         val lastSyncFailed: Boolean = false,
+        val mayPinForEveryone: Boolean = true,
     )
 
     sealed interface UiEvent {

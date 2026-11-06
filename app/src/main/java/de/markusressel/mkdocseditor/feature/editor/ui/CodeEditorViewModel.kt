@@ -308,15 +308,15 @@ internal class CodeEditorViewModel @Inject constructor(
 
         launch {
             combine(
-                session.connectionStatus,
                 session.editable,
                 sessionEnvironment.offlineMode,
                 openedByJoinLink,
-            ) { status, editable, offlineModeEnabled, _ ->
-                (status?.connected ?: false)
-                    && editable
-                    && offlineModeEnabled.not()
-                    && (preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value || openedByJoinLink.value)
+            ) { editable, offlineModeEnabled, _ ->
+                editModeOpensByItself(
+                    editable = editable,
+                    offlineMode = offlineModeEnabled,
+                    wanted = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value || openedByJoinLink.value,
+                )
             }.distinctUntilChanged().collect {
                 // only opens the edit mode; losing the connection keeps it, because
                 // edits are kept in the local copy and synced on reconnect
@@ -488,6 +488,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
                 is UiEvent.SnackbarActionClicked -> onSnackbarAction(event.snackbar)
                 is UiEvent.StopFollowingClicked -> stopFollowing()
+                is UiEvent.RetryOpeningClicked -> session.retry()
                 is UiEvent.CursorColorChosen -> {
                     localCursorColor.set(event.color)
                     dismissCurrentDialog()
@@ -874,6 +875,15 @@ internal class CodeEditorViewModel @Inject constructor(
 
         /** see docs/sync-protocol.md of the backend, "Viewport" */
 
+        /**
+         * Whether the edit mode opens on its own. It does not wait for the connection: a local copy can be edited
+         * without one, and its edits sync later. Without a local copy the text only comes with the connection.
+         *
+         * @param wanted the user always wants the edit mode, or a join link asks for it
+         */
+        internal fun editModeOpensByItself(editable: Boolean, offlineMode: Boolean, wanted: Boolean): Boolean =
+            editable && !offlineMode && wanted
+
         internal val DisableEditModeFabConfig = FabConfig.Fab<CodeEditorFabId>(
             id = CodeEditorFabId.DisableEditMode,
             description = R.string.code_editor_disable_edit_mode,
@@ -1015,6 +1025,9 @@ internal class CodeEditorViewModel @Inject constructor(
         data class ExpandableFabItemSelected(val item: FabConfig.Fab<CodeEditorFabId>) : UiEvent()
         data class SnackbarActionClicked(val snackbar: SnackbarData) : UiEvent()
         data object StopFollowingClicked : UiEvent()
+
+        /** the page is not on this device yet, and the user asks the server again */
+        data object RetryOpeningClicked : UiEvent()
 
         /** @param color `#rrggbb`, null for the color of the account */
         data class CursorColorChosen(val color: String?) : UiEvent()

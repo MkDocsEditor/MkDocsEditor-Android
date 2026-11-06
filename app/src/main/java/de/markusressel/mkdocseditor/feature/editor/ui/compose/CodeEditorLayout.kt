@@ -203,11 +203,13 @@ internal fun CodeEditorLayout(
                     layout = layout,
                     remotePeers = remotePeers.value,
                     background = palette.background,
+                    foreground = palette.text,
                 )
                 RemotePeersOverlay(
                     layout = layout,
                     remotePeers = ghosts.map { it.asPeer() },
                     background = palette.background,
+                    foreground = palette.text,
                     alpha = GHOST_ALPHA,
                 )
             }
