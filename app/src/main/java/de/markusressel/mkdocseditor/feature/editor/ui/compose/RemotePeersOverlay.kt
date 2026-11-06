@@ -57,7 +57,8 @@ internal fun BoxScope.RemotePeersOverlay(
                 if (selection.start != selection.end) {
                     drawPath(
                         path = layout.getPathForRange(selection.start, selection.end),
-                        color = colors.flag.copy(alpha = 0.3f),
+                        // as in the web client, and a ghost is faint here too
+                        color = colors.flag.copy(alpha = SELECTION_ALPHA * colors.flag.alpha),
                     )
                 }
 
@@ -141,3 +142,6 @@ private fun RemotePeerLabel(
         )
     }
 }
+
+/** how much the selection of another user shows */
+private const val SELECTION_ALPHA = 0.25f
