@@ -31,7 +31,7 @@ import kotlin.math.roundToInt
  *
  * @param layout the current text layout of the editor
  * @param remotePeers the other users in this document, resolved against the text of [layout]
- * @param background the editor background; peer colors are adjusted to stay visible on it
+ * @param background the editor background; carets are adjusted to stay visible on it
  * @param alpha how much the cursors show, ghosts of users who left are faint
  */
 @Composable
@@ -44,7 +44,7 @@ internal fun BoxScope.RemotePeersOverlay(
     val textLength = layout.text.length
 
     remotePeers.forEach { peer ->
-        val color = peer.composeColor.readableOn(background).copy(alpha = alpha)
+        val colors = peerCursorColors(peer.composeColor, background, alpha)
         val selections = peer.selections.map {
             it.copy(
                 anchor = it.anchor.coerceIn(0, textLength),
@@ -57,13 +57,13 @@ internal fun BoxScope.RemotePeersOverlay(
                 if (selection.start != selection.end) {
                     drawPath(
                         path = layout.getPathForRange(selection.start, selection.end),
-                        color = color.copy(alpha = 0.3f),
+                        color = colors.flag.copy(alpha = 0.3f),
                     )
                 }
 
                 val cursorRect = layout.getCursorRect(selection.head)
                 drawLine(
-                    color = color,
+                    color = colors.caret,
                     start = cursorRect.topCenter,
                     end = cursorRect.bottomCenter,
                     strokeWidth = 2.dp.toPx(),
@@ -75,7 +75,7 @@ internal fun BoxScope.RemotePeersOverlay(
             RemotePeerLabel(
                 name = peer.label,
                 avatar = peer.avatarModel,
-                color = color,
+                colors = colors,
                 layout = layout,
                 offset = selection.head,
             )
@@ -91,13 +91,13 @@ internal fun BoxScope.RemotePeersOverlay(
 private fun RemotePeerLabel(
     name: String,
     avatar: Avatar?,
-    color: Color,
+    colors: PeerCursorColors,
     layout: KodeEditorLayout,
     offset: Int,
 ) {
     val cursorRect = layout.getCursorRect(offset)
     val style = MaterialTheme.typography.labelSmall
-    val textColor = labelTextColorOn(color)
+    val color = colors.flag
 
     Row(
         modifier = Modifier
@@ -135,7 +135,7 @@ private fun RemotePeerLabel(
         }
         Text(
             text = name,
-            color = textColor,
+            color = colors.flagText,
             style = style,
             maxLines = 1,
         )

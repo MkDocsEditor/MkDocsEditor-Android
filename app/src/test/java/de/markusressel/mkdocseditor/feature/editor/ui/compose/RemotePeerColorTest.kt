@@ -6,6 +6,7 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.contrast
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -73,6 +74,31 @@ class RemotePeerColorTest {
         (fallbackPeerColors).forEach {
             assertTrue(contrastRatio(labelTextColorOn(it), it) >= 4.5, "label on $it")
         }
+    }
+
+    @Test
+    fun `the flag shows the exact profile color, only the caret is adjusted for contrast`() {
+        val dark = Color(0xFF1A1C18)
+        val background = EditorPalette.Dark.background
+        val colors = peerCursorColors(dark, background)
+
+        assertEquals(dark, colors.flag)
+        assertEquals(Color.White, colors.flagText)
+        assertNotEquals(dark, colors.caret)
+        assertTrue(contrastRatio(colors.caret, background) >= 3.0)
+    }
+
+    @Test
+    fun `the text on the flag stays readable`() {
+        assertEquals(Color.Black, peerCursorColors(Color(0xFFFDFDF5), EditorPalette.Light.background).flagText)
+        assertEquals(Color.White, peerCursorColors(Color(0xFF000080), EditorPalette.Dark.background).flagText)
+    }
+
+    @Test
+    fun `a ghost is faint, in the same colors`() {
+        val colors = peerCursorColors(Color(0xFF3D8FE0), EditorPalette.Dark.background, alpha = 0.4f)
+        assertEquals(Color(0xFF3D8FE0).copy(alpha = 0.4f), colors.flag)
+        assertEquals(0.4f, colors.caret.alpha)
     }
 
     private fun peer(

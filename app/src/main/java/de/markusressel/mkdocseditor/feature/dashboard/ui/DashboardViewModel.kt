@@ -41,7 +41,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -93,6 +95,16 @@ internal class DashboardViewModel @Inject constructor(
                 config ?: return@collect
                 showStored(config)
                 refreshAll()
+            }
+        }
+        launch {
+            // also a sync of the editor or the file browser, while this screen is in the back stack
+            getCurrentBackendConfigFlowUseCase().distinctUntilChanged { old, new -> old?.id == new?.id }.collectLatest { config ->
+                config ?: return@collectLatest
+                // the stored time is in the state already, see above
+                syncStatusStore.lastSyncFlow(config.id).drop(1).collect { lastSync ->
+                    _uiState.update { it.copy(lastSync = lastSync, lastSyncFailed = false) }
+                }
             }
         }
     }

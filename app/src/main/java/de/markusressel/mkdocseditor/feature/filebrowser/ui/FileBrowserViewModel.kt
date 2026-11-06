@@ -182,9 +182,14 @@ internal class FileBrowserViewModel @Inject constructor(
         }
 
         launch {
-            getCurrentBackendConfigFlowUseCase().collect { config ->
-                _uiState.update { old ->
-                    old.copy(lastSync = config?.let { syncStatusStore.lastSync(it.id) }, lastSyncFailed = false)
+            // also a sync of the editor, while this screen is in the back stack
+            getCurrentBackendConfigFlowUseCase().collectLatest { config ->
+                if (config == null) {
+                    _uiState.update { old -> old.copy(lastSync = null, lastSyncFailed = false) }
+                    return@collectLatest
+                }
+                syncStatusStore.lastSyncFlow(config.id).collect { lastSync ->
+                    _uiState.update { old -> old.copy(lastSync = lastSync, lastSyncFailed = false) }
                 }
             }
         }

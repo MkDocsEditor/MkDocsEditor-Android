@@ -78,6 +78,9 @@ class DocumentSessionTest {
             this.text = text
             listener.onTextReplaced(text)
         }
+
+        /** the server answered a sync */
+        fun serverAnswered() = listener.onServerAnswered()
     }
 
     private inner class FakeEnvironment(scope: TestScope) : DocumentSessionEnvironment {
@@ -91,6 +94,7 @@ class DocumentSessionTest {
         var lastInstanceId: String? = null
         var signedIn = true
         val unauthenticated = mutableListOf<Long>()
+        val serverAnswers = mutableListOf<Long>()
         var backend: BackendConfig? = backendConfig(1)
         val documents = mutableListOf<FakeDocument>()
         var localCopyText: String? = null
@@ -105,6 +109,10 @@ class DocumentSessionTest {
         override fun isSignedIn(backendId: Long) = signedIn
         override fun onUnauthenticated(backendId: Long) {
             unauthenticated += backendId
+        }
+
+        override fun onServerAnswered(backendId: Long) {
+            serverAnswers += backendId
         }
 
         override suspend fun currentBackend() = backend
@@ -234,6 +242,18 @@ class DocumentSessionTest {
         assertFalse(f.state.loading)
         assertTrue(f.session.editable.value)
         assertEquals(listOf("page" to "server text"), f.environment.cacheUpdates)
+    }
+
+    @Test
+    fun `an answer of the server to the document sync counts as the last sync with its backend`() = test { f ->
+        f.environment.backend = backendConfig(7)
+        f.open()
+        f.document.connected()
+        assertEquals(emptyList(), f.environment.serverAnswers, "connected, but no answer yet")
+
+        f.document.serverAnswered()
+
+        assertEquals(listOf(7L), f.environment.serverAnswers)
     }
 
     @Test
