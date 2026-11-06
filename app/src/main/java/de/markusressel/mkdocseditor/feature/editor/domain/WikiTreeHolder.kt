@@ -46,6 +46,17 @@ internal class WikiTreeHolder(
         return tree
     }
 
+    /** @return the stored tree, which may be older than the one on the server, null if there is none */
+    suspend fun loadStored(): WikiTree? {
+        val root = try {
+            cached()
+        } catch (ex: Exception) {
+            Timber.w(ex) { "Could not load the stored wiki tree" }
+            return null
+        }
+        return WikiTree(root).also { _tree.value = it }
+    }
+
     /**
      * Loads the wiki tree from the server, after uploads and moves
      *

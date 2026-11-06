@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
@@ -76,13 +78,15 @@ private fun ColumnScope.PrimaryNavRailItems(
 ) {
     for (item in items) {
         val icon = when (item) {
-            is NavItem.BackendSelection -> Icons.Default.Home
-            is NavItem.FileBrowser -> Icons.Default.Home
+            is NavItem.BackendSelection -> Icons.Default.Cloud
+            is NavItem.Dashboard -> Icons.Default.Home
+            is NavItem.FileBrowser -> Icons.AutoMirrored.Filled.List
             is NavItem.Settings -> Icons.Default.Settings
         }
         val label = stringResource(
             id = when (item) {
                 is NavItem.BackendSelection -> R.string.bottom_navigation_backend_selection
+                is NavItem.Dashboard -> R.string.bottom_navigation_item_dashboard
                 is NavItem.FileBrowser -> R.string.bottom_navigation_item_files
                 is NavItem.Settings -> R.string.bottom_navigation_item_settings
             }
@@ -155,6 +159,7 @@ private fun MkDocsEditorNavigationRailPreview() {
         MkDocsEditorNavigationRail(
             navItems = listOf(
                 NavItem.BackendSelection,
+                NavItem.Dashboard,
                 NavItem.FileBrowser,
                 NavItem.Settings,
                 NavItem.About

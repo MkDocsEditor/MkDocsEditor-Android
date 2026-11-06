@@ -15,6 +15,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.retryWhen
@@ -27,18 +29,31 @@ import java.util.concurrent.atomic.AtomicLong
 
 private const val HELLO = """{"type":"hello","client":"MkDocsEditor-Android"}"""
 private const val HEARTBEAT = """{"type":"heartbeat"}"""
-private const val TREE_CHANGED = "tree-changed"
 private const val HTTP_UNAUTHORIZED = 401
 private const val STABLE_CONNECTION_MS = RECONNECT_MAX_DELAY_MS
 
 private val envelopes = moshi.adapter(MessageEnvelope::class.java)
 
-/** @return true if this message of the events websocket says that the tree changed */
-internal fun isTreeChanged(message: String): Boolean = try {
-    envelopes.fromJson(message)?.type == TREE_CHANGED
+/**
+ * What the events websocket says may have changed on the server
+ *
+ * @param type the `type` of the message, null for [Connected]
+ */
+enum class ServerEvent(internal val type: String?) {
+    /** a new connection: everything may have changed while there was none */
+    Connected(null),
+    TreeChanged("tree-changed"),
+    PinsChanged("pins-changed"),
+    FeedChanged("feed-changed"),
+}
+
+/** @return the change this message of the events websocket reports, null for other messages */
+internal fun serverEventOf(message: String): ServerEvent? = try {
+    val type = envelopes.fromJson(message)?.type
+    ServerEvent.entries.firstOrNull { it.type != null && it.type == type }
 } catch (e: Exception) {
     Timber.w(e, "Unreadable message of the events websocket")
-    false
+    null
 }
 
 /** @return how long to wait before the given attempt to connect again */
@@ -54,6 +69,12 @@ internal fun reconnectDelayMs(attempt: Long): Long =
  * @param onRefused called on another thread, right before this flow completes because of a refused session
  */
 fun treeChanges(url: String, authorizationProvider: AuthorizationProvider, onRefused: () -> Unit): Flow<Unit> =
+    serverEvents(url, authorizationProvider, onRefused)
+        .filter { it == ServerEvent.Connected || it == ServerEvent.TreeChanged }
+        .map { }
+
+/** Like [treeChanges], with every kind of [ServerEvent] */
+fun serverEvents(url: String, authorizationProvider: AuthorizationProvider, onRefused: () -> Unit): Flow<ServerEvent> =
     connectOnce(url, authorizationProvider, onRefused).retryingWithGrowingDelay()
 
 /**
@@ -80,19 +101,19 @@ internal fun connectOnce(
     onRefused: () -> Unit,
     heartbeatIntervalMs: Long = HEARTBEAT_INTERVAL_MS,
     serverTimeoutMs: Long = SERVER_TIMEOUT_MS,
-): Flow<Unit> = callbackFlow {
+): Flow<ServerEvent> = callbackFlow {
     val connection = WebsocketConnectionHandler(authorizationProvider)
     val lastReceivedAt = AtomicLong(nowMs())
     connection.setListener(object : WebsocketConnectionListener {
         override fun onOpen() {
             lastReceivedAt.set(nowMs())
             connection.send(HELLO)
-            trySend(Unit)
+            trySend(ServerEvent.Connected)
         }
 
         override fun onMessage(text: String) {
             lastReceivedAt.set(nowMs())
-            if (isTreeChanged(text)) trySend(Unit)
+            serverEventOf(text)?.let { trySend(it) }
         }
 
         override fun onClosed(code: Int?, httpStatus: Int?, throwable: Throwable?) {

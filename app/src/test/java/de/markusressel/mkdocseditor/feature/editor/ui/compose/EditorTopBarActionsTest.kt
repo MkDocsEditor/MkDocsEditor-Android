@@ -37,16 +37,17 @@ class EditorTopBarActionsTest {
     }
 
     @Test
-    fun `the page can be renamed, moved and deleted from the menu, last`() {
+    fun `the page can be renamed, moved, pinned and deleted from the menu, last`() {
         val menu = menuOf(editorTopBarActions(CodeEditorViewModel.UiState(), SplitMode.Off, wide = false))
 
         assertEquals(
             listOf(
                 TopAppBarAction.CodeEditor.RenameAction,
                 TopAppBarAction.CodeEditor.MoveAction,
+                TopAppBarAction.CodeEditor.PinAction,
                 TopAppBarAction.CodeEditor.DeleteAction,
             ),
-            menu.takeLast(3),
+            menu.takeLast(4),
         )
     }
 }

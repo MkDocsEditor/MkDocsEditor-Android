@@ -32,11 +32,15 @@ import de.markusressel.mkdocseditor.feature.main.ui.NavItem
 import de.markusressel.mkdocseditor.feature.main.ui.NavigationLayoutType
 import de.markusressel.mkdocseditor.feature.main.ui.compose.tab.AboutTab
 import de.markusressel.mkdocseditor.feature.main.ui.compose.tab.BackendSelectionTab
+import de.markusressel.mkdocseditor.feature.main.ui.compose.tab.DashboardTab
 import de.markusressel.mkdocseditor.feature.main.ui.compose.tab.FileBrowserTab
 import de.markusressel.mkdocseditor.feature.main.ui.compose.tab.SettingsTab
 import de.markusressel.mkdocseditor.ui.activity.UiState
 
 val LocalMainScreenOnBack = staticCompositionLocalOf<() -> Unit> { {} }
+
+/** the tab the app starts with, where back leaves the app */
+internal val LocalMainScreenStartTab = staticCompositionLocalOf<NavItem?> { null }
 
 @OptIn(ExperimentalLayoutApi::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -61,7 +65,10 @@ internal fun MainScreenContent(
             )
         }
 
-        CompositionLocalProvider(LocalMainScreenOnBack provides onBackPressedCallback) {
+        CompositionLocalProvider(
+            LocalMainScreenOnBack provides onBackPressedCallback,
+            LocalMainScreenStartTab provides uiState.initialTab,
+        ) {
             TabNavigator(
                 tab = uiState.initialTab.toTab(
                     contentType = contentType,
@@ -133,7 +140,7 @@ private fun onBackPressed(
     contentType: ContentLayoutType,
 ) {
     if (navigator != null && navigator.pop()) {
-        val consumed = navigator.popUntil { it is BackendSelectionTab || it is FileBrowserTab }
+        val consumed = navigator.popUntil { it is BackendSelectionTab || it is DashboardTab || it is FileBrowserTab }
         if (consumed || tabNavigator == null) {
             return
         }
@@ -149,6 +156,7 @@ private fun NavItem.toTab(
     contentType: ContentLayoutType,
 ): Tab = when (this) {
     is NavItem.BackendSelection -> BackendSelectionTab
+    is NavItem.Dashboard -> DashboardTab
     is NavItem.FileBrowser -> FileBrowserTab(contentType)
     is NavItem.Settings -> SettingsTab
     is NavItem.About -> AboutTab
@@ -156,6 +164,7 @@ private fun NavItem.toTab(
 
 private fun Tab.toNavItem(): NavItem = when (this) {
     is BackendSelectionTab -> NavItem.BackendSelection
+    is DashboardTab -> NavItem.Dashboard
     is FileBrowserTab -> NavItem.FileBrowser
     is SettingsTab -> NavItem.Settings
     is AboutTab -> NavItem.About

@@ -99,6 +99,7 @@ object FileBrowserScreen : Screen {
                 onBacklinkClicked = { viewModel.onUiEvent(UiEvent.BacklinkClicked(it)) },
                 onDeleteConfirmed = { viewModel.onUiEvent(UiEvent.DeleteConfirmed) },
                 onDismissRequest = { viewModel.onUiEvent(UiEvent.DismissDialog) },
+                onPinChanged = { scope, pinned -> viewModel.onUiEvent(UiEvent.PinChanged(scope, pinned)) },
             )
         }
     }

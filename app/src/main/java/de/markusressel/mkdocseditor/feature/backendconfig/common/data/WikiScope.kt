@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.common.data
 
+import de.markusressel.mkdocseditor.feature.dashboard.data.forgetDashboards
 import android.content.Context
 import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -92,6 +93,7 @@ class WikiScope @Inject constructor(
             if (removed != ScopeDirectories.EXISTING) documentStoreOf(removed).deleteAll()
         }
         origin?.let { documentStoreOf(ScopeDirectories.EXISTING).deleteCopiesOf(it) }
+        forgetDashboards(context, backendId)
     }
 
     /** Removes what [forget] could not, or what a late save of an open page wrote afterwards */

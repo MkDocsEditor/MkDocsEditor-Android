@@ -29,6 +29,7 @@ internal data class UiState(
 
     val bottomBarNavItems: List<NavItem> = listOf(
         NavItem.BackendSelection,
+        NavItem.Dashboard,
         NavItem.FileBrowser,
         NavItem.Settings,
         NavItem.About,
@@ -57,6 +58,7 @@ internal class MainViewModel @Inject constructor(
             UiState(
                 bottomBarNavItems = listOf(
                     NavItem.BackendSelection,
+                    NavItem.Dashboard,
                     NavItem.FileBrowser,
                     NavItem.Settings,
                     NavItem.About,
@@ -90,6 +92,7 @@ internal class MainViewModel @Inject constructor(
         val newNavItems = when {
             backendConfig != null -> listOf(
                 NavItem.BackendSelection,
+                NavItem.Dashboard,
                 NavItem.FileBrowser,
                 NavItem.Settings,
                 NavItem.About,

@@ -1,8 +1,12 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui
 
+import kotlinx.coroutines.flow.filterNotNull
+import de.markusressel.mkdocseditor.feature.main.data.MainNavigationRequests
+import de.markusressel.mkdocsrestclient.dashboard.PinScope
+import de.markusressel.mkdocseditor.feature.dashboard.domain.PinActions
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.SyncStatusStore
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ObserveStoredFolderUseCase
-import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ObserveTreeChangesUseCase
+import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.ObserveServerEventsUseCase
 import org.mobilenativefoundation.store.store5.StoreReadResponseOrigin
 import java.util.Date
 import androidx.annotation.StringRes
@@ -76,9 +80,10 @@ internal class FileBrowserViewModel @Inject constructor(
     getBacklinksUseCase: GetBacklinksUseCase,
     loadWikiTreeUseCase: LoadWikiTreeUseCase,
     private val dataRepository: DataRepository,
-    private val observeTreeChangesUseCase: ObserveTreeChangesUseCase,
+    private val observeServerEventsUseCase: ObserveServerEventsUseCase,
     private val observeStoredFolderUseCase: ObserveStoredFolderUseCase,
     deleteItemUseCase: DeleteItemUseCase,
+    pinActions: PinActions,
     private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val uploadResourceUseCase: UploadResourceUseCase,
     private val downloadResourceUseCase: DownloadResourceUseCase,
@@ -89,6 +94,7 @@ internal class FileBrowserViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val getCurrentBackendConfigFlowUseCase: GetCurrentBackendConfigFlowUseCase,
     private val localDocumentStore: LocalDocumentStore,
+    private val mainNavigationRequests: MainNavigationRequests,
 ) : ViewModel() {
 
     /** the open folder; the path to it can be computed again from the database */
@@ -116,6 +122,7 @@ internal class FileBrowserViewModel @Inject constructor(
         showMessage = { _events.send(FileBrowserEvent.Toast(it)) },
         reload = ::reload,
         deleteItem = { item, force -> deleteItemUseCase(item, force) },
+        pins = pinActions,
     )
 
     /** every new value loads the open folder again */
@@ -139,6 +146,13 @@ internal class FileBrowserViewModel @Inject constructor(
     init {
         followParentFolder()
 
+        launch {
+            // a link on the dashboard to a folder
+            mainNavigationRequests.sectionToShow.filterNotNull().collect { sectionId ->
+                mainNavigationRequests.sectionShown(sectionId)
+                reportingErrors { navigator.open(sectionId) }
+            }
+        }
         launch {
             localDocumentStore.unsyncedIds.collect { ids ->
                 _uiState.update { old -> old.copy(unsyncedDocumentIds = ids) }
@@ -303,6 +317,8 @@ internal class FileBrowserViewModel @Inject constructor(
 
                 is UiEvent.DeleteConfirmed -> reportingErrors { itemActions.applyDelete() }
 
+                is UiEvent.PinChanged -> reportingErrors { itemActions.setPinned(event.scope, event.pinned) }
+
                 is UiEvent.DismissDialog -> itemActions.dismiss()
 
                 is UiEvent.TopAppBarActionClicked -> onTopAppBarActionClicked(event.action)
@@ -391,7 +407,7 @@ internal class FileBrowserViewModel @Inject constructor(
      * open folder follows through its stream without a loading indicator, and a failure stays quiet.
      */
     internal suspend fun followTreeChanges() {
-        observeTreeChangesUseCase().conflate().collect {
+        observeServerEventsUseCase.treeChanges().conflate().collect {
             try {
                 dataRepository.sectionStore.fresh(ROOT_SECTION_ID)
                 onBackendAnswered()
@@ -479,6 +495,8 @@ internal sealed class UiEvent {
 
     data object DeleteConfirmed : UiEvent()
 
+    data class PinChanged(val scope: PinScope, val pinned: Boolean) : UiEvent()
+
     data class TopAppBarActionClicked(val action: TopAppBarAction.FileBrowser) : UiEvent()
 
     data object DismissDialog : UiEvent()
@@ -486,7 +504,7 @@ internal sealed class UiEvent {
     data object SignInClicked : UiEvent()
 }
 
-internal enum class ItemAction { Rename, Move, UsedBy, Delete }
+internal enum class ItemAction { Rename, Move, UsedBy, Pin, Delete }
 
 internal sealed class FileBrowserEvent {
     data object OpenSearch : FileBrowserEvent()
