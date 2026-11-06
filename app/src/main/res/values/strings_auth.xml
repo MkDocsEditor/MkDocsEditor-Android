@@ -100,6 +100,9 @@
     <string name="account_color">Color</string>
     <string name="account_color_hint">Hex color like #3f51b5, shown next to your edits</string>
     <string name="account_save_profile">Save profile</string>
+    <string name="account_avatar_add">Add picture</string>
+    <string name="account_avatar_change">Change picture</string>
+    <string name="account_avatar_remove">Remove picture</string>
     <string name="account_profile_saved">Profile saved.</string>
     <string name="account_role">Role: %1$s</string>
     <string name="account_security">Sign-in and security</string>

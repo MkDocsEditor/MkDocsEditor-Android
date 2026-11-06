@@ -104,6 +104,16 @@ interface AuthApi {
 
     suspend fun updateAccount(token: String, update: AccountUpdate): AccountInfo
 
+    /**
+     * Replaces the profile picture. The server crops and scales it.
+     *
+     * @param image the encoded image
+     * @param contentType its type, like `image/jpeg`
+     */
+    suspend fun uploadAvatar(token: String, image: ByteArray, contentType: String): AccountInfo
+
+    suspend fun deleteAvatar(token: String): AccountInfo
+
     suspend fun changePassword(token: String, currentPassword: String?, newPassword: String)
 
     suspend fun beginTotp(token: String): TotpEnrollment

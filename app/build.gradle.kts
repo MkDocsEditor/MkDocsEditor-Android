@@ -268,6 +268,11 @@ dependencies {
     // Spanned Text to AnnotatedString
     implementation(libs.aghajari.annotatedtext)
 
+    // Profile pictures
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+    implementation(libs.okhttp)
+
     // WebView
     implementation(libs.androidx.webkit)
 

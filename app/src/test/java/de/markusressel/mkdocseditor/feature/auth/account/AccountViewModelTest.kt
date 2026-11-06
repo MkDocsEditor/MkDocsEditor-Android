@@ -8,6 +8,8 @@ import de.markusressel.mkdocseditor.auth.api.AuthApiException
 import de.markusressel.mkdocseditor.auth.api.AuthErrorCode
 import de.markusressel.mkdocseditor.auth.api.PasskeyInfo
 import de.markusressel.mkdocseditor.auth.api.PasskeySupport
+import de.markusressel.mkdocseditor.auth.api.ServerFeature
+import de.markusressel.mkdocseditor.auth.api.ServerInfo
 import de.markusressel.mkdocseditor.auth.api.SessionInfo
 import de.markusressel.mkdocseditor.auth.domain.AuthRepository
 import de.markusressel.mkdocseditor.auth.token.AuthSession
@@ -50,6 +52,8 @@ class AccountViewModelTest {
     private val now = Instant.parse("2026-11-01T12:00:00Z")
     private lateinit var viewModel: AccountViewModel
     private val events = mutableListOf<AccountEvent>()
+    private val encoded = ByteArray(3)
+    private val encodedUris = mutableListOf<String>()
 
     private var account = AccountInfo(
         id = "u1",
@@ -77,6 +81,7 @@ class AccountViewModelTest {
             UnusedCredentialClient,
             promptStore,
             providers,
+            { uri -> encoded.also { encodedUris += uri } },
         )
         viewModel.clock = Clock.fixed(now, ZoneOffset.UTC)
     }
@@ -102,6 +107,36 @@ class AccountViewModelTest {
         assertEquals(listOf("p1"), state.passkeys.map { it.id })
         assertEquals(listOf("s1", "s2"), state.sessions.map { it.id })
         assertFalse(state.loading)
+    }
+
+    @Test
+    fun `profile pictures show only on a server that has them`() = runTest {
+        start()
+        assertFalse(viewModel.uiState.value.avatarsSupported)
+
+        api.onServerInfo = { ServerInfo(features = listOf(ServerFeature.AVATARS)) }
+        viewModel.onUiEvent(UiEvent.Refresh)
+        assertTrue(viewModel.uiState.value.avatarsSupported)
+    }
+
+    @Test
+    fun `a picked picture is encoded, uploaded and shown`() = runTest {
+        start()
+        account = account.copy(avatar = "0123456789abcdef")
+        viewModel.onUiEvent(UiEvent.AvatarPicked("content://media/picker/1"))
+        assertEquals(listOf("content://media/picker/1"), encodedUris)
+        assertTrue(api.calls.contains("uploadAvatar:image/jpeg:3"))
+        assertEquals("0123456789abcdef", viewModel.uiState.value.account?.avatar)
+    }
+
+    @Test
+    fun `removing the picture deletes it on the server`() = runTest {
+        account = account.copy(avatar = "0123456789abcdef")
+        start()
+        account = account.copy(avatar = null)
+        viewModel.onUiEvent(UiEvent.RemoveAvatarClicked)
+        assertTrue(api.calls.contains("deleteAvatar"))
+        assertNull(viewModel.uiState.value.account?.avatar)
     }
 
     @Test

@@ -3,16 +3,25 @@ package de.markusressel.mkdocseditor.feature.editor.ui.compose
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import de.markusressel.kodeeditor.library.compose.KodeEditorLayout
+import de.markusressel.mkdocseditor.feature.avatar.data.Avatar
+import de.markusressel.mkdocseditor.feature.avatar.ui.compose.UserAvatar
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 import kotlin.math.roundToInt
 
@@ -65,6 +74,7 @@ internal fun BoxScope.RemotePeersOverlay(
         selections.firstOrNull()?.let { selection ->
             RemotePeerLabel(
                 name = peer.label,
+                avatar = peer.avatarModel,
                 color = color,
                 layout = layout,
                 offset = selection.head,
@@ -74,18 +84,22 @@ internal fun BoxScope.RemotePeersOverlay(
 }
 
 /**
- * The name of a user, shown above its cursor (or below, on the first line)
+ * The name of a user, shown above its cursor (or below, on the first line), with its profile
+ * picture in front of it if it has one
  */
 @Composable
 private fun RemotePeerLabel(
     name: String,
+    avatar: Avatar?,
     color: Color,
     layout: KodeEditorLayout,
     offset: Int,
 ) {
     val cursorRect = layout.getCursorRect(offset)
+    val style = MaterialTheme.typography.labelSmall
+    val textColor = labelTextColorOn(color)
 
-    Text(
+    Row(
         modifier = Modifier
             .layout { measurable, constraints ->
                 val placeable = measurable.measure(constraints)
@@ -102,9 +116,28 @@ private fun RemotePeerLabel(
             }
             .background(color = color, shape = RoundedCornerShape(2.dp))
             .padding(horizontal = 2.dp),
-        text = name,
-        color = labelTextColorOn(color),
-        style = MaterialTheme.typography.labelSmall,
-        maxLines = 1,
-    )
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (avatar != null) {
+            UserAvatar(
+                // as high as the text, so the label keeps its height
+                modifier = Modifier
+                    .padding(vertical = 1.dp)
+                    .size(with(LocalDensity.current) { style.lineHeight.toDp() } - 2.dp)
+                    // faint like the rest of the label, for ghosts
+                    .alpha(color.alpha),
+                name = name,
+                color = color.copy(alpha = 1f),
+                avatar = avatar,
+                textStyle = style,
+            )
+            Spacer(Modifier.width(2.dp))
+        }
+        Text(
+            text = name,
+            color = textColor,
+            style = style,
+            maxLines = 1,
+        )
+    }
 }

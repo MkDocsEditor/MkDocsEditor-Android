@@ -445,6 +445,30 @@ class DocumentSyncSessionTest {
     }
 
     @Test
+    fun `peers and ghosts carry the profile picture, a leave keeps the one of the presence`() {
+        val listener = EditorListener()
+        val (server, session) = connectedSession(listener)
+
+        session.onMessage(
+            """{"type":"presence","documentId":"${server.documentId}","clientId":"c1","instanceId":"i1","accountId":"a1","username":"bob",
+                "avatar":"0123456789abcdef","selections":[]}"""
+        )
+        assertEquals("0123456789abcdef", listener.peers.single().avatar)
+
+        session.onMessage(
+            """{"type":"presence-leave","documentId":"${server.documentId}","clientId":"c1","instanceId":"i1","accountId":"a1",
+                "selections":[{"anchor":"end","head":"end"}],"ghostMs":60000}"""
+        )
+        assertEquals("0123456789abcdef", listener.ghosts.single().avatar)
+
+        session.onMessage(
+            """{"type":"presence-snapshot","documentId":"${server.documentId}",
+                "ghosts":[{"instanceId":"i2","accountId":"a2","username":"anna","avatar":"fedcba9876543210","selections":[],"ghostMs":20000}]}"""
+        )
+        assertEquals("fedcba9876543210", listener.ghosts.single { it.instanceId == "i2" }.avatar)
+    }
+
+    @Test
     fun `hello names the instance and its color, the same after a reconnect`() {
         val session = DocumentSyncSession("doc", InMemoryDocumentStore(), EditorListener(), instanceId = "0f".repeat(16))
         session.updateLocalColor("#112233")

@@ -3,6 +3,9 @@ package de.markusressel.mkdocseditor.application
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.HiltAndroidApp
 import de.markusressel.mkdocseditor.BuildConfig
@@ -21,12 +24,13 @@ import kotlinx.coroutines.launch
 import de.markusressel.mkdocseditor.service.AccessRequestsWorker
 import de.markusressel.mkdocseditor.service.UnsyncedChangesScheduler
 import javax.inject.Inject
+import javax.inject.Provider
 
 /**
  * Created by Markus on 20.12.2017.
  */
 @HiltAndroidApp
-class App : Application(), Configuration.Provider {
+class App : Application(), Configuration.Provider, SingletonImageLoader.Factory {
 
     // used for WorkManager
     @Inject
@@ -55,6 +59,12 @@ class App : Application(), Configuration.Provider {
 
     @Inject
     internal lateinit var migrateBackendBasicAuthUseCase: MigrateBackendBasicAuthUseCase
+
+    @Inject
+    internal lateinit var imageLoader: Provider<ImageLoader>
+
+    // AsyncImage uses this one, which knows how to load profile pictures
+    override fun newImageLoader(context: PlatformContext): ImageLoader = imageLoader.get()
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()

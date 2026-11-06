@@ -3,7 +3,9 @@ package de.markusressel.mkdocseditor.auth.api
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.JsonReader
 import com.squareup.moshi.Types
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.RequestBody.Companion.toRequestBody
 import okio.Buffer
 import java.time.Instant
 
@@ -212,6 +214,17 @@ class OkHttpAuthApi(
             response = accountAdapter,
         )
     )
+
+    override suspend fun uploadAvatar(token: String, image: ByteArray, contentType: String): AccountInfo = requireNotNull(
+        http.call(
+            "PUT", "account/avatar/", token = token,
+            body = image.toRequestBody(contentType.toMediaType()),
+            response = accountAdapter,
+        )
+    )
+
+    override suspend fun deleteAvatar(token: String): AccountInfo =
+        requireNotNull(http.call("DELETE", "account/avatar/", token = token, response = accountAdapter))
 
     override suspend fun changePassword(token: String, currentPassword: String?, newPassword: String) {
         http.call<Unit>("PUT", "account/password/", token = token, body = jsonObject {

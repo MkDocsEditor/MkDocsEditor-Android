@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.toArgb
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.contrastRatio
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.wcagLuminance
 import de.markusressel.mkdocsrestclient.sync.automerge.RemoteGhost
+import de.markusressel.mkdocseditor.feature.avatar.data.Avatar
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 import kotlin.math.absoluteValue
 
@@ -67,6 +68,10 @@ internal val RemotePeer.composeColor: Color
 /**
  * The name to show for this peer
  */
+/** the profile picture, null without one */
+internal val RemotePeer.avatarModel: Avatar?
+    get() = Avatar.of(accountId, avatar)
+
 internal val RemotePeer.name: String
     get() = displayName?.takeIf { it.isNotBlank() } ?: username
 
@@ -111,4 +116,5 @@ internal fun RemoteGhost.asPeer() = RemotePeer(
     instanceId = instanceId,
     deviceName = deviceName,
     instanceColor = instanceColor,
+    avatar = avatar,
 )
