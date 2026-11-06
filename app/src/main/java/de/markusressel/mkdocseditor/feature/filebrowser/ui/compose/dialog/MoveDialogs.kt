@@ -141,7 +141,8 @@ internal fun MoveDialog(
         Column(modifier = Modifier.fillMaxSize()) {
             if (state.working) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth().testTag("move-working"))
-                StillWorkingNote(working = true, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                // with a preview on screen, the move itself runs
+                StillWorkingNote(working = true, changesWiki = state.preview != null, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             }
             val preview = state.preview
             if (preview == null) {

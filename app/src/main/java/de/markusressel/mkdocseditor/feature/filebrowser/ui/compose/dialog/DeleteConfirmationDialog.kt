@@ -64,7 +64,7 @@ fun DeleteConfirmationDialog(
                 // a folder with many files takes the server a while
                 if (working) {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth().testTag(DELETE_WORKING_TAG))
-                    StillWorkingNote(working = true)
+                    StillWorkingNote(working = true, changesWiki = true)
                 }
 
                 Row {

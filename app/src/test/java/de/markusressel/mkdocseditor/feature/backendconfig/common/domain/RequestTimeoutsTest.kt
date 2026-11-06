@@ -92,6 +92,14 @@ class RequestTimeoutsTest {
         assertTrue(server.receivedBodySizes.single() >= content.size)
     }
 
+    /** The bug: without a file name the backend read the part as a form value, and refused a large file with 400 */
+    @Test
+    fun `an upload sends the content as a file`() = runBlocking<Unit> {
+        client.uploadResource("root", "big.bin", ByteArray(10))
+
+        assertTrue("filename=\"big.bin\"" in server.receivedBodyStarts.single(), server.receivedBodyStarts.single())
+    }
+
     private companion object {
         const val FUEL_DEFAULT_READ_TIMEOUT_MS = 15_000L
 

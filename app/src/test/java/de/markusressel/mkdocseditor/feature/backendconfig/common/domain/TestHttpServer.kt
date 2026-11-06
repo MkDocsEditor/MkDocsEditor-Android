@@ -33,6 +33,9 @@ internal class TestHttpServer {
     /** the size of the body of every request */
     val receivedBodySizes = CopyOnWriteArrayList<Int>()
 
+    /** the start of the body of every request, as Latin-1 */
+    val receivedBodyStarts = CopyOnWriteArrayList<String>()
+
     init {
         thread(isDaemon = true) {
             while (!socket.isClosed) {
@@ -51,7 +54,9 @@ internal class TestHttpServer {
                             val authorization = headers.header("Authorization")
                             received += path to authorization
                             val length = headers.header("Content-Length")?.toInt() ?: 0
-                            receivedBodySizes += input.readNBytes(length).size
+                            val requestBody = input.readNBytes(length)
+                            receivedBodySizes += requestBody.size
+                            receivedBodyStarts += String(requestBody, 0, minOf(requestBody.size, 512), Charsets.ISO_8859_1)
                             Thread.sleep(delayMs)
                             val content = body.toByteArray()
                             it.getOutputStream().write(

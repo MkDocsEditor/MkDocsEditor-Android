@@ -251,15 +251,20 @@ class RequestManager(
     /**
      * Uploads a file as the multipart field `file`. Cancelling the coroutine ends the upload.
      *
+     * @param fileName makes the part a file: without one, the backend reads it as a form value, which it limits to a
+     * few megabytes
      * @param onProgress the bytes sent so far and the size of the whole request body, on a network thread
      */
     suspend fun upload(
         url: String,
         blob: ByteArray,
+        fileName: String,
         onProgress: (doneBytes: Long, totalBytes: Long) -> Unit = { _, _ -> },
     ): Result<String, FuelError> {
         val request = createUploadRequest(url = url)
-        request.add(BlobDataPart(blob.inputStream().buffered(), name = "file", contentLength = blob.size.toLong()))
+        request.add(
+            BlobDataPart(blob.inputStream().buffered(), name = "file", filename = fileName, contentLength = blob.size.toLong())
+        )
         request.requestProgress(onProgress)
         return awaitInterruptible { request.response(StringDeserializer()).third }
     }

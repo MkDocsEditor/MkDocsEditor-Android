@@ -44,7 +44,7 @@ class ResourceApiImpl(
         content: ByteArray,
         onProgress: (doneBytes: Long, totalBytes: Long) -> Unit,
     ): Result<String, FuelError> {
-        return requestManager.upload("/resource/$parentId/$name/", content, onProgress)
+        return requestManager.upload("/resource/$parentId/$name/", content, fileName = name, onProgress = onProgress)
     }
 
     override suspend fun downloadResource(

@@ -52,13 +52,17 @@ internal fun rememberTakesLong(working: Boolean, afterMs: Long = TAKES_LONG_AFTE
     return takesLong && working
 }
 
-/** Below the progress of a long action, once it takes longer than usual */
+/**
+ * Below the progress of a long action, once it takes longer than usual
+ *
+ * @param changesWiki the action changes the wiki, so closing the dialog doesn't stop it
+ */
 @Composable
-internal fun StillWorkingNote(working: Boolean, modifier: Modifier = Modifier) {
+internal fun StillWorkingNote(working: Boolean, changesWiki: Boolean, modifier: Modifier = Modifier) {
     if (!rememberTakesLong(working)) return
     Text(
         modifier = modifier.testTag(STILL_WORKING_TAG),
-        text = stringResource(R.string.long_action_still_working),
+        text = stringResource(if (changesWiki) R.string.long_action_still_working_goes_on else R.string.long_action_still_working),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )

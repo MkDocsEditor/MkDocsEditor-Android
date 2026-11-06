@@ -93,7 +93,8 @@
     <string name="transfer_uploading">Uploading %1$s</string>
     <string name="transfer_downloading">Downloading %1$s</string>
     <string name="transfer_size">%1$s of %2$s</string>
-    <string name="long_action_still_working">This takes longer than usual. The server is still working on it, and finishes it even if you close this.</string>
+    <string name="long_action_still_working">This takes longer than usual. The server is still working on it.</string>
+    <string name="long_action_still_working_goes_on">This takes longer than usual. The server is still working on it, and finishes it even if you close this.</string>
     <string name="move_failed_later">%1$s was not moved: %2$s</string>
     <string name="format_bold">Bold</string>
     <string name="format_italic">Italic</string>
