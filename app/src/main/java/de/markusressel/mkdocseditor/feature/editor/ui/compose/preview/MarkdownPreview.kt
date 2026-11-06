@@ -47,6 +47,8 @@ fun interface PreviewResourceLoader {
  * @param sectionPath the folder of the document (`a/b`, empty for the root), for relative paths
  * @param resourceLoader loads the wiki files that the page asks for
  * @param onLinkClicked called with the target of a clicked link, as written in the markdown
+ * @param onContentHeight with it, the page tells the height of its content in CSS pixels (dp), for a preview that
+ * doesn't scroll itself but grows with its content. Zooming is off then.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -57,6 +59,7 @@ internal fun MarkdownPreview(
     onLinkClicked: (String) -> Unit,
     modifier: Modifier = Modifier,
     visible: Boolean = true,
+    onContentHeight: ((Int) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val palette = rememberEditorPalette()
@@ -73,6 +76,8 @@ internal fun MarkdownPreview(
     val currentLoader by rememberUpdatedState(resourceLoader)
     val currentOnLinkClicked by rememberUpdatedState(onLinkClicked)
     val currentVisible by rememberUpdatedState(visible)
+    val currentOnContentHeight by rememberUpdatedState(onContentHeight)
+    val growsWithContent = onContentHeight != null
 
     val state = remember { PreviewRenderState() }
 
@@ -86,8 +91,8 @@ internal fun MarkdownPreview(
             settings.allowFileAccess = false
             settings.allowContentAccess = false
             settings.domStorageEnabled = false
-            settings.setSupportZoom(true)
-            settings.builtInZoomControls = true
+            settings.setSupportZoom(!growsWithContent)
+            settings.builtInZoomControls = !growsWithContent
             // only the pinch, without the buttons on top of the page
             settings.displayZoomControls = false
             webViewClient = object : WebViewClient() {
@@ -119,6 +124,11 @@ internal fun MarkdownPreview(
                 @JavascriptInterface
                 fun openLink(href: String) {
                     mainHandler.post { currentOnLinkClicked(href) }
+                }
+
+                @JavascriptInterface
+                fun contentHeight(height: Int) {
+                    mainHandler.post { currentOnContentHeight?.invoke(height) }
                 }
 
                 @JavascriptInterface

@@ -134,6 +134,7 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
                     is TopAppBarAction.CodeEditor.MenuDivider,
                     is TopAppBarAction.CodeEditor.RenameAction,
                     is TopAppBarAction.CodeEditor.MoveAction,
+                    is TopAppBarAction.CodeEditor.PinAction,
                     is TopAppBarAction.CodeEditor.DeleteAction,
                     is TopAppBarAction.CodeEditor.FollowUserAction -> Unit
 

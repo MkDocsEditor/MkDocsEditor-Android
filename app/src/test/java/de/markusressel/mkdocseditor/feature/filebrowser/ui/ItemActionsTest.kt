@@ -5,6 +5,14 @@ import com.github.kittinunf.fuel.core.HttpException
 import com.github.kittinunf.fuel.core.Response
 import com.github.kittinunf.fuel.core.requests.DefaultBody
 import com.github.kittinunf.result.Result as FuelResult
+import de.markusressel.mkdocseditor.feature.dashboard.domain.PinActions
+import de.markusressel.mkdocseditor.feature.dashboard.domain.SetPinUseCase
+import de.markusressel.mkdocseditor.feature.filebrowser.data.DocumentData
+import de.markusressel.mkdocsrestclient.dashboard.FeedAuthorModel
+import de.markusressel.mkdocsrestclient.dashboard.PinModel
+import de.markusressel.mkdocsrestclient.dashboard.PinScope
+import de.markusressel.mkdocsrestclient.dashboard.PinsModel
+import java.util.Date
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTreeTest.Companion.section
@@ -79,6 +87,7 @@ class ItemActionsTest {
         tree: suspend () -> WikiTree? = { WikiTree(section("root", "root")) },
         delete: (force: Boolean) -> DeleteOutcome = { DeleteOutcome.Deleted },
         ownConnection: Boolean = false,
+        pinClient: IMkDocsRestClient? = null,
     ): ItemActions {
         val client = object : IMkDocsRestClient by DummyMkDocsRestClient() {
             override suspend fun move(request: MoveRequestModel) = move(request)
@@ -95,7 +104,85 @@ class ItemActionsTest {
             deleteItem = { item, force -> deletes += item.id to force; delete(force) },
             ownConnection = ownConnection,
             onDeleted = { deleted += it },
+            pins = pinClient?.let { PinActions(it, SetPinUseCase(it)) },
         )
+    }
+
+    /** pins of a server where this account may only pin for itself */
+    private inner class PinServer(private val mayPinForEveryone: Boolean) : IMkDocsRestClient by DummyMkDocsRestClient() {
+        var pins = PinsModel()
+
+        private fun pinOf(documentId: String) = PinModel(
+            documentId = documentId,
+            path = "$documentId.md",
+            name = documentId,
+            pinnedBy = FeedAuthorModel(accountId = "a1", displayName = "Anna", color = "#1971c2"),
+            pinnedAt = Date(0),
+        )
+
+        override suspend fun getPins(): FuelResult<PinsModel, FuelError> = FuelResult.success(pins)
+
+        override suspend fun pin(scope: PinScope, documentId: String) = change(scope) { it.filter { pin -> pin.documentId != documentId } + pinOf(documentId) }
+
+        override suspend fun unpin(scope: PinScope, documentId: String) = change(scope) { it.filter { pin -> pin.documentId != documentId } }
+
+        private fun change(scope: PinScope, update: (List<PinModel>) -> List<PinModel>): FuelResult<PinsModel, FuelError> {
+            if (scope == PinScope.Family && !mayPinForEveryone) return FuelResult.error(fuelError(403, """{"code":"forbidden"}"""))
+            pins = if (scope == PinScope.Family) pins.copy(family = update(pins.family)) else pins.copy(personal = update(pins.personal))
+            return FuelResult.success(pins)
+        }
+    }
+
+    private val page = WikiItem.Document(
+        DocumentData(0, "d1", "shopping", 0, Date(0), "", content = null, isOfflineAvailable = false)
+    )
+    private val pinDialog get() = assertIs<DialogState.Pin>(state.value.currentDialogState)
+
+    @Test
+    fun `the pin dialog shows and changes whether a page is pinned`() = runTest {
+        val server = PinServer(mayPinForEveryone = true)
+        val actions = actions(pinClient = server)
+        actions.onActionClicked(page, ItemAction.Pin)
+        assertEquals(false, pinDialog.isPinned(PinScope.Personal))
+        assertEquals(false, pinDialog.isPinned(PinScope.Family))
+
+        actions.setPinned(PinScope.Personal, pinned = true)
+        assertEquals(true, pinDialog.isPinned(PinScope.Personal))
+        assertEquals(false, pinDialog.isPinned(PinScope.Family))
+
+        actions.setPinned(PinScope.Family, pinned = true)
+        actions.setPinned(PinScope.Personal, pinned = false)
+        assertEquals(false, pinDialog.isPinned(PinScope.Personal))
+        assertEquals(true, pinDialog.isPinned(PinScope.Family))
+        assertEquals(listOf("d1"), server.pins.family.map { it.documentId })
+    }
+
+    @Test
+    fun `a reader who pins for everyone is told that only editors can`() = runTest {
+        val actions = actions(pinClient = PinServer(mayPinForEveryone = false))
+        actions.onActionClicked(page, ItemAction.Pin)
+
+        actions.setPinned(PinScope.Family, pinned = true)
+
+        assertTrue(pinDialog.forbidden)
+        assertEquals(false, pinDialog.working)
+        assertEquals(false, pinDialog.isPinned(PinScope.Family))
+
+        actions.setPinned(PinScope.Personal, pinned = true)
+        assertEquals(false, pinDialog.forbidden)
+        assertEquals(true, pinDialog.isPinned(PinScope.Personal))
+    }
+
+    @Test
+    fun `pins that can not be loaded say so instead of showing switches`() = runTest {
+        val offline = object : IMkDocsRestClient by DummyMkDocsRestClient() {
+            override suspend fun getPins(): FuelResult<PinsModel, FuelError> = FuelResult.error(fuelError(500, ""))
+        }
+        val actions = actions(pinClient = offline)
+        actions.onActionClicked(page, ItemAction.Pin)
+
+        assertTrue(pinDialog.unavailable)
+        assertNull(pinDialog.isPinned(PinScope.Personal))
     }
 
     private val moveDialog get() = assertIs<DialogState.Move>(state.value.currentDialogState)

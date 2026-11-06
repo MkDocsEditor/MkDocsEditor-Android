@@ -275,6 +275,7 @@ internal fun editorTopBarActions(
         TopAppBarAction.CodeEditor.MenuDivider,
         TopAppBarAction.CodeEditor.RenameAction,
         TopAppBarAction.CodeEditor.MoveAction,
+        TopAppBarAction.CodeEditor.PinAction,
         TopAppBarAction.CodeEditor.DeleteAction,
     )
     return listOfNotNull(
@@ -446,6 +447,7 @@ private fun menuText(entry: TopAppBarAction.CodeEditor): String? = when (entry) 
     TopAppBarAction.CodeEditor.ShowInBrowserAction -> stringResource(R.string.open_in_browser)
     TopAppBarAction.CodeEditor.RenameAction -> stringResource(R.string.item_action_rename)
     TopAppBarAction.CodeEditor.MoveAction -> stringResource(R.string.item_action_move)
+    TopAppBarAction.CodeEditor.PinAction -> stringResource(R.string.item_action_pin)
     TopAppBarAction.CodeEditor.DeleteAction -> stringResource(R.string.item_action_delete)
     else -> null
 }

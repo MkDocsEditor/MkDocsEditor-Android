@@ -50,6 +50,21 @@ class MainNavigationRequests @Inject constructor() {
         _showFileBrowser.tryEmit(Unit)
     }
 
+    private val _sectionToShow = MutableStateFlow<String?>(null)
+
+    /** a folder for the file browser to open. A state, because the file browser may not exist yet. */
+    val sectionToShow: StateFlow<String?> = _sectionToShow.asStateFlow()
+
+    /** shows a folder in the file browser, from another tab */
+    fun showSection(sectionId: String) {
+        _sectionToShow.value = sectionId
+        _showFileBrowser.tryEmit(Unit)
+    }
+
+    fun sectionShown(sectionId: String) {
+        _sectionToShow.compareAndSet(sectionId, null)
+    }
+
     @EntryPoint
     @InstallIn(SingletonComponent::class)
     interface Accessor {

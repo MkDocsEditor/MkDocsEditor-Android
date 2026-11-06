@@ -107,6 +107,21 @@ class KutePreferencesHolder @Inject constructor(
             })
     }
 
+    /** what the app shows when it starts: the dashboard or the file list */
+    val startPagePreference by lazy {
+        KuteSingleSelectStringPreference(context = context,
+            key = context.getString(R.string.start_page_key),
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_home),
+            title = context.getString(R.string.start_page_title),
+            possibleValues = mapOf(
+                R.string.start_page_dashboard_value to R.string.start_page_dashboard_name,
+                R.string.start_page_files_value to R.string.start_page_files_name,
+            ),
+            defaultValue = R.string.start_page_dashboard_value,
+            dataProvider = dataProvider,
+            onPreferenceChangedListener = { _, _ -> })
+    }
+
     val offlineModePreference by lazy {
         KuteBooleanPreference(key = context.getString(R.string.offline_mode_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_airplane),
@@ -146,6 +161,7 @@ class KutePreferencesHolder @Inject constructor(
             title = context.getString(R.string.section_general_ui_title),
             children = listOf(
                 themePreference,
+                startPagePreference,
             )
         )
     }

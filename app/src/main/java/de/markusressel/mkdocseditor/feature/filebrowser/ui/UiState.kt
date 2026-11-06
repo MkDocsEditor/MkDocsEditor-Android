@@ -1,5 +1,7 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui
 
+import de.markusressel.mkdocsrestclient.dashboard.PinsModel
+import de.markusressel.mkdocsrestclient.dashboard.PinScope
 import java.util.Date
 import androidx.annotation.StringRes
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
@@ -66,6 +68,28 @@ sealed interface DialogState {
         val openElsewhere: Boolean = false,
         val working: Boolean = false,
     ) : DialogState
+
+    /**
+     * Whether a page is pinned to the dashboard, for the account and for everyone
+     *
+     * @param pins null while loading
+     * @param unavailable the pins could not be loaded (older backend, no connection)
+     * @param forbidden the last change was refused: only editors and admins pin for everyone
+     * @param working true while a change runs
+     */
+    data class Pin(
+        val item: WikiItem,
+        val pins: PinsModel? = null,
+        val unavailable: Boolean = false,
+        val forbidden: Boolean = false,
+        val working: Boolean = false,
+    ) : DialogState {
+        fun isPinned(scope: PinScope): Boolean? {
+            val pins = pins ?: return null
+            val list = if (scope == PinScope.Family) pins.family else pins.personal
+            return list.any { it.documentId == item.id }
+        }
+    }
 }
 
 /**

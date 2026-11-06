@@ -1,6 +1,21 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog
 
 import android.content.Context
+import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import de.markusressel.mkdocsrestclient.dashboard.PinScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -26,6 +41,7 @@ internal fun ItemDialogs(
     onBacklinkClicked: (documentId: String) -> Unit,
     onDeleteConfirmed: () -> Unit,
     onDismissRequest: () -> Unit,
+    onPinChanged: (PinScope, pinned: Boolean) -> Unit = { _, _ -> },
 ) {
     when (dialogState) {
         is DialogState.ItemActions -> ItemActionsDialog(
@@ -49,6 +65,8 @@ internal fun ItemDialogs(
         )
 
         is DialogState.DeleteConfirmation -> DeleteItemDialog(dialogState, onDeleteConfirmed, onDismissRequest)
+
+        is DialogState.Pin -> PinDialog(dialogState, onPinChanged, onDismissRequest)
 
         else -> {}
     }
@@ -92,6 +110,64 @@ private fun DeleteItemDialog(
         onConfirmClicked = onDeleteConfirmed,
         onDismissRequest = onDismissRequest,
     )
+}
+
+@Composable
+private fun PinDialog(
+    state: DialogState.Pin,
+    onPinChanged: (PinScope, pinned: Boolean) -> Unit,
+    onDismissRequest: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(stringResource(R.string.pin_title, state.item.name)) },
+        text = {
+            Column {
+                Text(stringResource(R.string.pin_description))
+                when {
+                    state.unavailable -> Text(
+                        modifier = Modifier.padding(top = 16.dp),
+                        text = stringResource(R.string.pin_unavailable),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+
+                    state.pins == null -> LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = 16.dp))
+
+                    else -> {
+                        PinSwitch(R.string.pin_for_me, state.isPinned(PinScope.Personal), !state.working) {
+                            onPinChanged(PinScope.Personal, it)
+                        }
+                        PinSwitch(R.string.pin_for_everyone, state.isPinned(PinScope.Family), !state.working) {
+                            onPinChanged(PinScope.Family, it)
+                        }
+                        if (state.forbidden) {
+                            Text(
+                                text = stringResource(R.string.pin_for_everyone_forbidden),
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.done)) }
+        },
+    )
+}
+
+@Composable
+private fun PinSwitch(@StringRes label: Int, checked: Boolean?, enabled: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(modifier = Modifier.weight(1f), text = stringResource(label))
+        Switch(checked = checked == true, enabled = enabled && checked != null, onCheckedChange = onCheckedChange)
+    }
 }
 
 internal fun BrowserMessage.text(context: Context): String = when (this) {

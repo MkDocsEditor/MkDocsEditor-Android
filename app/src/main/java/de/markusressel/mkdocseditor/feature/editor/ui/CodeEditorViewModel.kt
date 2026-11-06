@@ -1,5 +1,7 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
+import de.markusressel.mkdocsrestclient.dashboard.PinScope
+import de.markusressel.mkdocseditor.feature.dashboard.domain.PinActions
 import de.markusressel.mkdocseditor.feature.common.ui.userMessage
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DeleteItemUseCase
@@ -110,6 +112,7 @@ internal class CodeEditorViewModel @Inject constructor(
     getBacklinksUseCase: GetBacklinksUseCase,
     loadWikiTreeUseCase: LoadWikiTreeUseCase,
     deleteItemUseCase: DeleteItemUseCase,
+    pinActions: PinActions,
 ) : ViewModel() {
 
     /** this app as a client instance, see [ClientInstanceId] */
@@ -148,6 +151,7 @@ internal class CodeEditorViewModel @Inject constructor(
         deleteItem = { item, force -> deleteItemUseCase(item, force) },
         ownConnection = true,
         onDeleted = { _navigationEvents.send(NavigationRequest.Close) },
+        pins = pinActions,
     )
 
     /** the wiki tree, for the link and image pickers */
@@ -429,6 +433,14 @@ internal class CodeEditorViewModel @Inject constructor(
                     showMessage(context.getString(e.userMessage()))
                 }
                 is UiEvent.ItemDialogDismissed -> itemActions.dismiss()
+                is UiEvent.ItemPinChanged -> try {
+                    itemActions.setPinned(event.scope, event.pinned)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.e(e)
+                    showMessage(context.getString(R.string.pin_failed))
+                }
 
                 is UiEvent.TopAppBarActionClicked -> onTopAppBarActionClicked(event.action)
                 is UiEvent.ExpandableFabItemSelected -> when (event.item.id) {
@@ -547,6 +559,7 @@ internal class CodeEditorViewModel @Inject constructor(
             is TopAppBarAction.CodeEditor.MenuDivider -> Unit
             is TopAppBarAction.CodeEditor.RenameAction -> onItemAction(ItemAction.Rename)
             is TopAppBarAction.CodeEditor.MoveAction -> onItemAction(ItemAction.Move)
+            is TopAppBarAction.CodeEditor.PinAction -> onItemAction(ItemAction.Pin)
             is TopAppBarAction.CodeEditor.DeleteAction -> onItemAction(ItemAction.Delete)
             is TopAppBarAction.CodeEditor.FollowUserAction -> startFollowing(action.instanceId)
             is TopAppBarAction.CodeEditor.CursorColorAction -> showDialog(DialogState.CursorColorPicker)
@@ -1004,6 +1017,7 @@ internal class CodeEditorViewModel @Inject constructor(
         data class ItemBacklinkClicked(val documentId: String) : UiEvent()
         data object ItemDeleteConfirmed : UiEvent()
         data object ItemDialogDismissed : UiEvent()
+        data class ItemPinChanged(val scope: PinScope, val pinned: Boolean) : UiEvent()
 
         data class TopAppBarActionClicked(val action: TopAppBarAction.CodeEditor) : UiEvent()
 

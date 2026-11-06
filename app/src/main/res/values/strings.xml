@@ -4,6 +4,28 @@
 
     <string name="bottom_navigation_backend_selection">Servers</string>
     <string name="bottom_navigation_item_files">Files</string>
+    <string name="bottom_navigation_item_dashboard">Dashboard</string>
+    <string name="screen_dashboard_title">What’s going on</string>
+    <string name="dashboard_home_page">Home page</string>
+    <string name="dashboard_home_page_edit">Open the home page</string>
+    <string name="dashboard_home_page_missing">This wiki has no home page (index.md) yet.</string>
+    <string name="dashboard_home_page_unavailable">The home page is not available offline yet.</string>
+    <string name="dashboard_pins_family">Pinned for everyone</string>
+    <string name="dashboard_pins_personal">My pins</string>
+    <string name="dashboard_pins_empty">No pinned pages yet. Pin a page from its menu in the file list or the editor.</string>
+    <string name="dashboard_feed_title">Changes</string>
+    <string name="dashboard_feed_empty">No changes yet.</string>
+    <string name="dashboard_feed_older">Show older changes</string>
+    <string name="dashboard_feed_older_failed">Older changes could not be loaded.</string>
+    <string name="dashboard_load_failed">The dashboard could not be loaded.</string>
+    <string name="dashboard_unpin">Remove pin</string>
+    <string name="dashboard_page_gone">This page no longer exists.</string>
+    <string name="feed_just_now">just now</string>
+    <string name="feed_created">Created</string>
+    <string name="feed_deleted">Deleted</string>
+    <string name="feed_moved">Moved from %1$s</string>
+    <string name="feed_edited_in">In %1$s</string>
+    <string name="feed_lines">+%1$d −%2$d</string>
     <string name="bottom_navigation_item_settings">Settings</string>
     <string name="bottom_navigation_item_about">About</string>
 
@@ -277,6 +299,15 @@
     <string name="item_action_rename">Rename</string>
     <string name="item_action_move">Move to…</string>
     <string name="item_action_used_by">Used by</string>
+    <string name="item_action_pin">Pin to the dashboard</string>
+    <string name="pin_title">Pin %1$s</string>
+    <string name="pin_description">Pinned pages show on the dashboard and stay available offline.</string>
+    <string name="pin_unavailable">Pins can\'t be loaded right now.</string>
+    <string name="pin_for_me">For me</string>
+    <string name="pin_for_everyone">For everyone</string>
+    <string name="pin_for_everyone_forbidden">Only editors and admins can pin pages for everyone.</string>
+    <string name="pin_failed">The pin could not be changed.</string>
+    <string name="done">Done</string>
     <string name="item_action_delete">Delete</string>
 
     <string name="move_title">Move %1$s</string>
