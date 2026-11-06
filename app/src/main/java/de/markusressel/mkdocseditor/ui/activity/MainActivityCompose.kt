@@ -43,12 +43,15 @@ import dagger.hilt.android.AndroidEntryPoint
 import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.feature.main.ui.DevicePosture
 import de.markusressel.mkdocseditor.feature.main.ui.compose.MainScreen
+import de.markusressel.mkdocseditor.feature.notifications.domain.OpenNotifiedDocumentUseCase
 import de.markusressel.mkdocseditor.feature.main.ui.isBookPosture
 import de.markusressel.mkdocseditor.feature.main.ui.isSeparating
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /**
  * The screens of a link opened from outside the app, on top of everything else
@@ -80,6 +83,9 @@ private const val ACCESS_REQUESTS_OF_BACKEND = "access-requests:"
 class MainActivityCompose : AppCompatActivity() {
 
     private val pendingAuthLink: PendingAuthLinkViewModel by viewModels()
+
+    @Inject
+    internal lateinit var openNotifiedDocument: OpenNotifiedDocumentUseCase
 
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -138,6 +144,13 @@ class MainActivityCompose : AppCompatActivity() {
     }
 
     private fun handleAuthLink(intent: Intent?) {
+        val notifiedDocument = intent?.getStringExtra(EXTRA_OPEN_DOCUMENT)
+        if (notifiedDocument != null) {
+            val backendId = intent.getLongExtra(EXTRA_OPEN_DOCUMENT_BACKEND, -1L)
+            intent.removeExtra(EXTRA_OPEN_DOCUMENT)
+            lifecycleScope.launch { openNotifiedDocument(backendId, notifiedDocument) }
+            return
+        }
         val adminOf = intent?.getLongExtra(EXTRA_ACCESS_REQUESTS_OF_BACKEND, -1L) ?: -1L
         if (adminOf >= 0) {
             intent?.removeExtra(EXTRA_ACCESS_REQUESTS_OF_BACKEND)
@@ -173,5 +186,9 @@ class MainActivityCompose : AppCompatActivity() {
     companion object {
         /** from the notification about new access requests: the server whose list to show */
         const val EXTRA_ACCESS_REQUESTS_OF_BACKEND = "access_requests_of_backend"
+
+        /** from a notification about a change: the document to open, and [EXTRA_OPEN_DOCUMENT_BACKEND] its server */
+        const val EXTRA_OPEN_DOCUMENT = "open_document"
+        const val EXTRA_OPEN_DOCUMENT_BACKEND = "open_document_backend"
     }
 }

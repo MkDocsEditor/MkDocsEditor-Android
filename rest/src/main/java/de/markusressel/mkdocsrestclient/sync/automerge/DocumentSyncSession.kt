@@ -172,6 +172,9 @@ class DocumentSyncSession(
         fun onDocumentDeleted() {}
 
         fun onServerError(code: String, message: String?) {}
+
+        /** The server answered for this document: it sent the document or a sync message */
+        fun onServerAnswered() {}
     }
 
     private class LocalCopy(
@@ -549,6 +552,7 @@ class DocumentSyncSession(
         syncState = SyncState()
         flushSync()
         sendPresence()
+        listener.onServerAnswered()
     }
 
     private fun reportAuthorColors() {
@@ -569,6 +573,7 @@ class DocumentSyncSession(
             resolvePeers()
         }
         flushSync()
+        listener.onServerAnswered()
     }
 
     private fun updateServerHeads() {

@@ -8,14 +8,9 @@ clients show the same thing.
 
 | Area | Entry | Kind of work | Needs another repo |
 |---|---|---|---|
-| Editor | [Author highlighting](#author-highlighting) | Open questions left | No |
-| Editor | [Follow another user](#follow-another-user) | Preview-only readers | Yes, the web client |
-| File browser | [Entries lack context](#file-browser-entries-lack-context) | Design and UI | Maybe the backend |
 | File browser | [Transitions between sections](#transitions-between-sections) | Path chips during the back gesture | No |
-| Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Feature | Yes, the backend and the web client |
-| App-wide | [Sync indicator](#sync-indicator) | Small feature | No |
+| Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Push, better summaries | Yes, the backend and the web client |
 | App-wide | [Settings](#settings) | About row and top bar | No |
-| Accounts | [Onboarding](#onboarding) | Optional feature tour | No |
 
 Order that fits how they depend on each other (Idea):
 
@@ -23,66 +18,7 @@ Order that fits how they depend on each other (Idea):
 
 ---
 
-# Editor
-
-## Follow another user
-
-Works in the editor pane. What is left:
-
-- A reader in preview-only mode sends no viewport (`"viewport": null`), so a follower only sees their cursor. Mapping the
-  preview position to the text needs its own PR, in both clients.
-
-## Author highlighting
-
-**What I want**
-
-CodiMD can show who wrote which character, per line and within a line. I want the same, fitting our current UI and
-what KodeEditor offers right now. It should be possible to turn it on and off, because it might be overwhelming if it
-is on permanently. Three modes:
-
-- a colored vertical strip for each line in the editor gutter
-- that strip plus a slight background highlight, like a marker, on the text itself
-- nothing
-
-**State**
-
-- Built, using `GET /document/{id}/authorship/`. The setting is under Editor, and the default is strip and marker. A
-  button in the editor switches through the modes.
-- Colors come from the server, as in the web client. Only an author the server names no color for gets a derived one.
-- `AuthorRuns` moves with each edit, in the call that makes it. New text has no author until the backend's next answer,
-  about 2 seconds after the text settles, because the app can't tell which actor made a remote change.
-- A strip with several authors on a line shows each one with its share.
-- Offline shows nothing, and nothing stores the runs.
-
-**Open questions**
-
-- Cursors of other users still use a color adjusted for contrast, so a dark color can differ from the web client.
-
----
-
 # File browser
-
-## File browser entries lack context
-
-**What I want**
-
-- There is not much information to decide which folder might be interesting and why. I like how minimalistic it is,
-  but the lack of context feels like bad UX.
-
-**Where to start**
-
-- `listentry/SectionListEntry.kt`, `DocumentListEntry.kt` and `ResourceListEntry.kt` in `feature/filebrowser/ui/compose`.
-- Names use `onSurface`, and everything below them `onSurfaceVariant`.
-- A folder shows its name, counts and last change in its subtree (`SectionData.lastChange`). A document shows its name,
-  size and last change. Changes read as relative time, and aren't shown after a year (`LastModifiedDate.kt`).
-- The API also has `path` and `index` on sections, plus `mimeType` and `thumbnail` on resources. I didn't check which
-  of these the app already stores.
-- Tests: `DocumentListEntryTest`, `FolderScrollPositionTest`.
-
-**Open questions**
-
-- Does the last changed date give enough context? Further ideas: who changed it, the first line of its index page, names
-  of the newest documents. These may need backend or data work.
 
 ## Transitions between sections
 
@@ -133,9 +69,17 @@ The dashboard ("What's going on") is built in the app (`feature/dashboard`), the
 setting and the sync indicator. It shows what is stored at once, also offline, and follows `pins-changed` and
 `feed-changed` while visible. Pages are pinned from their dialog in the file list and from the editor menu.
 
+The app notifies about changes by polling (`WikiChangesWorker`, `CheckWikiChangesUseCase`): about once an hour, with
+a network and enough battery, it reads `GET /feed/` of the selected server while signed in. Edits by other accounts to
+pages pinned for everyone or for the user, and to pages the user edited, give one notification per page ("Anna and Ben
+changed Shopping", with the headings of the summary), grouped per server. Edits without an account (`External change`)
+don't notify. Tapping one opens the page in the editor. A mark per server and account keeps a change from notifying
+twice; the first check only sets it, and runs right after signing in. The setting is under Notifications and on by default; the dashboard asks for the
+permission once, turning the setting on asks again, and the setting says when Android blocks the notifications.
+
 **What is left**
 
-1. Notifications, which are "there are new entries in the feed".
+1. Push, decided below. The polling stays as the fallback.
 2. Better summaries, if the simple ones aren't enough.
 
 **Gamification (Idea)**
@@ -162,20 +106,18 @@ Keep it small, and useful for the wiki. A home wiki has no need for points or ra
 - The events socket ignores `items-moved`. A move in another client drops the offline copy under the old id with the next
   fetch, and a renamed open folder sends the user to its parent. Any refresh does that today, but it now happens at once.
 - Opening the file browser fetches the tree twice: once for the folder and once after the socket connects.
-- The app has no notification code yet: no `POST_NOTIFICATIONS` permission and no `NotificationChannel`. There is no
-  Firebase either.
-- Background work already uses WorkManager (`ScheduleOfflineCacheUpdateUseCase`, `UnsyncedChangesScheduler`).
 - Web client: `DocumentView` and its history are the place to look for what can be reused. I didn't check this in detail.
 
-**Getting notifications to the phone**
+**Push (decided, Markus, 2026-11-06)**
 
-| Way | For | Against |
-|---|---|---|
-| Periodic WorkManager check | No new infrastructure, works with a self-hosted server | At best every 15 minutes, and Android may delay it |
-| UnifiedPush or ntfy | Fast, no Google | Family devices need a distributor app, the backend has to send pushes |
-| Firebase Cloud Messaging | Fast and reliable | Adds Google and a Firebase project to an open source, self-hosted app, and the backend has to send pushes |
-
-Idea: start with the periodic check. For a home wiki, a delay of 15 minutes or more is fine.
+- UnifiedPush, with the self-hosted ntfy server at `https://ntfy.markusressel.de` as the distributor. It is reachable on
+  the LAN and over the family VPN, allows anonymous use, and only topics starting with `up`.
+- The app registers with UnifiedPush and gives its endpoint to the backend. The backend sends Web Push to that endpoint
+  (RFC 8030, encrypted with RFC 8291, VAPID from RFC 8292).
+- The WorkManager polling stays as the fallback, for example without a distributor app or while ntfy can't be reached.
+- The backend push contract (registering the endpoint, the VAPID key, what a push holds) is still being defined in the
+  backend. The app part waits for it.
+- No Firebase.
 
 **Summaries**
 
@@ -191,17 +133,13 @@ Idea: start with the periodic check. For a home wiki, a delay of 15 minutes or m
 
 If notifications get annoying, people turn them off, and the goal is lost.
 
-- Never notify about the user's own changes. Compare `accountId`.
-- Group several changes into one notification.
 - Decide on per-folder or per-document following, and a setting for how often. See [Settings](#settings).
-- Pinned pages could be the default for what notifies.
-- Tapping a notification opens the document, ideally at the change.
+- Tapping a notification opens the document, but not yet at the change.
 
 **Open questions**
 
 - What counts as an important change? Is fixing a typo worth a notification?
 - Does the feed also cover new, moved and deleted documents, and resources? Git sees these too.
-- What about edits that aren't from an account (`:disk` and `:server` in authorship)?
 - Is a change marked as read per account on the server, so the app and the web client agree? That seems right.
 - Does the web client get notifications too (browser push), or only the page?
 - Notifications help people remember the app, but not look things up faster. Worth checking separately: a home screen
@@ -211,27 +149,6 @@ If notifications get annoying, people turn them off, and the goal is lost.
 
 # App-wide
 
-## Sync indicator
-
-**What I want**
-
-A small "synced" indicator, maybe global or on every relevant top-level page, that says how long ago the last check with
-the backend was, and whether that might affect anything. Really minimal, and it has to fit into the rest of the design.
-
-**State**
-
-The file browser shows it below its title ("Synced 3 hours ago", "Not connected · Synced 3 hours ago"). It counts file
-browser loads only, and `SyncStatusStore` remembers the time per server.
-
-**Decided**
-
-- The file browser and the dashboard show it, the backend page doesn't (Markus, 2026-11-06). Both count only their own
-  loads.
-
-**Open questions**
-
-- Should document syncs count as an answer from the backend?
-
 ## Settings
 
 **What I want (Idea)**
@@ -240,26 +157,3 @@ browser loads only, and `SyncStatusStore` remembers the time per server.
   section of its own.
 - The settings have no top bar with a title, unlike the file browser and the dashboard, only the search field of
   KutePreferences.
-
----
-
-# Accounts
-
-## Onboarding
-
-**What I want**
-
-- We don't have one, and we should.
-- Point to the web login as an easy way to get started, and explain that an admin has to give out invite links.
-- It could also show off the features of the app. That's low priority. If we do it, keep it succinct but visually
-  pleasing (fancy animations would be awesome).
-
-**State**
-
-The first start shows a short welcome and the hint about invite links above `ConnectServerScreen`'s QR code and address
-field. It shows whenever no server exists, so nothing needs storing. There is no link to a web client, because its
-address is only known once a server is.
-
-**Left to do**
-
-- A feature tour, if we want one.

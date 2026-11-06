@@ -28,6 +28,8 @@ import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiTree
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DownloadResourceUseCase
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ShareFileUseCase
 import de.markusressel.mkdocseditor.feature.main.data.MainNavigationRequests
+import de.markusressel.mkdocseditor.feature.notifications.data.NotificationPermission
+import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocsrestclient.dashboard.DashboardSnapshotModel
 import de.markusressel.mkdocsrestclient.dashboard.FeedEntryModel
@@ -44,7 +46,9 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -76,6 +80,8 @@ internal class DashboardViewModel @Inject constructor(
     private val downloadResourceUseCase: DownloadResourceUseCase,
     private val shareFileUseCase: ShareFileUseCase,
     private val mainNavigationRequests: MainNavigationRequests,
+    private val notificationPermission: NotificationPermission,
+    private val preferencesHolder: KutePreferencesHolder,
     editorResources: EditorResources,
 ) : ViewModel() {
 
@@ -91,12 +97,27 @@ internal class DashboardViewModel @Inject constructor(
 
     init {
         launch {
+            if (notificationPermission.takeDashboardRequest(preferencesHolder.wikiChangeNotificationsPreference.persistedValue.value)) {
+                _events.send(DashboardEvent.AskForNotifications)
+            }
+        }
+        launch {
             getCurrentBackendConfigFlowUseCase().distinctUntilChanged { old, new -> old?.id == new?.id }.collect { config ->
                 olderFeed?.cancel()
                 _uiState.value = UiState(lastSync = config?.let { syncStatusStore.lastSync(it.id) })
                 config ?: return@collect
                 showStored(config)
                 refreshAll()
+            }
+        }
+        launch {
+            // also a sync of the editor or the file browser, while this screen is in the back stack
+            getCurrentBackendConfigFlowUseCase().distinctUntilChanged { old, new -> old?.id == new?.id }.collectLatest { config ->
+                config ?: return@collectLatest
+                // the stored time is in the state already, see above
+                syncStatusStore.lastSyncFlow(config.id).drop(1).collect { lastSync ->
+                    _uiState.update { it.copy(lastSync = lastSync, lastSyncFailed = false) }
+                }
             }
         }
     }
@@ -360,4 +381,7 @@ internal sealed interface DashboardEvent {
     data class OpenAccount(val backendId: Long) : DashboardEvent
     data object OpenSearch : DashboardEvent
     data class Toast(val text: String) : DashboardEvent
+
+    /** the first time the dashboard shows, see [NotificationPermission.takeDashboardRequest] */
+    data object AskForNotifications : DashboardEvent
 }

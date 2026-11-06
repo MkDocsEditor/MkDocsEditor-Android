@@ -27,6 +27,11 @@ class DocumentSyncSessionTest {
         var deleted = false
         var renamedTo: String? = null
         val remoteSplices = mutableListOf<TextSplice>()
+        var serverAnswers = 0
+
+        override fun onServerAnswered() {
+            serverAnswers++
+        }
 
         override fun onTextReplaced(text: String) {
             editorText = text
@@ -103,6 +108,23 @@ class DocumentSyncSessionTest {
         val stored = store.documents.getValue(server.documentId)
         assertEquals(hello.actorId, stored.actorId)
         assertEquals("epoch-1", stored.epoch)
+    }
+
+    @Test
+    fun `the document and each sync message of the server count as its answer`() {
+        val server = FakeSyncServer("one\n")
+        val listener = EditorListener()
+        val session = DocumentSyncSession(server.documentId, InMemoryDocumentStore(), listener)
+        assertEquals(0, listener.serverAnswers)
+
+        server.connect(session)
+        server.pump()
+        assertTrue(listener.serverAnswers > 0)
+
+        val before = listener.serverAnswers
+        session.type("one\ntwo\n", listener)
+        server.pump()
+        assertTrue(listener.serverAnswers > before, "the answer to an edit")
     }
 
     @Test
