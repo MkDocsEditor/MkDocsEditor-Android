@@ -124,10 +124,20 @@ internal data class UiState(
     /** null until it is known what is in the open folder */
     val folderContent: FolderContent? = null,
 
+    /** the stored content of the folder above the open one, for the back gesture */
+    val parentFolderContent: FolderContent? = null,
+
     /** the selected backend, when its server rejected the session; the cached data stays visible */
     val loginRequiredBackendId: Long? = null,
 ) {
     val canGoUp: Boolean get() = currentSectionPath.size > 1
+
+    /**
+     * What the back gesture shows while it is dragged, null to show nothing. Right after the folder changed, the content
+     * of the former parent may still be there, and must not pass as the new one.
+     */
+    val parentPreview: FolderContent?
+        get() = parentFolderContent?.takeIf { it.sectionId == currentSectionPath.getOrNull(currentSectionPath.lastIndex - 1)?.id }
 
     /** nothing can be created in a folder that is not known */
     val fabConfig: FabConfig<FileBrowserFabId> get() = if (folderContent == null) FabConfig() else CreateItemsFabConfig
