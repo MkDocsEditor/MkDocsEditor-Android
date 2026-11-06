@@ -76,7 +76,7 @@ object AuthModule {
     private val quickClient: OkHttpClient by lazy {
         authClient.newBuilder()
             .connectTimeout(3, TimeUnit.SECONDS)
-            .readTimeout(3, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.SECONDS)
             .build()
     }
 

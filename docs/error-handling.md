@@ -45,7 +45,8 @@ server that doesn't answer. `RequestKind` in `RequestManager` holds the timeouts
 
 | Kind | For | Gives up after |
 |---|---|---|
-| Quick | Reads a screen shows or that run in the background: tree, page, dashboard, pins, feed, server info, lookups | 3 s for the connection, 3 s for the answer |
+| Quick | Reads a screen shows or that run in the background: tree, page, dashboard, pins, feed, server info, lookups | 3 s for the connection, 10 s for the answer |
+| Blocking | The one lookup a screen waits for before it shows anything: whether a page without a local copy moved | 3 s for the connection, 3 s for the answer |
 | Long action | Anything that changes the wiki: move and its dry run, rename, delete, create, pin | 3 s for the connection, 10 minutes for the answer |
 | Transfer | Uploads and downloads | 3 s for the connection, 60 s without data |
 

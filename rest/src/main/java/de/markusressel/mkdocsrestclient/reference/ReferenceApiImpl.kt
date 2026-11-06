@@ -41,6 +41,6 @@ class ReferenceApiImpl(
             urlParameters = oldIds.map { "id" to it },
             method = Method.GET,
             // opening a document waits for this answer, and a coroutine timeout can not end a blocking request
-            kind = RequestKind.Quick,
+            kind = RequestKind.Blocking,
         )
 }

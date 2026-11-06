@@ -310,7 +310,13 @@ enum class RequestKind(val readTimeoutMs: Int) {
      * Reads the screens show or run in the background: the tree, a page, the dashboard, pins, the feed, lookups. A
      * server that is this slow counts as unreachable: the stored copy stays on screen, and a later try asks again.
      */
-    Quick(readTimeoutMs = 3_000),
+    Quick(readTimeoutMs = 10_000),
+
+    /**
+     * A lookup that a screen waits for before it shows anything: the move lookup when a page without a local copy
+     * opens. A coroutine timeout can not end the blocking request, so the request has to end soon by itself.
+     */
+    Blocking(readTimeoutMs = 3_000),
 
     /**
      * Anything that changes the wiki, and the dry run of a move. The server may work on it for minutes (a move rewrites

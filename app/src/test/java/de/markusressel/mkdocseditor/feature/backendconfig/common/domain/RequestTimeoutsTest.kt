@@ -45,7 +45,9 @@ class RequestTimeoutsTest {
             options.timeoutReadInMillisecond
         }
 
-        assertTrue(read.getValue(RequestKind.Quick) <= 5_000, "a quick read gives up soon")
+        assertEquals(3_000, CONNECT_TIMEOUT_MS, "a server that doesn't take the connection fails soon")
+        assertEquals(10_000, read.getValue(RequestKind.Quick), "a quick read gives up after 10 s")
+        assertTrue(read.getValue(RequestKind.Blocking) <= 5_000, "a lookup a screen waits for gives up soon")
         assertTrue(read.getValue(RequestKind.LongAction) >= 5 * 60_000, "a long action waits for minutes")
         assertTrue(read.getValue(RequestKind.Transfer) >= 30_000, "a transfer may stall for a moment")
     }
@@ -55,6 +57,14 @@ class RequestTimeoutsTest {
         val options = requestManager.createUploadRequest("resource/root/a.png/").executionOptions
         assertEquals(CONNECT_TIMEOUT_MS, options.timeoutInMillisecond)
         assertEquals(RequestKind.Transfer.readTimeoutMs, options.timeoutReadInMillisecond)
+    }
+
+    @Test
+    fun `a quick read waits for a server that needs a few seconds`() = runBlocking<Unit> {
+        server.body = "{}"
+        server.delayMs = 4_000L
+
+        assertNull(requestManager.doRequest<String>("section/", Method.GET).component2())
     }
 
     /**
@@ -67,11 +77,11 @@ class RequestTimeoutsTest {
         server.delayMs = FUEL_DEFAULT_READ_TIMEOUT_MS + 1_000L
 
         val move = client.move(MoveRequestModel(type = "section", id = "guide", parent = "archive", dryRun = false))
-        val quick = client.getMoved(listOf("guide"))
+        val lookup = client.getMoved(listOf("guide"))
 
         assertNull(move.component2())
         assertEquals("archive/guide", assertNotNull(move.component1()).newPath)
-        assertIs<SocketTimeoutException>(assertNotNull(quick.component2()).exception)
+        assertIs<SocketTimeoutException>(assertNotNull(lookup.component2()).exception)
     }
 
     @Test
