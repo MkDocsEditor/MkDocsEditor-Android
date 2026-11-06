@@ -5,6 +5,7 @@ import de.markusressel.mkdocseditor.feature.main.data.MainNavigationRequests
 import de.markusressel.mkdocsrestclient.dashboard.PinScope
 import de.markusressel.mkdocseditor.feature.dashboard.domain.PinActions
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.SyncStatusStore
+import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ObserveStoredFolderUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.ObserveServerEventsUseCase
 import org.mobilenativefoundation.store.store5.StoreReadResponseOrigin
 import java.util.Date
@@ -48,6 +49,7 @@ import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCa
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocsrestclient.sync.automerge.LocalDocumentStore
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,6 +59,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -77,6 +81,7 @@ internal class FileBrowserViewModel @Inject constructor(
     loadWikiTreeUseCase: LoadWikiTreeUseCase,
     private val dataRepository: DataRepository,
     private val observeServerEventsUseCase: ObserveServerEventsUseCase,
+    private val observeStoredFolderUseCase: ObserveStoredFolderUseCase,
     deleteItemUseCase: DeleteItemUseCase,
     pinActions: PinActions,
     private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
@@ -129,7 +134,18 @@ internal class FileBrowserViewModel @Inject constructor(
     /** waits for the file picker; the file goes to the folder that was open when the upload started */
     private var pendingUpload: Job? = null
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun followParentFolder() = launch {
+        // the back gesture shows the parent while it is dragged, so its content has to be there already
+        _uiState.map { it.currentSectionPath.getOrNull(it.currentSectionPath.lastIndex - 1)?.id }
+            .distinctUntilChanged()
+            .flatMapLatest { parentId -> if (parentId == null) flowOf(null) else observeStoredFolderUseCase(parentId) }
+            .collect { parent -> _uiState.update { old -> old.copy(parentFolderContent = parent) } }
+    }
+
     init {
+        followParentFolder()
+
         launch {
             // a link on the dashboard to a folder
             mainNavigationRequests.sectionToShow.filterNotNull().collect { sectionId ->

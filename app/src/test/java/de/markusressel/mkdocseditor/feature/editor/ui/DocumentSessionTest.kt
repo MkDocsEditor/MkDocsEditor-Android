@@ -101,6 +101,8 @@ class DocumentSessionTest {
         var localCopyInStore = true
         var redirects = mapOf<String, String>()
         var redirectLookups = 0
+        /** the lookup waits for it, if set */
+        var redirectAnswer: CompletableDeferred<Unit>? = null
         var cached: CachedDocument? = null
         var loadAnswer: CompletableDeferred<DocumentLoad>? = null
         var loadCount = 0
@@ -137,6 +139,7 @@ class DocumentSessionTest {
         override fun hasLocalCopy(documentId: String) = localCopyInStore
         override suspend fun followRedirect(documentId: String): String {
             redirectLookups++
+            redirectAnswer?.await()
             return redirects[documentId] ?: documentId
         }
 
@@ -367,6 +370,82 @@ class DocumentSessionTest {
         f.document.connected()
         f.document.textArrived("server text")
         assertFalse(f.state.noOfflineVersion)
+    }
+
+    @Test
+    fun `a failed load without a connection ends the loading, while the connection keeps trying`() = test { f ->
+        f.environment.loadAnswer = CompletableDeferred(DocumentLoad(null, IOException("no server")))
+        f.open()
+        assertTrue(f.state.noOfflineVersion)
+        assertFalse(f.session.showsLoading.value)
+        assertTrue(f.document.disconnects.isEmpty())
+    }
+
+    @Test
+    fun `without a local copy, opening stops waiting for a server that does not answer`() = test { f ->
+        f.environment.loadAnswer = CompletableDeferred()
+        f.open()
+        advanceTimeBy(OPENING_TIMEOUT_MS - 1)
+        assertTrue(f.session.showsLoading.value)
+        assertFalse(f.state.noOfflineVersion)
+
+        advanceTimeBy(2)
+        assertFalse(f.session.showsLoading.value)
+        assertTrue(f.state.noOfflineVersion)
+        assertTrue(f.document.disconnects.isEmpty(), "the connection keeps trying")
+
+        f.document.connected()
+        f.document.textArrived("server text")
+        assertFalse(f.state.noOfflineVersion)
+        assertEquals("server text", f.fieldText)
+    }
+
+    @Test
+    fun `a server that does not answer brings up the cached text as the offline version`() = test { f ->
+        f.environment.cached = CachedDocument("Title", "cached text")
+        f.environment.loadAnswer = CompletableDeferred()
+        f.open()
+        advanceTimeBy(OPENING_TIMEOUT_MS + 1)
+        assertFalse(f.session.showsLoading.value)
+        assertFalse(f.state.noOfflineVersion)
+        assertEquals(1, f.host.offlineVersions)
+        assertEquals("cached text", f.fieldText)
+    }
+
+    @Test
+    fun `a connection in time keeps the loading until the text arrives`() = test { f ->
+        f.environment.loadAnswer = CompletableDeferred()
+        f.open()
+        f.document.connected()
+        advanceTimeBy(OPENING_TIMEOUT_MS + 1)
+        assertTrue(f.session.showsLoading.value)
+        assertFalse(f.state.noOfflineVersion)
+    }
+
+    @Test
+    fun `the loading shows while it looks for a moved copy`() = test { f ->
+        f.environment.localCopyInStore = false
+        f.environment.redirectAnswer = CompletableDeferred()
+        f.open()
+        assertTrue(f.session.showsLoading.value)
+    }
+
+    @Test
+    fun `retrying asks the server again, and stops waiting again`() = test { f ->
+        f.environment.loadAnswer = CompletableDeferred(DocumentLoad(null, IOException("no server")))
+        f.open()
+        assertTrue(f.state.noOfflineVersion)
+
+        // the server takes its time to answer this time
+        f.environment.loadAnswer = CompletableDeferred()
+        f.session.retry()
+        assertEquals(2, f.document.connects)
+        assertEquals(2, f.environment.loadCount)
+        assertTrue(f.session.showsLoading.value)
+
+        advanceTimeBy(OPENING_TIMEOUT_MS + 1)
+        assertFalse(f.session.showsLoading.value)
+        assertTrue(f.state.noOfflineVersion)
     }
 
     @Test

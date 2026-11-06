@@ -35,6 +35,12 @@ import kotlinx.coroutines.withTimeoutOrNull
 private const val REDIRECT_TIMEOUT_MS = 5_000L
 private const val INDICATOR_DELAY_MS = 2_000L
 
+/**
+ * How long opening a document without a local copy waits for the server. A server that is down answers at once,
+ * but one that hangs, or a proxy in front of it, only fails after the timeouts of the requests (15 s).
+ */
+internal const val OPENING_TIMEOUT_MS = 3_000L
+
 /** what the database knows about a document */
 internal data class CachedDocument(val name: String, val text: String?)
 
@@ -236,6 +242,9 @@ internal class DocumentSession(
     /** what the database knew when the document was last loaded */
     private var loadedDocument: CachedDocument? = null
 
+    /** ends the loading of a document without a local copy, when the server takes too long */
+    private var openingTimeout: Job? = null
+
     fun start() {
         scope.launch {
             _documentId.collect { documentId -> open(documentId) }
@@ -298,6 +307,7 @@ internal class DocumentSession(
             // a copy held under an old id of this document (moved while the app was
             // offline) must be re-keyed before the copy is loaded, or its edits would not
             // show up
+            _state.update { old -> old.copy(loading = true) }
             val currentId = withTimeoutOrNull(REDIRECT_TIMEOUT_MS) {
                 withContext(environment.ioDispatcher) { environment.followRedirect(documentId) }
             }
@@ -318,6 +328,7 @@ internal class DocumentSession(
         syncedDocument?.shutdown()
         // nothing may reach the old document while the next one loads
         syncedDocument = null
+        openingTimeout?.cancel()
         environment.onDocumentOpen(documentId)
         text.unbind()
         localCopyAvailable.value = false
@@ -438,9 +449,14 @@ internal class DocumentSession(
         if (connect && !offlineMode) reconnect()
 
         val result = environment.loadDocument(documentId) { cached ->
-            if (connect) showCachedDocument(cached)
+            if (connect) {
+                // the offline version, if the server does not answer in time
+                loadedDocument = cached
+                showCachedDocument(cached)
+            }
         }
-        loadedDocument = result.document
+        // a failed load may know nothing, while the cached text is still the offline version
+        loadedDocument = result.document ?: loadedDocument
         updateTitle(result.document?.name ?: "")
         when {
             result.error != null -> {
@@ -479,15 +495,38 @@ internal class DocumentSession(
         }
     }
 
+    /** Ends the loading: what can be shown now is all there is until the server answers */
     private fun showOfflineVersionIfPossible() {
         // prefer the local Automerge copy, it includes edits made offline
         val cachedContent = syncedDocument?.text ?: loadedDocument?.text
-        if (cachedContent == null) {
-            _state.update { old -> old.copy(noOfflineVersion = true) }
-            return
-        }
+        _state.update { old -> old.copy(loading = false, noOfflineVersion = cachedContent == null) }
+        if (cachedContent == null) return
         host.onOfflineVersionShown()
         text.showDetachedText(cachedContent)
+    }
+
+    /**
+     * Without a local copy there is nothing to read while the server does not answer, so the user is not kept waiting
+     * for the timeouts of the requests. The connection keeps trying, and the text replaces what is shown when it comes.
+     */
+    private fun endLoadingLater() {
+        openingTimeout?.cancel()
+        openingTimeout = scope.launch {
+            delay(OPENING_TIMEOUT_MS)
+            if (_state.value.loading && !localCopyAvailable.value && syncedDocument?.isConnected == false) {
+                showOfflineVersionIfPossible()
+            }
+        }
+    }
+
+    /** Asks the server again for a document that is not on this device */
+    fun retry() {
+        val documentId = _documentId.value ?: return
+        reconnect()
+        if (documentLoadFailed) {
+            documentLoadFailed = false
+            scope.launch { load(documentId, connect = false) }
+        }
     }
 
     private fun updateTitle(title: String) {
@@ -498,8 +537,11 @@ internal class DocumentSession(
      * Disconnects from the server (if necessary) and tries to reestablish a connection
      */
     fun reconnect() {
-        _state.update { old -> old.copy(loading = syncedDocument != null) }
-        syncedDocument?.connect()
+        val document = syncedDocument
+        _state.update { old -> old.copy(loading = document != null) }
+        document ?: return
+        document.connect()
+        endLoadingLater()
     }
 
     private fun disconnect(reason: String) {

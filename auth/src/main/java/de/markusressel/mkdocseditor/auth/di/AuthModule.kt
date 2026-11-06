@@ -12,6 +12,7 @@ import de.markusressel.mkdocseditor.auth.api.AuthApiFactory
 import de.markusressel.mkdocseditor.auth.api.OkHttpAuthApi
 import de.markusressel.mkdocseditor.auth.domain.AuthRepository
 import de.markusressel.mkdocseditor.auth.token.AccessRequestStore
+import de.markusressel.mkdocseditor.auth.token.AccountRoleStore
 import de.markusressel.mkdocseditor.auth.token.AesGcmTokenCipher
 import de.markusressel.mkdocseditor.auth.token.AndroidKeystoreKey
 import de.markusressel.mkdocseditor.auth.token.EncryptedTokenStore
@@ -38,6 +39,9 @@ object AuthModule {
     /** like the sessions, this can not be decrypted on another device */
     const val ACCESS_REQUEST_PREFERENCES_NAME = "access_requests"
     private const val ACCESS_REQUEST_KEY_ALIAS = "mkdocseditor_access_requests"
+
+    /** the last known role of each signed-in account, not a secret */
+    private const val ROLE_PREFERENCES_NAME = "account_roles"
 
     @Provides
     @Singleton
@@ -86,6 +90,9 @@ object AuthModule {
         tokenStore = tokenStore,
         apiFactory = apiFactory,
         deviceName = deviceName(context),
+        roleStore = AccountRoleStore(
+            SharedPreferencesKeyValueStore(context.getSharedPreferences(ROLE_PREFERENCES_NAME, Context.MODE_PRIVATE))
+        ),
     )
 
     /**
