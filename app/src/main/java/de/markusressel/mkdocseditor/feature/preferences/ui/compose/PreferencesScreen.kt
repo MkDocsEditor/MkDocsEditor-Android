@@ -56,11 +56,14 @@ internal fun settingsColors(): KuteColors {
             elevation = CARD_ELEVATION,
             cardBackgroundColor = cardColor,
             titleColor = MaterialTheme.colorScheme.onSurface,
+            shape = CardDefaults.elevatedShape,
         ),
         section = defaults.section.copy(
             elevation = CARD_ELEVATION,
             titleBackgroundColor = cardColor,
             contentBackgroundColor = cardColor,
+            titleTextStyle = MaterialTheme.typography.titleMedium,
+            shape = CardDefaults.elevatedShape,
         ),
         defaultItem = defaults.defaultItem.copy(
             titleColor = MaterialTheme.colorScheme.onSurface,

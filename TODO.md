@@ -15,7 +15,7 @@ clients show the same thing.
 | File browser | [Transitions between sections](#transitions-between-sections) | Design and UI | No |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Feature | Yes, the backend and the web client |
 | App-wide | [Sync indicator](#sync-indicator) | Small feature | No |
-| App-wide | [Settings](#settings) | Few candidates left | Maybe KutePreferences |
+| App-wide | [Settings](#settings) | About row and top bar | No |
 | Accounts | [Onboarding](#onboarding) | Optional feature tour | No |
 
 Order that fits how they depend on each other (Idea):
@@ -271,26 +271,12 @@ browser loads only, and `SyncStatusStore` remembers the time per server.
 
 ## Settings
 
-**What I want**
+**What I want (Idea)**
 
-- The settings are very rudimentary. Keep the library.
-- Expand the options: check all our features and decide which behaviors deserve a setting, then categorize them
-  properly.
-- Rework the styling. It looks similar to the rest of the app, but doesn't fully fit.
-- Changing [KutePreferences](https://github.com/markusressel/KutePreferences) is fine if needed. It's my own project,
-  and it can adapt to more use cases.
-
-**State**
-
-- Categories are Offline, Editor and Appearance. Offline mode has its setting, and the editor has line wrapping, line
-  numbers and text size.
-- The category cards are flat, using `KutePreferencesTheme` colors. `Category.kt` in KutePreferences hardcodes its
-  container color, which KutePreferences would have to change.
-
-**Candidates left (Idea)**
-
-- connect automatically: `connectsAutomatically` follows "always open in edit mode" today
-- default split mode: the window size decides today, and that seems fine
+- The About entry on the top level is a plain row next to the category cards. It could be a card too, or sit in a
+  section of its own.
+- The settings have no top bar with a title, unlike the file browser and the dashboard, only the search field of
+  KutePreferences.
 
 ---
 
