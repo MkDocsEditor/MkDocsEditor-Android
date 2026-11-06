@@ -41,6 +41,9 @@ import de.markusressel.mkdocseditor.feature.editor.domain.followTarget
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
 import de.markusressel.mkdocsrestclient.sync.automerge.RemoteGhost
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.filterNotNull
+import androidx.compose.runtime.rememberUpdatedState
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -75,10 +78,22 @@ internal fun CodeEditorLayout(
     localColor: String? = null,
     onStopFollowing: () -> Unit = {},
     onVisibleRangeChanged: (TextRange?) -> Unit = {},
+    scrollSync: ScrollSync? = null,
 ) {
     val viewState = rememberKodeEditorViewState()
-    LaunchedEffect(viewState) {
-        snapshotFlow { viewState.visibleRange }.collect(onVisibleRangeChanged)
+    val currentOnVisibleRangeChanged by rememberUpdatedState(onVisibleRangeChanged)
+    LaunchedEffect(viewState, scrollSync) {
+        snapshotFlow { viewState.visibleRange }.collect { range ->
+            currentOnVisibleRangeChanged(range)
+            scrollSync?.onEditorVisibleRange(range)
+        }
+    }
+    LaunchedEffect(viewState, scrollSync) {
+        if (scrollSync == null) return@LaunchedEffect
+        // one scroll after the other: a new one that starts near the target would stop the running one short
+        snapshotFlow { scrollSync.editorTarget }.filterNotNull().conflate().collect { target ->
+            viewState.scrollToRange(target.first, target.last, animate = true)
+        }
     }
     LaunchedEffect(jumpRequest) {
         jumpRequest?.let { viewState.scrollToPosition(it.position, animate = false) }
@@ -88,7 +103,15 @@ internal fun CodeEditorLayout(
     var followPaused by remember(following?.instanceId) { mutableStateOf(false) }
     var followPauseMs by remember(following?.instanceId) { mutableLongStateOf(FOLLOW_PAUSE_MIN_MS) }
     var followResumedAt by remember(following?.instanceId) { mutableStateOf<Long?>(null) }
-    LaunchedEffect(followPaused, viewState.isUserMovingView) {
+    // moving the page of a split moves the editor, so it pauses following as well
+    val previewMoves = scrollSync?.previewMovedByUser ?: 0
+    LaunchedEffect(previewMoves) {
+        if (previewMoves > 0 && following != null && !followPaused) {
+            followPauseMs = nextFollowPauseMs(followPauseMs, followResumedAt?.let { SystemClock.uptimeMillis() - it })
+            followPaused = true
+        }
+    }
+    LaunchedEffect(followPaused, viewState.isUserMovingView, previewMoves) {
         if (followPaused && !viewState.isUserMovingView) {
             delay(followPauseMs)
             followPaused = false
@@ -98,6 +121,8 @@ internal fun CodeEditorLayout(
     val followTarget = following?.let { followTarget(remotePeers.value, ghosts, it.instanceId) }
     LaunchedEffect(followTarget, followPaused) {
         if (followPaused || followTarget == null) return@LaunchedEffect
+        // the page of a split shows what is followed as well
+        scrollSync?.onEditorDriving()
         if (viewState.visibleRange != null) {
             viewState.scrollTo(followTarget, animate = true)
             return@LaunchedEffect
@@ -154,6 +179,7 @@ internal fun CodeEditorLayout(
             state = state,
             viewState = viewState,
             onUserMovedView = {
+                scrollSync?.onEditorDriving()
                 if (following != null && !followPaused) {
                     followPauseMs = nextFollowPauseMs(followPauseMs, followResumedAt?.let { SystemClock.uptimeMillis() - it })
                     followPaused = true
@@ -177,11 +203,13 @@ internal fun CodeEditorLayout(
                     layout = layout,
                     remotePeers = remotePeers.value,
                     background = palette.background,
+                    foreground = palette.text,
                 )
                 RemotePeersOverlay(
                     layout = layout,
                     remotePeers = ghosts.map { it.asPeer() },
                     background = palette.background,
+                    foreground = palette.text,
                     alpha = GHOST_ALPHA,
                 )
             }

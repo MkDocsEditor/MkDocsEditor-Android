@@ -5,7 +5,11 @@ import androidx.compose.runtime.getValue
 import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.kutepreferences.core.KuteNavigator
 import de.markusressel.kutepreferences.ui.vm.KutePreferencesViewModel
+import de.markusressel.kutepreferences.core.preference.bool.BooleanPreferenceBehavior
 import de.markusressel.mkdocseditor.BuildConfig
+import de.markusressel.mkdocseditor.feature.notifications.data.NotificationPermission
+import de.markusressel.mkdocseditor.feature.preferences.domain.WikiChangeNotificationsPreference
+import de.markusressel.mkdocseditor.feature.preferences.ui.compose.WikiChangeNotificationsPreferenceView
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocseditor.feature.preferences.domain.LastOfflineCacheUpdatePreferenceItem
 import de.markusressel.mkdocseditor.feature.preferences.ui.compose.LastOfflineCacheUpdatePreferenceItemView
@@ -19,6 +23,7 @@ internal class PreferencesViewModel @Inject constructor(
     preferencesHolder: KutePreferencesHolder,
     private val isOfflineCacheUpdateInProgressUseCase: IsOfflineCacheUpdateInProgressUseCase,
     private val kuteNavigator: KuteNavigator,
+    notificationPermission: NotificationPermission,
 ) : KutePreferencesViewModel(
     navigator = kuteNavigator
 ) {
@@ -40,10 +45,15 @@ internal class PreferencesViewModel @Inject constructor(
             )
         }
 
+        registry.register<WikiChangeNotificationsPreference, BooleanPreferenceBehavior>(::BooleanPreferenceBehavior) {
+            WikiChangeNotificationsPreferenceView(behavior = it, isGranted = notificationPermission::isGranted)
+        }
+
         initPreferencesTree(
             listOf(
                 preferencesHolder.offlineCacheCategory,
                 preferencesHolder.uxCategory,
+                preferencesHolder.notificationsCategory,
                 preferencesHolder.uiCategory,
             ).let {
                 when {

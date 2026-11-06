@@ -84,6 +84,9 @@ internal interface DocumentSessionEnvironment {
     /** The server refused the session of the backend */
     fun onUnauthenticated(backendId: Long)
 
+    /** The backend answered a sync of the document, so it counts as the last sync with it */
+    fun onServerAnswered(backendId: Long)
+
     suspend fun currentBackend(): BackendConfig?
 
     /** Reads and parses the local copy, so this is not called on the main thread */
@@ -409,6 +412,10 @@ internal class DocumentSession(
         override fun onDocumentDeleted() {
             // the local copy (and any unsynced edits) stays available
             _state.update { old -> old.copy(deletedOnServer = true) }
+        }
+
+        override fun onServerAnswered() {
+            environment.onServerAnswered(backendId)
         }
     }
 

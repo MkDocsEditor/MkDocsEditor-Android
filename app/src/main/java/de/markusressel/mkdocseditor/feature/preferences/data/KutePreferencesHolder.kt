@@ -19,6 +19,8 @@ import de.markusressel.mkdocseditor.event.BusEvent
 import de.markusressel.mkdocseditor.event.EventBusManager
 import de.markusressel.mkdocseditor.feature.about.data.appVersionText
 import de.markusressel.mkdocseditor.feature.preferences.domain.LastOfflineCacheUpdatePreferenceItem
+import de.markusressel.mkdocseditor.feature.preferences.domain.WikiChangeNotificationsPreference
+import de.markusressel.mkdocseditor.service.WikiChangesWorker
 import de.markusressel.mkdocseditor.ui.IconHandler
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.MainScope
@@ -119,6 +121,38 @@ class KutePreferencesHolder @Inject constructor(
             defaultValue = R.string.start_page_dashboard_value,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { _, _ -> })
+    }
+
+    val notificationsCategory by lazy {
+        KuteCategory(
+            key = context.getString(R.string.category_notifications_key),
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_notifications),
+            title = context.getString(R.string.category_notifications_title),
+            description = context.getString(R.string.category_notifications_description),
+            children = listOf(
+                KuteSection(
+                    key = context.getString(R.string.section_wiki_notifications_key),
+                    title = context.getString(R.string.section_wiki_notifications_title),
+                    children = listOf(
+                        wikiChangeNotificationsPreference,
+                    )
+                )
+            )
+        )
+    }
+
+    /** changes of others to pinned pages and to pages the user edited, see [WikiChangesWorker] */
+    internal val wikiChangeNotificationsPreference by lazy {
+        WikiChangeNotificationsPreference(
+            key = context.getString(R.string.wiki_change_notifications_key),
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_notifications_active),
+            title = context.getString(R.string.wiki_change_notifications_title),
+            description = context.getString(R.string.wiki_change_notifications_description),
+            dataProvider = dataProvider,
+            onPreferenceChangedListener = { _, enabled ->
+                if (enabled) WikiChangesWorker.schedule(context) else WikiChangesWorker.cancel(context)
+            },
+        )
     }
 
     val uxCategory by lazy {

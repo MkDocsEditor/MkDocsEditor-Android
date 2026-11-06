@@ -3,6 +3,7 @@ package de.markusressel.mkdocseditor.feature.editor.ui
 import de.markusressel.mkdocseditor.auth.domain.AuthRepository
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
+import de.markusressel.mkdocseditor.feature.backendconfig.common.data.SyncStatusStore
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.GetDocumentUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.OpenDocuments
@@ -18,6 +19,7 @@ import de.markusressel.mkdocseditor.util.Resource
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
+import java.util.Date
 import javax.inject.Inject
 
 internal class AndroidDocumentSessionEnvironment @Inject constructor(
@@ -30,6 +32,7 @@ internal class AndroidDocumentSessionEnvironment @Inject constructor(
     networkManager: NetworkManager,
     private val syncedDocumentFactory: SyncedDocumentFactory,
     private val openDocuments: OpenDocuments,
+    private val syncStatusStore: SyncStatusStore,
 ) : DocumentSessionEnvironment {
 
     override val ioDispatcher = Dispatchers.IO
@@ -41,6 +44,8 @@ internal class AndroidDocumentSessionEnvironment @Inject constructor(
     override fun isSignedIn(backendId: Long) = authRepository.isSignedIn(backendId)
 
     override fun onUnauthenticated(backendId: Long) = authRepository.onUnauthenticated(backendId)
+
+    override fun onServerAnswered(backendId: Long) = syncStatusStore.setLastSync(backendId, Date())
 
     override suspend fun currentBackend(): BackendConfig? = getCurrentBackendConfigUseCase()
 

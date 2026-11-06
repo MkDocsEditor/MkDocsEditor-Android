@@ -147,6 +147,17 @@
     <string name="cursor_color_reset">Use profile color</string>
     <string name="join_title">Invitation</string>
     <string name="access_request_channel">Access requests</string>
+    <string name="wiki_changes_channel">Changes in the wiki</string>
+    <string name="wiki_change_title_one">%1$s changed %2$s</string>
+    <string name="wiki_change_title_two">%1$s and %2$s changed %3$s</string>
+    <plurals name="wiki_change_title_more">
+        <item quantity="one">%1$s and %2$d other changed %3$s</item>
+        <item quantity="other">%1$s and %2$d others changed %3$s</item>
+    </plurals>
+    <plurals name="wiki_changes_summary">
+        <item quantity="one">%d page changed</item>
+        <item quantity="other">%d pages changed</item>
+    </plurals>
     <string name="access_request_notification_title">Your request for %1$s</string>
     <string name="access_request_notification_approved">You were let in. Tap to create your account.</string>
     <string name="access_request_notification_rejected">The admin has declined your request.</string>
