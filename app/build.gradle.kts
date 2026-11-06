@@ -195,13 +195,7 @@ dependencies {
     implementation(libs.vanpra.compose.material.dialogs.datetime)
 
     // Code editor
-    // not sure why but we need to explicitly specify this dependency even though it is
-    // marked as "api" within the KodeEditor library
-    implementation(libs.zoomlayout)
-
-    implementation(libs.markusressel.kodeeditor) {
-        isChanging = true
-    }
+    implementation(libs.markusressel.kodeeditor)
 
     // Syntax Highlighting
     implementation(libs.markusressel.kodehighlighter.core) {

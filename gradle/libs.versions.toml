@@ -56,7 +56,6 @@ windowVersion = "1.5.1"
 uiViewbinding = "1.11.4"
 workTesting = "2.12.0"
 voyager = "2.2.21-1.10.3"
-zoomlayout = "1.9.0"
 documentfileVersion = "1.1.0"
 
 [libraries]
@@ -172,7 +171,7 @@ markusressel-typedpreferences = { group = "com.github.markusressel", name = "Typ
 markusressel-kutepreferences-core = { group = "com.github.markusressel.KutePreferences", name = "core", version.ref = "kutePreferences" }
 markusressel-kutepreferences-ui = { group = "com.github.markusressel.KutePreferences", name = "ui", version.ref = "kutePreferences" }
 
-markusressel-kodeeditor = { group = "com.github.markusressel.KodeEditor", name = "library", version = "d0776c18c9" }
+markusressel-kodeeditor = { group = "com.github.markusressel.KodeEditor", name = "library", version = "8.0.0" }
 
 mikepenz-aboutlibraries = { module = "com.mikepenz:aboutlibraries", version.ref = "aboutlibrariesVersion" }
 mikepenz-aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutlibrariesVersion" }
@@ -221,7 +220,6 @@ voyager-hilt = { module = "cafe.adriel.voyager:voyager-hilt", version.ref = "voy
 voyager-kodein = { module = "cafe.adriel.voyager:voyager-kodein", version.ref = "voyager" }
 voyager-rxjava = { module = "cafe.adriel.voyager:voyager-rxjava", version.ref = "voyager" }
 
-zoomlayout = { module = "com.otaliastudios:zoomlayout", version.ref = "zoomlayout" }
 
 junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
 junit-bom = { group = "org.junit", name = "junit-bom", version.ref = "junit5" }
