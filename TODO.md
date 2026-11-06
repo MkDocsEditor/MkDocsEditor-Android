@@ -8,7 +8,6 @@ clients show the same thing.
 
 | Area | Entry | Kind of work | Needs another repo |
 |---|---|---|---|
-| Editor | [Follow another user](#follow-another-user) | Preview-only readers | Yes, the web client |
 | File browser | [Transitions between sections](#transitions-between-sections) | Path chips during the back gesture | No |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Push, better summaries | Yes, the backend and the web client |
 | App-wide | [Settings](#settings) | Card color left | Maybe KutePreferences |
@@ -16,17 +15,6 @@ clients show the same thing.
 Order that fits how they depend on each other (Idea):
 
 - New screens follow the error handling spec in `docs/error-handling.md`.
-
----
-
-# Editor
-
-## Follow another user
-
-Works in the editor pane. What is left:
-
-- A reader in preview-only mode sends no viewport (`"viewport": null`), so a follower only sees their cursor. Mapping the
-  preview position to the text needs its own PR, in both clients.
 
 ---
 
