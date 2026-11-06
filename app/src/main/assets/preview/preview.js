@@ -44,6 +44,16 @@
     },
   }
 
+  // a preview without its own scrolling grows with its content, so the app needs the height
+  var content = document.getElementById('content')
+  if (window.MkDocsPreviewBridge && MkDocsPreviewBridge.contentHeight && window.ResizeObserver && content) {
+    new ResizeObserver(function () {
+      var style = window.getComputedStyle(document.body)
+      var height = content.offsetTop + content.offsetHeight + parseFloat(style.marginBottom || '0')
+      MkDocsPreviewBridge.contentHeight(Math.ceil(height))
+    }).observe(content)
+  }
+
   // the last script of the page: from here on the app can render
   if (window.MkDocsPreviewBridge) MkDocsPreviewBridge.pageReady()
 })()

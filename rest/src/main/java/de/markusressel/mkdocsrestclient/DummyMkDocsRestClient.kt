@@ -2,6 +2,9 @@
 
 package de.markusressel.mkdocsrestclient
 
+import de.markusressel.mkdocsrestclient.dashboard.FeedPageModel
+import de.markusressel.mkdocsrestclient.dashboard.PinScope
+import de.markusressel.mkdocsrestclient.dashboard.PinsModel
 import de.markusressel.mkdocsrestclient.reference.AuthorshipModel
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.result.Result
@@ -255,6 +258,17 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
 
     override suspend fun getMoved(oldIds: List<String>): Result<MovedListModel, FuelError> =
         Result.error(FuelError.wrap(UnsupportedOperationException("not in the demo")))
+
+    override suspend fun getPins(): Result<PinsModel, FuelError> = Result.success(PinsModel())
+
+    override suspend fun pin(scope: PinScope, documentId: String): Result<PinsModel, FuelError> =
+        Result.error(FuelError.wrap(UnsupportedOperationException("not in the demo")))
+
+    override suspend fun unpin(scope: PinScope, documentId: String): Result<PinsModel, FuelError> =
+        Result.error(FuelError.wrap(UnsupportedOperationException("not in the demo")))
+
+    override suspend fun getFeed(before: String?, limit: Int): Result<FeedPageModel, FuelError> =
+        Result.success(FeedPageModel())
 
     override suspend fun getMkDocsConfig(): Result<MkDocsConfigModel, FuelError> {
         return Result.success(

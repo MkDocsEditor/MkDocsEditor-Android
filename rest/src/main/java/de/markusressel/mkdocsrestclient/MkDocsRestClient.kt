@@ -3,6 +3,8 @@ package de.markusressel.mkdocsrestclient
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Method
 import com.github.kittinunf.result.Result
+import de.markusressel.mkdocsrestclient.dashboard.DashboardApi
+import de.markusressel.mkdocsrestclient.dashboard.DashboardApiImpl
 import de.markusressel.mkdocsrestclient.document.DocumentApi
 import de.markusressel.mkdocsrestclient.document.DocumentApiImpl
 import de.markusressel.mkdocsrestclient.mkdocs.MkDocsApi
@@ -27,12 +29,14 @@ class MkDocsRestClient constructor(
     documentApi: DocumentApi = DocumentApiImpl(requestManager),
     resourceApi: ResourceApi = ResourceApiImpl(requestManager),
     referenceApi: ReferenceApi = ReferenceApiImpl(requestManager),
+    dashboardApi: DashboardApi = DashboardApiImpl(requestManager),
 ) : IMkDocsRestClient,
     MkDocsApi by mkDocsApi,
     SectionApi by sectionApi,
     DocumentApi by documentApi,
     ResourceApi by resourceApi,
-    ReferenceApi by referenceApi {
+    ReferenceApi by referenceApi,
+    DashboardApi by dashboardApi {
 
     override suspend fun isHostAlive(): Result<String, FuelError> {
         return requestManager.doStatusRequest("/alive/", Method.GET)

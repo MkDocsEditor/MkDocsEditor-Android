@@ -1,5 +1,8 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.ui
 
+import de.markusressel.mkdocsrestclient.dashboard.PinScope
+import de.markusressel.mkdocseditor.feature.dashboard.domain.PinOutcome
+import de.markusressel.mkdocseditor.feature.dashboard.domain.PinActions
 import de.markusressel.mkdocseditor.feature.common.ui.userMessage
 import com.github.ajalt.timberkt.Timber
 import com.github.kittinunf.fuel.core.FuelError
@@ -31,6 +34,7 @@ internal class DialogSlot(
  * @param ownConnection the screen is connected to the item itself (the editor of a page), so the server would always
  * count it as open: the dialog then says whether others have it open, and deletes with force
  * @param onDeleted after the item is gone
+ * @param pins pins pages to the dashboard, null where that is not offered
  */
 internal class ItemActions(
     private val state: DialogSlot,
@@ -42,6 +46,7 @@ internal class ItemActions(
     private val deleteItem: suspend (WikiItem, force: Boolean) -> DeleteOutcome,
     private val ownConnection: Boolean = false,
     private val onDeleted: suspend (WikiItem) -> Unit = {},
+    private val pins: PinActions? = null,
 ) {
     /** @param openElsewhere the screen knows that others have [item] open right now */
     suspend fun onActionClicked(item: WikiItem, action: ItemAction, openElsewhere: Boolean = false) {
@@ -49,7 +54,39 @@ internal class ItemActions(
             ItemAction.Rename -> showDialog(DialogState.Move(item = item, renameOnly = true))
             ItemAction.Move -> startMove(item)
             ItemAction.UsedBy -> showBacklinks(item)
+            ItemAction.Pin -> showPins(item)
             ItemAction.Delete -> confirmDelete(item, openElsewhere)
+        }
+    }
+
+    private suspend fun showPins(item: WikiItem) {
+        val pins = pins ?: return
+        showDialog(DialogState.Pin(item))
+        val current = pins.current()
+        updatePinDialog(item) { it.copy(pins = current, unavailable = current == null) }
+    }
+
+    /**
+     * Pins the page of the pin dialog, or removes its pin
+     *
+     * @throws Exception when the server fails, the dialog stays open then
+     */
+    suspend fun setPinned(scope: PinScope, pinned: Boolean) {
+        val pins = pins ?: return
+        val dialog = state.value as? DialogState.Pin ?: return
+        if (dialog.working) return
+        updatePinDialog(dialog.item) { it.copy(working = true, forbidden = false) }
+        val outcome = try {
+            pins.set(scope, dialog.item.id, pinned)
+        } catch (e: Exception) {
+            updatePinDialog(dialog.item) { it.copy(working = false) }
+            throw e
+        }
+        updatePinDialog(dialog.item) {
+            when (outcome) {
+                is PinOutcome.Changed -> it.copy(working = false, pins = outcome.pins)
+                PinOutcome.Forbidden -> it.copy(working = false, forbidden = true)
+            }
         }
     }
 
@@ -174,6 +211,11 @@ internal class ItemActions(
     private fun updateBacklinksDialog(item: WikiItem, update: (DialogState.Backlinks) -> DialogState.Backlinks) =
         state.update { old ->
             if (old is DialogState.Backlinks && old.item.id == item.id) update(old) else old
+        }
+
+    private fun updatePinDialog(item: WikiItem, update: (DialogState.Pin) -> DialogState.Pin) =
+        state.update { old ->
+            if (old is DialogState.Pin && old.item.id == item.id) update(old) else old
         }
 
     private fun updateDeleteDialog(item: WikiItem, update: (DialogState.DeleteConfirmation) -> DialogState.DeleteConfirmation) =

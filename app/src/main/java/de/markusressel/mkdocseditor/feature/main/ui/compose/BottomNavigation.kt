@@ -31,6 +31,7 @@ fun BottomBar(
                             .size(32.dp),
                         asset = when (item) {
                             is NavItem.BackendSelection -> MaterialDesignIconic.Icon.gmi_cloud
+                            is NavItem.Dashboard -> MaterialDesignIconic.Icon.gmi_home
                             is NavItem.FileBrowser -> MaterialDesignIconic.Icon.gmi_file
                             is NavItem.Settings -> MaterialDesignIconic.Icon.gmi_settings
                             is NavItem.About -> MaterialDesignIconic.Icon.gmi_info
@@ -43,6 +44,7 @@ fun BottomBar(
                         text = stringResource(
                             id = when (item) {
                                 is NavItem.BackendSelection -> R.string.bottom_navigation_backend_selection
+                                is NavItem.Dashboard -> R.string.bottom_navigation_item_dashboard
                                 is NavItem.FileBrowser -> R.string.bottom_navigation_item_files
                                 is NavItem.Settings -> R.string.bottom_navigation_item_settings
                                 is NavItem.About -> R.string.bottom_navigation_item_about

@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.outlined.DriveFileMove
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DriveFileRenameOutline
 import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -89,6 +90,9 @@ internal fun ItemActionsDialog(
                 ActionEntry(Icons.Outlined.DriveFileRenameOutline, R.string.item_action_rename, "action-rename") { onAction(ItemAction.Rename) }
                 ActionEntry(Icons.AutoMirrored.Outlined.DriveFileMove, R.string.item_action_move, "action-move") { onAction(ItemAction.Move) }
                 ActionEntry(Icons.Outlined.Link, R.string.item_action_used_by, "action-used-by") { onAction(ItemAction.UsedBy) }
+                if (item is WikiItem.Document) {
+                    ActionEntry(Icons.Outlined.PushPin, R.string.item_action_pin, "action-pin") { onAction(ItemAction.Pin) }
+                }
                 ActionEntry(Icons.Outlined.Delete, R.string.item_action_delete, "action-delete") { onAction(ItemAction.Delete) }
             }
         }
