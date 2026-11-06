@@ -125,15 +125,19 @@ class RequestManager(
      * @param url the url
      * @param urlParameters query parameters
      * @param method the request type (f.ex. GET)
+     * @param timeout how long to wait for the connection
+     * @param readTimeout how long to wait for the answer, null for the default of Fuel (15 s)
      */
     fun createRequest(
         url: String,
         urlParameters: Parameters = emptyList(),
         method: Method,
-        timeout: Int = DEFAULT_TIMEOUT
+        timeout: Int = DEFAULT_TIMEOUT,
+        readTimeout: Int? = null,
     ): Request {
-        return getAuthenticatedRequest(fuelManager.request(method, absoluteUrl(url), urlParameters))
+        val request = getAuthenticatedRequest(fuelManager.request(method, absoluteUrl(url), urlParameters))
             .timeout(timeout = timeout)
+        return if (readTimeout == null) request else request.timeoutRead(timeout = readTimeout)
     }
 
     /**
@@ -188,15 +192,17 @@ class RequestManager(
      * @param url the URL
      * @param urlParameters url query parameters
      * @param method the request type (f.ex. GET)
+     * @param readTimeout how long to wait for the answer, null for the default of Fuel (15 s)
      */
     suspend inline fun <reified T : Any> doRequest(
         url: String,
         urlParameters: Parameters,
-        method: Method
+        method: Method,
+        readTimeout: Int? = null,
     ): Result<T, FuelError> {
         return withContext(Dispatchers.IO) {
             val deserializer: Deserializable<T> = deserializer()
-            val request = createRequest(url = url, urlParameters = urlParameters, method = method)
+            val request = createRequest(url = url, urlParameters = urlParameters, method = method, readTimeout = readTimeout)
             @Suppress("UNCHECKED_CAST")
             when (T::class) {
                 String::class -> request.awaitStringResult() as Result<T, FuelError>

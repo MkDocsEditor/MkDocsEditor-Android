@@ -10,6 +10,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.Button
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -226,6 +228,10 @@ internal fun CodeEditorScreenContent(
                         )
                     },
                 )
+            }
+
+            if (uiState.isNoOfflineVersionVisible) {
+                NotOnDeviceView(onRetry = { onUiEvent(CodeEditorViewModel.UiEvent.RetryOpeningClicked) })
             }
 
             // on top of the text, so the text does not move when it goes away
@@ -479,8 +485,28 @@ internal fun CodeEditorSackbar(
 /** what the user has to know about the open document */
 @Composable
 private fun EditorBanners(uiState: CodeEditorViewModel.UiState) {
-    if (uiState.isNoOfflineVersionVisible) EditorBanner(stringResource(R.string.no_offline_version))
     if (uiState.isDocumentDeletedOnServer) EditorBanner(stringResource(R.string.document_deleted_on_server))
+}
+
+/**
+ * Nothing to read yet, so this takes the place of the empty page (docs/error-handling.md). It covers the editor
+ * instead of replacing it, so the editor keeps its state for the text that comes with the connection.
+ */
+@Composable
+private fun NotOnDeviceView(onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+    ) {
+        Text(text = stringResource(R.string.no_offline_version), textAlign = TextAlign.Center)
+        Button(onClick = onRetry) {
+            Text(text = stringResource(R.string.retry))
+        }
+    }
 }
 
 @Composable
