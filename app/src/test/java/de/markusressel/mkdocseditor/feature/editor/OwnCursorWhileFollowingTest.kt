@@ -18,7 +18,7 @@ class OwnCursorWhileFollowingTest {
 
     @Test
     fun `a cursor in an editor that following opened ends following and can be typed at`() {
-        val state = openedByFollowing.ownCursorPlaced(offline = false)
+        val state = openedByFollowing.ownCursorPlaced()
 
         assertNull(state.following)
         assertTrue(state.editModeActive)
@@ -27,28 +27,23 @@ class OwnCursorWhileFollowingTest {
 
     @Test
     fun `a reader gets the cursor and the end of following, but no edit mode`() {
-        val state = openedByFollowing.copy(canEdit = false).ownCursorPlaced(offline = false)
+        val state = openedByFollowing.copy(canEdit = false).ownCursorPlaced()
 
         assertNull(state.following)
         assertFalse(state.editModeActive)
     }
 
     @Test
-    fun `offline the edit mode stays off, as it does for a join link`() {
-        assertFalse(openedByFollowing.ownCursorPlaced(offline = true).editModeActive)
-    }
-
-    @Test
     fun `a cursor while editing only ends following`() {
         val editing = UiState(following = following, editModeActive = true, canEdit = true)
 
-        assertEquals(editing.copy(following = null), editing.ownCursorPlaced(offline = false))
+        assertEquals(editing.copy(following = null), editing.ownCursorPlaced())
     }
 
     @Test
     fun `without following a cursor changes nothing`() {
         val reading = UiState(readOnlyEditorShown = true, canEdit = true)
 
-        assertEquals(reading, reading.ownCursorPlaced(offline = false))
+        assertEquals(reading, reading.ownCursorPlaced())
     }
 }

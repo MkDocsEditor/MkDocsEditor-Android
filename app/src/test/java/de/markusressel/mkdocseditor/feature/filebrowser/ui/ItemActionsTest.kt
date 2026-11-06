@@ -394,6 +394,69 @@ class ItemActionsTest {
     }
 
     @Test
+    fun `a move goes on after its dialog is closed, and its end still shows without closing another dialog`() = runTest {
+        val answer = CompletableDeferred<FuelResult<MoveResultModel, FuelError>>()
+        val actions = actions(move = { if (it.dryRun) FuelResult.success(moveResult) else answer.await() })
+        actions.onActionClicked(item, ItemAction.Rename)
+        actions.previewMove(null, "b")
+        val job = launch(start = CoroutineStart.UNDISPATCHED) { actions.applyMove() }
+        assertTrue(moveDialog.working)
+
+        // the user closes the dialog while the server works, and opens another one
+        val other = DialogState.Backlinks(WikiItem.Section(section("other", "other")))
+        state.update { it.copy(currentDialogState = other) }
+        answer.complete(FuelResult.success(moveResult))
+        job.join()
+
+        assertEquals(other, state.value.currentDialogState)
+        assertIs<BrowserMessage.Moved>(messages.single())
+        assertEquals(1, reloads)
+    }
+
+    @Test
+    fun `a move that fails after its dialog was closed says so`() = runTest {
+        val answer = CompletableDeferred<FuelResult<MoveResultModel, FuelError>>()
+        val actions = actions(move = { if (it.dryRun) FuelResult.success(moveResult) else answer.await() })
+        actions.onActionClicked(item, ItemAction.Rename)
+        actions.previewMove(null, "b")
+        val job = launch(start = CoroutineStart.UNDISPATCHED) { actions.applyMove() }
+
+        state.update { it.copy(currentDialogState = null) }
+        answer.complete(FuelResult.error(fuelError(500, "{}")))
+        job.join()
+
+        assertNull(state.value.currentDialogState)
+        assertEquals("a", assertIs<BrowserMessage.MoveFailed>(messages.single()).name)
+    }
+
+    @Test
+    fun `a delete that ends after its dialog was closed leaves another dialog open`() = runTest {
+        val answer = CompletableDeferred<DeleteOutcome>()
+        val actions = ItemActions(
+            state = DialogSlot({ state.value.currentDialogState }) { change ->
+                state.update { it.copy(currentDialogState = change(it.currentDialogState)) }
+            },
+            moveItem = MoveItemUseCase(DummyMkDocsRestClient(), NoStore),
+            getBacklinks = { Result.success(emptyList()) },
+            loadTree = { null },
+            showMessage = { messages += it },
+            reload = { reloads++ },
+            deleteItem = { _, _ -> answer.await() },
+        )
+        actions.onActionClicked(item, ItemAction.Delete)
+        val job = launch(start = CoroutineStart.UNDISPATCHED) { actions.applyDelete() }
+        assertTrue(deleteDialog.working)
+
+        val other = DialogState.ItemActions(item)
+        state.update { it.copy(currentDialogState = other) }
+        answer.complete(DeleteOutcome.Deleted)
+        job.join()
+
+        assertEquals(other, state.value.currentDialogState)
+        assertEquals(1, reloads)
+    }
+
+    @Test
     fun `applying without a preview does nothing`() = runTest {
         val requests = mutableListOf<MoveRequestModel>()
         val actions = actions(move = { requests += it; FuelResult.success(moveResult) })

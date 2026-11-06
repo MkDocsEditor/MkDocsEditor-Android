@@ -206,12 +206,16 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
     override suspend fun uploadResource(
         parentId: String,
         name: String,
-        content: ByteArray
+        content: ByteArray,
+        onProgress: (doneBytes: Long, totalBytes: Long) -> Unit,
     ): Result<String, FuelError> {
         return Result.success("")
     }
 
-    override suspend fun downloadResource(id: String): Result<ByteArray, FuelError> {
+    override suspend fun downloadResource(
+        id: String,
+        onProgress: (doneBytes: Long, totalBytes: Long) -> Unit,
+    ): Result<ByteArray, FuelError> {
         return DemoData.RootSection.findRecursive<ResourceModel> {
             it.id == id
         }?.let {

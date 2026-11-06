@@ -37,7 +37,7 @@ private const val INDICATOR_DELAY_MS = 2_000L
 
 /**
  * How long opening a document without a local copy waits for the server. A server that is down answers at once,
- * but one that hangs, or a proxy in front of it, only fails after the timeouts of the requests (15 s).
+ * but one that hangs, or a proxy in front of it, only fails after the timeouts: the websocket upgrade gives up after 15 s.
  */
 internal const val OPENING_TIMEOUT_MS = 3_000L
 
@@ -65,18 +65,13 @@ internal data class ConnectionStatus(
 }
 
 /** what the small icon of the editor shows */
-enum class ConnectionIndicator { Connected, NotConnected, OfflineMode, UnsyncedChanges }
+enum class ConnectionIndicator { Connected, NotConnected, UnsyncedChanges }
 
 /**
  * What a [DocumentSession] needs from the rest of the app
  */
 internal interface DocumentSessionEnvironment {
     val ioDispatcher: CoroutineDispatcher
-
-    val offlineMode: StateFlow<Boolean>
-
-    /** whether the editor connects on its own when the offline mode ends */
-    val connectsAutomatically: Boolean
 
     /** the device got a network, after having none or another one */
     val networkChanges: Flow<Unit>
@@ -180,17 +175,15 @@ internal class DocumentSession(
     @OptIn(ExperimentalCoroutinesApi::class)
     val connectionIndicator: StateFlow<ConnectionIndicator?> = combine(
         _connectionStatus,
-        environment.offlineMode,
         unsyncedChanges,
-    ) { status, offlineMode, unsyncedChanges ->
+    ) { status, unsyncedChanges ->
         when {
             unsyncedChanges -> ConnectionIndicator.UnsyncedChanges
             status?.connected == true -> ConnectionIndicator.Connected
-            offlineMode -> ConnectionIndicator.OfflineMode
             else -> ConnectionIndicator.NotConnected
         }
     }.distinctUntilChanged().mapLatest { indicator ->
-        if (indicator != ConnectionIndicator.Connected && indicator != ConnectionIndicator.OfflineMode) {
+        if (indicator != ConnectionIndicator.Connected) {
             delay(INDICATOR_DELAY_MS)
         }
         indicator
@@ -254,8 +247,7 @@ internal class DocumentSession(
             // sync again as soon as the user signed in again
             environment.sessionChanges.collect { backendId ->
                 if (backendId == this@DocumentSession.backendId && environment.isSignedIn(backendId) &&
-                    syncedDocument?.isConnected == false &&
-                    environment.offlineMode.value.not()
+                    syncedDocument?.isConnected == false
                 ) {
                     reconnect()
                 }
@@ -265,23 +257,10 @@ internal class DocumentSession(
         scope.launch {
             // no need to wait for the next try, which can be up to 30 seconds away
             environment.networkChanges.collect {
-                if (syncedDocument?.isConnected == false && environment.offlineMode.value.not() &&
+                if (syncedDocument?.isConnected == false &&
                     _connectionStatus.value?.isAuthenticationFailure != true
                 ) {
                     reconnect()
-                }
-            }
-        }
-
-        scope.launch {
-            environment.offlineMode.collect { enabled ->
-
-                when {
-                    enabled -> disconnect("Offline mode activated")
-                    environment.connectsAutomatically -> reconnect()
-                    else -> _connectionStatus.value = ConnectionStatus(
-                        connected = _connectionStatus.value?.connected ?: false
-                    )
                 }
             }
         }
@@ -301,7 +280,7 @@ internal class DocumentSession(
             load(documentId, connect = false)
             return
         }
-        if (documentId != null && !environment.offlineMode.value &&
+        if (documentId != null &&
             withContext(environment.ioDispatcher) { !environment.hasLocalCopy(documentId) }
         ) {
             // a copy held under an old id of this document (moved while the app was
@@ -319,7 +298,7 @@ internal class DocumentSession(
         _state.update { old ->
             old.copy(
                 documentId = documentId,
-                loading = documentId != null && !environment.offlineMode.value,
+                loading = documentId != null,
                 deletedOnServer = false,
                 noOfflineVersion = false,
             )
@@ -444,9 +423,8 @@ internal class DocumentSession(
      * @param connect false when the document is connected already (after a move)
      */
     private suspend fun load(documentId: String, connect: Boolean) {
-        val offlineMode = environment.offlineMode.value
         // the text comes through the connection, it does not wait for the item tree
-        if (connect && !offlineMode) reconnect()
+        if (connect) reconnect()
 
         val result = environment.loadDocument(documentId) { cached ->
             if (connect) {
@@ -458,17 +436,13 @@ internal class DocumentSession(
         // a failed load may know nothing, while the cached text is still the offline version
         loadedDocument = result.document ?: loadedDocument
         updateTitle(result.document?.name ?: "")
-        when {
-            result.error != null -> {
-                Timber.e(result.error) { "Error loading document resource" }
-                val connected = syncedDocument?.isConnected == true
-                documentLoadFailed = !connected
-                // a local copy is shown and editable already, and its edits sync later. The
-                // connection keeps trying, and ends the offline state as soon as the server answers
-                if (!localCopyAvailable.value && !connected) showOfflineVersionIfPossible()
-            }
-
-            connect && offlineMode -> showOfflineVersionIfPossible()
+        if (result.error != null) {
+            Timber.e(result.error) { "Error loading document resource" }
+            val connected = syncedDocument?.isConnected == true
+            documentLoadFailed = !connected
+            // a local copy is shown and editable already, and its edits sync later. The
+            // connection keeps trying, and ends the offline state as soon as the server answers
+            if (!localCopyAvailable.value && !connected) showOfflineVersionIfPossible()
         }
     }
 
@@ -542,12 +516,6 @@ internal class DocumentSession(
         document ?: return
         document.connect()
         endLoadingLater()
-    }
-
-    private fun disconnect(reason: String) {
-        syncedDocument?.disconnect(reason = reason)
-        _connectionStatus.value = ConnectionStatus(connected = false)
-        _state.update { old -> old.copy(loading = false) }
     }
 
     fun onLocalSelectionChanged(anchor: Int, head: Int) {

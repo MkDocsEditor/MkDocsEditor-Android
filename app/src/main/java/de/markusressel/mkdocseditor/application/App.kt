@@ -93,7 +93,7 @@ class App : Application(), Configuration.Provider, SingletonImageLoader.Factory 
 
         listenToEvents()
 
-        initOfflineMode()
+        scheduleOfflineCacheUpdate()
 
         unsyncedChangesScheduler.start(MainScope())
 
@@ -113,7 +113,7 @@ class App : Application(), Configuration.Provider, SingletonImageLoader.Factory 
         eventBusManager.observe<BusEvent.SettingsEvent.ScheduleOfflineCacheUpdateRequestEvent>()
             .subscribe { event ->
                 runCatching {
-                    scheduleOfflineCacheUpdateUseCase(evenInOfflineMode = true)
+                    scheduleOfflineCacheUpdateUseCase()
                 }.onFailure {
                     Timber.e(it) { "Failed to schedule offline cache update" }
                 }
@@ -135,7 +135,7 @@ class App : Application(), Configuration.Provider, SingletonImageLoader.Factory 
     private fun setupErrorHandlers() {
     }
 
-    private fun initOfflineMode() {
+    private fun scheduleOfflineCacheUpdate() {
         MainScope().launch {
             runCatching {
                 scheduleOfflineCacheUpdateUseCase()

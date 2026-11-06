@@ -11,6 +11,7 @@ clients show the same thing.
 | File browser | [Transitions between sections](#transitions-between-sections) | Path chips during the back gesture | No |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Push, better summaries | Yes, the backend and the web client |
 | App-wide | [Settings](#settings) | About row and top bar | No |
+| App-wide | [Download progress outside the file browser](#download-progress-outside-the-file-browser) | Small feature | No |
 
 Order that fits how they depend on each other (Idea):
 
@@ -157,3 +158,9 @@ If notifications get annoying, people turn them off, and the goal is lost.
   section of its own.
 - The settings have no top bar with a title, unlike the file browser and the dashboard, only the search field of
   KutePreferences.
+
+## Download progress outside the file browser
+
+Uploads and downloads in the file browser, and uploads of the image picker, show their bytes and can be cancelled. A
+file opened from the dashboard, from a link in the preview, or for the preview itself still downloads without
+progress. `DownloadResourceUseCase` already reports it; those screens need a place for `TransferProgressBar`.

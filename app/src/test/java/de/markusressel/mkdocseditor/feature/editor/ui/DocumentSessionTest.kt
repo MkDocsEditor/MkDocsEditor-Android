@@ -11,7 +11,6 @@ import de.markusressel.mkdocsrestclient.sync.text.TextSplice
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -85,8 +84,6 @@ class DocumentSessionTest {
 
     private inner class FakeEnvironment(scope: TestScope) : DocumentSessionEnvironment {
         override val ioDispatcher = UnconfinedTestDispatcher(scope.testScheduler)
-        override val offlineMode = MutableStateFlow(false)
-        override var connectsAutomatically = false
         override val networkChanges = MutableSharedFlow<Unit>()
         override val sessionChanges = MutableSharedFlow<Long>()
 
@@ -335,17 +332,6 @@ class DocumentSessionTest {
     }
 
     @Test
-    fun `offline mode shows the cached version and does not connect`() = test { f ->
-        f.environment.offlineMode.value = true
-        f.environment.cached = CachedDocument("Title", "cached text")
-        f.open()
-        assertEquals(0, f.document.connects)
-        assertFalse(f.state.loading)
-        assertEquals("cached text", f.fieldText)
-        assertEquals(1, f.host.offlineVersions)
-    }
-
-    @Test
     fun `a failed load without a connection falls back to the cache, the connection ends that`() = test { f ->
         f.environment.cached = CachedDocument("Title", "cached text")
         f.environment.loadAnswer = CompletableDeferred(DocumentLoad(f.environment.cached, IOException("no server")))
@@ -539,19 +525,6 @@ class DocumentSessionTest {
     }
 
     @Test
-    fun `switching on the offline mode disconnects, switching it off reconnects if configured`() = test { f ->
-        f.environment.connectsAutomatically = true
-        f.open()
-        val connects = f.document.connects
-
-        f.environment.offlineMode.value = true
-        assertEquals(listOf("Offline mode activated"), f.document.disconnects)
-
-        f.environment.offlineMode.value = false
-        assertEquals(connects + 1, f.document.connects)
-    }
-
-    @Test
     fun `the icon follows the connection, but ignores a short interruption`() = test { f ->
         assertNull(f.session.connectionIndicator.value)
         f.open()
@@ -610,7 +583,7 @@ class DocumentSessionTest {
     }
 
     @Test
-    fun `a new network leaves alone what is connected, offline or signed out`() = test { f ->
+    fun `a new network leaves alone what is connected or signed out`() = test { f ->
         f.open()
         val document = f.document
         val connects = document.connects
@@ -623,11 +596,6 @@ class DocumentSessionTest {
         document.listener.onConnectionStatusChanged(false, CloseCode.UNAUTHORIZED)
         f.environment.networkChanges.emit(Unit)
         assertEquals(connects, document.connects, "signed out")
-
-        document.listener.onConnectionStatusChanged(false)
-        f.environment.offlineMode.value = true
-        f.environment.networkChanges.emit(Unit)
-        assertEquals(connects, document.connects, "offline mode")
     }
 
     @Test
@@ -635,13 +603,6 @@ class DocumentSessionTest {
         f.session.start()
         f.environment.networkChanges.emit(Unit)
         assertEquals(0, f.environment.documents.size)
-    }
-
-    @Test
-    fun `the icon tells the offline mode apart`() = test { f ->
-        f.environment.offlineMode.value = true
-        f.open()
-        assertEquals(ConnectionIndicator.OfflineMode, f.session.connectionIndicator.value)
     }
 
     @Test

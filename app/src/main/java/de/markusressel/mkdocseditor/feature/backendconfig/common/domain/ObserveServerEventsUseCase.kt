@@ -2,7 +2,6 @@ package de.markusressel.mkdocseditor.feature.backendconfig.common.domain
 
 import de.markusressel.mkdocseditor.auth.domain.AuthRepository
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.eventsWebsocketUrl
-import de.markusressel.mkdocseditor.network.domain.IsOfflineModeEnabledFlowUseCase
 import de.markusressel.mkdocsrestclient.AuthorizationProvider
 import de.markusressel.mkdocsrestclient.sync.events.ServerEvent
 import de.markusressel.mkdocsrestclient.sync.events.serverEvents
@@ -20,7 +19,6 @@ import javax.inject.Singleton
 @Singleton
 internal class ObserveServerEventsUseCase @Inject constructor(
     private val getCurrentBackendConfigFlowUseCase: GetCurrentBackendConfigFlowUseCase,
-    private val isOfflineModeEnabledFlowUseCase: IsOfflineModeEnabledFlowUseCase,
     private val authRepository: AuthRepository,
 ) {
     /**
@@ -30,9 +28,8 @@ internal class ObserveServerEventsUseCase @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     suspend operator fun invoke(): Flow<ServerEvent> = combine(
         getCurrentBackendConfigFlowUseCase(),
-        isOfflineModeEnabledFlowUseCase(),
         authRepository.sessionChanges.map { }.onStart { emit(Unit) },
-    ) { config, offline, _ -> config.takeUnless { offline } }
+    ) { config, _ -> config }
         .flatMapLatest { config ->
             val server = config?.serverConfig ?: return@flatMapLatest emptyFlow()
             serverEvents(

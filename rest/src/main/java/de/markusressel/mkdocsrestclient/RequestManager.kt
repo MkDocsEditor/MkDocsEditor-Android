@@ -29,12 +29,15 @@ import com.github.kittinunf.fuel.core.Parameters
 import com.github.kittinunf.fuel.core.Request
 import com.github.kittinunf.fuel.core.Response
 import com.github.kittinunf.fuel.core.awaitResponseResult
+import com.github.kittinunf.fuel.core.deserializers.ByteArrayDeserializer
+import com.github.kittinunf.fuel.core.deserializers.StringDeserializer
 import com.github.kittinunf.fuel.core.requests.UploadRequest
 import com.github.kittinunf.fuel.core.requests.upload
-import com.github.kittinunf.fuel.coroutines.awaitByteArrayResult
+import com.github.kittinunf.fuel.core.response
 import com.github.kittinunf.fuel.coroutines.awaitStringResult
 import com.github.kittinunf.result.Result
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.IOException
@@ -125,20 +128,14 @@ class RequestManager(
      * @param url the url
      * @param urlParameters query parameters
      * @param method the request type (f.ex. GET)
-     * @param timeout how long to wait for the connection
-     * @param readTimeout how long to wait for the answer, null for the default of Fuel (15 s)
+     * @param kind how long the request may wait for the server
      */
     fun createRequest(
         url: String,
         urlParameters: Parameters = emptyList(),
         method: Method,
-        timeout: Int = DEFAULT_TIMEOUT,
-        readTimeout: Int? = null,
-    ): Request {
-        val request = getAuthenticatedRequest(fuelManager.request(method, absoluteUrl(url), urlParameters))
-            .timeout(timeout = timeout)
-        return if (readTimeout == null) request else request.timeoutRead(timeout = readTimeout)
-    }
+        kind: RequestKind = RequestKind.Quick,
+    ): Request = getAuthenticatedRequest(fuelManager.request(method, absoluteUrl(url), urlParameters)).withTimeouts(kind)
 
     /**
      * Applies the Authorization header to a request
@@ -170,21 +167,13 @@ class RequestManager(
      *
      * @param url the URL
      * @param method the request type (f.ex. GET)
+     * @param kind how long the request may wait for the server
      */
     suspend inline fun <reified T : Any> doRequest(
         url: String,
         method: Method,
-    ): Result<T, FuelError> {
-        return withContext(Dispatchers.IO) {
-            val deserializer: Deserializable<T> = deserializer()
-            val request = createRequest(url = url, method = method)
-            @Suppress("UNCHECKED_CAST")
-            when (T::class) {
-                String::class -> request.awaitStringResult() as Result<T, FuelError>
-                else -> request.awaitResponseResult(deserializer).third
-            }
-        }
-    }
+        kind: RequestKind = RequestKind.Quick,
+    ): Result<T, FuelError> = doRequest(url = url, urlParameters = emptyList(), method = method, kind = kind)
 
     /**
      * Do a request with query parameters that expects a json response body
@@ -192,17 +181,17 @@ class RequestManager(
      * @param url the URL
      * @param urlParameters url query parameters
      * @param method the request type (f.ex. GET)
-     * @param readTimeout how long to wait for the answer, null for the default of Fuel (15 s)
+     * @param kind how long the request may wait for the server
      */
     suspend inline fun <reified T : Any> doRequest(
         url: String,
         urlParameters: Parameters,
         method: Method,
-        readTimeout: Int? = null,
+        kind: RequestKind = RequestKind.Quick,
     ): Result<T, FuelError> {
         return withContext(Dispatchers.IO) {
             val deserializer: Deserializable<T> = deserializer()
-            val request = createRequest(url = url, urlParameters = urlParameters, method = method, readTimeout = readTimeout)
+            val request = createRequest(url = url, urlParameters = urlParameters, method = method, kind = kind)
             @Suppress("UNCHECKED_CAST")
             when (T::class) {
                 String::class -> request.awaitStringResult() as Result<T, FuelError>
@@ -217,18 +206,19 @@ class RequestManager(
      * @param url the URL
      * @param method the request type (f.ex. GET)
      * @param jsonData an Object that will be serialized to json
+     * @param kind how long the request may wait for the server; a request with a body usually changes the wiki
      */
     suspend inline fun <reified K : Any, reified T : Any> doJsonRequest(
         url: String,
         method: Method,
         jsonData: K,
-        timeout: Int = DEFAULT_TIMEOUT,
+        kind: RequestKind = RequestKind.LongAction,
     ): Result<T, FuelError> {
         return withContext(Dispatchers.IO) {
             val json = jsonData.toJson()
             val deserializer: Deserializable<T> = deserializer()
             val request =
-                createRequest(url = url, method = method, timeout = timeout)
+                createRequest(url = url, method = method, kind = kind)
                     .body(json)
                     .header(HEADER_CONTENT_TYPE_JSON)
             @Suppress("UNCHECKED_CAST")
@@ -240,16 +230,14 @@ class RequestManager(
     }
 
     /**
-     * Creates an (authenticated) request
+     * Creates an (authenticated) upload request
      *
      * @param url the url
      * @param urlParameters query parameters
-     * @param timeout the request timeout
      */
     fun createUploadRequest(
         url: String,
         urlParameters: Parameters = emptyList(),
-        timeout: Int = DEFAULT_TIMEOUT
     ): UploadRequest {
         return getAuthenticatedRequest(
             fuelManager.upload(
@@ -257,42 +245,94 @@ class RequestManager(
                 method = Method.POST,
                 urlParameters
             )
-        ).timeout(timeout = timeout).upload()
+        ).withTimeouts(RequestKind.Transfer).upload()
     }
 
-    suspend inline fun <reified T : Any> upload(
+    /**
+     * Uploads a file as the multipart field `file`. Cancelling the coroutine ends the upload.
+     *
+     * @param fileName makes the part a file: without one, the backend reads it as a form value, which it limits to a
+     * few megabytes
+     * @param onProgress the bytes sent so far and the size of the whole request body, on a network thread
+     */
+    suspend fun upload(
         url: String,
         blob: ByteArray,
-    ): Result<T, FuelError> {
-        return withContext(Dispatchers.IO) {
-            val request = createUploadRequest(url = url)
-            request.add(BlobDataPart(blob.inputStream().buffered(), name = "file"))
-            val deserializer: Deserializable<T> = deserializer()
-            @Suppress("UNCHECKED_CAST")
-            when (String::class) {
-                String::class -> request.awaitStringResult() as Result<T, FuelError>
-                else -> request.awaitResponseResult(deserializer).third
-            }
-        }
+        fileName: String,
+        onProgress: (doneBytes: Long, totalBytes: Long) -> Unit = { _, _ -> },
+    ): Result<String, FuelError> {
+        val request = createUploadRequest(url = url)
+        request.add(
+            BlobDataPart(blob.inputStream().buffered(), name = "file", filename = fileName, contentLength = blob.size.toLong())
+        )
+        request.requestProgress(onProgress)
+        return awaitInterruptible { request.response(StringDeserializer()).third }
     }
 
-    suspend inline fun download(
-        url: String
+    /**
+     * Downloads a file. Cancelling the coroutine ends the download.
+     *
+     * @param onProgress the bytes received so far and the size of the file (the bytes so far when the server does not
+     * say), on a network thread
+     */
+    suspend fun download(
+        url: String,
+        onProgress: (doneBytes: Long, totalBytes: Long) -> Unit = { _, _ -> },
     ): Result<ByteArray, FuelError> {
-        return withContext(Dispatchers.IO) {
-            val request = createRequest(url = url, method = Method.GET)
-            request.awaitByteArrayResult()
-        }
+        val request = createRequest(url = url, method = Method.GET, kind = RequestKind.Transfer)
+        request.responseProgress(onProgress)
+        return awaitInterruptible { request.response(ByteArrayDeserializer()).third }
     }
+
+    /**
+     * Fuel's coroutine calls can't be cancelled: they block until the server answers or a timeout ends them. A
+     * transfer runs on a thread that cancelling interrupts instead, and Fuel checks for that whenever data moved.
+     */
+    private suspend fun <T : Any> awaitInterruptible(block: () -> Result<T, FuelError>): Result<T, FuelError> =
+        runInterruptible(Dispatchers.IO) { block() }
 
     companion object {
         val HEADER_CONTENT_TYPE_JSON = "Content-Type" to "application/json"
         val HEADER_REQUESTED_WITH = "X-Requested-With" to "MkDocsEditor-Android"
-        const val DEFAULT_TIMEOUT = 3000
         private const val NOT_CONFIGURED_HOST = "backend-not-configured.invalid"
     }
 
 }
+
+/**
+ * How long a request waits for the server. Every kind fails at once on what is a real error: an HTTP error, a refused
+ * or reset connection, no network. A server that can't be reached at all fails after [CONNECT_TIMEOUT_MS]. The kinds
+ * only differ in how long a server that took the request may take to answer it (the read timeout, which counts while
+ * no data arrives).
+ */
+enum class RequestKind(val readTimeoutMs: Int) {
+    /**
+     * Reads the screens show or run in the background: the tree, a page, the dashboard, pins, the feed, lookups. A
+     * server that is this slow counts as unreachable: the stored copy stays on screen, and a later try asks again.
+     */
+    Quick(readTimeoutMs = 10_000),
+
+    /**
+     * A lookup that a screen waits for before it shows anything: the move lookup when a page without a local copy
+     * opens. A coroutine timeout can not end the blocking request, so the request has to end soon by itself.
+     */
+    Blocking(readTimeoutMs = 3_000),
+
+    /**
+     * Anything that changes the wiki, and the dry run of a move. The server may work on it for minutes (a move rewrites
+     * every page that links to the item), and giving up early would report a failure for a change that still happens.
+     */
+    LongAction(readTimeoutMs = 10 * 60_000),
+
+    /** Uploads and downloads: a large file never times out while its data moves, only a transfer that stalls does */
+    Transfer(readTimeoutMs = 60_000),
+}
+
+/** how long any request waits for the connection to the server */
+const val CONNECT_TIMEOUT_MS = 3_000
+
+private fun Request.withTimeouts(kind: RequestKind): Request =
+    timeout(timeout = CONNECT_TIMEOUT_MS).timeoutRead(timeout = kind.readTimeoutMs)
 
 /** `force=true` deletes an item also while clients are connected to it */
 internal fun forceParameter(force: Boolean): List<Pair<String, Any?>> = if (force) listOf("force" to "true") else emptyList()

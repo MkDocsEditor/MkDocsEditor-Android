@@ -4,7 +4,11 @@ import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
+import de.markusressel.mkdocseditor.feature.common.data.TransferProgress
+import de.markusressel.mkdocseditor.feature.common.data.percentSteps
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.InputStream
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -15,9 +19,18 @@ internal class UploadResourceUseCase @Inject constructor(
     private val contentResolver: ContentResolver,
     private val restClient: IMkDocsRestClient,
 ) {
-    suspend operator fun invoke(sectionId: String, uri: Uri) {
-        val (name, fileContent) = readFile(uri)
-        restClient.uploadResource(sectionId, name, fileContent).get()
+    /**
+     * Cancelling the coroutine ends the upload
+     *
+     * @param onProgress how far the upload is, on a network thread
+     */
+    suspend operator fun invoke(sectionId: String, uri: Uri, onProgress: (TransferProgress) -> Unit = {}) {
+        val (name, fileContent) = withContext(Dispatchers.IO) { readFile(uri) }
+        val progress = TransferProgress.start(name, upload = true)
+        onProgress(progress)
+        restClient.uploadResource(sectionId, name, fileContent, percentSteps { done, total ->
+            onProgress(progress.copy(doneBytes = done, totalBytes = total))
+        }).get()
     }
 
     private fun readFile(uri: Uri): Pair<String, ByteArray> {

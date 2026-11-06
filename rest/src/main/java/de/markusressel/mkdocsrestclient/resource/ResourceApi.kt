@@ -32,18 +32,26 @@ interface ResourceApi {
     suspend fun getResource(id: String): Result<ResourceModel, FuelError>
 
     /**
-     * Create a new resource
+     * Create a new resource. Cancelling the coroutine ends the upload.
+     *
+     * @param onProgress the bytes sent so far and the size of the whole request, on a network thread
      */
     suspend fun uploadResource(
         parentId: String,
         name: String,
-        content: ByteArray
+        content: ByteArray,
+        onProgress: (doneBytes: Long, totalBytes: Long) -> Unit = { _, _ -> },
     ): Result<String, FuelError>
 
     /**
-     * Download a resource
+     * Download a resource. Cancelling the coroutine ends the download.
+     *
+     * @param onProgress the bytes received so far and the size of the file, on a network thread
      */
-    suspend fun downloadResource(id: String): Result<ByteArray, FuelError>
+    suspend fun downloadResource(
+        id: String,
+        onProgress: (doneBytes: Long, totalBytes: Long) -> Unit = { _, _ -> },
+    ): Result<ByteArray, FuelError>
 
     /**
      * Rename a resource
