@@ -129,11 +129,6 @@ which direction to take the animations. Maybe there are widely used patterns we 
 Folder changes now use a shared axis on X with a fade, in `FileBrowserScreenContent`. A slow folder animates only when
 its content has loaded. The path chips fade in and out with the same timing (`SectionPath`).
 
-**Known flaw**
-
-Going up from a deeper folder, the last path chip vanishes at once instead of fading out. The chip of the only subfolder
-does fade. Scrolling isn't the cause: delaying it changed nothing.
-
 **Open questions**
 
 - Should the back gesture preview the parent folder (predictive back)? That needs a `PredictiveBackHandler` and the
@@ -339,12 +334,3 @@ address is only known once a server is.
 **Left to do**
 
 - A feature tour, if we want one.
-
----
-
-# Small follow-ups
-
-Left over from other work, not written by Markus.
-
-- `LiveBackendSyncTest` relies on HTTP Basic with `legacyBasicAuth`, which the backend docs say is removed. It needs
-  fixing before it can run.

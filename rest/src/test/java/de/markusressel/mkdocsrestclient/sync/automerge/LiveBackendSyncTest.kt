@@ -9,7 +9,6 @@ import de.markusressel.mkdocsrestclient.reference.MovedListModel
 import de.markusressel.mkdocsrestclient.reference.MovedModel
 import de.markusressel.mkdocsrestclient.toEntity
 import kotlinx.coroutines.runBlocking
-import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.OkHttpClient
@@ -18,6 +17,7 @@ import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.createTempDirectory
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -27,10 +27,12 @@ import kotlin.test.assertTrue
  * Gradle properties are set:
  *
  * - `-Pmkdocs.backend.url=http://127.0.0.1:7413`
- * - `-Pmkdocs.backend.users=alice:password,bob:password` (two editors)
+ * - `-Pmkdocs.backend.users=alice:password,bob:password` (two editors, without TOTP or passkeys)
  *
  * It edits the first document of the root section and creates and moves test documents, so
  * use a test wiki. The move test needs a backend with `POST /move/` (MkDocsEditor-Backend #49).
+ * Each user signs in with a bearer session and signs out after each test, so the backend
+ * should run with `server.auth.rateLimits.disabled: true`.
  */
 class LiveBackendSyncTest {
 
@@ -40,15 +42,40 @@ class LiveBackendSyncTest {
         TestUser(user, password)
     }
 
+    private val http = OkHttpClient.Builder().readTimeout(0, TimeUnit.MILLISECONDS).build()
+
     /**
-     * A user of the test backend. Authenticates with HTTP Basic, which the backend accepts
-     * with `server.auth.legacyBasicAuth: true`.
+     * A user of the test backend. Signs in with a bearer session at first use, as the app does
+     * (`POST /auth/login/` in docs/auth.md of the backend).
      */
-    private data class TestUser(val username: String, val password: String) {
-        val authorization: String = Credentials.basic(username, password)
+    private inner class TestUser(val username: String, private val password: String) {
+        private var token: String? = null
+
+        val authorization: String
+            get() = "Bearer " + (token ?: login().also { token = it })
+
+        private fun login(): String {
+            val body = """{"username":${jsonString(username)},"password":${jsonString(password)},""" +
+                """"sessionType":"bearer","deviceName":"LiveBackendSyncTest"}"""
+            val response = post("/auth/login/", body, authorization = null)
+            return requireNotNull(Regex("\"token\":\\s*\"([^\"]+)\"").find(response)) {
+                "no session for $username, an account with a second factor can't be used: $response"
+            }.groupValues[1]
+        }
+
+        fun logout() {
+            if (token == null) return
+            post("/auth/logout/", "{}", authorization)
+            token = null
+        }
     }
 
-    private val http = OkHttpClient.Builder().readTimeout(0, TimeUnit.MILLISECONDS).build()
+    private fun jsonString(value: String) = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+
+    @AfterTest
+    fun signOut() {
+        users?.forEach { it.logout() }
+    }
 
     /**
      * A session connected over a real websocket. All session calls run on one thread.
@@ -161,10 +188,16 @@ class LiveBackendSyncTest {
         }
     }
 
-    private fun send(method: String, path: String, auth: TestUser, json: String): String {
+    private fun send(method: String, path: String, auth: TestUser, json: String): String =
+        send(method, path, json, auth.authorization)
+
+    private fun post(path: String, json: String, authorization: String?): String =
+        send("POST", path, json, authorization)
+
+    private fun send(method: String, path: String, json: String, authorization: String?): String {
         val request = Request.Builder()
             .url(baseUrl!!.trimEnd('/') + path)
-            .header("Authorization", auth.authorization)
+            .apply { if (authorization != null) header("Authorization", authorization) }
             .header("X-Requested-With", "MkDocsEditor-Android")
             .method(method, json.toRequestBody("application/json".toMediaType()))
             .build()
