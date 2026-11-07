@@ -364,7 +364,7 @@
 
     <string name="editor_view_settings">View</string>
     <string name="editor_view_author_strip">Strip</string>
-    <string name="editor_view_author_strip_and_marker">Strip and marker</string>
+    <string name="editor_view_author_strip_and_marker">Marker</string>
     <string name="editor_view_text_size_value">%1$d sp</string>
     <string name="page_references_action">Links and files of this page</string>
     <string name="page_references_title">Links and files</string>

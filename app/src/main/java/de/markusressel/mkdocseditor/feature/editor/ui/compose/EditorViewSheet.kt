@@ -7,9 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -177,26 +174,26 @@ private fun AuthorHighlightButtons(
     SingleChoiceSegmentedButtonRow(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            // all as high as one with two lines
-            .height(IntrinsicSize.Min),
+            .padding(horizontal = 24.dp),
     ) {
         modes.forEachIndexed { index, option ->
             SegmentedButton(
-                modifier = Modifier.fillMaxHeight(),
                 selected = option == mode,
                 onClick = { onModeChosen(option) },
                 shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
                 // without the check mark, so that the longest name has room; the color shows the choice
                 icon = {},
-                // on a narrow phone the longest name takes two lines rather than being cut off
-                label = { Text(stringResource(option.shortNameRes), maxLines = 2, textAlign = TextAlign.Center) },
+                label = { Text(stringResource(option.shortNameRes), maxLines = 1, textAlign = TextAlign.Center) },
             )
         }
     }
 }
 
-/** shorter than the names in the settings, so that three fit next to each other on a phone */
+/**
+ * Shorter than the names in the settings, so that three fit next to each other on a phone in one line. A name in two
+ * lines does not work: a segmented button keeps the room of its icon even without one, and takes the height of one
+ * line, so a long name was cut off at the side and at the bottom.
+ */
 private val AuthorHighlightMode.shortNameRes: Int
     get() = when (this) {
         AuthorHighlightMode.Off -> R.string.editor_author_highlight_off_name
