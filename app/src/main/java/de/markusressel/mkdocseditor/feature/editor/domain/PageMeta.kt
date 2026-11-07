@@ -5,6 +5,7 @@ import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.Moshi
+import de.markusressel.mkdocseditor.feature.filebrowser.data.pageTitle
 import java.io.IOException
 
 /**
@@ -41,6 +42,25 @@ internal fun parsePageMeta(json: String): PageMeta? = try {
     null
 }
 
-/** @return the title of the front matter, or the name of the file for a page without one */
-internal fun editorTitle(meta: PageMeta?, fileName: String): String =
-    meta?.title?.trim()?.takeIf { it.isNotEmpty() } ?: fileName
+/**
+ * The title in the editor. It is the one the lists show ([storedTitle], from the backend), so a page has one name
+ * everywhere. Only the front matter of the text can be newer: the preview reads it while the page is edited, and the
+ * tree follows a few seconds later.
+ *
+ * @param meta the front matter of the text, null before the preview read it
+ * @param storedTitle the page name of the stored tree, null from a backend without `page-meta`
+ * @param storedMetaTitle the front matter title the stored tree knew
+ * @return the title of the front matter, else the stored title, else the name of the file
+ */
+internal fun editorTitle(
+    meta: PageMeta?,
+    fileName: String,
+    storedTitle: String? = null,
+    storedMetaTitle: String? = null,
+): String {
+    meta?.title?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
+    // the stored title was the front matter title the text no longer has. Until the tree catches up, the file name
+    // is closer than a title that is gone
+    if (meta != null && storedMetaTitle != null) return fileName
+    return pageTitle(storedTitle, fileName)
+}

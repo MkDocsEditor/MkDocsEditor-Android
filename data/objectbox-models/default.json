@@ -156,7 +156,7 @@
     },
     {
       "id": "4:926641655186087166",
-      "lastPropertyId": "9:4704703775551489654",
+      "lastPropertyId": "16:8059766189822353716",
       "name": "DocumentEntity",
       "properties": [
         {
@@ -212,6 +212,41 @@
           "type": 11,
           "flags": 520,
           "relationTarget": "DocumentContentEntity"
+        },
+        {
+          "id": "10:8857322150885619134",
+          "name": "title",
+          "type": 9
+        },
+        {
+          "id": "11:2692419555783977376",
+          "name": "metaTitle",
+          "type": 9
+        },
+        {
+          "id": "12:5431820471194951898",
+          "name": "description",
+          "type": 9
+        },
+        {
+          "id": "13:2707033633644756284",
+          "name": "icon",
+          "type": 9
+        },
+        {
+          "id": "14:4777432287040505957",
+          "name": "status",
+          "type": 9
+        },
+        {
+          "id": "15:1489350414187992385",
+          "name": "tags",
+          "type": 30
+        },
+        {
+          "id": "16:8059766189822353716",
+          "name": "searchExclude",
+          "type": 1
         }
       ],
       "relations": []

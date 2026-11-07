@@ -25,6 +25,19 @@ internal class SearchQuery(term: String) {
         return words.all { word -> folded.any { it.contains(word) } }
     }
 
+    /**
+     * whether a page is found: each word in its file name, title, description, tags or text. A page that asks not to be
+     * searched ([searchExclude], `search: exclude` in its front matter) never is, as in MkDocs.
+     */
+    fun matchesPage(
+        name: String,
+        title: String?,
+        description: String?,
+        tags: List<String>,
+        text: String,
+        searchExclude: Boolean,
+    ): Boolean = !searchExclude && matches(name, title.orEmpty(), description.orEmpty(), *tags.toTypedArray(), text)
+
     /** every place of any word in [text], as indices of [text]; these can overlap, so [matchesIn] is for showing them */
     fun occurrencesIn(text: String): List<IntRange> {
         if (words.isEmpty()) return emptyList()

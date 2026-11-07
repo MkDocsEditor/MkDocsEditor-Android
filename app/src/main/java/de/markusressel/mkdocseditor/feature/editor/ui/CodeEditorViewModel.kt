@@ -273,6 +273,8 @@ internal class CodeEditorViewModel @Inject constructor(
                     old.copy(
                         documentId = state.documentId,
                         title = state.title,
+                        storedPageTitle = state.pageTitle,
+                        storedPageMetaTitle = state.pageMetaTitle,
                         isDocumentDeletedOnServer = state.deletedOnServer,
                         isNoOfflineVersionVisible = state.noOfflineVersion,
                     )
@@ -983,6 +985,10 @@ internal class CodeEditorViewModel @Inject constructor(
         val documentId: String? = null,
         /** the name of the file */
         val title: String = "",
+        /** the page name of the stored tree, see [DocumentSession.State.pageTitle] */
+        val storedPageTitle: String? = null,
+        /** see [DocumentSession.State.pageMetaTitle] */
+        val storedPageMetaTitle: String? = null,
 
         /** the front matter of the page as the preview last read it, null before it did */
         val pageMeta: PageMeta? = null,
@@ -1056,9 +1062,9 @@ internal class CodeEditorViewModel @Inject constructor(
         val editorShown: Boolean
             get() = editModeActive || editModeOpening || readOnlyEditorShown
 
-        /** the title of the front matter, or the file name */
+        /** the title of the page, as the lists show it, but following the front matter while it is edited */
         val shownTitle: String
-            get() = editorTitle(pageMeta, title)
+            get() = editorTitle(pageMeta, title, storedPageTitle, storedPageMetaTitle)
     }
 
     sealed class UiEvent {

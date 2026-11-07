@@ -55,6 +55,7 @@ import de.markusressel.mkdocseditor.feature.dashboard.ui.DashboardViewModel.UiSt
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.parsePeerColor
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.preview.MarkdownPreview
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.preview.PreviewResourceLoader
+import de.markusressel.mkdocseditor.feature.filebrowser.data.pageTitle
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 import de.markusressel.mkdocsrestclient.dashboard.FeedAuthorModel
@@ -242,7 +243,7 @@ private fun ColumnScope.PinSection(
             modifier = Modifier.clickable { onUiEvent(UiEvent.DocumentClicked(pin.documentId)) },
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
             leadingContent = { Icon(Icons.Outlined.PushPin, contentDescription = null) },
-            headlineContent = { Text(pin.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            headlineContent = { Text(pin.shownTitle, maxLines = 1, overflow = TextOverflow.Ellipsis) },
             supportingContent = folderOf(pin.path)?.let { folder ->
                 { Text(folder, maxLines = 1, overflow = TextOverflow.Ellipsis) }
             },
@@ -278,7 +279,7 @@ private fun FeedEntry(entry: FeedEntryModel, now: Date, onClick: () -> Unit) {
         modifier = Modifier.clickable(onClick = onClick),
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         leadingContent = { AuthorAvatar(entry.authors.firstOrNull()) },
-        headlineContent = { Text(nameOf(entry.path), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        headlineContent = { Text(entry.shownTitle, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         supportingContent = {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(listOf(authors, time).filter { it.isNotEmpty() }.joinToString(" · "), maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -335,6 +336,14 @@ internal fun feedTime(time: Date, now: Date): String? {
 
 /** `guide/setup.md` is `setup` */
 internal fun nameOf(path: String): String = path.substringAfterLast('/').removeSuffix(".md")
+
+/** the title of the page, or its file name from a backend without `page-meta` */
+internal val PinModel.shownTitle: String
+    get() = pageTitle(title, name)
+
+/** the title of the page, or its file name for a page that is gone or from a backend without `page-meta` */
+internal val FeedEntryModel.shownTitle: String
+    get() = pageTitle(title, nameOf(path))
 
 /** `guide/setup.md` is in `guide`, a page in the top folder in none */
 internal fun folderOf(path: String): String? = path.substringBeforeLast('/', "").takeIf { it.isNotEmpty() }

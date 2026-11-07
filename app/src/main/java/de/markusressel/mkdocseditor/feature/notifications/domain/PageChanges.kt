@@ -1,6 +1,6 @@
 package de.markusressel.mkdocseditor.feature.notifications.domain
 
-import de.markusressel.mkdocseditor.feature.dashboard.ui.compose.nameOf
+import de.markusressel.mkdocseditor.feature.dashboard.ui.compose.shownTitle
 import de.markusressel.mkdocsrestclient.dashboard.FeedEntryModel
 import de.markusressel.mkdocsrestclient.dashboard.FeedKind
 import java.util.Date
@@ -42,7 +42,7 @@ internal fun findPageChanges(
         val inOrder = edits.reversed()
         PageChange(
             documentId = documentId,
-            pageName = nameOf(edits.first().path),
+            pageName = edits.first().shownTitle,
             authors = inOrder.flatMap { edit -> edit.authors.map { it.displayName } }.distinct(),
             headings = inOrder.flatMap { it.summary?.headings.orEmpty() }.distinct().take(MAX_HEADINGS),
             time = edits.first().time,

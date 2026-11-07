@@ -71,7 +71,16 @@ class DataRepository @Inject constructor(
         }.find()
 
         val documents = documentPersistenceManager.standardOperation().query {
-            filter { document -> query.matches(document.name, document.content.target?.text ?: "") }
+            filter { document ->
+                query.matchesPage(
+                    name = document.name,
+                    title = document.title,
+                    description = document.description,
+                    tags = document.tags.orEmpty(),
+                    text = document.content.target?.text ?: "",
+                    searchExclude = document.searchExclude,
+                )
+            }
         }.find()
 
         val resources = resourcePersistenceManager.standardOperation().query {
@@ -137,7 +146,22 @@ class DataRepository @Inject constructor(
     }
 
     private fun DocumentModel.asEntity(parentSection: SectionEntity): DocumentEntity {
-        val d = DocumentEntity(0, this.type, this.id, this.name, this.filesize, this.modtime, this.url)
+        val d = DocumentEntity(
+            entityId = 0,
+            type = type,
+            id = id,
+            name = name,
+            filesize = filesize,
+            modtime = modtime,
+            url = url,
+            title = title,
+            metaTitle = meta?.title,
+            description = meta?.description,
+            icon = meta?.icon,
+            status = meta?.status,
+            tags = meta?.tags,
+            searchExclude = meta?.searchExclude ?: false,
+        )
         d.parentSection.target = parentSection
         return d
     }

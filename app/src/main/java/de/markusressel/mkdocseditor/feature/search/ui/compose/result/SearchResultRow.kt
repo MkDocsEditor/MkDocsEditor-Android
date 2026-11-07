@@ -143,8 +143,42 @@ internal fun SearchResultRow(
                 }
             }
 
+            if (item is SearchResultItem.Document) PageMetaMatches(item, SearchQuery(searchTerm))
+
             excerpts.take(EXCERPT_LIMIT).forEach { excerpt -> Excerpt(excerpt) }
         }
+    }
+}
+
+/**
+ * The description and the tags of the front matter, when the search found something in them: a page found by a tag
+ * alone would otherwise show no reason
+ */
+@Composable
+private fun PageMetaMatches(item: SearchResultItem.Document, query: SearchQuery) {
+    val colors = MaterialTheme.colorScheme
+    item.description?.let { description ->
+        val matches = query.matchesIn(description)
+        if (matches.isNotEmpty()) {
+            Text(
+                text = highlighted(description, matches),
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+    val tags = item.tags.joinToString("  ") { "#$it" }
+    val tagMatches = query.matchesIn(tags)
+    if (tagMatches.isNotEmpty()) {
+        Text(
+            text = highlighted(tags, tagMatches),
+            style = MaterialTheme.typography.labelSmall,
+            color = colors.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

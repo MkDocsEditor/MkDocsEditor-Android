@@ -70,4 +70,20 @@ class PageMetaTest {
         assertEquals("setup.md", editorTitle(PageMeta(), "setup.md"))
         assertEquals("setup.md", editorTitle(PageMeta(title = "  "), "setup.md"))
     }
+
+    @Test
+    fun `the editor shows the title of the lists until the front matter says otherwise`() {
+        // a title from the first heading, before and after the preview read the text
+        assertEquals("Setup guide", editorTitle(null, "setup", storedTitle = "Setup guide"))
+        assertEquals("Setup guide", editorTitle(PageMeta(), "setup", storedTitle = "Setup guide"))
+        // a front matter title typed in the editor wins over the stored one
+        assertEquals("New", editorTitle(PageMeta(title = "New"), "setup", "Old", storedMetaTitle = "Old"))
+    }
+
+    @Test
+    fun `a removed front matter title is not shown until the tree catches up`() {
+        assertEquals("setup", editorTitle(PageMeta(), "setup", storedTitle = "Old", storedMetaTitle = "Old"))
+        // before the preview read the text, the stored title is all there is
+        assertEquals("Old", editorTitle(null, "setup", storedTitle = "Old", storedMetaTitle = "Old"))
+    }
 }

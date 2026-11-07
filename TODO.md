@@ -10,6 +10,7 @@ clients show the same thing.
 |---|---|---|---|
 | File browser | [Transitions between sections](#transitions-between-sections) | Path chips during the back gesture | No |
 | File browser | [File browser, editor and preview at once on a tablet](#file-browser-editor-and-preview-at-once-on-a-tablet) | Idea, low priority: a layout for large screens | No |
+| File browser | [Page metadata: what is left](#page-metadata-what-is-left) | Tag filter in search, icons, the wiki config | Partly MkDocsEditor-Web |
 | Editor | [Code blocks as one box](#code-blocks-as-one-box) | Full-width background of fenced code | Probably KodeEditor |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Push, better summaries | Yes, the backend and the web client |
 | App-wide | [Settings](#settings) | About row and top bar | No |
@@ -41,6 +42,20 @@ A new layout has one constraint, which caused the bug fixed in #168: the file br
 place in the composition for every window size. Voyager restores a nested navigator by that place, so a layout that
 moves it for another window size resets the file browser and closes the open document on a rotation or a resize. Put
 the panes around the one navigator instead of choosing between two layouts that each have their own.
+
+## Page metadata: what is left
+
+The lists, the dashboard, the editor and search use the `title` and `meta` of the backend (`docs/page-meta.md` there).
+What is left:
+
+- **Tag filter in search.** Search finds pages by their tags, but can't filter by one. It needs a way to pick tags,
+  for example chips of all tags in the tree above the results, and should work like the web client.
+- **Icon and status.** `meta.icon` and `meta.status` are stored, but no list shows them. A Material icon name
+  (`material/rocket`) needs a mapping to an icon the app has.
+- **The editor title follows only the front matter.** While a page is edited, a new front matter title shows at once.
+  A changed first heading shows once the tree is fetched again, because the editor does not follow `tree-changed`.
+- **`GET /wiki/config/`** (the renderer settings of `mkdocs.yml`) is for the preview renderer, which is built from
+  MkDocsEditor-Web. Using it starts there, then the copy here is updated with `make updatePreview`.
 
 ---
 

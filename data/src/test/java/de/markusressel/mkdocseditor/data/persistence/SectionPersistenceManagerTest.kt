@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.data.persistence
 
+import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -31,6 +32,43 @@ class SectionPersistenceManagerTest : PersistenceTestBase() {
         assertEquals(3, sections.standardOperation().count())
         assertEquals(3, documents.standardOperation().count())
         assertEquals(1, resources.standardOperation().count())
+    }
+
+    @Test
+    fun `the page metadata of a document is stored`() {
+        val root = section("root")
+        val document = DocumentEntity(
+            id = "d1",
+            name = "setup",
+            title = "Getting started",
+            metaTitle = "Getting started",
+            description = "First steps",
+            icon = "material/rocket",
+            status = "new",
+            tags = listOf("setup", "intro"),
+            searchExclude = true,
+        )
+        document.parentSection.target = root
+        root.documents.add(document)
+
+        sections.insertOrUpdateRoot(root)
+
+        val stored = document("d1")
+        assertEquals("Getting started", stored.title)
+        assertEquals("First steps", stored.description)
+        assertEquals(listOf("setup", "intro"), stored.tags)
+        assertEquals(true, stored.searchExclude)
+    }
+
+    @Test
+    fun `a document without page metadata has none`() {
+        sections.insertOrUpdateRoot(tree())
+
+        val stored = document("d1")
+        assertNull(stored.title)
+        assertNull(stored.metaTitle)
+        assertNull(stored.tags)
+        assertEquals(false, stored.searchExclude)
     }
 
     @Test

@@ -67,11 +67,16 @@ internal object SearchExcerpts {
     }
 }
 
-/** the best matches first: the name before the content, the whole name before a part of it */
+/**
+ * the best matches first: the name before the content, the whole name before a part of it. A page's title and its file
+ * name both count as its name.
+ */
 internal fun List<SearchResultItem>.sortedByRelevance(searchTerm: String): List<SearchResultItem> {
     val query = SearchQuery(searchTerm)
     return sortedWith(
-        compareBy<SearchResultItem> { query.nameRank(it.name) }
+        compareBy<SearchResultItem> { item ->
+            listOfNotNull(item.name, (item as? SearchResultItem.Document)?.fileName).minOf(query::nameRank)
+        }
             .thenByDescending { (it as? SearchResultItem.Document)?.matchCount ?: 0 }
             .thenBy { it.name.lowercase() }
     )
