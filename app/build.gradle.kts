@@ -150,6 +150,11 @@ dependencies {
 
     // Hilt WorkManager integration
     implementation(libs.hilt.ext.work)
+
+    // the front matter that the preview reads
+    implementation(libs.moshi)
+    ksp(libs.moshi.kotlin.codegen)
+
     // Hilt Compose integration
     implementation(libs.androidx.hilt.navigation.compose)
 

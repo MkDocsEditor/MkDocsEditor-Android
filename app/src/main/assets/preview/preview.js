@@ -245,11 +245,24 @@
     layoutChanged()
   })
 
+  var reportedMeta = null
+
+  /** tells the app the front matter of the page, only when it changed */
+  function reportMeta(meta) {
+    if (!bridge || !bridge.pageMeta) return
+    var json = JSON.stringify(meta || {})
+    if (json === reportedMeta) return
+    reportedMeta = json
+    bridge.pageMeta(json)
+  }
+
   window.MkDocsPreview = {
     render: function (source) {
       var content = document.getElementById('content')
       try {
-        content.innerHTML = MkDocsRenderer.renderMarkdown(source)
+        var page = MkDocsRenderer.renderPage(source)
+        content.innerHTML = page.html
+        reportMeta(page.meta)
       } catch (e) {
         content.textContent = String(e)
       }
@@ -270,6 +283,14 @@
       if (embedded) return
       syncAnchor = { line: line, viewportFraction: viewportFraction }
       scrollToSyncAnchor(!!smooth)
+    },
+    /** Reads only the front matter, for a page that nobody sees while the text changes. */
+    readMeta: function (source) {
+      try {
+        reportMeta(MkDocsRenderer.parseFrontMatter(source).meta)
+      } catch (e) {
+        // parseFrontMatter does not throw, and a page without the renderer has no meta to tell
+      }
     },
     /** Lets go of the source line of the app, so that the page stays where it is when it renders again. */
     stopSync: function () {

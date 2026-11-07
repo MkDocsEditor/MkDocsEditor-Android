@@ -23,11 +23,13 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.rememberEditorPalette
+import de.markusressel.mkdocseditor.feature.editor.domain.PageMeta
 import de.markusressel.mkdocseditor.feature.editor.domain.PreviewBlock
 import de.markusressel.mkdocseditor.feature.editor.domain.PreviewLayout
 import de.markusressel.mkdocseditor.feature.editor.domain.PreviewLayoutBlock
 import de.markusressel.mkdocseditor.feature.editor.domain.PreviewScroll
 import de.markusressel.mkdocseditor.feature.editor.domain.SyncAnchor
+import de.markusressel.mkdocseditor.feature.editor.domain.parsePageMeta
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.ScrollSync
 import kotlinx.coroutines.delay
 import org.json.JSONException
@@ -65,6 +67,8 @@ fun interface PreviewResourceLoader {
  * scrolls it. Null leaves the page where it is.
  * @param onLayout called when the blocks of the page move, after it renders or changes its size
  * @param onScrolled called when the page scrolls, also when the app scrolls it, or when its content moves
+ * @param onPageMeta called with the front matter of the text when it changes. While nobody sees the page, it reads
+ * only the front matter, so this follows the text all the same.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -79,6 +83,7 @@ internal fun MarkdownPreview(
     syncTarget: (() -> ScrollSync.PreviewTarget?)? = null,
     onLayout: ((PreviewLayout) -> Unit)? = null,
     onScrolled: ((PreviewScroll) -> Unit)? = null,
+    onPageMeta: ((PageMeta) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val palette = rememberEditorPalette()
@@ -99,6 +104,7 @@ internal fun MarkdownPreview(
     val currentSyncTarget by rememberUpdatedState(syncTarget)
     val currentOnLayout by rememberUpdatedState(onLayout)
     val currentOnScrolled by rememberUpdatedState(onScrolled)
+    val currentOnPageMeta by rememberUpdatedState(onPageMeta)
     val growsWithContent = onContentHeight != null
 
     val state = remember { PreviewRenderState() }
@@ -171,9 +177,16 @@ internal fun MarkdownPreview(
                 }
 
                 @JavascriptInterface
+                fun pageMeta(json: String) {
+                    val meta = parsePageMeta(json) ?: return
+                    mainHandler.post { currentOnPageMeta?.invoke(meta) }
+                }
+
+                @JavascriptInterface
                 fun pageReady() {
                     mainHandler.post {
                         state.onPageReady(currentText, ::renderMarkdown, currentVisible)
+                        if (!currentVisible && currentOnPageMeta != null) state.readMeta(currentText, ::readMeta)
                         // a new page starts at the top
                         currentSyncTarget?.invoke()?.let { scrollToLine(it.anchor, smooth = false) }
                     }
@@ -204,7 +217,11 @@ internal fun MarkdownPreview(
     // re-render at most every 150 ms while typing
     LaunchedEffect(text) {
         delay(150)
-        if (currentVisible) state.show(text, webView::renderMarkdown)
+        if (currentVisible) {
+            state.show(text, webView::renderMarkdown)
+        } else if (currentOnPageMeta != null) {
+            state.readMeta(text, webView::readMeta)
+        }
     }
 
     // nobody sees the page while typing without a split, so it catches up when it comes back
@@ -278,6 +295,10 @@ private fun parsePreviewScroll(json: String): PreviewScroll? = try {
 
 private fun WebView.renderMarkdown(text: String) {
     evaluateJavascript("MkDocsPreview.render(${JSONObject.quote(text)})", null)
+}
+
+private fun WebView.readMeta(text: String) {
+    evaluateJavascript("MkDocsPreview.readMeta(${JSONObject.quote(text)})", null)
 }
 
 private fun notFound() =

@@ -144,7 +144,7 @@ internal fun CodeEditorScreenContent(
                     exit = shrinkVertically(shrinkTowards = Alignment.Top),
                 ) {
                     MkDocsEditorTopAppBar(
-                        title = uiState.title,
+                        title = uiState.shownTitle,
                         actions = editorTopBarActions(
                             uiState = uiState,
                             splitMode = splitMode,
@@ -238,6 +238,7 @@ internal fun CodeEditorScreenContent(
                             sectionPath = uiState.previewSectionPath,
                             resourceLoader = previewResourceLoader,
                             onLinkClicked = { onUiEvent(CodeEditorViewModel.UiEvent.PreviewLinkClicked(it)) },
+                            onPageMeta = { onUiEvent(CodeEditorViewModel.UiEvent.PageMetaChanged(it)) },
                             syncTarget = { scrollSync.previewTarget },
                             onLayout = scrollSync::onPreviewLayout,
                             onScrolled = { scroll ->
