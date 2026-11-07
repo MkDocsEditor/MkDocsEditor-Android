@@ -485,7 +485,7 @@ internal class FileBrowserViewModel @Inject constructor(
      * @return the result, null when it was cancelled
      */
     private suspend fun <T> transfer(block: suspend (onProgress: (TransferProgress) -> Unit) -> T): T? =
-        shownTransfer.track(block = block)
+        shownTransfer.track(block)
 
     companion object {
         /** ID of the tree root section */

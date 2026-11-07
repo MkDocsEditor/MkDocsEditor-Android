@@ -191,13 +191,13 @@ internal class CodeEditorViewModel @Inject constructor(
     /** content URIs for photos taken from the image picker */
     internal val photoUriFactory = editorFiles.photoUriFactory
 
-    /** a file opened from a link in the preview, or an image of the preview, while it downloads */
+    /** a file opened from a link in the preview, while it downloads */
     private val download = ShownTransfer(viewModelScope) { change ->
         _uiState.update { old -> old.copy(download = change(old.download)) }
     }
 
     /** loads the images of the preview */
-    val previewResourceLoader = editorResources.previewResourceLoader(tree = { wikiTreeHolder.tree.value }, download = download)
+    val previewResourceLoader = editorResources.previewResourceLoader { wikiTreeHolder.tree.value }
 
     /** every new value asks the backend again who wrote what, once the text has settled */
     private val authorshipRequests = MutableStateFlow(0)
@@ -1005,7 +1005,7 @@ internal class CodeEditorViewModel @Inject constructor(
         /** how far the upload of the current file is, null before it starts */
         val uploadProgress: TransferProgress? = null,
 
-        /** a file of a link in the preview, or an image of the preview, while it downloads */
+        /** a file of a link in the preview, while it downloads */
         val download: TransferProgress? = null,
 
         /**

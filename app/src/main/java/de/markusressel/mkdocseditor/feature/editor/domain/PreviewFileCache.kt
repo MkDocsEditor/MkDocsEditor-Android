@@ -2,7 +2,6 @@ package de.markusressel.mkdocseditor.feature.editor.domain
 
 import android.util.LruCache
 import com.github.ajalt.timberkt.Timber
-import de.markusressel.mkdocseditor.feature.common.data.TransferProgress
 import kotlinx.coroutines.CancellationException
 import de.markusressel.mkdocseditor.feature.filebrowser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DownloadResourceUseCase
@@ -24,14 +23,13 @@ class PreviewFileCache @Inject constructor(
     }
 
     /**
-     * @param onProgress how far a download is; a file in memory reports nothing
      * @return the content of the resource, or null if it can't be loaded
      */
-    suspend fun get(resource: ResourceData, onProgress: (TransferProgress) -> Unit = {}): ByteArray? {
+    suspend fun get(resource: ResourceData): ByteArray? {
         val key = "${resource.id}@${resource.modtime.time}"
         cache.get(key)?.let { return it }
         return try {
-            val path = downloadResourceUseCase(resource.id, resource.name, onProgress)
+            val path = downloadResourceUseCase(resource.id, resource.name)
             Files.readAllBytes(path).also {
                 if (it.size <= MAX_BYTES / 4) cache.put(key, it)
             }

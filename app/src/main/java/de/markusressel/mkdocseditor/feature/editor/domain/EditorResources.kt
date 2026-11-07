@@ -4,7 +4,6 @@ import android.util.LruCache
 import android.webkit.MimeTypeMap
 import android.webkit.WebResourceResponse
 import androidx.compose.ui.graphics.ImageBitmap
-import de.markusressel.mkdocseditor.feature.common.ui.ShownTransfer
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.DocumentTextLoader
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.preview.PreviewResourceLoader
 import de.markusressel.mkdocseditor.feature.filebrowser.data.WikiItem
@@ -49,18 +48,14 @@ internal class EditorResources @Inject constructor(
 
     /**
      * Loads the images of the preview: wiki paths are resolved in the tree, the files come
-     * from the server with the session, or from the offline cache
-     *
-     * @param download shows an image while it downloads, so a large one can be cancelled
+     * from the server with the session, or from the offline cache. They show no progress: the page renders around
+     * them, as in a browser.
      */
-    fun previewResourceLoader(tree: () -> WikiTree?, download: ShownTransfer) = PreviewResourceLoader { encodedPath ->
+    fun previewResourceLoader(tree: () -> WikiTree?) = PreviewResourceLoader { encodedPath ->
         val current = tree() ?: return@PreviewResourceLoader null
         val resource = (current.resolve(current.root, encodedPath) as? WikiItem.Resource)?.resource
             ?: return@PreviewResourceLoader null
-        val bytes = runBlocking {
-            // not on the main thread, where the ViewModel runs: this thread waits for it
-            download.track(Dispatchers.IO) { onProgress -> previewFileCache.get(resource, onProgress) }
-        } ?: return@PreviewResourceLoader null
+        val bytes = runBlocking { previewFileCache.get(resource) } ?: return@PreviewResourceLoader null
         val extension = resource.name.substringAfterLast('.', "").lowercase()
         val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: "application/octet-stream"
         WebResourceResponse(mimeType, null, bytes.inputStream())

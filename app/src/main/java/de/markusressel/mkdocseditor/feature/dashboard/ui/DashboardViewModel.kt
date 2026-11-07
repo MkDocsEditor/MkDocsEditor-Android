@@ -92,12 +92,12 @@ internal class DashboardViewModel @Inject constructor(
     private val _events = Channel<DashboardEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
-    /** a file opened from a link of the home page, or an image of it, while it downloads */
+    /** a file opened from a link of the home page, while it downloads */
     private val download = ShownTransfer(viewModelScope) { change ->
         _uiState.update { old -> old.copy(download = change(old.download)) }
     }
 
-    val previewResourceLoader = editorResources.previewResourceLoader(tree = { wikiTreeHolder.tree.value }, download = download)
+    val previewResourceLoader = editorResources.previewResourceLoader { wikiTreeHolder.tree.value }
 
     private var olderFeed: Job? = null
 
@@ -352,7 +352,7 @@ internal class DashboardViewModel @Inject constructor(
      * @param lastSync when the server last answered
      * @param lastSyncFailed the server did not answer the last time
      * @param mayPinForEveryone false for a reader, who can not remove the pins for everyone
-     * @param download a file of a link on the home page, or an image of it, while it downloads
+     * @param download a file of a link on the home page, while it downloads
      */
     data class UiState(
         val homePage: HomePageState? = null,

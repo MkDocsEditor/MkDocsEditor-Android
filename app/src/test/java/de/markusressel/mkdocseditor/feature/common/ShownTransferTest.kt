@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.feature.common
 
 import de.markusressel.mkdocseditor.feature.common.data.TransferProgress
+import de.markusressel.mkdocseditor.feature.common.ui.SHOW_TRANSFER_AFTER_MS
 import de.markusressel.mkdocseditor.feature.common.ui.ShownTransfer
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -12,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import java.io.IOException
 import kotlin.test.Test
@@ -25,10 +28,21 @@ class ShownTransferTest {
     /** what the screen shows */
     private val shown = MutableStateFlow<TransferProgress?>(null)
 
+    /** every value the screen got, to see that a quick transfer never showed */
+    private val everShown = mutableListOf<TransferProgress>()
+
     /** with a supervisor, like the scope of a ViewModel: a failed transfer does not end the others */
     private fun TestScope.shownTransfer() = ShownTransfer(
         scope = CoroutineScope(backgroundScope.coroutineContext + SupervisorJob(backgroundScope.coroutineContext.job)),
-    ) { change -> shown.update(change) }
+    ) { change ->
+        shown.update(change)
+        shown.value?.let { everShown += it }
+    }
+
+    private fun TestScope.waitUntilShown() {
+        advanceTimeBy(SHOW_TRANSFER_AFTER_MS)
+        runCurrent()
+    }
 
     /** a download that reports its start, and then waits for [finish] */
     private class FakeDownload(name: String) {
@@ -43,11 +57,14 @@ class ShownTransferTest {
     }
 
     @Test
-    fun `a download shows how far it is until it ends`() = runTest(UnconfinedTestDispatcher()) {
+    fun `a download that takes long shows how far it is until it ends`() = runTest(UnconfinedTestDispatcher()) {
         val transfer = shownTransfer()
         val download = FakeDownload("holiday.jpg")
 
         val result = async { transfer.track { download.run(it) } }
+        assertNull(shown.value)
+
+        waitUntilShown()
         assertEquals(50, shown.value?.doneBytes)
         assertEquals("holiday.jpg", shown.value?.name)
 
@@ -57,11 +74,26 @@ class ShownTransferTest {
     }
 
     @Test
+    fun `a quick download never shows`() = runTest(UnconfinedTestDispatcher()) {
+        val transfer = shownTransfer()
+        val download = FakeDownload("small.pdf")
+
+        val result = async { transfer.track { download.run(it) } }
+        advanceTimeBy(SHOW_TRANSFER_AFTER_MS - 100)
+        download.finish.complete("file")
+
+        assertEquals("file", result.await())
+        waitUntilShown()
+        assertEquals(emptyList(), everShown)
+    }
+
+    @Test
     fun `cancelling ends the download, and the caller goes on without a result`() = runTest(UnconfinedTestDispatcher()) {
         val transfer = shownTransfer()
         val download = FakeDownload("holiday.jpg")
 
         val result = async { transfer.track { download.run(it) } }
+        waitUntilShown()
         transfer.cancel()
 
         assertNull(result.await())
@@ -75,7 +107,9 @@ class ShownTransferTest {
         val second = FakeDownload("second.pdf")
 
         val firstResult = async { transfer.track { first.run(it) } }
+        waitUntilShown()
         val secondResult = async { transfer.track { second.run(it) } }
+        waitUntilShown()
         assertEquals("second.pdf", shown.value?.name)
 
         transfer.cancel()
@@ -92,6 +126,7 @@ class ShownTransferTest {
         val download = FakeDownload("holiday.jpg")
 
         val result = async { runCatching { transfer.track { download.run(it) } } }
+        waitUntilShown()
         download.finish.completeExceptionally(IOException("offline"))
 
         assertFailsWith<IOException> { result.await().getOrThrow() }
