@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.feature.common.ui.compose
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -8,7 +9,6 @@ import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.contentColorFor
@@ -39,7 +39,9 @@ fun TabContentScaffold(
         floatingActionButtonPosition = floatingActionButtonPosition,
         containerColor = containerColor,
         contentColor = contentColor,
-        contentWindowInsets = ScaffoldDefaults.contentWindowInsets.only(WindowInsetsSides.Top),
+        // the bottom belongs to the bottom bar of the main screen. The sides count in landscape, where
+        // the navigation bar and the cutout are there: the content, the FAB and the snackbar stay clear of them
+        contentWindowInsets = WindowInsets.barsAndCutout.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
         content = content
     )
 }

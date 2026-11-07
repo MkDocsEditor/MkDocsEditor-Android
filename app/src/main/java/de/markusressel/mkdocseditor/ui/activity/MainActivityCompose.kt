@@ -4,7 +4,12 @@ import android.Manifest
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -21,6 +26,7 @@ import de.markusressel.mkdocseditor.feature.auth.onboarding.ui.compose.ConnectLi
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.LocalAuthFlowExit
 import de.markusressel.mkdocseditor.feature.auth.link.ui.PendingAuthLinkViewModel
 import de.markusressel.mkdocseditor.feature.auth.link.ui.compose.AuthLinkScreen
+import de.markusressel.mkdocseditor.feature.common.ui.compose.barsAndCutout
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -60,7 +66,7 @@ import javax.inject.Inject
 private fun AuthLinkFlow(link: String, onExit: () -> Unit) {
     BackHandler(onBack = onExit)
     CompositionLocalProvider(LocalAuthFlowExit provides onExit) {
-        Surface(modifier = Modifier.fillMaxSize()) {
+        FullScreenFlowSurface {
             key(link) {
                 val first = when {
                     link.startsWith(ACCESS_REQUESTS_OF_BACKEND) -> AccessRequestsScreen(link.removePrefix(ACCESS_REQUESTS_OF_BACKEND).toLong())
@@ -72,6 +78,20 @@ private fun AuthLinkFlow(link: String, onExit: () -> Unit) {
                     SlideTransition(navigator)
                 }
             }
+        }
+    }
+}
+
+/**
+ * The background of screens that cover the whole app. Without the main screen around them, nothing else makes room
+ * for the navigation bar at the bottom. The bottom insets are consumed here, so the keyboard padding of a text field
+ * further down only adds what the navigation bar does not cover yet.
+ */
+@Composable
+internal fun FullScreenFlowSurface(content: @Composable () -> Unit) {
+    Surface(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.windowInsetsPadding(WindowInsets.barsAndCutout.only(WindowInsetsSides.Bottom))) {
+            content()
         }
     }
 }
