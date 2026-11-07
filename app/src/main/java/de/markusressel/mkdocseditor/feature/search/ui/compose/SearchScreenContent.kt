@@ -5,6 +5,7 @@ import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.common.ui.compose.LoadingOverlay
+import de.markusressel.mkdocseditor.feature.common.ui.compose.barsAndCutout
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.feature.search.ui.SearchViewModel
 import de.markusressel.mkdocseditor.feature.search.ui.SearchViewModel.UiEvent
@@ -78,6 +80,8 @@ internal fun SearchScreenContent(
     // modifier let the input field take the whole screen, which hid the results
     SearchBar(
         modifier = Modifier.fillMaxWidth(),
+        // in landscape the navigation bar or the cutout can be at either side
+        windowInsets = WindowInsets.barsAndCutout,
         inputField = {
             SearchBarDefaults.InputField(
                 modifier = Modifier

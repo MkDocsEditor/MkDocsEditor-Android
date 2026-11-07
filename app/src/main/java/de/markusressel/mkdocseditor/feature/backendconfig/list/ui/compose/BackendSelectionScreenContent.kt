@@ -55,7 +55,7 @@ internal fun BackendSelectionScreenContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = paddingValues.calculateTopPadding())
+                .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
             BackendConfigList(

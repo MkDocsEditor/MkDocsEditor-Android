@@ -4,6 +4,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.size
@@ -27,7 +28,6 @@ import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Title
 import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -46,6 +46,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
+import de.markusressel.mkdocseditor.feature.common.ui.compose.barsAndCutout
 import de.markusressel.mkdocseditor.feature.editor.domain.AdmonitionTypes
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatAction
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
@@ -66,7 +67,7 @@ internal fun CodeEditorBottomBar(
 
     BottomAppBar(
         modifier = modifier,
-        windowInsets = BottomAppBarDefaults.windowInsets.only(
+        windowInsets = WindowInsets.barsAndCutout.only(
             sides = WindowInsetsSides.Left + WindowInsetsSides.Right + WindowInsetsSides.Top
         )
     ) {

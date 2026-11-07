@@ -1,8 +1,12 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose.picker
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
@@ -21,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.common.ui.compose.barsAndCutout
 
 /**
  * A full screen dialog with a title, a close button and tabs (none when [tabs] is empty), for
@@ -44,8 +49,11 @@ internal fun PickerScaffold(
             modifier = Modifier
                 .fillMaxSize()
                 .imePadding(),
+            // the dialog covers the screen, so in landscape the navigation bar or the cutout can be at either side
+            contentWindowInsets = WindowInsets.barsAndCutout,
             topBar = {
                 TopAppBar(
+                    windowInsets = WindowInsets.barsAndCutout.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
                     title = { Text(title) },
                     navigationIcon = {
                         IconButton(onClick = onDismiss, modifier = Modifier.testTag("picker-close")) {
@@ -55,7 +63,8 @@ internal fun PickerScaffold(
                 )
             },
         ) { padding ->
-            Column(modifier = Modifier.padding(padding)) {
+            // the upload progress in the content makes room for the sides itself, so it must not do that again
+            Column(modifier = Modifier.padding(padding).consumeWindowInsets(padding)) {
                 if (tabs.isNotEmpty()) {
                     TabRow(selectedTabIndex = tabs.indexOfFirst { it.first == selectedTab }.coerceAtLeast(0)) {
                         tabs.forEach { (id, label) ->

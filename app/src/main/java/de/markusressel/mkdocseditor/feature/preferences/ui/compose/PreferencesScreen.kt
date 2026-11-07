@@ -14,6 +14,7 @@ import de.markusressel.kutepreferences.ui.theme.KuteColors
 import de.markusressel.kutepreferences.ui.theme.KutePreferencesTheme
 import de.markusressel.kutepreferences.ui.theme.KutePreferencesThemeDefaults
 import de.markusressel.kutepreferences.ui.views.search.KutePreferencesScreen
+import de.markusressel.mkdocseditor.feature.common.ui.compose.horizontalBarsAndCutoutPadding
 import de.markusressel.mkdocseditor.feature.preferences.ui.PreferencesViewModel
 
 @Composable
@@ -32,7 +33,9 @@ internal fun PreferencesScreen(
         },
     )
 
-    Box(modifier = modifier) {
+    // the search bar of the preferences makes room for the status bar; in landscape the navigation bar or the
+    // cutout can be at either side
+    Box(modifier = modifier.horizontalBarsAndCutoutPadding()) {
         KutePreferencesTheme(colors = settingsColors()) {
             KutePreferencesScreen(
                 modifier = Modifier.fillMaxSize(),
