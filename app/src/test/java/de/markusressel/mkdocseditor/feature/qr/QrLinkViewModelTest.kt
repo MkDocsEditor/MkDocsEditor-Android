@@ -48,7 +48,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class QrLinkViewModelTest {
 
-    private val link = "https://edit.wiki.markusressel.de/q/wm"
+    private val link = "https://wiki.markusressel.de/q/wm"
 
     private class MapStore : KeyValueStore {
         val values = mutableMapOf<String, String>()

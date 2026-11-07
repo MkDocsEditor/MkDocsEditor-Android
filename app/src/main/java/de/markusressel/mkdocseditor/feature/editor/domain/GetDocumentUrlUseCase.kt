@@ -14,7 +14,7 @@ internal class GetDocumentUrlUseCase @Inject constructor(
         entity: DocumentEntity,
     ): String? {
         val mkdDocsWebConfig = backendConfig.mkDocsWebConfig
-        val domain = mkdDocsWebConfig?.domain?.takeIf { it.isNotBlank() } ?: return null
+        val domain = mkdDocsWebConfig?.domain?.trim()?.trimEnd('/')?.takeIf { it.isNotBlank() } ?: return null
         val protocol = when (mkdDocsWebConfig.useSsl) {
             true -> "https"
             else -> "http"
@@ -34,12 +34,18 @@ internal class GetDocumentUrlUseCase @Inject constructor(
         val result = listOfNotNull(
             "$protocol://",
             "$basicAuthInUrl@".takeUnless { username.isNullOrBlank() || password.isNullOrBlank() },
-            "${hostWithPort(domain, mkdDocsWebConfig.port, mkdDocsWebConfig.useSsl)}/view/$pagePath"
+            "${hostWithPort(domain, mkdDocsWebConfig.port, mkdDocsWebConfig.useSsl)}${sitePath(domain)}$pagePath"
         ).joinToString(separator = "")
 
         return result
     }
 }
+
+/**
+ * What comes after the stored [domain] before the page. A wiki URL from discovery holds the path of the site, like
+ * `wiki.example.com/view`; one typed by hand in the old form is only the host, and the site was under `/view/`.
+ */
+private fun sitePath(domain: String): String = if ('/' in domain) "/" else "/view/"
 
 /**
  * The old form stored port 80 for an empty field, also with https, and the port had no effect then. So https on 80
