@@ -32,6 +32,7 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferen
 import de.markusressel.mkdocsrestclient.reference.ReferenceModel
 import androidx.compose.runtime.State
 import de.markusressel.kodeeditor.library.compose.KodeEditorState
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.ajalt.timberkt.Timber
@@ -119,6 +120,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private val createJoinLinkUseCase: CreateJoinLinkUseCase,
     private val localCursorColor: LocalCursorColor,
     private val scrollSyncSetting: ScrollSyncSetting,
+    savedStateHandle: SavedStateHandle,
     clientInstanceId: ClientInstanceId,
     moveItemUseCase: MoveItemUseCase,
     getBacklinksUseCase: GetBacklinksUseCase,
@@ -130,10 +132,15 @@ internal class CodeEditorViewModel @Inject constructor(
     /** this app as a client instance, see [ClientInstanceId] */
     private val instanceId: String = clientInstanceId.value
 
+    private val savedMode = SavedEditorMode(savedStateHandle)
+
+    /** the edit mode was on before Android killed the app, and opens again once the document can be edited */
+    private val restoringEditMode = MutableStateFlow(savedMode.editing)
+
     private val _uiState = MutableStateFlow(
         initialUiState(
-            editModeOpening = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value,
-        )
+            editModeOpening = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value || savedMode.editing,
+        ).copy(splitMode = savedMode.splitMode)
     )
     internal val uiState = _uiState.asStateFlow()
 
@@ -340,16 +347,26 @@ internal class CodeEditorViewModel @Inject constructor(
             combine(
                 session.editable,
                 openedByJoinLink,
-            ) { editable, _ ->
+                restoringEditMode,
+            ) { editable, _, restoring ->
                 editModeOpensByItself(
                     editable = editable,
-                    wanted = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value || openedByJoinLink.value,
+                    wanted = preferencesHolder.codeEditorAlwaysOpenEditModePreference.persistedValue.value ||
+                        openedByJoinLink.value || restoring,
                 )
             }.distinctUntilChanged().collect {
                 // only opens the edit mode; losing the connection keeps it, because
                 // edits are kept in the local copy and synced on reconnect
-                if (it) enableEditMode()
+                if (it) {
+                    enableEditMode()
+                    // restored once: from now on the edit mode opens like for any page
+                    restoringEditMode.value = false
+                }
             }
+        }
+
+        launch {
+            uiState.collect { savedMode.save(it) }
         }
 
         launch {
@@ -871,6 +888,7 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     private fun disableEditMode() {
+        restoringEditMode.value = false
         _uiState.update { old ->
             old.copy(
                 editModeActive = false,

@@ -495,7 +495,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    See the License for the specific language governing permissions and
    limitations under the License.
 
-=== js-yaml 4.1.0 ===
+=== js-yaml 4.3.2 ===
 (The MIT License)
 
 Copyright (C) 2011-2015 by Vitaly Puzrin

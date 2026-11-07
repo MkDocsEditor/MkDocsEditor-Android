@@ -273,4 +273,79 @@ class ScrollSyncTest {
         assertEquals(ScrollSync.Side.Preview, sync.driver)
         assertNull(sync.previewTarget)
     }
+
+    private fun restoredSync(positions: ScrollSync.Positions) = ScrollSync(text = { text }, now = { time }, restored = positions).apply {
+        active = true
+        onPreviewLayout(
+            PreviewLayout(
+                listOf(PreviewLayoutBlock(2, 100f), PreviewLayoutBlock(5, 400f), PreviewLayoutBlock(8, 700f)),
+                scrollHeight = 1000f,
+            )
+        )
+    }
+
+    @Test
+    fun `it keeps the source line at the top of both sides, for a recreation of the screen`() {
+        sync.onEditorTop(3.0)
+        sync.onPreviewScrolled(previewScroll(400f, byUser = true))
+
+        assertEquals(ScrollSync.Positions(editorTop = 3.0, pageTop = 5.0), sync.positions)
+    }
+
+    @Test
+    fun `after a recreation the page goes back to its line at the top, and the editor to its own`() {
+        val restored = restoredSync(ScrollSync.Positions(editorTop = 3.0, pageTop = 5.0))
+
+        assertAnchor(SyncAnchor(5.0, 0f), restored.previewTarget?.anchor)
+        assertEquals(false, restored.previewTarget?.smooth)
+        assertEquals(3.0, restored.editorRestore)
+    }
+
+    @Test
+    fun `the editor does not drive the page until it is back at its line`() {
+        val restored = restoredSync(ScrollSync.Positions(editorTop = 3.0, pageTop = 5.0))
+
+        // the first layouts of the new editor are at the top
+        restored.onEditorTop(0.0)
+        restored.onEditorAnchor(restored.editorAnchorOf(FakeEditor(top = 0.0)) { 0.0 })
+        assertAnchor(SyncAnchor(5.0, 0f), restored.previewTarget?.anchor)
+        assertEquals(3.0, restored.positions.editorTop)
+
+        restored.onEditorRestored()
+        restored.onEditorAnchor(restored.editorAnchorOf(editor) { 0.0 })
+        assertReadingLine(restored.previewTarget)
+    }
+
+    @Test
+    fun `a page that has just loaded does not count as scrolled to the top`() {
+        val restored = restoredSync(ScrollSync.Positions(editorTop = null, pageTop = 5.0))
+
+        restored.onPreviewScrolled(previewScroll(0f, byUser = false))
+
+        assertEquals(5.0, restored.positions.pageTop)
+    }
+
+    @Test
+    fun `the user scrolling the page ends its way back, so that a new load does not go there again`() {
+        val restored = restoredSync(ScrollSync.Positions(editorTop = null, pageTop = 5.0))
+
+        restored.onPreviewScrolled(previewScroll(250f, byUser = true))
+
+        assertNull(restored.previewTarget)
+        assertEquals(3.5, assertNotNull(restored.positions.pageTop), 0.0001)
+    }
+
+    @Test
+    fun `the positions survive the saved state, also a side that was never laid out`() {
+        sync.onPreviewScrolled(previewScroll(400f, byUser = false))
+        val saver = ScrollSync.saver(text = { text })
+        val scope = object : androidx.compose.runtime.saveable.SaverScope {
+            override fun canBeSaved(value: Any) = true
+        }
+
+        val saved = assertNotNull(with(saver) { scope.save(sync) })
+        val restored = saver.restore(saved)
+
+        assertEquals(ScrollSync.Positions(editorTop = null, pageTop = 5.0), assertNotNull(restored).positions)
+    }
 }
