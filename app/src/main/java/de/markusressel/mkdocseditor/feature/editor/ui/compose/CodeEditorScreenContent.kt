@@ -71,6 +71,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
+import de.markusressel.mkdocseditor.feature.common.ui.compose.TransferProgressBar
 import de.markusressel.mkdocseditor.feature.common.ui.compose.barsAndCutout
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
@@ -179,19 +180,27 @@ internal fun CodeEditorScreenContent(
             // the buttons stay while the bar leaves, and the size change moves the content along with it
             val lastVisibleState = remember { mutableStateOf(uiState) }
             if (uiState.isBottomAppBarVisible) lastVisibleState.value = uiState
-            AnimatedVisibility(
-                visible = uiState.isBottomAppBarVisible,
-                enter = expandVertically(tween(EDITOR_MODE_ANIMATION_MS), expandFrom = Alignment.Top),
-                exit = shrinkVertically(tween(EDITOR_MODE_ANIMATION_MS), shrinkTowards = Alignment.Top),
-            ) {
-                CodeEditorBottomBar(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .then(if (keyboardVisible) Modifier.height(COMPACT_TOOLBAR_HEIGHT) else Modifier),
-                    uiState = lastVisibleState.value,
-                    // while the edit mode opens there is no document to change yet
-                    onUiEvent = { if (uiState.editModeActive) onUiEvent(it) },
-                )
+            Column {
+                uiState.download?.let { download ->
+                    TransferProgressBar(
+                        progress = download,
+                        onCancel = { onUiEvent(CodeEditorViewModel.UiEvent.CancelDownloadClicked) },
+                    )
+                }
+                AnimatedVisibility(
+                    visible = uiState.isBottomAppBarVisible,
+                    enter = expandVertically(tween(EDITOR_MODE_ANIMATION_MS), expandFrom = Alignment.Top),
+                    exit = shrinkVertically(tween(EDITOR_MODE_ANIMATION_MS), shrinkTowards = Alignment.Top),
+                ) {
+                    CodeEditorBottomBar(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(if (keyboardVisible) Modifier.height(COMPACT_TOOLBAR_HEIGHT) else Modifier),
+                        uiState = lastVisibleState.value,
+                        // while the edit mode opens there is no document to change yet
+                        onUiEvent = { if (uiState.editModeActive) onUiEvent(it) },
+                    )
+                }
             }
         },
         snackbarHost = {

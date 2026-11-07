@@ -28,6 +28,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -47,17 +48,30 @@ import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 private val MAX_CHIP_WIDTH = 200.dp
 
 /**
+ * The chip of the open folder while the back gesture takes it away
+ *
+ * @param progress how far, between 0 (shown) and 1 (gone)
+ */
+internal data class LeavingChip(val sectionId: String, val progress: Float)
+
+/** @return how visible the chip of [sectionId] is while [leaving] goes */
+internal fun chipAlpha(sectionId: String, leaving: LeavingChip?): Float =
+    if (leaving?.sectionId == sectionId) 1F - leaving.progress.coerceIn(0F, 1F) else 1F
+
+/**
  * The way from the root down to the open folder. The root stays in place. The rest scrolls, and ends at the open folder
  * whenever the path changes, because that is the one the user wants to see.
  *
  * @param path the sections, starting with the root
  * @param onSectionClicked a parent was clicked; the open folder cannot be clicked
+ * @param leavingChip the chip that fades with the back gesture. It is read while drawing, so the gesture only redraws.
  */
 @Composable
 internal fun SectionPath(
     path: List<SectionItem>,
     onSectionClicked: (SectionItem) -> Unit,
     modifier: Modifier = Modifier,
+    leavingChip: () -> LeavingChip? = { null },
 ) {
     val listState = rememberLazyListState()
     LaunchedEffect(path) {
@@ -93,11 +107,13 @@ internal fun SectionPath(
         ) {
             itemsIndexed(path.drop(1), key = { _, section -> section.id }) { index, section ->
                 Row(
-                    modifier = Modifier.animateItem(
-                        fadeInSpec = tween(FOLDER_ANIMATION_MS),
-                        placementSpec = tween(FOLDER_ANIMATION_MS),
-                        fadeOutSpec = tween(FOLDER_ANIMATION_MS),
-                    ),
+                    modifier = Modifier
+                        .animateItem(
+                            fadeInSpec = tween(FOLDER_ANIMATION_MS),
+                            placementSpec = tween(FOLDER_ANIMATION_MS),
+                            fadeOutSpec = tween(FOLDER_ANIMATION_MS),
+                        )
+                        .graphicsLayer { alpha = chipAlpha(section.id, leavingChip()) },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Image(

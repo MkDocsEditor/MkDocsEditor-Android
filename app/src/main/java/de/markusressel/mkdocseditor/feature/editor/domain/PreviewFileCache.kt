@@ -2,6 +2,7 @@ package de.markusressel.mkdocseditor.feature.editor.domain
 
 import android.util.LruCache
 import com.github.ajalt.timberkt.Timber
+import kotlinx.coroutines.CancellationException
 import de.markusressel.mkdocseditor.feature.filebrowser.data.ResourceData
 import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.DownloadResourceUseCase
 import java.nio.file.Files
@@ -32,6 +33,8 @@ class PreviewFileCache @Inject constructor(
             Files.readAllBytes(path).also {
                 if (it.size <= MAX_BYTES / 4) cache.put(key, it)
             }
+        } catch (ex: CancellationException) {
+            throw ex
         } catch (ex: Exception) {
             Timber.w(ex) { "Could not load resource ${resource.id} for the preview" }
             null
