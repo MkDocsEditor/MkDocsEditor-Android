@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 /**
- * Whether the editor and the rendered page of a split scroll together. The setting and the toggle in the editor's
- * menu are this one value.
+ * Whether the editor and the rendered page of a split scroll together. The setting and the switch in the editor's
+ * view sheet are this one value.
  */
 internal interface ScrollSyncSetting {
     val enabled: Flow<Boolean>
