@@ -36,3 +36,19 @@ html.embedded .markdown-preview th, html.embedded .markdown-preview td {
 html.embedded .markdown-preview table.preview-table-squeezed th,
 html.embedded .markdown-preview table.preview-table-squeezed td { overflow-wrap: anywhere; }
 html.embedded .markdown-preview img, html.embedded .markdown-preview video { height: auto; }
+
+/* a changed section that the app opened the page at lights up for a moment (preview.js) */
+@keyframes preview-change {
+  0%, 70% {
+    background-color: color-mix(in srgb, var(--md-primary) 20%, transparent);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--md-primary) 20%, transparent);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+.markdown-preview .preview-change {
+  border-radius: 4px;
+  animation: preview-change 2s ease-out;
+}

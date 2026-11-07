@@ -40,7 +40,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.avatar.data.Avatar
@@ -54,6 +58,7 @@ import de.markusressel.mkdocseditor.feature.dashboard.ui.DashboardViewModel.Home
 import de.markusressel.mkdocseditor.feature.dashboard.ui.DashboardViewModel.UiEvent
 import de.markusressel.mkdocseditor.feature.dashboard.ui.DashboardViewModel.UiState
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.parsePeerColor
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.rememberEditorPalette
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.preview.MarkdownPreview
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.preview.PreviewResourceLoader
 import de.markusressel.mkdocseditor.feature.filebrowser.data.pageTitle
@@ -274,13 +279,9 @@ private fun FeedEntry(entry: FeedEntryModel, now: Date, onClick: () -> Unit) {
         FeedKind.CREATED -> stringResource(R.string.feed_created)
         FeedKind.DELETED -> stringResource(R.string.feed_deleted)
         FeedKind.MOVED -> entry.oldPath?.let { stringResource(R.string.feed_moved, it) }
-        else -> entry.summary?.let { summary ->
-            listOfNotNull(
-                summary.headings.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.feed_edited_in, it.joinToString(", ")) },
-                stringResource(R.string.feed_lines, summary.linesAdded, summary.linesRemoved),
-            ).joinToString(" · ")
-        }
+        else -> entry.summary?.headings?.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.feed_edited_in, it.joinToString(", ")) }
     }
+    val counts = entry.summary?.takeIf { entry.kind == FeedKind.EDITED }?.let { ChangeCountsText(it.linesAdded, it.linesRemoved) }
     ListItem(
         modifier = Modifier.clickable(onClick = onClick),
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
@@ -290,10 +291,31 @@ private fun FeedEntry(entry: FeedEntryModel, now: Date, onClick: () -> Unit) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(listOf(authors, time).filter { it.isNotEmpty() }.joinToString(" · "), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 what?.let { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) }
+                counts?.let { Text(it, maxLines = 1) }
             }
         },
     )
 }
+
+/** "+3 −1", the added lines in green and the removed ones in red, like a diff */
+@Composable
+internal fun ChangeCountsText(linesAdded: Int, linesRemoved: Int): AnnotatedString {
+    val palette = rememberEditorPalette()
+    return changeCounts(
+        added = stringResource(R.string.feed_lines_added, linesAdded),
+        removed = stringResource(R.string.feed_lines_removed, linesRemoved),
+        addedColor = palette.inserted,
+        removedColor = palette.deleted,
+    )
+}
+
+/** the colors are those of a diff in the editor, which have enough contrast on the background in light and dark */
+internal fun changeCounts(added: String, removed: String, addedColor: Color, removedColor: Color): AnnotatedString =
+    buildAnnotatedString {
+        withStyle(SpanStyle(color = addedColor)) { append(added) }
+        append(' ')
+        withStyle(SpanStyle(color = removedColor)) { append(removed) }
+    }
 
 @Composable
 private fun AuthorAvatar(author: FeedAuthorModel?) {

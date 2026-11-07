@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.navigator.Navigator
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -74,8 +75,9 @@ class MainNavigationRequests @Inject constructor() {
     val documentToOpen: StateFlow<DocumentRequest?> = _documentToOpen.asStateFlow()
 
     /** opens [documentId] in the editor, on top of the file browser */
-    fun openDocument(documentId: String) {
-        _documentToOpen.value = DocumentRequest(documentId)
+    /** @param changedHeadings the headings of the changes the notification was about, see [CodeEditorScreen.changedHeadings] */
+    fun openDocument(documentId: String, changedHeadings: List<String> = emptyList()) {
+        _documentToOpen.value = DocumentRequest(documentId, changedHeadings)
     }
 
     fun documentOpened(request: DocumentRequest) {
@@ -83,7 +85,27 @@ class MainNavigationRequests @Inject constructor() {
     }
 
     /** not a data class: the same document asked for twice is two requests */
-    class DocumentRequest(val documentId: String)
+    class DocumentRequest(val documentId: String, val changedHeadings: List<String> = emptyList())
+
+    private val _editorChange = MutableStateFlow<EditorChange?>(null)
+
+    /**
+     * A change for an editor that is open already, to go to. A state and not an event: the editor may not be in
+     * composition yet.
+     */
+    val editorChange: StateFlow<EditorChange?> = _editorChange.asStateFlow()
+
+    fun handChange(change: EditorChange) {
+        _editorChange.value = change
+    }
+
+    /** the editor has taken [change] */
+    fun changeTaken(change: EditorChange) {
+        _editorChange.compareAndSet(change, null)
+    }
+
+    /** not a data class: the same change asked for twice is two requests */
+    class EditorChange(val screenKey: ScreenKey, val headings: List<String>)
 
     @EntryPoint
     @InstallIn(SingletonComponent::class)
@@ -124,8 +146,12 @@ internal fun OpenRequestedDocument(navigator: Navigator) {
         request?.let {
             requests.documentOpened(it)
             val open = navigator.items.editorOf(it.documentId)
-            if (open != null) navigator.popUntil { screen -> screen === open }
-            else navigator.push(CodeEditorScreen(documentId = it.documentId))
+            if (open != null) {
+                navigator.popUntil { screen -> screen === open }
+                if (it.changedHeadings.isNotEmpty()) requests.handChange(MainNavigationRequests.EditorChange(open.key, it.changedHeadings))
+            } else {
+                navigator.push(CodeEditorScreen(documentId = it.documentId, changedHeadings = it.changedHeadings))
+            }
         }
     }
 }

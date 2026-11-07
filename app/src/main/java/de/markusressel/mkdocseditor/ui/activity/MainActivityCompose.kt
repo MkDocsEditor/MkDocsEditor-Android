@@ -167,8 +167,9 @@ class MainActivityCompose : AppCompatActivity() {
         val notifiedDocument = intent?.getStringExtra(EXTRA_OPEN_DOCUMENT)
         if (notifiedDocument != null) {
             val backendId = intent.getLongExtra(EXTRA_OPEN_DOCUMENT_BACKEND, -1L)
+            val headings = intent.getStringArrayListExtra(EXTRA_OPEN_DOCUMENT_HEADINGS).orEmpty()
             intent.removeExtra(EXTRA_OPEN_DOCUMENT)
-            lifecycleScope.launch { openNotifiedDocument(backendId, notifiedDocument) }
+            lifecycleScope.launch { openNotifiedDocument(backendId, notifiedDocument, headings) }
             return
         }
         val adminOf = intent?.getLongExtra(EXTRA_ACCESS_REQUESTS_OF_BACKEND, -1L) ?: -1L
@@ -210,5 +211,8 @@ class MainActivityCompose : AppCompatActivity() {
         /** from a notification about a change: the document to open, and [EXTRA_OPEN_DOCUMENT_BACKEND] its server */
         const val EXTRA_OPEN_DOCUMENT = "open_document"
         const val EXTRA_OPEN_DOCUMENT_BACKEND = "open_document_backend"
+
+        /** with [EXTRA_OPEN_DOCUMENT]: the headings of the changes, for the page to open at the first one */
+        const val EXTRA_OPEN_DOCUMENT_HEADINGS = "open_document_headings"
     }
 }

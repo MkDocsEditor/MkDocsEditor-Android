@@ -1,8 +1,8 @@
 /*
  * The app's side of the markdown preview: renders with the renderer of MkDocsEditor-Web
  * (mkdocs-renderer.js, see `make updatePreview`), hands links to the app and marks missing images.
- * It also tells the app where the page is scrolled to and where its blocks are, and puts the source line of the
- * editor at a height of the view.
+ * It also tells the app where the page is scrolled to and where its blocks are, puts the source line of the
+ * editor at a height of the view, and lights up a changed section that the app opened the page at.
  */
 (function () {
   'use strict'
@@ -245,6 +245,42 @@
     layoutChanged()
   })
 
+  // the section of a change the app asked to show, until a render has its lines
+  var pendingSection = null
+
+  /** the outermost blocks that start in the lines of the section */
+  function sectionBlocks(start, end) {
+    function inSection(block) {
+      var line = lineOf(block)
+      return line >= start && line < end
+    }
+    return sourceBlocks().filter(function (block) {
+      if (!inSection(block)) return false
+      var parent = block.parentElement && block.parentElement.closest('[data-source-line]')
+      return !parent || !inSection(parent)
+    })
+  }
+
+  function showPendingSection() {
+    var section = pendingSection
+    if (!section || section.start >= lineCount) return
+    pendingSection = null
+    if (section.scroll && !embedded) {
+      syncAnchor = { line: section.start, viewportFraction: 0 }
+      scrollToSyncAnchor(false)
+    }
+    sectionBlocks(section.start, section.end).forEach(function (block) {
+      block.classList.remove('preview-change')
+      // starts the animation again for a block that still has it
+      void block.offsetWidth
+      block.classList.add('preview-change')
+      block.addEventListener('animationend', function () {
+        block.classList.remove('preview-change')
+      }, { once: true })
+    })
+    if (bridge && bridge.sectionShown) bridge.sectionShown()
+  }
+
   var reportedMeta = null
 
   /** tells the app the front matter of the page, only when it changed */
@@ -270,6 +306,7 @@
       blocks = null
       lineCount = source.split('\n').length
       layoutChanged()
+      showPendingSection()
     },
     /**
      * Scrolls a source line to a height of the view, as far as the page can scroll, and keeps it there when the page
@@ -283,6 +320,17 @@
       if (embedded) return
       syncAnchor = { line: line, viewportFraction: viewportFraction }
       scrollToSyncAnchor(!!smooth)
+    },
+    /**
+     * Lights up the blocks of a section for a moment, after the next render if this one does not have its lines yet.
+     *
+     * @param start the 0-based line of its heading
+     * @param end the 0-based line behind it
+     * @param scroll also puts the heading at the top of the view, and keeps it there like [scrollToLine]
+     */
+    showSection: function (start, end, scroll) {
+      pendingSection = { start: start, end: end, scroll: !!scroll }
+      showPendingSection()
     },
     /** Reads only the front matter, for a page that nobody sees while the text changes. */
     readMeta: function (source) {

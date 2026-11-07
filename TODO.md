@@ -174,7 +174,6 @@ Keep it small, and useful for the wiki. A home wiki has no need for points or ra
 If notifications get annoying, people turn them off, and the goal is lost.
 
 - Decide on per-folder or per-document following, and a setting for how often.
-- Tapping a notification opens the document, but not yet at the change.
 
 **Open questions**
 

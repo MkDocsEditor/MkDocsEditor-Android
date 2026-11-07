@@ -35,6 +35,7 @@ import de.markusressel.mkdocseditor.feature.notifications.data.NotificationPermi
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
 import de.markusressel.mkdocsrestclient.dashboard.DashboardSnapshotModel
 import de.markusressel.mkdocsrestclient.dashboard.FeedEntryModel
+import de.markusressel.mkdocsrestclient.dashboard.FeedKind
 import de.markusressel.mkdocsrestclient.dashboard.PinModel
 import de.markusressel.mkdocsrestclient.dashboard.PinScope
 import de.markusressel.mkdocsrestclient.dashboard.PinsModel
@@ -275,7 +276,7 @@ internal class DashboardViewModel @Inject constructor(
         when {
             documentId == null -> _events.send(DashboardEvent.Toast(context.getString(R.string.dashboard_page_gone)))
             entry.itemType == FEED_ITEM_SECTION -> mainNavigationRequests.showSection(documentId)
-            else -> _events.send(DashboardEvent.OpenDocument(documentId))
+            else -> _events.send(DashboardEvent.OpenDocument(documentId, entry.changedHeadings()))
         }
     }
 
@@ -388,8 +389,13 @@ internal class DashboardViewModel @Inject constructor(
     }
 }
 
+/** an edit opens at the section it changed, other entries at the top */
+internal fun FeedEntryModel.changedHeadings(): List<String> =
+    if (kind == FeedKind.EDITED) summary?.headings.orEmpty() else emptyList()
+
 internal sealed interface DashboardEvent {
-    data class OpenDocument(val documentId: String) : DashboardEvent
+    /** @param changedHeadings the headings of an edit, for the page to open at its section */
+    data class OpenDocument(val documentId: String, val changedHeadings: List<String> = emptyList()) : DashboardEvent
     data class OpenAccount(val backendId: Long) : DashboardEvent
     data object OpenSearch : DashboardEvent
     data class Toast(val text: String) : DashboardEvent

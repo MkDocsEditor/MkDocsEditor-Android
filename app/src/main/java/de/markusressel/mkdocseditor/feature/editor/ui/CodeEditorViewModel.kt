@@ -14,6 +14,7 @@ import de.markusressel.mkdocseditor.feature.filebrowser.ui.ItemActions
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.text
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.DialogState as FileBrowserDialogState
 import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRuns
+import de.markusressel.mkdocseditor.feature.editor.domain.ChangeSection
 import de.markusressel.mkdocseditor.feature.editor.domain.GetAuthorshipUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.PageMeta
 import de.markusressel.mkdocseditor.feature.editor.domain.editorTitle
@@ -134,6 +135,10 @@ internal class CodeEditorViewModel @Inject constructor(
     private val instanceId: String = clientInstanceId.value
 
     private val savedMode = SavedEditorMode(savedStateHandle)
+
+    private val changeJumpArguments = ChangeJumpArguments(savedStateHandle)
+
+    private var changeJumpJob: Job? = null
 
     /** the edit mode was on before Android killed the app, and opens again once the document can be edited */
     private val restoringEditMode = MutableStateFlow(savedMode.editing)
@@ -554,6 +559,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 is UiEvent.LineNumbersChanged -> preferencesHolder.editorLineNumbersPreference.persistValue(event.enabled)
                 is UiEvent.TextSizeChanged -> preferencesHolder.editorTextSizePreference.persistValue(event.size.coerceIn(EDITOR_TEXT_SIZE_RANGE).toLong())
                 is UiEvent.VisibleRangeChanged -> onVisibleRangeChanged(event.range)
+                is UiEvent.ChangeJumpShown -> _uiState.update { if (it.changeJump === event.jump) it.copy(changeJump = null) else it }
                 is UiEvent.PreviewLinesChanged -> previewLines.value = event.lines
                 is UiEvent.PageMetaChanged -> _uiState.update { it.copy(pageMeta = event.meta) }
             }
@@ -753,6 +759,32 @@ internal class CodeEditorViewModel @Inject constructor(
         onJoinLinkOpened(from, instance)
     }
 
+    /**
+     * The page was opened at a change, from the feed or a notification: goes to the first of [headings] that the text
+     * has, once, see [ChangeJumpArguments]
+     *
+     * @param headings the headings of the changed sections, from the arguments of the screen
+     */
+    fun onOpenedAtChange(headings: List<String>) {
+        changeJumpArguments.take(headings)?.let { jumpToChange(it) }
+    }
+
+    /** a notification for the page of this editor, tapped while the editor is already there; see [onOpenedAtChange] */
+    fun onChangeOpened(headings: List<String>) {
+        if (headings.isNotEmpty()) jumpToChange(headings)
+    }
+
+    private fun jumpToChange(headings: List<String>) {
+        changeJumpJob?.cancel()
+        changeJumpJob = launch {
+            // the text may still be loading, or come in with the sync; without any of the headings the page stays at the top
+            val section = withTimeoutOrNull(CHANGE_WAIT_MS) {
+                snapshotFlow { ChangeSection.find(editorText.text, headings) }.filterNotNull().first()
+            } ?: return@launch
+            _uiState.update { it.copy(changeJump = ChangeJump(section)) }
+        }
+    }
+
     /** a join link for the document of this editor, opened while the editor is already there; see [onOpenedByJoinLink] */
     fun onJoinLinkOpened(from: String?, instance: String?) {
         // someone who can only read still gets the editor, because only there the cursor shows where the sender is
@@ -926,6 +958,9 @@ internal class CodeEditorViewModel @Inject constructor(
         /** how long to wait for the sender of a join link to show up, they may have looked away for a moment */
         private const val SENDER_WAIT_MS = 5_000L
 
+        /** how long a page opened at a change waits for a text with one of its headings, then it stays at the top */
+        private const val CHANGE_WAIT_MS = 10_000L
+
         /** see docs/sync-protocol.md of the backend, "Viewport" */
 
         /**
@@ -975,6 +1010,12 @@ internal class CodeEditorViewModel @Inject constructor(
 
     /** A class and not just an index: going to the same place twice has to go there twice */
     internal class JumpRequest(val position: Int)
+
+    /**
+     * The section of a change that the page was opened at: its heading goes to the top, and the section lights up for a
+     * moment. A class and not just the section, like [JumpRequest].
+     */
+    internal class ChangeJump(val section: ChangeSection)
 
     data class Following(val instanceId: String, val name: String)
 
@@ -1051,6 +1092,9 @@ internal class CodeEditorViewModel @Inject constructor(
         /** where the editor should go, once */
         val jumpRequest: JumpRequest? = null,
 
+        /** the changed section the editor, or the page while reading, should go to, until one of them is there */
+        val changeJump: ChangeJump? = null,
+
         val ghosts: List<RemoteGhost> = emptyList(),
 
         /** whose view the editor follows */
@@ -1109,6 +1153,9 @@ internal class CodeEditorViewModel @Inject constructor(
         /** @param size in sp, within the range of the setting */
         data class TextSizeChanged(val size: Int) : UiEvent()
         data class VisibleRangeChanged(val range: TextRange?) : UiEvent()
+
+        /** the editor or the page went to [jump], see [UiState.changeJump] */
+        data class ChangeJumpShown(val jump: ChangeJump) : UiEvent()
 
         /** @param lines the 0-based source lines the rendered page shows, null while it has no room */
         data class PreviewLinesChanged(val lines: IntRange?) : UiEvent()

@@ -36,6 +36,11 @@ internal data class CodeEditorScreen(
     private val joinFrom: String? = null,
     /** the client instance of the sender to follow */
     private val joinInstance: String? = null,
+    /**
+     * Opened at a change, from the feed or a notification: the headings of its changed sections, the page goes to the
+     * first one it still has, see [CodeEditorViewModel.onOpenedAtChange]
+     */
+    val changedHeadings: List<String> = emptyList(),
 ) : Screen {
 
     /**
@@ -60,6 +65,7 @@ internal data class CodeEditorScreen(
         LaunchedEffect(documentId) {
             viewModel.setCurrentDocumentId(documentId)
             if (joinLink) viewModel.onOpenedByJoinLink(joinFrom, joinInstance)
+            viewModel.onOpenedAtChange(changedHeadings)
         }
 
         // a later join link for this document comes to this editor, see OpenJoinedDocument
@@ -71,6 +77,18 @@ internal data class CodeEditorScreen(
             join?.takeIf { it.screenKey == key }?.let {
                 editorJoins.taken(it)
                 viewModel.onJoinLinkOpened(it.from, it.instance)
+            }
+        }
+
+        // a later notification for this document comes to this editor, see OpenRequestedDocument
+        val navigationRequests = remember(context) {
+            EntryPointAccessors.fromApplication(context.applicationContext, MainNavigationRequests.Accessor::class.java).mainNavigationRequests()
+        }
+        val change by navigationRequests.editorChange.collectAsState()
+        LaunchedEffect(change) {
+            change?.takeIf { it.screenKey == key }?.let {
+                navigationRequests.changeTaken(it)
+                viewModel.onChangeOpened(it.headings)
             }
         }
 
