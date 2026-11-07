@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.ui.activity
 
+import de.markusressel.mkdocseditor.feature.editor.domain.ChangeLocation
 import android.Manifest
 import android.content.Intent
 import android.os.Bundle
@@ -167,8 +168,9 @@ class MainActivityCompose : AppCompatActivity() {
         val notifiedDocument = intent?.getStringExtra(EXTRA_OPEN_DOCUMENT)
         if (notifiedDocument != null) {
             val backendId = intent.getLongExtra(EXTRA_OPEN_DOCUMENT_BACKEND, -1L)
+            val change = intent.getSerializableExtra(EXTRA_OPEN_DOCUMENT_CHANGE, ChangeLocation::class.java)
             intent.removeExtra(EXTRA_OPEN_DOCUMENT)
-            lifecycleScope.launch { openNotifiedDocument(backendId, notifiedDocument) }
+            lifecycleScope.launch { openNotifiedDocument(backendId, notifiedDocument, change) }
             return
         }
         val adminOf = intent?.getLongExtra(EXTRA_ACCESS_REQUESTS_OF_BACKEND, -1L) ?: -1L
@@ -210,5 +212,8 @@ class MainActivityCompose : AppCompatActivity() {
         /** from a notification about a change: the document to open, and [EXTRA_OPEN_DOCUMENT_BACKEND] its server */
         const val EXTRA_OPEN_DOCUMENT = "open_document"
         const val EXTRA_OPEN_DOCUMENT_BACKEND = "open_document_backend"
+
+        /** with [EXTRA_OPEN_DOCUMENT]: a `ChangeLocation`, for the page to open at the change */
+        const val EXTRA_OPEN_DOCUMENT_CHANGE = "open_document_change"
     }
 }

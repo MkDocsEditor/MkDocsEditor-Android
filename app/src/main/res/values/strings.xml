@@ -25,7 +25,9 @@
     <string name="feed_deleted">Deleted</string>
     <string name="feed_moved">Moved from %1$s</string>
     <string name="feed_edited_in">In %1$s</string>
-    <string name="feed_lines">+%1$d −%2$d</string>
+    <!-- lines an edit added and removed, shown in green and red next to each other -->
+    <string name="feed_lines_added">+%1$d</string>
+    <string name="feed_lines_removed">−%1$d</string>
     <string name="bottom_navigation_item_settings">Settings</string>
     <string name="bottom_navigation_item_about">About</string>
 

@@ -1,5 +1,7 @@
 package de.markusressel.mkdocseditor.feature.notifications.domain
 
+import de.markusressel.mkdocseditor.feature.editor.domain.changeLocation
+import de.markusressel.mkdocseditor.feature.editor.domain.ChangeLocation
 import de.markusressel.mkdocseditor.feature.dashboard.ui.compose.shownTitle
 import de.markusressel.mkdocsrestclient.dashboard.FeedEntryModel
 import de.markusressel.mkdocsrestclient.dashboard.FeedKind
@@ -11,6 +13,7 @@ import java.util.Date
  * @param authors display names of the other accounts, in the order of their first change
  * @param headings headings of the changed sections, without repeats
  * @param time the latest of the changes
+ * @param change where the page opens: the lines of the newest change, or for an older backend all the headings
  */
 internal data class PageChange(
     val documentId: String,
@@ -18,6 +21,7 @@ internal data class PageChange(
     val authors: List<String>,
     val headings: List<String>,
     val time: Date,
+    val change: ChangeLocation = ChangeLocation(headings),
 )
 
 /**
@@ -40,12 +44,14 @@ internal fun findPageChanges(
     .map { (documentId, edits) ->
         // the feed is newest first, but authors and headings read better in the order they happened
         val inOrder = edits.reversed()
+        val headings = inOrder.flatMap { it.summary?.headings.orEmpty() }.distinct().take(MAX_HEADINGS)
         PageChange(
             documentId = documentId,
             pageName = edits.first().shownTitle,
             authors = inOrder.flatMap { edit -> edit.authors.map { it.displayName } }.distinct(),
-            headings = inOrder.flatMap { it.summary?.headings.orEmpty() }.distinct().take(MAX_HEADINGS),
+            headings = headings,
             time = edits.first().time,
+            change = edits.first().summary?.changeLocation(headings) ?: ChangeLocation(headings),
         )
     }
 

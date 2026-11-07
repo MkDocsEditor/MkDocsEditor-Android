@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.rememberEditorPalette
+import de.markusressel.mkdocseditor.feature.editor.domain.ChangeTarget
 import de.markusressel.mkdocseditor.feature.editor.domain.PageMeta
 import de.markusressel.mkdocseditor.feature.editor.domain.PreviewBlock
 import de.markusressel.mkdocseditor.feature.editor.domain.PreviewLayout
@@ -69,6 +70,9 @@ fun interface PreviewResourceLoader {
  * @param onScrolled called when the page scrolls, also when the app scrolls it, or when its content moves
  * @param onPageMeta called with the front matter of the text when it changes. While nobody sees the page, it reads
  * only the front matter, so this follows the text all the same.
+ * @param change changed lines the page lights up for a moment, once for each new value
+ * @param scrollToChange whether the page also puts the line of [change] at its top
+ * @param onChangeShown called when the page has shown [change]
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -84,6 +88,9 @@ internal fun MarkdownPreview(
     onLayout: ((PreviewLayout) -> Unit)? = null,
     onScrolled: ((PreviewScroll) -> Unit)? = null,
     onPageMeta: ((PageMeta) -> Unit)? = null,
+    change: ChangeTarget? = null,
+    scrollToChange: Boolean = true,
+    onChangeShown: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val palette = rememberEditorPalette()
@@ -105,6 +112,9 @@ internal fun MarkdownPreview(
     val currentOnLayout by rememberUpdatedState(onLayout)
     val currentOnScrolled by rememberUpdatedState(onScrolled)
     val currentOnPageMeta by rememberUpdatedState(onPageMeta)
+    val currentOnChangeShown by rememberUpdatedState(onChangeShown)
+    // sent again when the page loads again before it showed it
+    val pendingChange = remember { arrayOfNulls<Pair<ChangeTarget, Boolean>>(1) }
     val growsWithContent = onContentHeight != null
 
     val state = remember { PreviewRenderState() }
@@ -183,12 +193,21 @@ internal fun MarkdownPreview(
                 }
 
                 @JavascriptInterface
+                fun changeShown() {
+                    mainHandler.post {
+                        pendingChange[0] = null
+                        currentOnChangeShown?.invoke()
+                    }
+                }
+
+                @JavascriptInterface
                 fun pageReady() {
                     mainHandler.post {
                         state.onPageReady(currentText, ::renderMarkdown, currentVisible)
                         if (!currentVisible && currentOnPageMeta != null) state.readMeta(currentText, ::readMeta)
                         // a new page starts at the top
                         currentSyncTarget?.invoke()?.let { scrollToLine(it.anchor, smooth = false) }
+                        pendingChange[0]?.let { (target, scroll) -> showChange(target, scroll) }
                     }
                 }
             }, "MkDocsPreviewBridge")
@@ -237,6 +256,12 @@ internal fun MarkdownPreview(
             }
     }
 
+    LaunchedEffect(webView, change) {
+        val target = change ?: return@LaunchedEffect
+        pendingChange[0] = target to scrollToChange
+        webView.showChange(target, scrollToChange)
+    }
+
     AndroidView(modifier = modifier, factory = { webView })
 }
 
@@ -252,6 +277,12 @@ private fun WebView.scrollToLine(anchor: SyncAnchor, smooth: Boolean) {
         "window.MkDocsPreview && MkDocsPreview.scrollToLine(${anchor.line}, ${anchor.viewportFraction}, $smooth)",
         null,
     )
+}
+
+private fun WebView.showChange(target: ChangeTarget, scroll: Boolean) {
+    val ranges = target.ranges.joinToString(",", "[", "]") { "[${it.start},${it.end}]" }
+    // the page may still be loading, and then gets it again when it is ready
+    evaluateJavascript("window.MkDocsPreview && MkDocsPreview.showChange(${target.line}, $ranges, $scroll)", null)
 }
 
 private fun WebView.stopSync() {

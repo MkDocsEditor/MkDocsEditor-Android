@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.main.data
 
+import de.markusressel.mkdocseditor.feature.editor.domain.ChangeLocation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -7,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.navigator.Navigator
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -74,8 +76,9 @@ class MainNavigationRequests @Inject constructor() {
     val documentToOpen: StateFlow<DocumentRequest?> = _documentToOpen.asStateFlow()
 
     /** opens [documentId] in the editor, on top of the file browser */
-    fun openDocument(documentId: String) {
-        _documentToOpen.value = DocumentRequest(documentId)
+    /** @param change where the changes the notification was about are, see [CodeEditorScreen.change] */
+    fun openDocument(documentId: String, change: ChangeLocation? = null) {
+        _documentToOpen.value = DocumentRequest(documentId, change)
     }
 
     fun documentOpened(request: DocumentRequest) {
@@ -83,7 +86,27 @@ class MainNavigationRequests @Inject constructor() {
     }
 
     /** not a data class: the same document asked for twice is two requests */
-    class DocumentRequest(val documentId: String)
+    class DocumentRequest(val documentId: String, val change: ChangeLocation? = null)
+
+    private val _editorChange = MutableStateFlow<EditorChange?>(null)
+
+    /**
+     * A change for an editor that is open already, to go to. A state and not an event: the editor may not be in
+     * composition yet.
+     */
+    val editorChange: StateFlow<EditorChange?> = _editorChange.asStateFlow()
+
+    fun handChange(change: EditorChange) {
+        _editorChange.value = change
+    }
+
+    /** the editor has taken [change] */
+    fun changeTaken(change: EditorChange) {
+        _editorChange.compareAndSet(change, null)
+    }
+
+    /** not a data class: the same change asked for twice is two requests */
+    class EditorChange(val screenKey: ScreenKey, val change: ChangeLocation)
 
     @EntryPoint
     @InstallIn(SingletonComponent::class)
@@ -124,8 +147,12 @@ internal fun OpenRequestedDocument(navigator: Navigator) {
         request?.let {
             requests.documentOpened(it)
             val open = navigator.items.editorOf(it.documentId)
-            if (open != null) navigator.popUntil { screen -> screen === open }
-            else navigator.push(CodeEditorScreen(documentId = it.documentId))
+            if (open != null) {
+                navigator.popUntil { screen -> screen === open }
+                it.change?.let { change -> requests.handChange(MainNavigationRequests.EditorChange(open.key, change)) }
+            } else {
+                navigator.push(CodeEditorScreen(documentId = it.documentId, change = it.change))
+            }
         }
     }
 }

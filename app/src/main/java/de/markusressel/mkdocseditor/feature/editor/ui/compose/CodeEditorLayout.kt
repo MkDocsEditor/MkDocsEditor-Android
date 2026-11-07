@@ -3,6 +3,15 @@ package de.markusressel.mkdocseditor.feature.editor.ui.compose
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import de.markusressel.kodeeditor.library.compose.KodeEditorLayout
+import de.markusressel.mkdocseditor.feature.editor.domain.ChangeTarget
+import kotlinx.coroutines.flow.takeWhile
 import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRuns
 import de.markusressel.mkdocseditor.feature.editor.domain.lineShares
 import androidx.compose.ui.unit.sp
@@ -87,6 +96,8 @@ internal fun CodeEditorLayout(
     onVisibleRangeChanged: (TextRange?) -> Unit = {},
     scrollSync: ScrollSync? = null,
     restoreToCursor: Boolean = false,
+    changeJump: CodeEditorViewModel.ChangeJump? = null,
+    onChangeJumpShown: (CodeEditorViewModel.ChangeJump) -> Unit = {},
 ) {
     val viewState = rememberKodeEditorViewState()
     val currentOnVisibleRangeChanged by rememberUpdatedState(onVisibleRangeChanged)
@@ -132,6 +143,39 @@ internal fun CodeEditorLayout(
     LaunchedEffect(jumpRequest) {
         jumpRequest?.let { viewState.scrollToPosition(it.position, animate = false) }
     }
+    val currentOnChangeJumpShown by rememberUpdatedState(onChangeJumpShown)
+    var changeHighlight by remember { mutableStateOf<ChangeTarget?>(null) }
+    LaunchedEffect(changeJump) {
+        val jump = changeJump ?: return@LaunchedEffect
+        val line = jump.target.line
+        withTimeoutOrNull(RESTORE_WAIT_MS) {
+            snapshotFlow { viewState.visibleRange != null && lineCountOf(state.text) > line }.first { it }
+            // the page of a split follows the editor there
+            scrollSync?.onEditorDriving()
+            viewState.scrollToLine(line, animate = false)
+        }
+        changeHighlight = jump.target
+        currentOnChangeJumpShown(jump)
+    }
+    LaunchedEffect(changeHighlight) {
+        val target = changeHighlight ?: return@LaunchedEffect
+        // the first layouts of an editor that has just opened move its view back to the top, like for following
+        withTimeoutOrNull(OPENING_SETTLE_MS) {
+            snapshotFlow { viewState.visibleRange to viewState.isUserMovingView }
+                .takeWhile { (_, moving) -> !moving }
+                .collect {
+                    if (viewState.lineAt(0f)?.line != target.line) viewState.scrollToLine(target.line, animate = false)
+                }
+        }
+    }
+    val changeHighlightAlpha = remember { Animatable(0f) }
+    LaunchedEffect(changeHighlight) {
+        changeHighlight ?: return@LaunchedEffect
+        changeHighlightAlpha.snapTo(1f)
+        delay(CHANGE_HIGHLIGHT_HOLD_MS)
+        changeHighlightAlpha.animateTo(0f, tween(CHANGE_HIGHLIGHT_FADE_MS))
+        changeHighlight = null
+    }
 
     // moving the view by hand only pauses following, like in the navigation of a map
     var followPaused by remember(following?.instanceId) { mutableStateOf(false) }
@@ -173,6 +217,7 @@ internal fun CodeEditorLayout(
 
 
     val palette = rememberEditorPalette()
+    val highlightColor = MaterialTheme.colorScheme.primary
     val colorScheme = remember(palette) { EditorColorScheme(palette) }
     val ownColor = parsePeerColor(localColor)?.readableOn(palette.background)
     val ruleBook = remember { MkDocsMarkdownRuleBook() }
@@ -232,6 +277,7 @@ internal fun CodeEditorLayout(
             lineWrapping = settings.lineWrapping,
             gutterColumns = listOfNotNull(lineNumbers.takeIf { settings.lineNumbers }, authorStrip),
             overlay = { layout ->
+                changeHighlight?.let { ChangeHighlight(layout, it, highlightColor, { changeHighlightAlpha.value }) }
                 if (settings.authorHighlight == AuthorHighlightMode.StripAndMarker) {
                     AuthorMarkers(layout = layout, runs = authorRuns.value.runs, colorOf = colorOf)
                 }
@@ -263,6 +309,41 @@ internal fun CodeEditorLayout(
                 colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             )
         }
+        }
+    }
+}
+
+/**
+ * A band behind each range of changed lines, and a thin line where lines were removed, for the moment after the editor
+ * went there
+ */
+@Composable
+private fun BoxScope.ChangeHighlight(layout: KodeEditorLayout, target: ChangeTarget, color: Color, alpha: () -> Float) {
+    val markerHeight = with(LocalDensity.current) { CHANGE_REMOVAL_MARKER.toPx() }
+    Canvas(modifier = Modifier.matchParentSize()) {
+        val width = maxOf(size.width, layout.contentSize.width.toFloat())
+        val lineCount = layout.lineCount
+        if (lineCount == 0) return@Canvas
+        target.ranges.forEach { range ->
+            if (range.isRemoval) {
+                // between the lines around the removal, at the bottom of the text for one at its end
+                val y = if (range.start < lineCount) layout.getLineTop(range.start) else layout.getLineBottom(lineCount - 1)
+                drawRect(
+                    color = color.copy(alpha = alpha()),
+                    topLeft = Offset(0f, y - markerHeight / 2),
+                    size = Size(width, markerHeight),
+                )
+                return@forEach
+            }
+            val last = minOf(range.end, lineCount) - 1
+            if (last < range.start) return@forEach
+            val top = layout.getLineTop(range.start)
+            val bottom = layout.getLineBottom(last)
+            drawRect(
+                color = color.copy(alpha = CHANGE_HIGHLIGHT_ALPHA * alpha()),
+                topLeft = Offset(0f, top),
+                size = Size(width, bottom - top),
+            )
         }
     }
 }
@@ -307,6 +388,12 @@ private val NoAuthorRuns: State<AuthorRuns> = mutableStateOf(AuthorRuns())
 private val AUTHOR_STRIP_WIDTH = 3.dp
 private const val GHOST_ALPHA = 0.4f
 private const val OPENING_SETTLE_MS = 1_000L
+
+/** the changed lines the editor went to light up this long, then fade */
+private const val CHANGE_HIGHLIGHT_HOLD_MS = 1_400L
+private const val CHANGE_HIGHLIGHT_FADE_MS = 600
+private const val CHANGE_HIGHLIGHT_ALPHA = 0.2f
+private val CHANGE_REMOVAL_MARKER = 2.dp
 
 /** how long the editor waits for its text to go back to its line after a recreation */
 private const val RESTORE_WAIT_MS = 10_000L

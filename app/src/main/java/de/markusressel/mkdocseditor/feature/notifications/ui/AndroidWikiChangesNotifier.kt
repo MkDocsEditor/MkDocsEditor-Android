@@ -33,9 +33,7 @@ internal class AndroidWikiChangesNotifier @Inject constructor(
             val title = titleOf(change)
             val text = change.headings.joinToString(HEADING_SEPARATOR)
             val id = change.documentId.hashCode()
-            val open = Intent(context, MainActivityCompose::class.java)
-                .putExtra(MainActivityCompose.EXTRA_OPEN_DOCUMENT_BACKEND, backendId)
-                .putExtra(MainActivityCompose.EXTRA_OPEN_DOCUMENT, change.documentId)
+            val open = openIntent(context, backendId, change)
             val builder = NotificationCompat.Builder(context, WikiChangesChannel.ID)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(title)
@@ -90,3 +88,10 @@ internal class AndroidWikiChangesNotifier @Inject constructor(
         const val PENDING_FLAGS = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     }
 }
+
+/** opens the page of [change] at the change */
+internal fun openIntent(context: Context, backendId: Long, change: PageChange): Intent =
+    Intent(context, MainActivityCompose::class.java)
+        .putExtra(MainActivityCompose.EXTRA_OPEN_DOCUMENT_BACKEND, backendId)
+        .putExtra(MainActivityCompose.EXTRA_OPEN_DOCUMENT, change.documentId)
+        .putExtra(MainActivityCompose.EXTRA_OPEN_DOCUMENT_CHANGE, change.change)

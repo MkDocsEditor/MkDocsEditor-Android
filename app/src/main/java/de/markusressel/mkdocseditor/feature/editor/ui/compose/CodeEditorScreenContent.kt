@@ -255,6 +255,9 @@ internal fun CodeEditorScreenContent(
                             onStopFollowing = { onUiEvent(CodeEditorViewModel.UiEvent.StopFollowingClicked) },
                             onVisibleRangeChanged = { onUiEvent(CodeEditorViewModel.UiEvent.VisibleRangeChanged(it)) },
                             scrollSync = scrollSync,
+                            // the editor goes to a change while it is shown, else the page while reading
+                            changeJump = uiState.changeJump,
+                            onChangeJumpShown = { onUiEvent(CodeEditorViewModel.UiEvent.ChangeJumpShown(it)) },
                         )
                     },
                     preview = {
@@ -266,6 +269,12 @@ internal fun CodeEditorScreenContent(
                             resourceLoader = previewResourceLoader,
                             onLinkClicked = { onUiEvent(CodeEditorViewModel.UiEvent.PreviewLinkClicked(it)) },
                             onPageMeta = { onUiEvent(CodeEditorViewModel.UiEvent.PageMetaChanged(it)) },
+                            // in a split the page only lights the change up, and follows the editor there
+                            change = uiState.changeJump?.target,
+                            scrollToChange = !editorShown,
+                            onChangeShown = {
+                                uiState.changeJump?.takeIf { !editorShown }?.let { onUiEvent(CodeEditorViewModel.UiEvent.ChangeJumpShown(it)) }
+                            },
                             syncTarget = { scrollSync.previewTarget },
                             onLayout = scrollSync::onPreviewLayout,
                             onScrolled = { scroll ->

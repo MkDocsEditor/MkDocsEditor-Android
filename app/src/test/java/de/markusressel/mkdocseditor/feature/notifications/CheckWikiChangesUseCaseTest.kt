@@ -1,5 +1,7 @@
 package de.markusressel.mkdocseditor.feature.notifications
 
+import de.markusressel.mkdocseditor.feature.editor.domain.ChangedLines
+import de.markusressel.mkdocsrestclient.dashboard.FeedRangeModel
 import de.markusressel.mkdocseditor.auth.token.KeyValueStore
 import de.markusressel.mkdocseditor.feature.notifications.data.WikiChangesMarks
 import de.markusressel.mkdocseditor.feature.notifications.domain.CheckWikiChangesUseCase
@@ -79,6 +81,7 @@ class CheckWikiChangesUseCaseTest {
         vararg authors: FeedAuthorModel,
         headings: List<String> = emptyList(),
         kind: String = FeedKind.EDITED,
+        ranges: List<FeedRangeModel>? = null,
     ): FeedEntryModel {
         clock += 1_000
         val entry = FeedEntryModel(
@@ -89,7 +92,7 @@ class CheckWikiChangesUseCaseTest {
             documentId = documentId,
             path = "family/$documentId.md",
             authors = authors.toList(),
-            summary = FeedSummaryModel(linesAdded = 1, headings = headings),
+            summary = FeedSummaryModel(linesAdded = 1, headings = headings, textHash = ranges?.let { "h$clock" }, ranges = ranges),
         )
         server.feed = listOf(entry) + server.feed
         return entry
@@ -247,6 +250,21 @@ class CheckWikiChangesUseCaseTest {
         assertEquals(listOf("Anna", "Ben"), change.authors)
         assertEquals(listOf("Fruit", "Drinks"), change.headings)
         assertEquals(Date(clock), change.time)
+    }
+
+    @Test
+    fun `a notification of several changes opens at the lines of the newest one`() = runTest {
+        server.pins = PinsModel(family = listOf(pin("shopping")))
+        started()
+        edit("shopping", ANNA, headings = listOf("Fruit"), ranges = listOf(FeedRangeModel(3, 1, "Fruit", 1, 1)))
+        edit("shopping", BEN, headings = listOf("Drinks"), ranges = listOf(FeedRangeModel(8, 2, "Drinks", 1, 1)))
+
+        check()
+
+        val change = shown.single().change
+        assertEquals(listOf("Fruit", "Drinks"), change.headings)
+        assertEquals("h$clock", change.textHash)
+        assertEquals(listOf(ChangedLines(8, 2, "Drinks", 1, 1)), change.ranges)
     }
 
     @Test
