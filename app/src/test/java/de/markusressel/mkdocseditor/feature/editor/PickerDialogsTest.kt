@@ -129,12 +129,12 @@ class PickerDialogsTest {
     )
 
     @Test
-    fun `a page shows its title and its file name, and the link goes to the file`() {
+    fun `a page shows its title and its file name, and the link shows the title and goes to the file`() {
         linkPicker(tree = titledTree())
         composeRule.onNodeWithText("Kürbissuppe.md").assertExists()
         composeRule.onNodeWithText("Pumpkin soup").performClick()
         composeRule.onNodeWithTag("link-page").performClick()
-        assertEquals(listOf("[Kürbissuppe](Kürbissuppe.md)"), inserted)
+        assertEquals(listOf("[Pumpkin soup](Kürbissuppe.md)"), inserted)
     }
 
     @Test
@@ -143,7 +143,7 @@ class PickerDialogsTest {
         composeRule.onNodeWithTag("browser-search").performTextInput("pumpkin")
         composeRule.onNodeWithText("Pumpkin soup").performClick()
         composeRule.onNodeWithTag("link-page").performClick()
-        assertEquals(listOf("[Kürbissuppe](Kürbissuppe.md)"), inserted)
+        assertEquals(listOf("[Pumpkin soup](Kürbissuppe.md)"), inserted)
     }
 
     @Test
