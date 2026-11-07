@@ -8,12 +8,10 @@ clients show the same thing.
 
 | Area | Entry | Kind of work | Needs another repo |
 |---|---|---|---|
-| File browser | [Transitions between sections](#transitions-between-sections) | Path chips during the back gesture | No |
 | File browser | [File browser, editor and preview at once on a tablet](#file-browser-editor-and-preview-at-once-on-a-tablet) | Idea, low priority: a layout for large screens | No |
 | Editor | [Code blocks as one box](#code-blocks-as-one-box) | Full-width background of fenced code | Probably KodeEditor |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Better summaries | Yes, the backend and the web client |
-| App-wide | [Settings](#settings) | About row and top bar | No |
-| App-wide | [Download progress outside the file browser](#download-progress-outside-the-file-browser) | Small feature | No |
+| App-wide | [Large downloads run out of memory](#large-downloads-run-out-of-memory) | Bug: stream downloads to a file | No |
 | Project | [Code quality checks](#code-quality-checks) | CI setup, Android first | Yes, all six repositories |
 
 Order that fits how they depend on each other (Idea):
@@ -23,13 +21,6 @@ Order that fits how they depend on each other (Idea):
 ---
 
 # File browser
-
-## Transitions between sections
-
-Folders change with a shared axis, and the back gesture previews the parent folder. What is left:
-
-- The path chips do not follow the back gesture. They change once it is released, so the last chip only starts to fade
-  out then.
 
 ## File browser, editor and preview at once on a tablet
 
@@ -167,7 +158,7 @@ Keep it small, and useful for the wiki. A home wiki has no need for points or ra
 
 If notifications get annoying, people turn them off, and the goal is lost.
 
-- Decide on per-folder or per-document following, and a setting for how often. See [Settings](#settings).
+- Decide on per-folder or per-document following, and a setting for how often.
 - Tapping a notification opens the document, but not yet at the change.
 
 **Open questions**
@@ -183,20 +174,11 @@ If notifications get annoying, people turn them off, and the goal is lost.
 
 # App-wide
 
-## Settings
+## Large downloads run out of memory
 
-**What I want (Idea)**
-
-- The About entry on the top level is a plain row next to the category cards. It could be a card too, or sit in a
-  section of its own.
-- The settings have no top bar with a title, unlike the file browser and the dashboard, only the search field of
-  KutePreferences.
-
-## Download progress outside the file browser
-
-Uploads and downloads in the file browser, and uploads of the image picker, show their bytes and can be cancelled. A
-file opened from the dashboard, from a link in the preview, or for the preview itself still downloads without
-progress. `DownloadResourceUseCase` already reports it; those screens need a place for `TransferProgressBar`.
+`IMkDocsRestClient.downloadResource` reads the whole file into a `ByteArray` before `DownloadResourceUseCase` writes it
+to the file cache. A 400 MB file ended in an `OutOfMemoryError`, and the user only saw "Could not open big.bin". The
+download should stream to the file instead, with the same progress and cancel. Found while testing #170.
 
 ---
 

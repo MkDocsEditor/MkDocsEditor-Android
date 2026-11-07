@@ -48,7 +48,8 @@ internal class EditorResources @Inject constructor(
 
     /**
      * Loads the images of the preview: wiki paths are resolved in the tree, the files come
-     * from the server with the session, or from the offline cache
+     * from the server with the session, or from the offline cache. They show no progress: the page renders around
+     * them, as in a browser.
      */
     fun previewResourceLoader(tree: () -> WikiTree?) = PreviewResourceLoader { encodedPath ->
         val current = tree() ?: return@PreviewResourceLoader null
