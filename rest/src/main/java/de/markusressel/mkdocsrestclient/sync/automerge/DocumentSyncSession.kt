@@ -138,8 +138,10 @@ class DocumentSyncSession(
          * Remote changes were applied to the text.
          *
          * @param splices the changes, relative to the previous text, applied in order
+         * @param author the username of whoever made all of them, null if that is not known or they come from several
+         * users
          */
-        fun onRemoteChange(text: String, splices: List<TextSplice>) {}
+        fun onRemoteChange(text: String, splices: List<TextSplice>, author: String?) {}
 
         fun onReadOnlyChanged(readOnly: Boolean) {}
 
@@ -258,6 +260,9 @@ class DocumentSyncSession(
 
     override val version: DocumentVersion?
         get() = local?.document?.version
+
+    override val localAuthor: String?
+        get() = you?.username
 
     /**
      * true when a local copy exists, so the document can be shown and edited offline
@@ -493,7 +498,7 @@ class DocumentSyncSession(
         if (stored.epoch == current.epoch) {
             try {
                 val splices = current.document.merge(AutomergeTextDocument.load(stored.documentState))
-                if (splices.isNotEmpty()) listener.onRemoteChange(current.document.text, splices)
+                if (splices.isNotEmpty()) listener.onRemoteChange(current.document.text, splices, author = null)
                 return
             } catch (e: Exception) {
                 Timber.e(e, "Could not merge the stored copy of $documentId")
@@ -555,6 +560,18 @@ class DocumentSyncSession(
         listener.onServerAnswered()
     }
 
+    /**
+     * The server binds each actor id to one user and refuses changes of an actor that belongs to someone else, so the
+     * actor of a change names its author for sure.
+     *
+     * @return the user who made all changes of [actorIds], null if unknown, imported, or from several users
+     */
+    private fun authorOf(actorIds: Set<String>?): String? {
+        val usernames = actorIds?.map { actors[it]?.username ?: return null }?.toSet() ?: return null
+        // ":disk" and ":server" are the backend itself
+        return usernames.singleOrNull()?.takeUnless { it.startsWith(":") || it.isBlank() }
+    }
+
     private fun reportAuthorColors() {
         val colors = actors.values.associate { it.username to it.color }
         listener.onAuthorColorsChanged(colors + listOfNotNull(you).associate { it.username to it.color })
@@ -566,10 +583,11 @@ class DocumentSyncSession(
         }
         val current = local ?: return
         val state = syncState ?: return
+        val before = current.document.heads
         val splices = current.document.receiveSyncMessage(state, Base64.getDecoder().decode(message.syncMessage))
         if (splices.isNotEmpty()) {
             markDirty()
-            listener.onRemoteChange(current.document.text, splices)
+            listener.onRemoteChange(current.document.text, splices, authorOf(current.document.actorsSince(before)))
             resolvePeers()
         }
         flushSync()

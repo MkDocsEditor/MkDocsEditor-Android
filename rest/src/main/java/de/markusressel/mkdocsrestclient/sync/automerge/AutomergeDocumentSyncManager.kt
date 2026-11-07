@@ -77,6 +77,9 @@ class AutomergeDocumentSyncManager(
     override val version: DocumentVersion?
         get() = session.version
 
+    override val localAuthor: String?
+        get() = session.localAuthor
+
     override val hasLocalCopy: Boolean
         get() = session.hasLocalCopy
 

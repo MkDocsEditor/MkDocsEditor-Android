@@ -58,7 +58,14 @@ internal object PreviewPage {
         return name.takeIf { it in scripts || it in styles }?.let { "preview/$it" }
     }
 
-    fun html(theme: PreviewTheme): String {
+    /** the class of the page that grows with its content instead of scrolling itself, styled in `preview.css` */
+    const val EMBEDDED_CLASS = "embedded"
+
+    /**
+     * @param embedded for a page that grows with its content inside a scrolling column: it wraps everything to its width
+     * and never scrolls itself
+     */
+    fun html(theme: PreviewTheme, embedded: Boolean = false): String {
         val onSurface = theme.onSurface
         val rgb = listOf(onSurface.red, onSurface.green, onSurface.blue).joinToString(", ") { (it * 255).toInt().toString() }
         val variables = buildString {
@@ -75,7 +82,9 @@ internal object PreviewPage {
             append("}")
         }
         return buildString {
-            append("<!doctype html><html><head><meta charset=\"utf-8\">")
+            append("<!doctype html>")
+            append(if (embedded) "<html class=\"$EMBEDDED_CLASS\">" else "<html>")
+            append("<head><meta charset=\"utf-8\">")
             append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
             styles.forEach { append("<link rel=\"stylesheet\" href=\"$ORIGIN$ASSET_PATH$it\">") }
             append("<style>").append(variables).append("</style>")
