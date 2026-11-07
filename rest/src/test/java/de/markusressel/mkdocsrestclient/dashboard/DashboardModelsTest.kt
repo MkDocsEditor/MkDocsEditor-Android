@@ -33,6 +33,32 @@ class DashboardModelsTest {
     }
 
     @Test
+    fun `the changed lines of an edit are read, and are null from an older backend`() {
+        val page = """
+            {"entries": [
+              {"id": "e1", "time": "2026-11-06T10:00:00Z", "kind": "edited", "itemType": "document", "path": "a.md",
+               "summary": {"linesAdded": 3, "linesRemoved": 1, "headings": ["Setup"], "textHash": "9f2c1a0b7d3e4f55",
+                 "ranges": [{"line": 12, "count": 3, "heading": "Setup", "headingOccurrence": 1, "offset": 4},
+                            {"line": 2, "count": 0, "heading": null, "headingOccurrence": 0, "offset": 1}]}},
+              {"id": "e2", "time": "2026-11-06T10:00:00Z", "kind": "edited", "itemType": "document", "path": "a.md",
+               "summary": {"linesAdded": 0, "linesRemoved": 0, "headings": [], "textHash": "9f2c1a0b7d3e4f55", "ranges": []}},
+              {"id": "e3", "time": "2026-11-06T10:00:00Z", "kind": "edited", "itemType": "document", "path": "a.md",
+               "summary": {"linesAdded": 1, "linesRemoved": 0, "headings": [], "ranges": null}}
+            ]}
+        """.trimIndent().toEntity<FeedPageModel>()
+
+        val summary = page.entries[0].summary!!
+        assertEquals("9f2c1a0b7d3e4f55", summary.textHash)
+        assertEquals(
+            listOf(FeedRangeModel(12, 3, "Setup", 1, 4), FeedRangeModel(2, 0, null, 0, 1)),
+            summary.ranges,
+        )
+        assertEquals(emptyList(), page.entries[1].summary?.ranges)
+        assertNull(page.entries[2].summary?.ranges)
+        assertNull(page.entries[2].summary?.textHash)
+    }
+
+    @Test
     fun `pins and feed entries have the title of their page`() {
         val pins = """
             {"family": [{"documentId": "d1", "path": "guide/setup.md", "name": "setup", "title": "Getting started",

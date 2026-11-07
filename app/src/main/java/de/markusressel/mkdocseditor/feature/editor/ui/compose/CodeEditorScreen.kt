@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
+import de.markusressel.mkdocseditor.feature.editor.domain.ChangeLocation
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.ItemDialogs
 import android.content.Intent
 import androidx.activity.compose.BackHandler
@@ -36,11 +37,8 @@ internal data class CodeEditorScreen(
     private val joinFrom: String? = null,
     /** the client instance of the sender to follow */
     private val joinInstance: String? = null,
-    /**
-     * Opened at a change, from the feed or a notification: the headings of its changed sections, the page goes to the
-     * first one it still has, see [CodeEditorViewModel.onOpenedAtChange]
-     */
-    val changedHeadings: List<String> = emptyList(),
+    /** opened at a change, from the feed or a notification, see [CodeEditorViewModel.onOpenedAtChange] */
+    val change: ChangeLocation? = null,
 ) : Screen {
 
     /**
@@ -65,7 +63,7 @@ internal data class CodeEditorScreen(
         LaunchedEffect(documentId) {
             viewModel.setCurrentDocumentId(documentId)
             if (joinLink) viewModel.onOpenedByJoinLink(joinFrom, joinInstance)
-            viewModel.onOpenedAtChange(changedHeadings)
+            viewModel.onOpenedAtChange(change)
         }
 
         // a later join link for this document comes to this editor, see OpenJoinedDocument
@@ -88,7 +86,7 @@ internal data class CodeEditorScreen(
         LaunchedEffect(change) {
             change?.takeIf { it.screenKey == key }?.let {
                 navigationRequests.changeTaken(it)
-                viewModel.onChangeOpened(it.headings)
+                viewModel.onChangeOpened(it.change)
             }
         }
 

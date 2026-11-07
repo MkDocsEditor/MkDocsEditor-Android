@@ -2,7 +2,7 @@
  * The app's side of the markdown preview: renders with the renderer of MkDocsEditor-Web
  * (mkdocs-renderer.js, see `make updatePreview`), hands links to the app and marks missing images.
  * It also tells the app where the page is scrolled to and where its blocks are, puts the source line of the
- * editor at a height of the view, and lights up a changed section that the app opened the page at.
+ * editor at a height of the view, and lights up the changed lines that the app opened the page at.
  */
 (function () {
   'use strict'
@@ -233,6 +233,7 @@
   /** the blocks moved: keeps the source line of the app in place and tells the app */
   function layoutChanged() {
     layout = null
+    placeBands()
     // an embedded page never scrolls, so there is nothing to keep in place or to report
     if (embedded) return
     scrollToSyncAnchor(false)
@@ -245,40 +246,83 @@
     layoutChanged()
   })
 
-  // the section of a change the app asked to show, until a render has its lines
-  var pendingSection = null
+  // the change the app asked to show, until a render has its lines
+  var pendingChange = null
+  // the bands that light up the changed lines for a moment, each with its lines
+  var bands = []
 
-  /** the outermost blocks that start in the lines of the section */
-  function sectionBlocks(start, end) {
-    function inSection(block) {
-      var line = lineOf(block)
-      return line >= start && line < end
+  /**
+   * The extent of the innermost blocks that cover the lines [start, end): the one that starts at or above start, and
+   * all that start below it in the lines. Only blocks without blocks inside, because a list that starts in the lines
+   * may go on far below them. For removed lines (start = end) a thin line at the top of the first block from there
+   * on, or at the bottom of the last block.
+   */
+  function extentOf(range) {
+    var start = range[0]
+    var end = range[1]
+    var leaves = sourceBlocks().filter(function (block) { return !block.querySelector('[data-source-line]') })
+    if (!leaves.length) return null
+    if (start === end) {
+      var after = leaves.filter(function (block) { return lineOf(block) >= start })[0]
+      var y = after ? after.getBoundingClientRect().top : leaves[leaves.length - 1].getBoundingClientRect().bottom
+      return { top: y - 1, bottom: y + 1, marker: true }
     }
-    return sourceBlocks().filter(function (block) {
-      if (!inSection(block)) return false
-      var parent = block.parentElement && block.parentElement.closest('[data-source-line]')
-      return !parent || !inSection(parent)
+    var covering = null
+    leaves.forEach(function (block) {
+      if (lineOf(block) <= start && (!covering || lineOf(block) >= lineOf(covering))) covering = block
+    })
+    var top = Infinity
+    var bottom = -Infinity
+    leaves.forEach(function (block) {
+      var line = lineOf(block)
+      if (block !== covering && (line <= start || line >= end)) return
+      var rect = block.getBoundingClientRect()
+      top = Math.min(top, rect.top)
+      bottom = Math.max(bottom, rect.bottom)
+    })
+    return top < bottom ? { top: top, bottom: bottom } : null
+  }
+
+  /** puts each band over its lines again, after a render or a reflow moved them */
+  function placeBands() {
+    if (!bands.length) return
+    var content = document.getElementById('content').getBoundingClientRect()
+    var body = document.body.getBoundingClientRect()
+    bands.forEach(function (band) {
+      var extent = extentOf(band.range)
+      band.element.style.display = extent ? 'block' : 'none'
+      if (!extent) return
+      band.element.style.top = (extent.top - body.top) + 'px'
+      band.element.style.height = (extent.bottom - extent.top) + 'px'
+      band.element.classList.toggle('preview-change-removal', !!extent.marker)
+      band.element.style.left = (content.left - body.left) + 'px'
+      band.element.style.width = content.width + 'px'
     })
   }
 
-  function showPendingSection() {
-    var section = pendingSection
-    if (!section || section.start >= lineCount) return
-    pendingSection = null
-    if (section.scroll && !embedded) {
-      syncAnchor = { line: section.start, viewportFraction: 0 }
+  function showPendingChange() {
+    var change = pendingChange
+    if (!change || change.line >= lineCount) return
+    pendingChange = null
+    if (change.scroll && !embedded) {
+      syncAnchor = { line: change.line, viewportFraction: 0 }
       scrollToSyncAnchor(false)
     }
-    sectionBlocks(section.start, section.end).forEach(function (block) {
-      block.classList.remove('preview-change')
-      // starts the animation again for a block that still has it
-      void block.offsetWidth
-      block.classList.add('preview-change')
-      block.addEventListener('animationend', function () {
-        block.classList.remove('preview-change')
+    bands.forEach(function (band) { band.element.remove() })
+    // one band for each range, in a layer outside of the content, so a render in between keeps it
+    bands = change.ranges.map(function (range) {
+      var element = document.createElement('div')
+      element.className = 'preview-change'
+      document.body.appendChild(element)
+      var band = { range: range, element: element }
+      element.addEventListener('animationend', function () {
+        element.remove()
+        bands = bands.filter(function (other) { return other !== band })
       }, { once: true })
+      return band
     })
-    if (bridge && bridge.sectionShown) bridge.sectionShown()
+    placeBands()
+    if (bridge && bridge.changeShown) bridge.changeShown()
   }
 
   var reportedMeta = null
@@ -306,7 +350,7 @@
       blocks = null
       lineCount = source.split('\n').length
       layoutChanged()
-      showPendingSection()
+      showPendingChange()
     },
     /**
      * Scrolls a source line to a height of the view, as far as the page can scroll, and keeps it there when the page
@@ -322,15 +366,16 @@
       scrollToSyncAnchor(!!smooth)
     },
     /**
-     * Lights up the blocks of a section for a moment, after the next render if this one does not have its lines yet.
+     * Lights up changed lines for a moment, after the next render if this one does not have them yet, with one band
+     * from the top of the first block of each range to the bottom of its last one.
      *
-     * @param start the 0-based line of its heading
-     * @param end the 0-based line behind it
-     * @param scroll also puts the heading at the top of the view, and keeps it there like [scrollToLine]
+     * @param line the 0-based line to show at the top
+     * @param ranges the changed lines as [start, end], 0-based, end not included; start = end for removed lines
+     * @param scroll also puts the line at the top of the view, and keeps it there like [scrollToLine]
      */
-    showSection: function (start, end, scroll) {
-      pendingSection = { start: start, end: end, scroll: !!scroll }
-      showPendingSection()
+    showChange: function (line, ranges, scroll) {
+      pendingChange = { line: line, ranges: ranges, scroll: !!scroll }
+      showPendingChange()
     },
     /** Reads only the front matter, for a page that nobody sees while the text changes. */
     readMeta: function (source) {

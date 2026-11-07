@@ -269,8 +269,8 @@ internal fun CodeEditorScreenContent(
                             resourceLoader = previewResourceLoader,
                             onLinkClicked = { onUiEvent(CodeEditorViewModel.UiEvent.PreviewLinkClicked(it)) },
                             onPageMeta = { onUiEvent(CodeEditorViewModel.UiEvent.PageMetaChanged(it)) },
-                            // in a split the page only lights the section up, and follows the editor there
-                            changeSection = uiState.changeJump?.section,
+                            // in a split the page only lights the change up, and follows the editor there
+                            change = uiState.changeJump?.target,
                             scrollToChange = !editorShown,
                             onChangeShown = {
                                 uiState.changeJump?.takeIf { !editorShown }?.let { onUiEvent(CodeEditorViewModel.UiEvent.ChangeJumpShown(it)) }

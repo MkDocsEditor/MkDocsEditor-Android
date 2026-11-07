@@ -47,15 +47,37 @@ data class PinsModel(
 )
 
 /**
- * What an edit changed
+ * What an edit changed, see "Changed lines" in `docs/dashboard.md` of the backend
  *
  * @param headings up to 5 headings whose sections the edit touched, in document order
+ * @param textHash identifies the text after the edit, null from a backend without `feed-ranges`
+ * @param ranges the changed lines of the text after the edit, in text order. Null from a backend without
+ * `feed-ranges` and for older entries, empty when only the newline at the end changed.
  */
 @JsonClass(generateAdapter = true)
 data class FeedSummaryModel(
     val linesAdded: Int = 0,
     val linesRemoved: Int = 0,
     val headings: List<String> = emptyList(),
+    val textHash: String? = null,
+    val ranges: List<FeedRangeModel>? = null,
+)
+
+/**
+ * Lines an edit added or changed, or with [count] 0 the place of removed lines
+ *
+ * @param line 1-based. With [count] 0 the lines were removed before it, the line count + 1 at the end.
+ * @param heading the nearest heading at or above [line], as in [FeedSummaryModel.headings], null without one
+ * @param headingOccurrence which heading with this text it is from the top, 1 for the first, 0 without [heading]
+ * @param offset [line] minus the line of [heading], or [line] - 1 without one
+ */
+@JsonClass(generateAdapter = true)
+data class FeedRangeModel(
+    val line: Int,
+    val count: Int,
+    val heading: String? = null,
+    val headingOccurrence: Int = 0,
+    val offset: Int = 0,
 )
 
 /**

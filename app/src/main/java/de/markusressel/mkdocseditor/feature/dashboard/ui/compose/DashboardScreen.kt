@@ -50,7 +50,7 @@ internal object DashboardScreen : Screen {
         LaunchedEffect(Unit) {
             viewModel.events.collect { event ->
                 when (event) {
-                    is DashboardEvent.OpenDocument -> navigator.push(CodeEditorScreen(documentId = event.documentId, changedHeadings = event.changedHeadings))
+                    is DashboardEvent.OpenDocument -> navigator.push(CodeEditorScreen(documentId = event.documentId, change = event.change))
                     is DashboardEvent.OpenAccount -> navigator.push(AccountScreen(backendId = event.backendId))
                     DashboardEvent.OpenSearch -> navigator.push(SearchScreen)
                     is DashboardEvent.Toast -> Toast.makeText(context, event.text, Toast.LENGTH_SHORT).show()

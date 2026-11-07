@@ -89,9 +89,9 @@ internal class AndroidWikiChangesNotifier @Inject constructor(
     }
 }
 
-/** opens the page of [change], at the first of its headings that the page still has */
+/** opens the page of [change] at the change */
 internal fun openIntent(context: Context, backendId: Long, change: PageChange): Intent =
     Intent(context, MainActivityCompose::class.java)
         .putExtra(MainActivityCompose.EXTRA_OPEN_DOCUMENT_BACKEND, backendId)
         .putExtra(MainActivityCompose.EXTRA_OPEN_DOCUMENT, change.documentId)
-        .putStringArrayListExtra(MainActivityCompose.EXTRA_OPEN_DOCUMENT_HEADINGS, ArrayList(change.headings))
+        .putExtra(MainActivityCompose.EXTRA_OPEN_DOCUMENT_CHANGE, change.change)

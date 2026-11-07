@@ -3,7 +3,8 @@ package de.markusressel.mkdocseditor.feature.dashboard
 import de.markusressel.mkdocseditor.feature.dashboard.domain.homePage
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
-import de.markusressel.mkdocseditor.feature.dashboard.ui.changedHeadings
+import de.markusressel.mkdocseditor.feature.dashboard.ui.changeLocation
+import de.markusressel.mkdocseditor.feature.editor.domain.ChangeLocation
 import de.markusressel.mkdocseditor.feature.dashboard.ui.compose.changeCounts
 import de.markusressel.mkdocseditor.feature.dashboard.ui.compose.feedTime
 import de.markusressel.mkdocseditor.feature.dashboard.ui.compose.folderOf
@@ -51,11 +52,26 @@ class DashboardTest {
     fun `the counts of an edit are green and red`() {
         val green = Color(0xFF1A7A2D)
         val red = Color(0xFFB3261E)
-        val counts = changeCounts(added = "+3", removed = "−1", addedColor = green, removedColor = red)
+        val counts = changeCounts(added = "+3", removed = "−1", addedColor = green, removedColor = red)!!
 
         assertEquals("+3 −1", counts.text)
         val styles = counts.spanStyles.map { it.item to (it.start until it.end) }
         assertEquals(listOf(SpanStyle(color = green) to (0 until 2), SpanStyle(color = red) to (3 until 5)), styles)
+    }
+
+    @Test
+    fun `a count of zero is left out`() {
+        val green = Color(0xFF1A7A2D)
+        val red = Color(0xFFB3261E)
+        val added = changeCounts(added = "+4", removed = null, addedColor = green, removedColor = red)!!
+        assertEquals("+4", added.text)
+        assertEquals(listOf(SpanStyle(color = green)), added.spanStyles.map { it.item })
+
+        val removed = changeCounts(added = null, removed = "−2", addedColor = green, removedColor = red)!!
+        assertEquals("−2", removed.text)
+        assertEquals(listOf(SpanStyle(color = red)), removed.spanStyles.map { it.item })
+
+        assertNull(changeCounts(added = null, removed = null, addedColor = green, removedColor = red))
     }
 
     private fun entry(kind: String) = FeedEntryModel(
@@ -65,9 +81,9 @@ class DashboardTest {
 
     @Test
     fun `only an edit opens the page at the section it changed`() {
-        assertEquals(listOf("Fruit"), entry(FeedKind.EDITED).changedHeadings())
-        assertEquals(emptyList(), entry(FeedKind.CREATED).changedHeadings())
-        assertEquals(emptyList(), entry(FeedKind.MOVED).changedHeadings())
-        assertEquals(emptyList(), entry(FeedKind.DELETED).changedHeadings())
+        assertEquals(ChangeLocation(listOf("Fruit")), entry(FeedKind.EDITED).changeLocation())
+        assertNull(entry(FeedKind.CREATED).changeLocation())
+        assertNull(entry(FeedKind.MOVED).changeLocation())
+        assertNull(entry(FeedKind.DELETED).changeLocation())
     }
 }

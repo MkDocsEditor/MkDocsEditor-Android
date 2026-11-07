@@ -297,25 +297,34 @@ private fun FeedEntry(entry: FeedEntryModel, now: Date, onClick: () -> Unit) {
     )
 }
 
-/** "+3 −1", the added lines in green and the removed ones in red, like a diff */
+/** "+3 −1", the added lines in green and the removed ones in red, like a diff; null if the edit changed no line */
 @Composable
-internal fun ChangeCountsText(linesAdded: Int, linesRemoved: Int): AnnotatedString {
+internal fun ChangeCountsText(linesAdded: Int, linesRemoved: Int): AnnotatedString? {
     val palette = rememberEditorPalette()
     return changeCounts(
-        added = stringResource(R.string.feed_lines_added, linesAdded),
-        removed = stringResource(R.string.feed_lines_removed, linesRemoved),
+        added = if (linesAdded > 0) stringResource(R.string.feed_lines_added, linesAdded) else null,
+        removed = if (linesRemoved > 0) stringResource(R.string.feed_lines_removed, linesRemoved) else null,
         addedColor = palette.inserted,
         removedColor = palette.deleted,
     )
 }
 
-/** the colors are those of a diff in the editor, which have enough contrast on the background in light and dark */
-internal fun changeCounts(added: String, removed: String, addedColor: Color, removedColor: Color): AnnotatedString =
-    buildAnnotatedString {
-        withStyle(SpanStyle(color = addedColor)) { append(added) }
-        append(' ')
-        withStyle(SpanStyle(color = removedColor)) { append(removed) }
+/**
+ * A count of zero is left out. The colors are those of a diff in the editor, which have enough contrast on the
+ * background in light and dark.
+ *
+ * @param added the added lines, null for none
+ * @param removed the removed lines, null for none
+ * @return null without either
+ */
+internal fun changeCounts(added: String?, removed: String?, addedColor: Color, removedColor: Color): AnnotatedString? {
+    if (added == null && removed == null) return null
+    return buildAnnotatedString {
+        added?.let { withStyle(SpanStyle(color = addedColor)) { append(it) } }
+        if (added != null && removed != null) append(' ')
+        removed?.let { withStyle(SpanStyle(color = removedColor)) { append(it) } }
     }
+}
 
 @Composable
 private fun AuthorAvatar(author: FeedAuthorModel?) {

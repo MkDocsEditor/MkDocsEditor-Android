@@ -1,5 +1,7 @@
 package de.markusressel.mkdocseditor.feature.dashboard.ui
 
+import de.markusressel.mkdocseditor.feature.editor.domain.changeLocation
+import de.markusressel.mkdocseditor.feature.editor.domain.ChangeLocation
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -276,7 +278,7 @@ internal class DashboardViewModel @Inject constructor(
         when {
             documentId == null -> _events.send(DashboardEvent.Toast(context.getString(R.string.dashboard_page_gone)))
             entry.itemType == FEED_ITEM_SECTION -> mainNavigationRequests.showSection(documentId)
-            else -> _events.send(DashboardEvent.OpenDocument(documentId, entry.changedHeadings()))
+            else -> _events.send(DashboardEvent.OpenDocument(documentId, entry.changeLocation()))
         }
     }
 
@@ -390,12 +392,12 @@ internal class DashboardViewModel @Inject constructor(
 }
 
 /** an edit opens at the section it changed, other entries at the top */
-internal fun FeedEntryModel.changedHeadings(): List<String> =
-    if (kind == FeedKind.EDITED) summary?.headings.orEmpty() else emptyList()
+internal fun FeedEntryModel.changeLocation(): ChangeLocation? =
+    if (kind == FeedKind.EDITED) summary?.changeLocation() else null
 
 internal sealed interface DashboardEvent {
-    /** @param changedHeadings the headings of an edit, for the page to open at its section */
-    data class OpenDocument(val documentId: String, val changedHeadings: List<String> = emptyList()) : DashboardEvent
+    /** @param change where an edit was, for the page to open there */
+    data class OpenDocument(val documentId: String, val change: ChangeLocation? = null) : DashboardEvent
     data class OpenAccount(val backendId: Long) : DashboardEvent
     data object OpenSearch : DashboardEvent
     data class Toast(val text: String) : DashboardEvent

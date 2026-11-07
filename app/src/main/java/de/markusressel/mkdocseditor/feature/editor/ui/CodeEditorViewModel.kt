@@ -1,5 +1,7 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
+import kotlinx.coroutines.flow.transformWhile
+import de.markusressel.mkdocseditor.feature.editor.domain.ChangeLocation
 import de.markusressel.mkdocsrestclient.dashboard.PinScope
 import de.markusressel.mkdocseditor.feature.dashboard.domain.PinActions
 import de.markusressel.mkdocseditor.feature.common.ui.userMessage
@@ -14,7 +16,7 @@ import de.markusressel.mkdocseditor.feature.filebrowser.ui.ItemActions
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.text
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.DialogState as FileBrowserDialogState
 import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRuns
-import de.markusressel.mkdocseditor.feature.editor.domain.ChangeSection
+import de.markusressel.mkdocseditor.feature.editor.domain.ChangeTarget
 import de.markusressel.mkdocseditor.feature.editor.domain.GetAuthorshipUseCase
 import de.markusressel.mkdocseditor.feature.editor.domain.PageMeta
 import de.markusressel.mkdocseditor.feature.editor.domain.editorTitle
@@ -760,28 +762,30 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     /**
-     * The page was opened at a change, from the feed or a notification: goes to the first of [headings] that the text
-     * has, once, see [ChangeJumpArguments]
+     * The page was opened at a change, from the feed or a notification: goes there once, see [ChangeJumpArguments]
      *
-     * @param headings the headings of the changed sections, from the arguments of the screen
+     * @param change from the arguments of the screen
      */
-    fun onOpenedAtChange(headings: List<String>) {
-        changeJumpArguments.take(headings)?.let { jumpToChange(it) }
+    fun onOpenedAtChange(change: ChangeLocation?) {
+        changeJumpArguments.take(change)?.let { jumpToChange(it) }
     }
 
     /** a notification for the page of this editor, tapped while the editor is already there; see [onOpenedAtChange] */
-    fun onChangeOpened(headings: List<String>) {
-        if (headings.isNotEmpty()) jumpToChange(headings)
-    }
+    fun onChangeOpened(change: ChangeLocation) = jumpToChange(change)
 
-    private fun jumpToChange(headings: List<String>) {
+    private fun jumpToChange(change: ChangeLocation) {
         changeJumpJob?.cancel()
         changeJumpJob = launch {
-            // the text may still be loading, or come in with the sync; without any of the headings the page stays at the top
-            val section = withTimeoutOrNull(CHANGE_WAIT_MS) {
-                snapshotFlow { ChangeSection.find(editorText.text, headings) }.filterNotNull().first()
-            } ?: return@launch
-            _uiState.update { it.copy(changeJump = ChangeJump(section)) }
+            val targets = snapshotFlow { ChangeTarget.of(editorText.text, change) }.filterNotNull()
+            // the text may still be loading; without a place in it the page stays at the top
+            var target = withTimeoutOrNull(CHANGE_WAIT_MS) { targets.first() } ?: return@launch
+            if (!target.exact) {
+                // a local copy from before the change: the sync may still bring the text the lines are exact for
+                withTimeoutOrNull(CHANGE_EXACT_WAIT_MS) {
+                    targets.transformWhile { emit(it); !it.exact }.collect { target = it }
+                }
+            }
+            _uiState.update { it.copy(changeJump = ChangeJump(target)) }
         }
     }
 
@@ -958,8 +962,11 @@ internal class CodeEditorViewModel @Inject constructor(
         /** how long to wait for the sender of a join link to show up, they may have looked away for a moment */
         private const val SENDER_WAIT_MS = 5_000L
 
-        /** how long a page opened at a change waits for a text with one of its headings, then it stays at the top */
+        /** how long a page opened at a change waits for a text to find it in, then it stays at the top */
         private const val CHANGE_WAIT_MS = 10_000L
+
+        /** how long a page opened at a change waits for the text its lines are exact for, once it has a text */
+        private const val CHANGE_EXACT_WAIT_MS = 2_000L
 
         /** see docs/sync-protocol.md of the backend, "Viewport" */
 
@@ -1012,10 +1019,10 @@ internal class CodeEditorViewModel @Inject constructor(
     internal class JumpRequest(val position: Int)
 
     /**
-     * The section of a change that the page was opened at: its heading goes to the top, and the section lights up for a
-     * moment. A class and not just the section, like [JumpRequest].
+     * The change that the page was opened at: its line goes to the top, and the changed lines light up for a moment. A
+     * class and not just the target, like [JumpRequest].
      */
-    internal class ChangeJump(val section: ChangeSection)
+    internal class ChangeJump(val target: ChangeTarget)
 
     data class Following(val instanceId: String, val name: String)
 
@@ -1092,7 +1099,7 @@ internal class CodeEditorViewModel @Inject constructor(
         /** where the editor should go, once */
         val jumpRequest: JumpRequest? = null,
 
-        /** the changed section the editor, or the page while reading, should go to, until one of them is there */
+        /** the change the editor, or the page while reading, should go to, until one of them is there */
         val changeJump: ChangeJump? = null,
 
         val ghosts: List<RemoteGhost> = emptyList(),

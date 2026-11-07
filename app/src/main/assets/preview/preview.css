@@ -37,18 +37,33 @@ html.embedded .markdown-preview table.preview-table-squeezed th,
 html.embedded .markdown-preview table.preview-table-squeezed td { overflow-wrap: anywhere; }
 html.embedded .markdown-preview img, html.embedded .markdown-preview video { height: auto; }
 
-/* a changed section that the app opened the page at lights up for a moment (preview.js) */
-@keyframes preview-change {
-  0%, 70% {
-    background-color: color-mix(in srgb, var(--md-primary) 20%, transparent);
-    box-shadow: 0 0 0 6px color-mix(in srgb, var(--md-primary) 20%, transparent);
-  }
-  100% {
-    background-color: transparent;
-    box-shadow: 0 0 0 6px transparent;
-  }
-}
-.markdown-preview .preview-change {
+/*
+ * The changed lines that the app opened the page at light up for a moment (preview.js): a band behind the text, in
+ * a layer under the content, so a render does not take it away.
+ */
+body { position: relative; }
+#content { position: relative; z-index: 1; }
+.preview-change {
+  position: absolute;
+  z-index: 0;
+  margin: -4px -8px;
+  padding: 4px 8px;
+  box-sizing: content-box;
   border-radius: 4px;
-  animation: preview-change 2s ease-out;
+  pointer-events: none;
+  background-color: color-mix(in srgb, var(--md-primary) 20%, transparent);
+  animation: preview-change 2s ease-out forwards;
+}
+/* where lines were removed: a thin line between the blocks around them */
+.preview-change.preview-change-removal {
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  border-radius: 1px;
+  background-color: var(--md-primary);
+}
+@keyframes preview-change {
+  0%, 70% { opacity: 1; }
+  100% { opacity: 0; }
 }

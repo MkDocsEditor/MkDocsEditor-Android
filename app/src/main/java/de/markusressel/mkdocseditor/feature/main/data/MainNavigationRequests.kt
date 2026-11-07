@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.main.data
 
+import de.markusressel.mkdocseditor.feature.editor.domain.ChangeLocation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -75,9 +76,9 @@ class MainNavigationRequests @Inject constructor() {
     val documentToOpen: StateFlow<DocumentRequest?> = _documentToOpen.asStateFlow()
 
     /** opens [documentId] in the editor, on top of the file browser */
-    /** @param changedHeadings the headings of the changes the notification was about, see [CodeEditorScreen.changedHeadings] */
-    fun openDocument(documentId: String, changedHeadings: List<String> = emptyList()) {
-        _documentToOpen.value = DocumentRequest(documentId, changedHeadings)
+    /** @param change where the changes the notification was about are, see [CodeEditorScreen.change] */
+    fun openDocument(documentId: String, change: ChangeLocation? = null) {
+        _documentToOpen.value = DocumentRequest(documentId, change)
     }
 
     fun documentOpened(request: DocumentRequest) {
@@ -85,7 +86,7 @@ class MainNavigationRequests @Inject constructor() {
     }
 
     /** not a data class: the same document asked for twice is two requests */
-    class DocumentRequest(val documentId: String, val changedHeadings: List<String> = emptyList())
+    class DocumentRequest(val documentId: String, val change: ChangeLocation? = null)
 
     private val _editorChange = MutableStateFlow<EditorChange?>(null)
 
@@ -105,7 +106,7 @@ class MainNavigationRequests @Inject constructor() {
     }
 
     /** not a data class: the same change asked for twice is two requests */
-    class EditorChange(val screenKey: ScreenKey, val headings: List<String>)
+    class EditorChange(val screenKey: ScreenKey, val change: ChangeLocation)
 
     @EntryPoint
     @InstallIn(SingletonComponent::class)
@@ -148,9 +149,9 @@ internal fun OpenRequestedDocument(navigator: Navigator) {
             val open = navigator.items.editorOf(it.documentId)
             if (open != null) {
                 navigator.popUntil { screen -> screen === open }
-                if (it.changedHeadings.isNotEmpty()) requests.handChange(MainNavigationRequests.EditorChange(open.key, it.changedHeadings))
+                it.change?.let { change -> requests.handChange(MainNavigationRequests.EditorChange(open.key, change)) }
             } else {
-                navigator.push(CodeEditorScreen(documentId = it.documentId, changedHeadings = it.changedHeadings))
+                navigator.push(CodeEditorScreen(documentId = it.documentId, change = it.change))
             }
         }
     }
