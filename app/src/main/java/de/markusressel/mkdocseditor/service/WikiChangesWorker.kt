@@ -21,9 +21,15 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import de.markusressel.mkdocseditor.auth.token.SharedPreferencesKeyValueStore
+import de.markusressel.mkdocseditor.feature.notifications.data.AuthPushServer
+import de.markusressel.mkdocseditor.feature.notifications.data.PushRegistrationStore
 import de.markusressel.mkdocseditor.feature.notifications.data.RestWikiChangesServer
+import de.markusressel.mkdocseditor.feature.notifications.data.UnifiedPushDistributor
 import de.markusressel.mkdocseditor.feature.notifications.data.WikiChangesMarks
 import de.markusressel.mkdocseditor.feature.notifications.domain.CheckWikiChangesUseCase
+import de.markusressel.mkdocseditor.feature.notifications.domain.PushDistributor
+import de.markusressel.mkdocseditor.feature.notifications.domain.PushServer
+import de.markusressel.mkdocseditor.feature.notifications.domain.WikiChangesCheck
 import de.markusressel.mkdocseditor.feature.notifications.domain.WikiChangesNotifier
 import de.markusressel.mkdocseditor.feature.notifications.domain.WikiChangesServer
 import de.markusressel.mkdocseditor.feature.notifications.ui.AndroidWikiChangesNotifier
@@ -31,8 +37,8 @@ import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHold
 import java.util.concurrent.TimeUnit
 
 /**
- * See [CheckWikiChangesUseCase]. Most of the time nothing happens in a home wiki, so once an hour is enough, until
- * the server can push.
+ * See [CheckWikiChangesUseCase]. Most of the time nothing happens in a home wiki, so once an hour is enough. With push
+ * a check runs right after a change ([WikiChangesPushService]), and this is the fallback without a distributor.
  */
 @HiltWorker
 internal class WikiChangesWorker @AssistedInject constructor(
@@ -74,7 +80,8 @@ internal class WikiChangesWorker @AssistedInject constructor(
 
         /**
          * Checks once, as soon as there is a network. After signing in this sets the seen mark at once, instead of
-         * an hour later, so changes from then on notify.
+         * an hour later, so changes from then on notify. A push replaces a running check: it is cancelled only while
+         * it waits for the server, never between notifying and setting the mark.
          */
         fun checkNow(context: Context) {
             val request = OneTimeWorkRequestBuilder<WikiChangesWorker>()
@@ -95,10 +102,24 @@ internal abstract class WikiChangesModule {
     @Binds
     abstract fun bindNotifier(impl: AndroidWikiChangesNotifier): WikiChangesNotifier
 
+    @Binds
+    abstract fun bindPushServer(impl: AuthPushServer): PushServer
+
+    @Binds
+    abstract fun bindPushDistributor(impl: UnifiedPushDistributor): PushDistributor
+
     companion object {
         @Provides
         fun provideMarks(@ApplicationContext context: Context) = WikiChangesMarks(
             SharedPreferencesKeyValueStore(context.getSharedPreferences("wiki_changes_seen", Context.MODE_PRIVATE))
         )
+
+        @Provides
+        fun providePushRegistrationStore(@ApplicationContext context: Context) = PushRegistrationStore(
+            SharedPreferencesKeyValueStore(context.getSharedPreferences("wiki_changes_push", Context.MODE_PRIVATE))
+        )
+
+        @Provides
+        fun provideCheck(@ApplicationContext context: Context) = WikiChangesCheck { WikiChangesWorker.checkNow(context) }
     }
 }

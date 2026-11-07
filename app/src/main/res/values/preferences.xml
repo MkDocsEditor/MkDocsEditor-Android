@@ -102,8 +102,9 @@
 
     <string name="wiki_change_notifications_key" translatable="false">wiki_change_notifications</string>
     <string name="wiki_change_notifications_title">Changes by others</string>
-    <string name="wiki_change_notifications_description">To pinned pages and pages you edited. The app checks about once an hour.</string>
+    <string name="wiki_change_notifications_description">To pinned pages and pages you edited. With push they come about a minute after a change, otherwise the app checks about once an hour.</string>
     <string name="wiki_change_notifications_blocked">Notifications are turned off for this app. Tap to allow them.</string>
+    <string name="wiki_change_notifications_no_distributor">The server can push changes. For that, install a UnifiedPush app such as ntfy.</string>
 
 
     <!-- Debug -->

@@ -16,6 +16,7 @@ import de.markusressel.mkdocseditor.auth.token.AccountRoleStore
 import de.markusressel.mkdocseditor.auth.token.AuthSession
 import de.markusressel.mkdocseditor.auth.token.MemoryKeyValueStore
 import de.markusressel.mkdocseditor.auth.token.TokenStore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -27,6 +28,7 @@ import kotlinx.coroutines.flow.update
 import timber.log.Timber
 import java.io.IOException
 import java.time.Instant
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * A backend as the auth layer sees it
@@ -98,6 +100,8 @@ class AuthRepository(
 ) {
 
     private val apis = mutableMapOf<String, AuthApi>()
+
+    private val beforeSignOut = CopyOnWriteArrayList<suspend (BackendRef) -> Unit>()
 
     private val _sessionEnded = MutableSharedFlow<Long>(
         extraBufferCapacity = 8,
@@ -254,10 +258,29 @@ class AuthRepository(
     )
 
     /**
+     * Runs [action] in [signOut] while the session is still valid, for what has to end on the server with it
+     */
+    fun doBeforeSignOut(action: suspend (backend: BackendRef) -> Unit) {
+        beforeSignOut += action
+    }
+
+    /**
      * Ends the session on the server (best effort) and forgets it locally
      */
     suspend fun signOut(backend: BackendRef) {
         val token = tokenStore.get(backend.id)?.token
+        if (token != null) {
+            beforeSignOut.forEach { action ->
+                try {
+                    action(backend)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // signing out must not fail because of it
+                    Timber.w(e, "A step before signing out failed")
+                }
+            }
+        }
         tokenStore.remove(backend.id)
         roleStore.remove(backend.id)
         if (token != null) {

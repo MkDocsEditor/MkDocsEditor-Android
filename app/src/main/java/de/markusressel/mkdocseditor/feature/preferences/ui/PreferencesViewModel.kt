@@ -11,6 +11,7 @@ import de.markusressel.kutepreferences.ui.views.listitems.KuteCategoryView
 import de.markusressel.mkdocseditor.feature.preferences.domain.AboutPreferenceItem
 import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.feature.notifications.data.NotificationPermission
+import de.markusressel.mkdocseditor.feature.notifications.data.PushRegistrationStore
 import de.markusressel.mkdocseditor.feature.preferences.domain.WikiChangeNotificationsPreference
 import de.markusressel.mkdocseditor.feature.preferences.ui.compose.WikiChangeNotificationsPreferenceView
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
@@ -27,6 +28,7 @@ internal class PreferencesViewModel @Inject constructor(
     private val isOfflineCacheUpdateInProgressUseCase: IsOfflineCacheUpdateInProgressUseCase,
     private val kuteNavigator: KuteNavigator,
     notificationPermission: NotificationPermission,
+    pushRegistrationStore: PushRegistrationStore,
 ) : KutePreferencesViewModel(
     navigator = kuteNavigator
 ) {
@@ -51,7 +53,11 @@ internal class PreferencesViewModel @Inject constructor(
         }
 
         registry.register<WikiChangeNotificationsPreference, BooleanPreferenceBehavior>(::BooleanPreferenceBehavior) {
-            WikiChangeNotificationsPreferenceView(behavior = it, isGranted = notificationPermission::isGranted)
+            WikiChangeNotificationsPreferenceView(
+                behavior = it,
+                isGranted = notificationPermission::isGranted,
+                isDistributorMissing = { pushRegistrationStore.distributorMissing },
+            )
         }
 
         // a card like the categories next to it. Its behavior lets a search result highlight it.

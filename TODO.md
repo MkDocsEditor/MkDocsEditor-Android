@@ -10,7 +10,8 @@ clients show the same thing.
 |---|---|---|---|
 | File browser | [File browser, editor and preview at once on a tablet](#file-browser-editor-and-preview-at-once-on-a-tablet) | Idea, low priority: a layout for large screens | No |
 | Editor | [Code blocks as one box](#code-blocks-as-one-box) | Full-width background of fenced code | Probably KodeEditor |
-| Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Push, better summaries | Yes, the backend and the web client |
+| Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Better summaries | Yes, the backend and the web client |
+| App-wide | [Large downloads run out of memory](#large-downloads-run-out-of-memory) | Bug: stream downloads to a file | No |
 | Project | [Code quality checks](#code-quality-checks) | CI setup, Android first | Yes, all six repositories |
 
 Order that fits how they depend on each other (Idea):
@@ -98,10 +99,19 @@ don't notify. Tapping one opens the page in the editor. A mark per server and ac
 twice; the first check only sets it, and runs right after signing in. The setting is under Notifications and on by default; the dashboard asks for the
 permission once, turning the setting on asks again, and the setting says when Android blocks the notifications.
 
+Push (backend `docs/push.md`): when the selected server lists `push` and the user is signed in, the app registers with
+UnifiedPush using the server's VAPID key and posts the endpoint and keys to `/push/subscriptions/`
+(`WikiChangesPushRegistration`), again after each sign-in, for a new endpoint and when another server is selected. Signing
+out deletes the subscription first, then unregisters. A `feed-changed` push runs the same check as the polling
+(`WikiChangesPushService`), so the mark keeps it from notifying twice. No Firebase: the distributor is an app like ntfy,
+set to `https://ntfy.markusressel.de` for the family. Without a distributor, or with push off on the server, the hourly
+polling is all there is, and the setting says that a UnifiedPush app is missing. With several distributors and no default,
+the app takes ntfy, or else the first one. A subscription stays on a server that is no longer selected until its
+session ends.
+
 **What is left**
 
-1. Push, decided below. The polling stays as the fallback.
-2. Better summaries, if the simple ones aren't enough.
+1. Better summaries, if the simple ones aren't enough.
 
 **Gamification (Idea)**
 
@@ -131,14 +141,8 @@ Keep it small, and useful for the wiki. A home wiki has no need for points or ra
 
 **Push (decided, Markus, 2026-11-06)**
 
-- UnifiedPush, with the self-hosted ntfy server at `https://ntfy.markusressel.de` as the distributor. It is reachable on
-  the LAN and over the family VPN, allows anonymous use, and only topics starting with `up`.
-- The app registers with UnifiedPush and gives its endpoint to the backend. The backend sends Web Push to that endpoint
-  (RFC 8030, encrypted with RFC 8291, VAPID from RFC 8292).
-- The WorkManager polling stays as the fallback, for example without a distributor app or while ntfy can't be reached.
-- The backend push contract (registering the endpoint, the VAPID key, what a push holds) is still being defined in the
-  backend. The app part waits for it.
-- No Firebase.
+- The ntfy server at `https://ntfy.markusressel.de` is reachable on the LAN and over the family VPN, allows anonymous
+  use, and only topics starting with `up`. The backend needs it in `server.push.allowedHosts`.
 
 **Summaries**
 
@@ -165,6 +169,16 @@ If notifications get annoying, people turn them off, and the goal is lost.
 - Does the web client get notifications too (browser push), or only the page?
 - Notifications help people remember the app, but not look things up faster. Worth checking separately: a home screen
   widget or shortcut to search or to pinned pages.
+
+---
+
+# App-wide
+
+## Large downloads run out of memory
+
+`IMkDocsRestClient.downloadResource` reads the whole file into a `ByteArray` before `DownloadResourceUseCase` writes it
+to the file cache. A 400 MB file ended in an `OutOfMemoryError`, and the user only saw "Could not open big.bin". The
+download should stream to the file instead, with the same progress and cancel. Found while testing #170.
 
 ---
 
