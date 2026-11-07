@@ -8,6 +8,11 @@ sealed class SearchResultItem {
     /** the names of the folders it is in, without the root */
     abstract val path: List<String>
 
+    /**
+     * @param documentName the title of the page, or its file name without one
+     * @param fileName the file name, when it is not [documentName]
+     * @param description and [tags] from the front matter
+     */
     data class Document(
         val documentId: String,
         val documentName: String,
@@ -16,6 +21,9 @@ sealed class SearchResultItem {
         val modtime: Date? = null,
         /** matches in the content, which can be more than [excerpts] */
         val matchCount: Int = 0,
+        val fileName: String? = null,
+        val description: String? = null,
+        val tags: List<String> = emptyList(),
     ) : SearchResultItem() {
         override val name get() = documentName
 

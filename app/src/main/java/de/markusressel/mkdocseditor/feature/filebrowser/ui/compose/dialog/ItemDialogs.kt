@@ -120,9 +120,17 @@ private fun PinDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text(stringResource(R.string.pin_title, state.item.name)) },
+        title = { Text(stringResource(R.string.pin_title, state.item.shownTitle)) },
         text = {
             Column {
+                state.item.secondaryName?.let {
+                    Text(
+                        modifier = Modifier.padding(bottom = 8.dp),
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Text(stringResource(R.string.pin_description))
                 when {
                     state.unavailable -> Text(

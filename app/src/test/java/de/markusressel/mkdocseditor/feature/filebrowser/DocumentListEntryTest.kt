@@ -39,4 +39,24 @@ class DocumentListEntryTest {
         }
         composeRule.onNodeWithText("Changes not synced yet").assertIsDisplayed()
     }
+
+    @Test
+    fun `a page shows its title, and its file name next to the size`() {
+        composeRule.setContent {
+            MkDocsEditorTheme {
+                FileBrowserList(
+                    content = FolderContent(documents = listOf(documentData("d1", name = "setup").copy(title = "Getting started"))),
+                    unsyncedDocumentIds = emptySet(),
+                    onDocumentClicked = {},
+                    onDocumentLongClicked = {},
+                    onResourceClicked = {},
+                    onResourceLongClicked = {},
+                    onSectionClicked = {},
+                    onSectionLongClicked = {},
+                )
+            }
+        }
+        composeRule.onNodeWithText("Getting started").assertIsDisplayed()
+        composeRule.onNodeWithText("setup.md", substring = true).assertIsDisplayed()
+    }
 }

@@ -75,5 +75,5 @@ internal class AndroidDocumentSessionEnvironment @Inject constructor(
         dataRepository.updateDocumentContentInCache(documentId, text)
     }
 
-    private fun DocumentEntity.toCachedDocument() = CachedDocument(name, content.target?.text)
+    private fun DocumentEntity.toCachedDocument() = CachedDocument(name, content.target?.text, title, metaTitle)
 }

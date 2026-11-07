@@ -50,7 +50,7 @@ class PickerDialogsTest {
     private val inserted = mutableListOf<String>()
     private val uploads = mutableListOf<Triple<String, List<Uri>, String>>()
 
-    private fun linkPicker(selection: String = "") = composeRule.setContent {
+    private fun linkPicker(selection: String = "", tree: WikiTree = this.tree) = composeRule.setContent {
         MkDocsEditorTheme {
             LinkPickerDialog(
                 tree = tree,
@@ -113,6 +113,37 @@ class PickerDialogsTest {
         composeRule.onNodeWithTag("browser-search").performTextInput("strand")
         composeRule.onNodeWithText("Strand.png").performClick()
         assertEquals(listOf("[Strand.png](../Urlaub/Strand.png)"), inserted)
+    }
+
+    /** Rezepte with Kürbissuppe.md titled "Pumpkin soup" */
+    private fun titledTree() = WikiTree(
+        section(
+            "root", "root",
+            subsections = listOf(
+                section(
+                    "s-r", "Rezepte",
+                    documents = listOf(doc("d-apfel", "Apfelkuchen"), doc("d-suppe", "Kürbissuppe").copy(title = "Pumpkin soup")),
+                ),
+            ),
+        )
+    )
+
+    @Test
+    fun `a page shows its title and its file name, and the link goes to the file`() {
+        linkPicker(tree = titledTree())
+        composeRule.onNodeWithText("Kürbissuppe.md").assertExists()
+        composeRule.onNodeWithText("Pumpkin soup").performClick()
+        composeRule.onNodeWithTag("link-page").performClick()
+        assertEquals(listOf("[Kürbissuppe](Kürbissuppe.md)"), inserted)
+    }
+
+    @Test
+    fun `search finds a page by its title`() {
+        linkPicker(tree = titledTree())
+        composeRule.onNodeWithTag("browser-search").performTextInput("pumpkin")
+        composeRule.onNodeWithText("Pumpkin soup").performClick()
+        composeRule.onNodeWithTag("link-page").performClick()
+        assertEquals(listOf("[Kürbissuppe](Kürbissuppe.md)"), inserted)
     }
 
     @Test

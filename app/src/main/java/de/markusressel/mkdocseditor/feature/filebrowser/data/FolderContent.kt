@@ -1,7 +1,7 @@
 package de.markusressel.mkdocseditor.feature.filebrowser.data
 
 /**
- * What a folder shows, each kind sorted by name
+ * What a folder shows, each kind sorted by name, pages by their title
  *
  * @param sectionId the folder this is the content of
  */
@@ -20,6 +20,7 @@ internal data class FolderContent(
 internal fun SectionData.toFolderContent() = FolderContent(
     sectionId = id,
     sections = subsections.sortedBy { it.name.lowercase() },
-    documents = documents.sortedBy { it.name.lowercase() },
+    // by what the list shows
+    documents = documents.sortedBy { it.shownTitle.lowercase() },
     resources = resources.sortedBy { it.name.lowercase() },
 )

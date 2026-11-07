@@ -41,8 +41,18 @@ private const val INDICATOR_DELAY_MS = 2_000L
  */
 internal const val OPENING_TIMEOUT_MS = 3_000L
 
-/** what the database knows about a document */
-internal data class CachedDocument(val name: String, val text: String?)
+/**
+ * what the database knows about a document
+ *
+ * @param title the page name of the tree, null from a backend without `page-meta`
+ * @param metaTitle the part of [title] that came from the front matter
+ */
+internal data class CachedDocument(
+    val name: String,
+    val text: String?,
+    val title: String? = null,
+    val metaTitle: String? = null,
+)
 
 /**
  * The answer when a document is loaded
@@ -143,7 +153,12 @@ internal class DocumentSession(
 
     data class State(
         val documentId: String? = null,
+        /** the file name */
         val title: String = "",
+        /** see [CachedDocument.title] */
+        val pageTitle: String? = null,
+        /** see [CachedDocument.metaTitle] */
+        val pageMetaTitle: String? = null,
         val loading: Boolean = false,
         val deletedOnServer: Boolean = false,
         /** there is neither a connection nor a text to show */
@@ -435,7 +450,7 @@ internal class DocumentSession(
         }
         // a failed load may know nothing, while the cached text is still the offline version
         loadedDocument = result.document ?: loadedDocument
-        updateTitle(result.document?.name ?: "")
+        updateTitle(result.document)
         if (result.error != null) {
             Timber.e(result.error) { "Error loading document resource" }
             val connected = syncedDocument?.isConnected == true
@@ -452,7 +467,7 @@ internal class DocumentSession(
      */
     private fun showCachedDocument(cached: CachedDocument?) {
         cached ?: return
-        updateTitle(cached.name)
+        updateTitle(cached)
         cached.text?.let { text.showDetachedText(it) }
     }
 
@@ -503,8 +518,14 @@ internal class DocumentSession(
         }
     }
 
-    private fun updateTitle(title: String) {
-        _state.update { old -> old.copy(title = title) }
+    private fun updateTitle(document: CachedDocument?) {
+        _state.update { old ->
+            old.copy(
+                title = document?.name ?: "",
+                pageTitle = document?.title,
+                pageMetaTitle = document?.metaTitle,
+            )
+        }
     }
 
     /**

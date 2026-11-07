@@ -24,6 +24,8 @@ data class FeedAuthorModel(
  *
  * @param path relative to the docs folder, like `guide/setup.md`
  * @param name the document name without `.md`, as in the tree
+ * @param title the page name, see [de.markusressel.mkdocsrestclient.document.DocumentModel.title]; null from a backend
+ * without `page-meta`
  */
 @JsonClass(generateAdapter = true)
 data class PinModel(
@@ -32,6 +34,7 @@ data class PinModel(
     val name: String,
     val pinnedBy: FeedAuthorModel,
     val pinnedAt: Date,
+    val title: String? = null,
 )
 
 /**
@@ -61,6 +64,7 @@ data class FeedSummaryModel(
  * @param kind [FeedKind]
  * @param itemType `document` or `section`
  * @param documentId the current id, while the item still exists at [path]
+ * @param title the page name of the document at [path], null without one or from a backend without `page-meta`
  * @param oldPath only for [FeedKind.MOVED]
  * @param summary only for [FeedKind.EDITED]
  */
@@ -75,6 +79,7 @@ data class FeedEntryModel(
     val oldPath: String? = null,
     val authors: List<FeedAuthorModel> = emptyList(),
     val summary: FeedSummaryModel? = null,
+    val title: String? = null,
 )
 
 /**

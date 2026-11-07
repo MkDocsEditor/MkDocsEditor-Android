@@ -85,17 +85,18 @@ internal fun DocumentListEntry(
             Column {
                 Text(
                     modifier = Modifier.padding(start = 8.dp),
-                    text = item.name,
+                    text = item.shownTitle,
                     color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleMedium,
                 )
 
+                // the file name next to the size, so that a page with a title needs no extra line
                 Text(
                     modifier = Modifier.padding(start = 8.dp),
-                    text = stringResource(
-                        R.string.document_list_entry_filesize,
-                        item.formattedDocumentSize(context)
-                    ),
+                    text = listOfNotNull(
+                        item.secondaryName?.let { "$it.md" },
+                        stringResource(R.string.document_list_entry_filesize, item.formattedDocumentSize(context)),
+                    ).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -137,12 +138,13 @@ private fun DocumentListEntryPreview() {
             item = DocumentData(
                 entityId = 1,
                 id = "1",
-                name = "Sample File",
+                name = "sample-file",
                 filesize = 1234,
                 modtime = Date(),
                 url = "https://example.com/sample-file.md",
                 content = null,
                 isOfflineAvailable = true,
+                title = "Getting started",
             ),
             onClick = {},
             onLongClick = {}

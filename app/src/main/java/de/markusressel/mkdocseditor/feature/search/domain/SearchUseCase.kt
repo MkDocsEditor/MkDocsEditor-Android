@@ -21,11 +21,14 @@ internal class SearchUseCase @Inject constructor(
                         val matches = SearchExcerpts.find(item.content?.text.orEmpty(), searchTerm)
                         SearchResultItem.Document(
                             documentId = item.id,
-                            documentName = item.name,
+                            documentName = item.shownTitle,
                             excerpts = matches.excerpts,
                             path = found.path,
                             modtime = item.modtime,
                             matchCount = matches.matchCount,
+                            fileName = item.name.takeIf { it != item.shownTitle },
+                            description = item.description,
+                            tags = item.tags,
                         )
                     }
 

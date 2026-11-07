@@ -33,6 +33,41 @@ class DashboardModelsTest {
     }
 
     @Test
+    fun `pins and feed entries have the title of their page`() {
+        val pins = """
+            {"family": [{"documentId": "d1", "path": "guide/setup.md", "name": "setup", "title": "Getting started",
+              "pinnedAt": "2026-11-06T10:00:00Z", "pinnedBy": {"displayName": "Anna", "color": "#1971c2"}}]}
+        """.trimIndent().toEntity<PinsModel>()
+        val feed = """
+            {"entries": [
+              {"id": "e1", "time": "2026-11-06T10:00:00Z", "kind": "edited", "itemType": "document", "documentId": "d1",
+               "title": "Getting started", "path": "guide/setup.md"},
+              {"id": "e2", "time": "2026-11-06T09:00:00Z", "kind": "deleted", "itemType": "document",
+               "title": null, "path": "old.md"}
+            ]}
+        """.trimIndent().toEntity<FeedPageModel>()
+
+        assertEquals("Getting started", pins.family.single().title)
+        assertEquals("Getting started", feed.entries[0].title)
+        assertNull(feed.entries[1].title)
+    }
+
+    @Test
+    fun `pins and feed entries of a backend without page-meta have no title`() {
+        val pins = """
+            {"family": [{"documentId": "d1", "path": "index.md", "name": "index", "pinnedAt": "2026-11-06T10:00:00Z",
+              "pinnedBy": {"displayName": "Anna", "color": "#1971c2"}}]}
+        """.trimIndent().toEntity<PinsModel>()
+        val feed = """
+            {"entries": [{"id": "e1", "time": "2026-11-06T10:00:00Z", "kind": "edited", "itemType": "document",
+              "path": "index.md"}]}
+        """.trimIndent().toEntity<FeedPageModel>()
+
+        assertNull(pins.family.single().title)
+        assertNull(feed.entries.single().title)
+    }
+
+    @Test
     fun `a stored dashboard reads back the same`() {
         val pins = """
             {"family": [{"documentId": "d1", "path": "index.md", "name": "index", "pinnedAt": "2026-11-06T10:00:00Z",

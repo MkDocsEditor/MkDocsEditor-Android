@@ -33,7 +33,12 @@ class DataFactory @Inject constructor(
             modtime = modtime,
             url = url,
             content = content.target.toDocumentContentData(),
-            isOfflineAvailable = content.target != null
+            isOfflineAvailable = content.target != null,
+            title = title,
+            metaTitle = metaTitle,
+            description = description,
+            tags = tags.orEmpty(),
+            searchExclude = searchExclude,
         )
     }
 
