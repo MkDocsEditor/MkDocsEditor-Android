@@ -38,6 +38,10 @@ import de.markusressel.mkdocseditor.feature.editor.domain.FOLLOW_PAUSE_MIN_MS
 import de.markusressel.mkdocseditor.feature.editor.domain.EditorScrollView
 import de.markusressel.mkdocseditor.feature.editor.domain.FollowTarget
 import de.markusressel.mkdocseditor.feature.editor.domain.lineOfPosition
+import de.markusressel.mkdocseditor.feature.editor.domain.SyncAnchor
+import de.markusressel.mkdocseditor.feature.editor.domain.editorTargetOf
+import de.markusressel.mkdocseditor.feature.editor.domain.lineCountOf
+import kotlinx.coroutines.flow.first
 import de.markusressel.mkdocseditor.feature.editor.domain.nextFollowPauseMs
 import de.markusressel.mkdocseditor.feature.editor.domain.followTarget
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
@@ -82,6 +86,7 @@ internal fun CodeEditorLayout(
     onStopFollowing: () -> Unit = {},
     onVisibleRangeChanged: (TextRange?) -> Unit = {},
     scrollSync: ScrollSync? = null,
+    restoreToCursor: Boolean = false,
 ) {
     val viewState = rememberKodeEditorViewState()
     val currentOnVisibleRangeChanged by rememberUpdatedState(onVisibleRangeChanged)
@@ -102,6 +107,27 @@ internal fun CodeEditorLayout(
         snapshotFlow { scrollSync.editorTarget }.filterNotNull().conflate().collect { target ->
             viewState.scrollToLine(target.line, target.fraction, target.viewportFraction, animate = false)
         }
+    }
+    LaunchedEffect(viewState, scrollSync) {
+        if (scrollSync == null) return@LaunchedEffect
+        snapshotFlow { viewState.lineAt(0f)?.let { it.line + it.fraction.toDouble() } }
+            .collect { scrollSync.onEditorTop(it) }
+    }
+    LaunchedEffect(viewState, scrollSync) {
+        val line = scrollSync?.editorRestore ?: return@LaunchedEffect
+        // after a recreation: back to the line at the top, once the editor is laid out and has the text, which comes
+        // later after process death
+        withTimeoutOrNull(RESTORE_WAIT_MS) {
+            snapshotFlow { viewState.visibleRange != null && lineCountOf(state.text) > line.toInt() }.first { it }
+            if (restoreToCursor) {
+                // the editor gets its focus back, and the keyboard opens at the cursor
+                viewState.scrollToPosition(state.selection.end, animate = false)
+            } else {
+                val target = editorTargetOf(SyncAnchor(line, 0f), lineCountOf(state.text))
+                viewState.scrollToLine(target.line, target.fraction, target.viewportFraction, animate = false)
+            }
+        }
+        scrollSync.onEditorRestored()
     }
     LaunchedEffect(jumpRequest) {
         jumpRequest?.let { viewState.scrollToPosition(it.position, animate = false) }
@@ -281,3 +307,6 @@ private val NoAuthorRuns: State<AuthorRuns> = mutableStateOf(AuthorRuns())
 private val AUTHOR_STRIP_WIDTH = 3.dp
 private const val GHOST_ALPHA = 0.4f
 private const val OPENING_SETTLE_MS = 1_000L
+
+/** how long the editor waits for its text to go back to its line after a recreation */
+private const val RESTORE_WAIT_MS = 10_000L

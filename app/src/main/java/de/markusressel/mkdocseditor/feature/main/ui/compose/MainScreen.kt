@@ -5,7 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
-import de.markusressel.mkdocseditor.feature.main.ui.ContentLayoutType
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import de.markusressel.mkdocseditor.feature.main.ui.DevicePosture
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
 import de.markusressel.mkdocseditor.feature.main.ui.NavigationLayoutType
@@ -24,6 +25,7 @@ internal fun MainScreen(
 
     MainScreenLayout(
         uiState = uiState,
+        fileBrowserRequests = mainViewModel.fileBrowserRequests,
         windowSize = windowSize,
         devicePosture = devicePosture,
     )
@@ -35,6 +37,7 @@ private fun MainScreenPreview() {
     MkDocsEditorTheme {
         MainScreenLayout(
             uiState = UiState(initialTab = NavItem.FileBrowser),
+            fileBrowserRequests = emptyFlow(),
             windowSize = WindowWidthSizeClass.Compact,
             devicePosture = DevicePosture.NormalPosture,
         )
@@ -47,6 +50,7 @@ private fun MainScreenPreviewTablet() {
     MkDocsEditorTheme {
         MainScreenLayout(
             uiState = UiState(initialTab = NavItem.FileBrowser),
+            fileBrowserRequests = emptyFlow(),
             windowSize = WindowWidthSizeClass.Medium,
             devicePosture = DevicePosture.NormalPosture,
         )
@@ -59,6 +63,7 @@ private fun MainScreenPreviewDesktop() {
     MkDocsEditorTheme {
         MainScreenLayout(
             uiState = UiState(initialTab = NavItem.FileBrowser),
+            fileBrowserRequests = emptyFlow(),
             windowSize = WindowWidthSizeClass.Expanded,
             devicePosture = DevicePosture.NormalPosture,
         )
@@ -68,18 +73,17 @@ private fun MainScreenPreviewDesktop() {
 @Composable
 private fun MainScreenLayout(
     uiState: UiState,
+    fileBrowserRequests: Flow<Unit>,
     windowSize: WindowWidthSizeClass,
     devicePosture: DevicePosture,
 ) {
-    val (navigationType, contentType) = determineLayoutStyle(windowSize, devicePosture)
-
-    when (navigationType) {
+    when (val navigationType = determineNavigationType(windowSize, devicePosture)) {
         NavigationLayoutType.BOTTOM_NAVIGATION,
         NavigationLayoutType.NAVIGATION_RAIL -> {
             MainScreenContent(
                 navigationType = navigationType,
-                contentType = contentType,
                 uiState = uiState,
+                fileBrowserRequests = fileBrowserRequests,
             )
         }
 
@@ -87,44 +91,18 @@ private fun MainScreenLayout(
     }
 }
 
-private fun determineLayoutStyle(
+private fun determineNavigationType(
     windowSize: WindowWidthSizeClass,
     devicePosture: DevicePosture
-): Pair<NavigationLayoutType, ContentLayoutType> {
-    val navigationType: NavigationLayoutType
-    val contentType: ContentLayoutType
-
-    when (windowSize) {
-        WindowWidthSizeClass.Compact -> {
-            navigationType = NavigationLayoutType.BOTTOM_NAVIGATION
-            contentType = ContentLayoutType.LIST_ONLY
-        }
-
-        WindowWidthSizeClass.Medium -> {
-            navigationType = NavigationLayoutType.NAVIGATION_RAIL
-            contentType = if (devicePosture != DevicePosture.NormalPosture) {
-                ContentLayoutType.LIST_AND_DOCUMENT
-            } else {
-                ContentLayoutType.LIST_ONLY
-            }
-        }
-
-        WindowWidthSizeClass.Expanded -> {
-            navigationType = if (devicePosture is DevicePosture.BookPosture) {
-                NavigationLayoutType.NAVIGATION_RAIL
-            } else {
-                NavigationLayoutType.NAVIGATION_RAIL
-                //NavigationLayoutType.PERMANENT_NAVIGATION_DRAWER
-            }
-            contentType = ContentLayoutType.LIST_AND_DOCUMENT
-        }
-
-        else -> {
-            navigationType = NavigationLayoutType.BOTTOM_NAVIGATION
-            contentType = ContentLayoutType.LIST_ONLY
-        }
+): NavigationLayoutType = when (windowSize) {
+    WindowWidthSizeClass.Compact -> NavigationLayoutType.BOTTOM_NAVIGATION
+    WindowWidthSizeClass.Medium -> NavigationLayoutType.NAVIGATION_RAIL
+    WindowWidthSizeClass.Expanded -> if (devicePosture is DevicePosture.BookPosture) {
+        NavigationLayoutType.NAVIGATION_RAIL
+    } else {
+        NavigationLayoutType.NAVIGATION_RAIL
+        //NavigationLayoutType.PERMANENT_NAVIGATION_DRAWER
     }
 
-    return navigationType to contentType
+    else -> NavigationLayoutType.BOTTOM_NAVIGATION
 }
-

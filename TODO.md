@@ -9,6 +9,8 @@ clients show the same thing.
 | Area | Entry | Kind of work | Needs another repo |
 |---|---|---|---|
 | File browser | [Transitions between sections](#transitions-between-sections) | Path chips during the back gesture | No |
+| File browser | [File browser, editor and preview at once on a tablet](#file-browser-editor-and-preview-at-once-on-a-tablet) | Idea, low priority: a layout for large screens | No |
+| Editor | [Code blocks as one box](#code-blocks-as-one-box) | Full-width background of fenced code | Probably KodeEditor |
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Push, better summaries | Yes, the backend and the web client |
 | App-wide | [Settings](#settings) | About row and top bar | No |
 | App-wide | [Download progress outside the file browser](#download-progress-outside-the-file-browser) | Small feature | No |
@@ -28,6 +30,33 @@ Folders change with a shared axis, and the back gesture previews the parent fold
 
 - The path chips do not follow the back gesture. They change once it is released, so the last chip only starts to fade
   out then.
+
+## File browser, editor and preview at once on a tablet
+
+**Idea, low priority.** On a tablet, the file browser, the editor and the preview could all be open at once. That is a
+niche case. The old two-pane layout for large windows (`MkDocsEditorListAndDocumentContent`) never showed a document,
+and it was removed in #168.
+
+A new layout has one constraint, which caused the bug fixed in #168: the file browser's navigator must stay at the same
+place in the composition for every window size. Voyager restores a nested navigator by that place, so a layout that
+moves it for another window size resets the file browser and closes the open document on a rotation or a resize. Put
+the panes around the one navigator instead of choosing between two layouts that each have their own.
+
+---
+
+# Editor
+
+## Code blocks as one box
+
+In the editor, the background of a fenced code block only shades the text of each line, not the full width of the
+editor. So the block looks ragged, unlike the preview, where it is one box.
+
+The shading is a span: `EditorColorScheme.codeStyle` gives `MarkdownRules.FencedCode` (and inline code) a `SpanStyle`
+with `background = palette.codeBackground`. A span background only covers the glyphs of a line. A full-width box needs
+a background behind whole lines, and KodeEditor has none: its `overlay` draws on top of the text, and the only line
+background is `foldedLineBackgroundColor` for folds. So this probably needs a line background (or a layer below the
+text) in KodeEditor, a separate repository where only Markus merges. The rule book would then name the lines of a
+block, for example from the same fences that `MkDocsFoldProvider` finds.
 
 ---
 

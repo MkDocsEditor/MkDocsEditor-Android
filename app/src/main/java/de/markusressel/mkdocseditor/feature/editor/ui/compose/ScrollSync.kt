@@ -5,6 +5,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.setValue
 import de.markusressel.mkdocseditor.feature.editor.domain.EditorScrollView
 import de.markusressel.mkdocseditor.feature.editor.domain.EditorTarget
@@ -35,14 +36,26 @@ import de.markusressel.mkdocseditor.feature.editor.domain.previewReadingAnchor
  *
  * The user can turn it off, then both sides scroll on their own.
  *
+ * It also keeps the source line at the top of each side, so that a rotation or a resize, which recreate the screen,
+ * puts both back at the same line, see [Positions]. A line and not a pixel offset, because the new width wraps the
+ * text differently.
+ *
  * @param text the text of the editor
  * @param now the clock for the time after an edit
+ * @param restored where both sides were before the screen was recreated
  */
 @Stable
 internal class ScrollSync(
     private val text: () -> String,
     private val now: () -> Long = SystemClock::uptimeMillis,
+    restored: Positions? = null,
 ) {
+
+    /**
+     * The source lines at the top of the editor and of the page, with the part of the way to the next line, null for a
+     * side that was never laid out
+     */
+    data class Positions(val editorTop: Double?, val pageTop: Double?)
 
     enum class Side { Editor, Preview }
 
@@ -80,8 +93,25 @@ internal class ScrollSync(
         }
 
     /** where the page should scroll to, null as long as the editor did not move or while the page drives */
-    var previewTarget by mutableStateOf<PreviewTarget?>(null)
+    var previewTarget by mutableStateOf(restored?.pageTop?.let { PreviewTarget(SyncAnchor(it, 0f), smooth = false) })
         private set
+
+    /** the line the page goes back to after a recreation, until the user or the editor moves the page */
+    private var pageRestore: PreviewTarget? = previewTarget
+
+    /**
+     * The line the editor goes back to after a recreation, null when there is none, or once it is there. Until then the
+     * editor does not drive the page: its first layouts are at the top.
+     */
+    var editorRestore: Double? = restored?.editorTop
+        private set
+
+    private var editorTop: Double? = restored?.editorTop
+    private var pageTop: Double? = restored?.pageTop
+
+    /** what to keep for a recreation of the screen */
+    val positions: Positions
+        get() = Positions(editorTop, pageTop)
 
     /** where the editor should scroll to, while the page drives */
     var editorTarget by mutableStateOf<EditorTarget?>(null)
@@ -102,6 +132,18 @@ internal class ScrollSync(
     /** the user scrolled the editor, or following moved it */
     fun onEditorDriving() {
         driver = Side.Editor
+        editorRestore = null
+    }
+
+    /** the editor went back to [editorRestore], or can't */
+    fun onEditorRestored() {
+        editorRestore = null
+    }
+
+    /** the source line at the top of the editor, null before its first layout */
+    fun onEditorTop(line: Double?) {
+        if (line == null || editorRestore != null) return
+        editorTop = line
     }
 
     /** the user typed in the editor */
@@ -131,7 +173,7 @@ internal class ScrollSync(
 
     fun onEditorAnchor(anchor: EditorAnchor?) {
         // while off the editor's anchor is kept, for the page to align with when it is turned on again
-        if (anchor == null || (enabled && driver != Side.Editor)) return
+        if (anchor == null || editorRestore != null || (enabled && driver != Side.Editor)) return
         editorAnchor = anchor
         publishPreviewTarget()
     }
@@ -142,6 +184,15 @@ internal class ScrollSync(
     }
 
     fun onPreviewScrolled(scroll: PreviewScroll) {
+        if (scroll.byUser && pageRestore != null) {
+            // the user takes over, and a page that loads again must not go back to the line
+            if (previewTarget === pageRestore) previewTarget = null
+            pageRestore = null
+        }
+        // a page that has just loaded is at the top until it gets to the line it goes back to, and stays there
+        if (pageRestore == null || previewTarget !== pageRestore) {
+            map?.let { pageTop = it.lineAt(scroll.scrollY) }
+        }
         // the page also reports the scrolls that the app makes, and those must not drive
         if (!scroll.byUser || !active || !enabled) return
         if (driver != Side.Preview) {
@@ -156,13 +207,25 @@ internal class ScrollSync(
     }
 
     private fun publishPreviewTarget() {
-        if (!enabled || !active || driver != Side.Editor) return
+        if (!enabled || !active || driver != Side.Editor || editorRestore != null) return
         val anchor = editorAnchor ?: return
         previewTarget = PreviewTarget(anchor.anchor, smooth = anchor.caret)
+        pageRestore = null
     }
 
     companion object {
         /** how long after an edit the caret is the anchor */
         const val CARET_ANCHOR_MS = 300L
+
+        /** keeps [positions] across a recreation of the screen */
+        fun saver(text: () -> String) = listSaver<ScrollSync, Double>(
+            save = { listOf(it.editorTop ?: Double.NaN, it.pageTop ?: Double.NaN) },
+            restore = { (editorTop, pageTop) ->
+                ScrollSync(
+                    text = text,
+                    restored = Positions(editorTop.takeUnless { it.isNaN() }, pageTop.takeUnless { it.isNaN() }),
+                )
+            },
+        )
     }
 }

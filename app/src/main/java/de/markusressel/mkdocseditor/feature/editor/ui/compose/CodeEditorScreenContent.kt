@@ -50,6 +50,14 @@ import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.platform.testTag
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
@@ -100,7 +108,10 @@ internal fun CodeEditorScreenContent(
     val editorShown = uiState.editorShown
     val previewShown = !editorShown || splitMode != SplitMode.Off
 
-    val scrollSync = remember(editorState) { ScrollSync(text = { editorState.text }) }
+    // saved: a rotation recreates the screen, and both sides go back to their lines
+    val scrollSync = rememberSaveable(editorState, saver = ScrollSync.saver(text = { editorState.text })) {
+        ScrollSync(text = { editorState.text })
+    }
     SideEffect {
         scrollSync.enabled = uiState.editorSettings.scrollSync
         scrollSync.active = editorShown && previewShown
@@ -111,6 +122,11 @@ internal fun CodeEditorScreenContent(
     LaunchedEffect(uiState.editModeActive) {
         if (!uiState.editModeActive) focusManager.clearFocus()
     }
+
+    val editorFocus = rememberEditorFocus(
+        editModeActive = uiState.editModeActive,
+        editModeOpening = uiState.editModeOpening,
+    )
 
     val chrome = remember { EditorChromeState() }
     val keyboardVisible = WindowInsets.isImeVisible
@@ -215,7 +231,8 @@ internal fun CodeEditorScreenContent(
                     onRatioChangeFinished = { onUiEvent(CodeEditorViewModel.UiEvent.SplitRatioChangeFinished) },
                     editor = {
                         CodeEditorLayout(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.fillMaxSize().then(editorFocus.modifier),
+                            restoreToCursor = editorFocus.hadFocus,
                             state = editorState,
                             remotePeers = remotePeers,
                             settings = uiState.editorSettings,
@@ -278,6 +295,49 @@ internal fun CodeEditorScreenContent(
 }
 
 internal const val LOADING_INDICATOR_TAG = "editor-loading"
+
+/**
+ * Gives the focus back to the editor after a rotation, or after Android restored the screen, if it had it in the edit
+ * mode before, and opens the keyboard again. The keyboard's composition ends with the old window all the same. The
+ * text and the selection stay in the editor's state, so nothing goes through the document here.
+ */
+@Composable
+internal fun rememberEditorFocus(editModeActive: Boolean, editModeOpening: Boolean): EditorFocus {
+    var focused by rememberSaveable { mutableStateOf(false) }
+    // read once: the first focus events of the new editor say it has none, and must not overwrite what was saved
+    val hadFocus = remember { focused }
+    var restoring by remember { mutableStateOf(hadFocus) }
+    val requester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(restoring, editModeActive, editModeOpening) {
+        if (!restoring) return@LaunchedEffect
+        if (editModeActive) {
+            // after the first layout, the editor's focus target is there then
+            withFrameNanos { }
+            requester.requestFocus()
+            keyboard?.show()
+            restoring = false
+        } else if (!editModeOpening) {
+            // the edit mode does not come back on its own
+            restoring = false
+        }
+    }
+    val modifier = Modifier
+        .focusRequester(requester)
+        .onFocusChanged {
+            // the window gives up the focus when the activity goes away, before its state is saved
+            if (!restoring && lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) focused = it.hasFocus
+        }
+    return EditorFocus(modifier, hadFocus)
+}
+
+/**
+ * @param modifier for the editor
+ * @param hadFocus the editor had the focus before the screen was recreated, so the cursor matters more than the line
+ * at the top
+ */
+internal class EditorFocus(val modifier: Modifier, val hadFocus: Boolean)
 
 /** from this width the bar has room for the actions that are toggled or looked at often */
 internal const val WIDE_TOP_BAR_DP = 600
