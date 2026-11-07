@@ -28,6 +28,10 @@ import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.LinkPickerDialog
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferencesDialog
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.ResourcePickerDialog
+import androidx.compose.ui.res.stringResource
+import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.qr.domain.QrLink
+import de.markusressel.mkdocseditor.feature.qr.ui.compose.PageQrCodesDialog
 
 internal data class CodeEditorScreen(
     val documentId: String,
@@ -194,6 +198,20 @@ internal data class CodeEditorScreen(
                     onFix = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.ReferenceFixClicked(it)) },
                     onOpenDocument = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.OpenDocumentClicked(it)) },
                     onUpload = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.PanelUploadClicked) },
+                    onDismiss = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.DismissDialog) },
+                )
+            }
+
+            is CodeEditorViewModel.DialogState.QrCodes -> {
+                val clientUrl = stringResource(R.string.auth_web_client_url)
+                PageQrCodesDialog(
+                    state = dialogState,
+                    readOnly = !uiState.canEdit,
+                    stickerUrl = { QrLink.build(clientUrl, it) },
+                    onKeyChanged = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.QrKeyChanged(it)) },
+                    onLabelChanged = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.QrLabelChanged(it)) },
+                    onAdd = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.QrAddClicked) },
+                    onRemove = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.QrRemoveClicked(it)) },
                     onDismiss = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.DismissDialog) },
                 )
             }

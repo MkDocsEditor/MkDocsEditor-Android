@@ -257,6 +257,34 @@ internal class EditorTextController(
         apply(MarkdownFormatting.replaceSelection(text, start, end, replacement))
     }
 
+    /**
+     * Changes the text to [newText] as one edit of the part that differs, so the rest of the text and the cursors in it
+     * stay as they are. The selection stays where it is in the text around the change.
+     */
+    fun changeTo(newText: String) {
+        val before = text
+        var start = 0
+        while (start < before.length && start < newText.length && before[start] == newText[start]) start++
+        // never between the two halves of a character
+        if (start > 0 && before[start - 1].isHighSurrogate()) start--
+        var same = 0
+        while (same < before.length - start && same < newText.length - start &&
+            before[before.length - 1 - same] == newText[newText.length - 1 - same]
+        ) same++
+        if (same > 0 && before[before.length - same].isLowSurrogate()) same--
+        val end = before.length - same
+        val inserted = newText.substring(start, newText.length - same)
+        if (start == end && inserted.isEmpty()) return
+
+        fun moved(position: Int) = when {
+            position <= start -> position
+            position >= end -> position + inserted.length - (end - start)
+            else -> start + inserted.length
+        }
+        val selection = selection
+        apply(FormatEdit(newText, moved(selection.start), moved(selection.end)))
+    }
+
     private fun apply(edit: FormatEdit) {
         applyingAction = true
         try {

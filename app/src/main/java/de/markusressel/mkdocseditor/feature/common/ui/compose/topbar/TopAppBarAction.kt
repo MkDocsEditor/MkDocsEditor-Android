@@ -24,6 +24,8 @@ sealed interface TopAppBarAction {
         data class OnlineUsersAction(val remotePeers: List<RemotePeer>) : CodeEditor
         data class FollowUserAction(val instanceId: String) : CodeEditor
         data object PageReferencesAction : CodeEditor
+        /** the QR code stickers of the page */
+        data object QrCodesAction : CodeEditor
         /** opens the sheet with the view settings of the editor */
         data object ViewSettingsAction : CodeEditor
         data class ConnectionAction(val indicator: ConnectionIndicator) : CodeEditor

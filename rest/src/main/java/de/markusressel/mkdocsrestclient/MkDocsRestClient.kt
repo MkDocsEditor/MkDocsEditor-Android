@@ -9,6 +9,8 @@ import de.markusressel.mkdocsrestclient.document.DocumentApi
 import de.markusressel.mkdocsrestclient.document.DocumentApiImpl
 import de.markusressel.mkdocsrestclient.mkdocs.MkDocsApi
 import de.markusressel.mkdocsrestclient.mkdocs.MkDocsApiImpl
+import de.markusressel.mkdocsrestclient.qr.QrCodeApi
+import de.markusressel.mkdocsrestclient.qr.QrCodeApiImpl
 import de.markusressel.mkdocsrestclient.reference.ReferenceApi
 import de.markusressel.mkdocsrestclient.reference.ReferenceApiImpl
 import de.markusressel.mkdocsrestclient.resource.ResourceApi
@@ -30,13 +32,15 @@ class MkDocsRestClient constructor(
     resourceApi: ResourceApi = ResourceApiImpl(requestManager),
     referenceApi: ReferenceApi = ReferenceApiImpl(requestManager),
     dashboardApi: DashboardApi = DashboardApiImpl(requestManager),
+    qrCodeApi: QrCodeApi = QrCodeApiImpl(requestManager),
 ) : IMkDocsRestClient,
     MkDocsApi by mkDocsApi,
     SectionApi by sectionApi,
     DocumentApi by documentApi,
     ResourceApi by resourceApi,
     ReferenceApi by referenceApi,
-    DashboardApi by dashboardApi {
+    DashboardApi by dashboardApi,
+    QrCodeApi by qrCodeApi {
 
     override suspend fun isHostAlive(): Result<String, FuelError> {
         return requestManager.doStatusRequest("/alive/", Method.GET)

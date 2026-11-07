@@ -5,12 +5,13 @@ import com.github.kittinunf.result.Result
 import de.markusressel.mkdocsrestclient.dashboard.DashboardApi
 import de.markusressel.mkdocsrestclient.document.DocumentApi
 import de.markusressel.mkdocsrestclient.mkdocs.MkDocsApi
+import de.markusressel.mkdocsrestclient.qr.QrCodeApi
 import de.markusressel.mkdocsrestclient.reference.ReferenceApi
 import de.markusressel.mkdocsrestclient.resource.ResourceApi
 import de.markusressel.mkdocsrestclient.section.SectionApi
 import de.markusressel.mkdocsrestclient.section.SectionModel
 
-interface IMkDocsRestClient : MkDocsApi, SectionApi, DocumentApi, ResourceApi, ReferenceApi, DashboardApi {
+interface IMkDocsRestClient : MkDocsApi, SectionApi, DocumentApi, ResourceApi, ReferenceApi, DashboardApi, QrCodeApi {
 
     /**
      * Check if the server is alive and reachable

@@ -415,4 +415,37 @@
         <item quantity="other">%1$d folders</item>
     </plurals>
 
+    <!-- QR code stickers, docs/qr.md of the backend -->
+    <string name="qr_link_title">QR code “%1$s”</string>
+    <string name="qr_link_conflict">More than one page has this code. Open one of them, and remove the code from the others.</string>
+    <string name="qr_link_unknown">No page has this code yet.</string>
+    <string name="qr_link_gone">No page has this code any more. It was on “%1$s”.</string>
+    <string name="qr_link_gone_with_label">No page has this code any more. It was on “%1$s”, labelled “%2$s”.</string>
+    <string name="qr_link_put_on_page">Put it on a page</string>
+    <string name="qr_link_ask_editor">Ask an editor of the wiki to put the code on a page.</string>
+    <string name="qr_link_pick_page">Put the code on a page, so the sticker opens it:</string>
+    <string name="qr_link_page_query">Find a page</string>
+    <string name="qr_problem_invalid">This link holds no QR code.</string>
+    <string name="qr_problem_no_backend">No server is set up yet. Add the server of the wiki, then scan the code again.</string>
+    <string name="qr_problem_signed_out">Sign in to %1$s, then scan the code again.</string>
+    <string name="qr_problem_unsupported">%1$s has no QR codes yet.</string>
+    <string name="qr_problem_unreachable">Can\'t reach %1$s. Check your connection and try again.</string>
+    <string name="qr_problem_failed">The code could not be opened.</string>
+    <string name="qr_codes_action">QR codes</string>
+    <string name="qr_codes_explanation">A sticker with one of these codes opens this page, also after it is renamed or moved.</string>
+    <string name="qr_codes_none">This page has no QR code yet.</string>
+    <string name="qr_codes_key">Code</string>
+    <string name="qr_codes_key_hint">Lower-case letters, digits and dashes</string>
+    <string name="qr_codes_label">Where the sticker is (optional)</string>
+    <string name="qr_codes_add">Add code</string>
+    <string name="qr_codes_remove">Remove %1$s</string>
+    <string name="qr_codes_copy">Copy the link of %1$s</string>
+    <string name="qr_codes_copied">Link copied</string>
+    <string name="qr_codes_image">QR code %1$s</string>
+    <string name="qr_codes_print_on_web">To print stickers, open the page in the web client.</string>
+    <string name="qr_codes_error_invalid">Use lower-case letters, digits and dashes, up to 64.</string>
+    <string name="qr_codes_error_on_page">The page has this code already.</string>
+    <string name="qr_codes_error_elsewhere">“%1$s” has this code. Remove it there first.</string>
+    <string name="qr_codes_error_unchecked">Can\'t ask the server whether another page has this code. Try again with a connection.</string>
+
 </resources>

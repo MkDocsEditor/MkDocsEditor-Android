@@ -23,6 +23,8 @@ import de.markusressel.mkdocseditor.auth.link.ConnectLinkParser
 import de.markusressel.mkdocseditor.auth.link.JoinLinkParser
 import de.markusressel.mkdocseditor.feature.join.ui.compose.AccessRequestsScreen
 import de.markusressel.mkdocseditor.feature.join.ui.compose.JoinLinkScreen
+import de.markusressel.mkdocseditor.feature.qr.domain.QrLink
+import de.markusressel.mkdocseditor.feature.qr.ui.compose.QrLinkScreen
 import de.markusressel.mkdocseditor.feature.auth.onboarding.ui.compose.ConnectLinkScreen
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.LocalAuthFlowExit
 import de.markusressel.mkdocseditor.feature.auth.link.ui.PendingAuthLinkViewModel
@@ -72,6 +74,7 @@ private fun AuthLinkFlow(link: String, onExit: () -> Unit) {
                 val first = when {
                     link.startsWith(ACCESS_REQUESTS_OF_BACKEND) -> AccessRequestsScreen(link.removePrefix(ACCESS_REQUESTS_OF_BACKEND).toLong())
                     ConnectLinkParser.isConnectLink(link) -> ConnectLinkScreen(link)
+                    QrLink.parse(link) != null -> QrLinkScreen(link)
                     JoinLinkParser.parse(link) != null -> JoinLinkScreen(link)
                     else -> AuthLinkScreen(linkText = link)
                 }
@@ -181,7 +184,9 @@ class MainActivityCompose : AppCompatActivity() {
         }
         if (intent?.action != Intent.ACTION_VIEW) return
         val data = intent.dataString ?: return
-        if (AuthLinkParser.parse(data) != null || ConnectLinkParser.isConnectLink(data) || JoinLinkParser.parse(data) != null) {
+        if (AuthLinkParser.parse(data) != null || ConnectLinkParser.isConnectLink(data) || JoinLinkParser.parse(data) != null ||
+            QrLink.parse(data) != null
+        ) {
             pendingAuthLink.open(data)
         }
         // the link token must not stay in the intent (recents, recreation)
