@@ -18,7 +18,7 @@ internal class SearchUseCase @Inject constructor(
             dataRepository.find(searchTerm).map { found ->
                 when (val item = found.item) {
                     is DocumentData -> {
-                        val matches = SearchExcerpts.find(item.content?.text.orEmpty(), searchTerm)
+                        val matches = SearchExcerpts.find(item.searchableText, searchTerm)
                         SearchResultItem.Document(
                             documentId = item.id,
                             documentName = item.shownTitle,

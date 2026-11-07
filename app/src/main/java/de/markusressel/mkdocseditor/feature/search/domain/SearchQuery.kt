@@ -26,8 +26,9 @@ internal class SearchQuery(term: String) {
     }
 
     /**
-     * whether a page is found: each word in its file name, title, description, tags or text. A page that asks not to be
-     * searched ([searchExclude], `search: exclude` in its front matter) never is, as in MkDocs.
+     * whether a page is found: each word in its file name, title, description, tags or text. The text of a page that
+     * asks not to be searched ([searchExclude], `search: exclude` in its front matter) is left out, as in MkDocs and the
+     * web client, but the page can still be found by its name, like in the file browser.
      */
     fun matchesPage(
         name: String,
@@ -36,7 +37,7 @@ internal class SearchQuery(term: String) {
         tags: List<String>,
         text: String,
         searchExclude: Boolean,
-    ): Boolean = !searchExclude && matches(name, title.orEmpty(), description.orEmpty(), *tags.toTypedArray(), text)
+    ): Boolean = matches(name, title.orEmpty(), description.orEmpty(), *tags.toTypedArray(), if (searchExclude) "" else text)
 
     /** every place of any word in [text], as indices of [text]; these can overlap, so [matchesIn] is for showing them */
     fun occurrencesIn(text: String): List<IntRange> {

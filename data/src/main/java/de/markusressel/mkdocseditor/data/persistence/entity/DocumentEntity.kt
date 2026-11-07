@@ -16,7 +16,7 @@ import java.util.Date
  * @param title the page name as MkDocs shows it, see `DocumentModel.title`
  * @param metaTitle the title of the front matter only; [title] can also come from a heading or the file name
  * @param tags the tags of the front matter
- * @param searchExclude the page asks not to be found by search
+ * @param searchExclude the page asks not to be found by its text in search
  */
 @Entity
 data class DocumentEntity(

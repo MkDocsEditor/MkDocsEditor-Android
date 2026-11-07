@@ -1,8 +1,12 @@
 package de.markusressel.mkdocseditor.feature.search
 
+import de.markusressel.mkdocseditor.feature.filebrowser.data.DocumentContentData
+import de.markusressel.mkdocseditor.feature.filebrowser.data.DocumentData
+import de.markusressel.mkdocseditor.feature.search.domain.SearchExcerpts
 import de.markusressel.mkdocseditor.feature.search.domain.SearchQuery
 import de.markusressel.mkdocseditor.feature.search.domain.SearchResultItem
 import de.markusressel.mkdocseditor.feature.search.domain.sortedByRelevance
+import java.util.Date
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -40,10 +44,21 @@ class PageMetaSearchTest {
     }
 
     @Test
-    fun `a page that asks not to be searched is never found`() {
-        assertFalse(SearchQuery("setup").finds(searchExclude = true))
-        assertFalse(SearchQuery("getting").finds(title = "Getting started", searchExclude = true))
+    fun `a page that asks not to be searched is found by its name, but not by its text`() {
+        assertTrue(SearchQuery("setup").finds(searchExclude = true))
+        assertTrue(SearchQuery("getting").finds(title = "Getting started", searchExclude = true))
+        assertTrue(SearchQuery("intro").finds(tags = listOf("intro"), searchExclude = true))
         assertFalse(SearchQuery("router").finds(text = "The router", searchExclude = true))
+        assertFalse(SearchQuery("setup router").finds(text = "The router", searchExclude = true))
+    }
+
+    @Test
+    fun `a page that asks not to be searched shows no excerpts of its text`() {
+        val content = DocumentContentData(0, 0, "The router is in the hall", 0, 1f, 0f, 0f)
+        val page = DocumentData(0, "d1", "setup", 0, Date(0), "", content, isOfflineAvailable = true)
+        assertEquals("The router is in the hall", page.searchableText)
+        assertEquals("", page.copy(searchExclude = true).searchableText)
+        assertEquals(0, SearchExcerpts.find(page.copy(searchExclude = true).searchableText, "router").matchCount)
     }
 
     @Test
