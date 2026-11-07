@@ -21,6 +21,7 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.AuthorHighlightMod
 import kotlinx.coroutines.flow.map
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.EditorSettings
 import android.net.Uri
+import android.os.SystemClock
 import de.markusressel.mkdocseditor.feature.editor.domain.TextPositions
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.DEFAULT_SPLIT_RATIO
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.MAX_SPLIT_RATIO
@@ -202,6 +203,21 @@ internal class CodeEditorViewModel @Inject constructor(
         onDocumentChanged = { authorshipRequests.update { it + 1 } },
     )
 
+    private val authorshipLoader = AuthorshipLoader(
+        fetch = { documentId ->
+            getAuthorshipUseCase(documentId).fold(
+                success = { it },
+                failure = {
+                    // for example a backend that does not have this yet; the editor works without it
+                    Timber.w(it)
+                    null
+                },
+            )
+        },
+        show = editorText::showAuthors,
+        now = SystemClock::elapsedRealtime,
+    )
+
     /** who wrote what, see [EditorTextController.authorRuns] */
     internal val editorAuthorRuns: State<AuthorRuns> = editorText.authorRuns
 
@@ -287,7 +303,7 @@ internal class CodeEditorViewModel @Inject constructor(
             ) { documentId, connected, mode, request ->
                 val wanted = connected && AuthorHighlightMode.fromValue(mode) != AuthorHighlightMode.Off
                 documentId.takeIf { wanted } to request
-            }.collectLatest { (documentId, _) -> if (documentId != null) loadAuthors(documentId) }
+            }.collectLatest { (documentId, _) -> if (documentId != null) authorshipLoader.load(documentId) }
         }
 
         session.start()
@@ -558,22 +574,6 @@ internal class CodeEditorViewModel @Inject constructor(
         }
         // show the new files in the tree (pickers, preview)
         session.documentId.value?.let { refreshWikiTree(it) }
-    }
-
-    /** Waits until the text settled, because an answer only fits the exact state of the text it describes */
-    private suspend fun loadAuthors(documentId: String) {
-        repeat(AUTHORSHIP_ATTEMPTS) {
-            delay(AUTHORSHIP_SETTLE_MS)
-            val fits = getAuthorshipUseCase(documentId).fold(
-                success = { editorText.showAuthors(it) },
-                failure = {
-                    // for example a backend that does not have this yet; the editor works without it
-                    Timber.w(it)
-                    return
-                },
-            )
-            if (fits) return
-        }
     }
 
     private suspend fun onTopAppBarActionClicked(action: TopAppBarAction.CodeEditor) {
@@ -1133,6 +1133,3 @@ internal class CodeEditorViewModel @Inject constructor(
         data object CursorColorPicker : DialogState
     }
 }
-
-private const val AUTHORSHIP_SETTLE_MS = 2000L
-private const val AUTHORSHIP_ATTEMPTS = 3

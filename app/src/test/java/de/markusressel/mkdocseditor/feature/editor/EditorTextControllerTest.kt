@@ -23,7 +23,7 @@ import kotlin.test.assertTrue
 
 class EditorTextControllerTest {
 
-    private class TestDocument(text: String) : EditableTextDocument {
+    private class TestDocument(text: String, override val localAuthor: String? = null) : EditableTextDocument {
         val automerge: AutomergeTextDocument = run {
             val document = Document()
             document.startTransaction().use { tx ->
@@ -277,5 +277,59 @@ class EditorTextControllerTest {
 
         assertTrue(reads.intersect(writes).isNotEmpty())
         assertEquals("#e8590c", controller.authorColors["anna"])
+    }
+
+    @Test
+    fun `the user's own typing gets their name at once, also before the first answer`() {
+        val controller = controller()
+        controller.bind(TestDocument("abcd", localAuthor = "anna"))
+        controller.select(4, 4)
+
+        controller.editorState.replaceSelection("ef")
+
+        assertEquals(listOf(AuthorRun(4, 6, "anna")), controller.authorRuns.value.runs)
+    }
+
+    @Test
+    fun `the user's typing joins their run, and splits the run of another author`() {
+        val controller = controller()
+        val document = TestDocument("abcd", localAuthor = "anna")
+        controller.bind(document)
+        controller.showAuthors(document.authorship(AuthorshipRunModel(0, 2, "1", "anna"), AuthorshipRunModel(2, 4, "2", "bob")))
+
+        controller.select(2, 2)
+        controller.editorState.replaceSelection("x")
+        controller.select(4, 4)
+        controller.editorState.replaceSelection("y")
+
+        assertEquals(
+            listOf(AuthorRun(0, 3, "anna"), AuthorRun(3, 4, "bob"), AuthorRun(4, 5, "anna"), AuthorRun(5, 6, "bob")),
+            controller.authorRuns.value.runs,
+        )
+    }
+
+    @Test
+    fun `the answer of the backend replaces the runs of the instant guess`() {
+        val controller = controller()
+        val document = TestDocument("abcd", localAuthor = "anna")
+        controller.bind(document)
+        controller.select(4, 4)
+        controller.editorState.replaceSelection("ef")
+
+        assertTrue(controller.showAuthors(document.authorship(AuthorshipRunModel(0, 6, "1", "bob"))))
+
+        assertEquals(listOf(AuthorRun(0, 6, "bob")), controller.authorRuns.value.runs)
+    }
+
+    @Test
+    fun `a remote change of a known author gets their name, an unknown one waits for the backend`() {
+        val controller = controller()
+        val document = TestDocument("abcd")
+        controller.bind(document)
+
+        controller.onRemoteChange("zabcd", document.remoteEdit("zabcd"), author = "bob")
+        controller.onRemoteChange("zabcdy", document.remoteEdit("zabcdy"), author = null)
+
+        assertEquals(listOf(AuthorRun(0, 1, "bob"), AuthorRun(5, 6, null)), controller.authorRuns.value.runs)
     }
 }

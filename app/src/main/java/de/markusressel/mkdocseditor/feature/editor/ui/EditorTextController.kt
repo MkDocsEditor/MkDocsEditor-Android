@@ -88,7 +88,10 @@ internal class EditorTextController(
 
     private val _authorRuns = mutableStateOf(AuthorRuns())
 
-    /** who wrote what, moved within the call of each edit like [peers]. Empty until the backend told us. */
+    /**
+     * Who wrote what, moved within the call of each edit like [peers]. The user's own edits and those of a known remote
+     * author get their author at once, the backend's answer replaces everything with the exact attribution.
+     */
     val authorRuns: State<AuthorRuns> = _authorRuns
 
     private val _authorColors = mutableStateOf(emptyMap<String, String?>())
@@ -170,8 +173,8 @@ internal class EditorTextController(
         return true
     }
 
-    private fun moveAuthors(start: Int, removed: Int, inserted: Int) {
-        _authorRuns.value = _authorRuns.value.applied(start, removed, inserted)
+    private fun moveAuthors(start: Int, removed: Int, inserted: Int, author: String?) {
+        _authorRuns.value = _authorRuns.value.applied(start, removed, inserted, author)
         onDocumentChanged()
     }
 
@@ -180,8 +183,9 @@ internal class EditorTextController(
      *
      * @param text the text of the document after the change
      * @param splices the change, each one refers to the text after the one before it
+     * @param author who made all of [splices], null if not known
      */
-    fun onRemoteChange(text: String, splices: List<TextSplice>) {
+    fun onRemoteChange(text: String, splices: List<TextSplice>, author: String? = null) {
         var fits = true
         showInEditor {
             editorState.applyRemote(splices.map { EditorSplice(it.index, it.deleteCount, it.insert) })
@@ -193,7 +197,7 @@ internal class EditorTextController(
             }
         }
         if (!fits) return forgetAuthors()
-        splices.forEach { moveAuthors(it.index, it.deleteCount, it.insert.length) }
+        splices.forEach { moveAuthors(it.index, it.deleteCount, it.insert.length, author) }
     }
 
     fun onAuthorColorsChanged(colors: Map<String, String?>) {
@@ -269,7 +273,7 @@ internal class EditorTextController(
         val applied = version != null && applyToDocument(version, splice)
         if (applied) {
             documentText = editorState.text
-            moveAuthors(splice.start, splice.removedLength, splice.inserted.length)
+            moveAuthors(splice.start, splice.removedLength, splice.inserted.length, document.localAuthor)
             onLocalEdit()
         } else {
             onTextReplaced()

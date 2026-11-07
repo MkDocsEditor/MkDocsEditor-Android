@@ -10,20 +10,25 @@ import de.markusressel.mkdocsrestclient.reference.AuthorshipModel
 internal data class AuthorRun(val start: Int, val end: Int, val author: String?)
 
 /**
- * Who wrote which part of the text. It moves with each edit, so it always fits the text on screen. An edit has no
- * author here: the backend knows who made it, and names it in its next answer.
+ * Who wrote which part of the text. It moves with each edit, so it always fits the text on screen. An edit gets the
+ * author the app knows right away, or none until the backend names it in its next answer. That answer replaces all
+ * runs, so it corrects a guess.
  */
 internal data class AuthorRuns(val runs: List<AuthorRun> = emptyList()) {
 
-    /** @return these runs after replacing [removed] characters at [start] with [inserted] */
-    fun applied(start: Int, removed: Int, inserted: Int): AuthorRuns {
-        if (runs.isEmpty()) return this
+    /**
+     * @param author who wrote the inserted text, null if only the backend knows
+     * @return these runs after replacing [removed] characters at [start] with [inserted]
+     */
+    fun applied(start: Int, removed: Int, inserted: Int, author: String? = null): AuthorRuns {
+        // without runs nothing is known, and a run without an author would say nothing either
+        if (runs.isEmpty() && (author == null || inserted == 0)) return this
         val removedEnd = start + removed
         val shift = inserted - removed
         val result = ArrayList<AuthorRun>(runs.size + 2)
         var insertedRun = inserted == 0
         fun addInserted() {
-            if (!insertedRun) result.add(AuthorRun(start, start + inserted, null))
+            if (!insertedRun) result.add(AuthorRun(start, start + inserted, author))
             insertedRun = true
         }
         runs.forEach { run ->

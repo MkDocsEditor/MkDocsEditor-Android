@@ -626,7 +626,7 @@ class DocumentSessionTest {
         assertEquals(1, f.host.readOnly)
 
         f.document.text = "text!"
-        f.document.listener.onRemoteChange("text!", emptyList())
+        f.document.listener.onRemoteChange("text!", emptyList(), author = null)
         assertEquals(1, f.host.remoteChanges)
         assertEquals("text!", f.text.text)
 
