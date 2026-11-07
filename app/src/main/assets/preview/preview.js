@@ -248,6 +248,11 @@
       syncAnchor = { line: line, viewportFraction: viewportFraction }
       scrollToSyncAnchor(!!smooth)
     },
+    /** Lets go of the source line of the app, so that the page stays where it is when it renders again. */
+    stopSync: function () {
+      syncAnchor = null
+      target = null
+    },
   }
 
   var content = document.getElementById('content')

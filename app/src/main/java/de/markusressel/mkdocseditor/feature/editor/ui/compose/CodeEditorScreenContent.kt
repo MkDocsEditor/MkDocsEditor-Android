@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -99,7 +100,10 @@ internal fun CodeEditorScreenContent(
     val previewShown = !editorShown || splitMode != SplitMode.Off
 
     val scrollSync = remember(editorState) { ScrollSync(text = { editorState.text }) }
-    SideEffect { scrollSync.active = editorShown && previewShown }
+    SideEffect {
+        scrollSync.enabled = uiState.editorSettings.scrollSync
+        scrollSync.active = editorShown && previewShown
+    }
 
     // at the start of the animation, so the keyboard does not wait for the editor to leave
     val focusManager = LocalFocusManager.current
@@ -283,6 +287,8 @@ internal fun editorTopBarActions(
     val menu = listOfNotNull(
         authorHighlight.takeIf { !wide },
         references.takeIf { !wide },
+        TopAppBarAction.CodeEditor.ScrollSyncAction(uiState.editorSettings.scrollSync)
+            .takeIf { editorShown && splitMode != SplitMode.Off },
         TopAppBarAction.CodeEditor.CursorColorAction,
         TopAppBarAction.CodeEditor.MenuDivider,
         TopAppBarAction.CodeEditor.ShareLinkAction,
@@ -440,6 +446,9 @@ internal fun MoreAction(
                 DropdownMenuItem(
                     modifier = Modifier.testTag("menu-${entry::class.simpleName}"),
                     text = { Text(text) },
+                    trailingIcon = (entry as? TopAppBarAction.CodeEditor.ScrollSyncAction)?.let {
+                        { Checkbox(checked = it.enabled, onCheckedChange = null) }
+                    },
                     onClick = {
                         expanded = false
                         onEntryClicked(entry)
@@ -455,6 +464,7 @@ private fun menuText(entry: TopAppBarAction.CodeEditor): String? = when (entry) 
     is TopAppBarAction.CodeEditor.AuthorHighlightAction ->
         stringResource(R.string.editor_author_highlight_action, stringResource(entry.mode.nameRes))
     TopAppBarAction.CodeEditor.PageReferencesAction -> stringResource(R.string.page_references_action)
+    is TopAppBarAction.CodeEditor.ScrollSyncAction -> stringResource(R.string.editor_scroll_sync_action)
     TopAppBarAction.CodeEditor.CursorColorAction -> stringResource(R.string.cursor_color)
     TopAppBarAction.CodeEditor.ShareLinkAction -> stringResource(R.string.share_document_link)
     TopAppBarAction.CodeEditor.ShowInBrowserAction -> stringResource(R.string.open_in_browser)

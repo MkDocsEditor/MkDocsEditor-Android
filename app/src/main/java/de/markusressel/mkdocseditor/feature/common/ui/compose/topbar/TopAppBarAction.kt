@@ -27,6 +27,8 @@ sealed interface TopAppBarAction {
         data object CursorColorAction : CodeEditor
         data object PageReferencesAction : CodeEditor
         data class AuthorHighlightAction(val mode: AuthorHighlightMode) : CodeEditor
+        /** @param enabled whether editor and rendered page of the split scroll together */
+        data class ScrollSyncAction(val enabled: Boolean) : CodeEditor
         data class ConnectionAction(val indicator: ConnectionIndicator) : CodeEditor
     }
 

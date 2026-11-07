@@ -15,6 +15,8 @@ import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.text
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.DialogState as FileBrowserDialogState
 import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRuns
 import de.markusressel.mkdocseditor.feature.editor.domain.GetAuthorshipUseCase
+import de.markusressel.mkdocseditor.feature.editor.domain.ToggleScrollSyncUseCase
+import de.markusressel.mkdocseditor.feature.editor.data.ScrollSyncSetting
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.AuthorHighlightMode
 import kotlinx.coroutines.flow.map
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.EditorSettings
@@ -113,6 +115,8 @@ internal class CodeEditorViewModel @Inject constructor(
     private val getAuthorshipUseCase: GetAuthorshipUseCase,
     private val createJoinLinkUseCase: CreateJoinLinkUseCase,
     private val localCursorColor: LocalCursorColor,
+    private val toggleScrollSync: ToggleScrollSyncUseCase,
+    scrollSyncSetting: ScrollSyncSetting,
     clientInstanceId: ClientInstanceId,
     moveItemUseCase: MoveItemUseCase,
     getBacklinksUseCase: GetBacklinksUseCase,
@@ -262,12 +266,14 @@ internal class CodeEditorViewModel @Inject constructor(
                 preferencesHolder.editorLineNumbersPreference.persistedValue,
                 preferencesHolder.editorTextSizePreference.persistedValue,
                 preferencesHolder.editorAuthorHighlightPreference.persistedValue,
-            ) { wrapping, numbers, size, authors ->
+                scrollSyncSetting.enabled,
+            ) { wrapping, numbers, size, authors, scrollSync ->
                 EditorSettings(
                     lineWrapping = wrapping,
                     lineNumbers = numbers,
                     textSize = size.toInt(),
                     authorHighlight = AuthorHighlightMode.fromValue(authors),
+                    scrollSync = scrollSync,
                 )
             }.collect { settings -> _uiState.update { it.copy(editorSettings = settings) } }
         }
@@ -593,6 +599,10 @@ internal class CodeEditorViewModel @Inject constructor(
                 val next = action.mode.next()
                 preferencesHolder.editorAuthorHighlightPreference.persistValue(next.value)
                 showMessage(context.getString(R.string.editor_author_highlight_changed, context.getString(next.nameRes)))
+            }
+            is TopAppBarAction.CodeEditor.ScrollSyncAction -> {
+                val enabled = toggleScrollSync()
+                showMessage(context.getString(if (enabled) R.string.editor_scroll_sync_on else R.string.editor_scroll_sync_off))
             }
         }
     }

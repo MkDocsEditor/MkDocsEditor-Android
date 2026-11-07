@@ -30,7 +30,6 @@ import de.markusressel.mkdocseditor.feature.editor.domain.PreviewScroll
 import de.markusressel.mkdocseditor.feature.editor.domain.SyncAnchor
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.ScrollSync
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filterNotNull
 import org.json.JSONException
 import org.json.JSONObject
 import com.github.ajalt.timberkt.Timber
@@ -208,8 +207,10 @@ internal fun MarkdownPreview(
 
     LaunchedEffect(webView) {
         snapshotFlow { currentSyncTarget?.invoke() }
-            .filterNotNull()
-            .collect { webView.scrollToLine(it.anchor, it.smooth) }
+            .collect { target ->
+                // without a target the page stays where it is, also when it renders again
+                if (target == null) webView.stopSync() else webView.scrollToLine(target.anchor, target.smooth)
+            }
     }
 
     AndroidView(modifier = modifier, factory = { webView })
@@ -221,6 +222,10 @@ private fun WebView.scrollToLine(anchor: SyncAnchor, smooth: Boolean) {
         "window.MkDocsPreview && MkDocsPreview.scrollToLine(${anchor.line}, ${anchor.viewportFraction}, $smooth)",
         null,
     )
+}
+
+private fun WebView.stopSync() {
+    evaluateJavascript("window.MkDocsPreview && MkDocsPreview.stopSync()", null)
 }
 
 /** @return null for a report that can't be read */

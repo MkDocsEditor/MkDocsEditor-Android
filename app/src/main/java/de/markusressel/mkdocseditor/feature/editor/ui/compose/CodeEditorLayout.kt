@@ -270,6 +270,8 @@ internal data class EditorSettings(
     val lineNumbers: Boolean = true,
     val textSize: Int = DEFAULT_EDITOR_TEXT_SIZE.toInt(),
     val authorHighlight: AuthorHighlightMode = AuthorHighlightMode.StripAndMarker,
+    /** whether editor and rendered page of a split scroll together */
+    val scrollSync: Boolean = true,
 )
 
 private val NoAuthorRuns: State<AuthorRuns> = mutableStateOf(AuthorRuns())

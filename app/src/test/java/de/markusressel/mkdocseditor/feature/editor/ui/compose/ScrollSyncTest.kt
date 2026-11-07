@@ -171,6 +171,44 @@ class ScrollSyncTest {
     }
 
     @Test
+    fun `off means no pane drives`() {
+        sync.enabled = false
+        editorMoves()
+        sync.onPreviewScrolled(previewScroll(scrollY = 400f, byUser = true))
+        sync.onLocalEdit()
+        editorMoves(caretLine = 3.0)
+
+        assertNull(sync.previewTarget)
+        assertNull(sync.editorTarget)
+        assertEquals(0, sync.previewMovedByUser)
+    }
+
+    @Test
+    fun `turning it off lets go of the page, so that it stays where it is`() {
+        editorMoves()
+        sync.enabled = false
+
+        assertNull(sync.previewTarget)
+    }
+
+    @Test
+    fun `turning it on aligns the page with the editor once, also after the page drove`() {
+        sync.onPreviewScrolled(previewScroll(scrollY = 400f, byUser = true))
+        sync.enabled = false
+        // the user moves both on their own
+        editorMoves()
+
+        sync.enabled = true
+
+        assertEquals(ScrollSync.Side.Editor, sync.driver)
+        assertReadingLine(sync.previewTarget)
+
+        // from then on the side the user moves drives again
+        sync.onPreviewScrolled(previewScroll(scrollY = 400f, byUser = true))
+        assertEquals(EditorTarget(line = 6, fraction = 0f, viewportFraction = 0.5f), sync.editorTarget)
+    }
+
+    @Test
     fun `without a split nothing moves, and the page catches up when the split comes`() {
         sync.active = false
         editorMoves()

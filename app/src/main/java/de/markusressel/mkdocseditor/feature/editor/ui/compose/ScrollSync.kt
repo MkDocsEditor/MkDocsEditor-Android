@@ -29,6 +29,8 @@ import de.markusressel.mkdocseditor.feature.editor.domain.previewReadingAnchor
  * together, also when they show very different amounts of text. While typing, the caret is the anchor instead, at
  * its height in the editor, so that the page keeps the block being typed in view. Same in the web client.
  *
+ * The user can turn it off, then both sides scroll on their own.
+ *
  * @param text the text of the editor
  * @param now the clock for the time after an edit
  */
@@ -48,6 +50,21 @@ internal class ScrollSync(
 
     var driver: Side = Side.Editor
         private set
+
+    /** whether the user wants both sides to scroll together, see the setting */
+    var enabled: Boolean = true
+        set(value) {
+            if (field == value) return
+            field = value
+            if (value) {
+                // the page aligns with the editor once, and from then on follows the side the user moves
+                driver = Side.Editor
+                publishPreviewTarget()
+            } else {
+                // and the page lets go of the line, so that a new render does not move it
+                previewTarget = null
+            }
+        }
 
     /** whether the editor and the page are both shown */
     var active: Boolean = false
@@ -105,7 +122,8 @@ internal class ScrollSync(
     }
 
     fun onEditorAnchor(anchor: EditorAnchor?) {
-        if (anchor == null || driver != Side.Editor) return
+        // while off the editor's anchor is kept, for the page to align with when it is turned on again
+        if (anchor == null || (enabled && driver != Side.Editor)) return
         editorAnchor = anchor
         publishPreviewTarget()
     }
@@ -117,7 +135,7 @@ internal class ScrollSync(
 
     fun onPreviewScrolled(scroll: PreviewScroll) {
         // the page also reports the scrolls that the app makes, and those must not drive
-        if (!scroll.byUser || !active) return
+        if (!scroll.byUser || !active || !enabled) return
         if (driver != Side.Preview) {
             driver = Side.Preview
             // or a page that comes in again, or renders, would go back to it
@@ -130,7 +148,7 @@ internal class ScrollSync(
     }
 
     private fun publishPreviewTarget() {
-        if (!active || driver != Side.Editor) return
+        if (!enabled || !active || driver != Side.Editor) return
         val anchor = editorAnchor ?: return
         previewTarget = PreviewTarget(anchor.anchor, smooth = anchor.caret)
     }
