@@ -126,15 +126,8 @@ internal fun MainScreenContent(
                                 )
                             }
 
-                            // Actual tab content. Next to the rail it does not touch the start of the screen,
-                            // so it must not make room for a navigation bar or a cutout there a second time
-                            Box(
-                                modifier = if (navigationType == NavigationLayoutType.NAVIGATION_RAIL) {
-                                    Modifier.consumeWindowInsets(WindowInsets.barsAndCutout.only(WindowInsetsSides.Start))
-                                } else {
-                                    Modifier
-                                }
-                            ) {
+                            // Actual tab content
+                            ContentBesideRail(railShown = navigationType == NavigationLayoutType.NAVIGATION_RAIL) {
                                 CurrentTab()
                             }
                         }
@@ -142,6 +135,26 @@ internal fun MainScreenContent(
                 }
             }
         }
+    }
+}
+
+/**
+ * The content next to the navigation rail. It does not touch the start of the screen then, so it must not make room
+ * for a navigation bar or a cutout there a second time: the rail already does.
+ */
+@Composable
+internal fun ContentBesideRail(
+    railShown: Boolean,
+    content: @Composable () -> Unit,
+) {
+    Box(
+        modifier = if (railShown) {
+            Modifier.consumeWindowInsets(WindowInsets.barsAndCutout.only(WindowInsetsSides.Start))
+        } else {
+            Modifier
+        }
+    ) {
+        content()
     }
 }
 
