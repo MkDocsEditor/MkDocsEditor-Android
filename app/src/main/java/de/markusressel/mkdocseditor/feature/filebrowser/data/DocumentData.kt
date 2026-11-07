@@ -9,7 +9,7 @@ import java.util.Date
  * @param title the page name from the backend (front matter title, first heading or file name), null from a backend
  * without `page-meta`
  * @param metaTitle the title of the front matter only
- * @param searchExclude the page asks not to be found by search
+ * @param searchExclude the page asks not to be found by its text in search
  */
 data class DocumentData(
     val entityId: Long,
@@ -36,6 +36,10 @@ data class DocumentData(
      */
     val secondaryName: String?
         get() = name.takeIf { !it.replace('-', ' ').replace('_', ' ').equals(shownTitle, ignoreCase = true) }
+
+    /** the text search looks in and shows excerpts of: none for a page that asks not to be searched */
+    val searchableText: String
+        get() = if (searchExclude) "" else content?.text.orEmpty()
 
     /**
      * Human readable representation of file size
