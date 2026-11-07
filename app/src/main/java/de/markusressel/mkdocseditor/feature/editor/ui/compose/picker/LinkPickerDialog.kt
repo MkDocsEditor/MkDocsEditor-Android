@@ -196,7 +196,7 @@ private fun HeadingList(
             IconButton(onClick = onBack, modifier = Modifier.testTag("link-back")) {
                 Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.picker_back))
             }
-            Text(page.name, fontWeight = FontWeight.Bold)
+            Text(page.shownTitle, fontWeight = FontWeight.Bold)
         }
         LazyColumn {
             item {

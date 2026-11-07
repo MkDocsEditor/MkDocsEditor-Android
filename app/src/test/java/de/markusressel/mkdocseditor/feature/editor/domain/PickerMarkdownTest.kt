@@ -81,4 +81,31 @@ class PickerMarkdownTest {
         assertEquals(listOf("d-apfel", "d-index", "d-suppe", "s-r", "r-pdf"), tree.search("e").map { it.item.id })
         assertTrue(tree.search("  ").isEmpty())
     }
+
+    private val titled = WikiTree(
+        section(
+            "root", "root",
+            documents = listOf(
+                doc("d-setup", "setup").copy(title = "Getting started"),
+                doc("d-notes", "notes"),
+            ),
+        )
+    )
+
+    @Test
+    fun `search finds a page by its title and by its file name`() {
+        assertEquals(listOf("d-setup"), titled.search("getting").map { it.item.id })
+        assertEquals(listOf("d-setup"), titled.search("setup").map { it.item.id })
+        // each word in the title or in the file name
+        assertEquals(listOf("d-setup"), titled.search("setup started").map { it.item.id })
+        assertEquals(listOf("d-notes"), titled.search("notes").map { it.item.id })
+    }
+
+    @Test
+    fun `a link to a page with a title still goes to its file`() {
+        val setup = WikiItem.Document(titled.root.documents[0])
+        assertEquals("Getting started", setup.shownTitle)
+        assertEquals("setup.md", setup.secondaryName)
+        assertEquals("[setup](setup.md)", PickerMarkdown.markdownLink(titled, "notes.md", setup, asLink = true))
+    }
 }

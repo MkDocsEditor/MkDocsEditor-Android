@@ -5,7 +5,15 @@ package de.markusressel.mkdocseditor.feature.filebrowser.data
  */
 sealed interface WikiItem {
     val id: String
+
+    /** the file name, which links are made of */
     val name: String
+
+    /** what a list shows: the title of a page, the name of anything else */
+    val shownTitle: String get() = name
+
+    /** the file name of a page, when it says something its title does not */
+    val secondaryName: String? get() = null
 
     data class Section(val section: SectionData) : WikiItem {
         override val id get() = section.id
@@ -15,6 +23,8 @@ sealed interface WikiItem {
     data class Document(val document: DocumentData) : WikiItem {
         override val id get() = document.id
         override val name get() = document.name
+        override val shownTitle get() = document.shownTitle
+        override val secondaryName get() = document.secondaryName?.let { "$it.md" }
     }
 
     data class Resource(val resource: ResourceData) : WikiItem {
@@ -149,7 +159,8 @@ class WikiTree(val root: SectionData) {
 
     /**
      * Finds items whose name contains every word of [query] (case and accent insensitive):
-     * documents first, then folders, then files, each by name (as the web client does)
+     * documents first, then folders, then files, each by name (as the web client does).
+     * A page is also found by its title, and each word can be in either.
      */
     fun search(query: String, limit: Int = 50): List<SearchHit> {
         val words = normalize(query).split(Regex("\\s+")).filter { it.isNotEmpty() }
@@ -162,8 +173,11 @@ class WikiTree(val root: SectionData) {
             }
         }
         return allItems()
-            .filter { item -> normalize(item.name).let { name -> words.all { name.contains(it) } } }
-            .sortedWith(compareBy<WikiItem>(rank).thenBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+            .filter { item ->
+                val names = listOf(item.name, item.shownTitle).map(::normalize)
+                words.all { word -> names.any { it.contains(word) } }
+            }
+            .sortedWith(compareBy<WikiItem>(rank).thenBy(String.CASE_INSENSITIVE_ORDER) { it.shownTitle })
             .take(limit)
             .map { item ->
                 val parent = parentOf(item)

@@ -181,7 +181,7 @@ fun WikiTreeBrowser(
             }
 
             val entries = (current.subsections.sortedBy { it.name.lowercase() }.map { WikiItem.Section(it) } +
-                current.documents.sortedBy { it.name.lowercase() }.map { WikiItem.Document(it) } +
+                current.documents.sortedBy { it.shownTitle.lowercase() }.map { WikiItem.Document(it) } +
                 current.resources.sortedBy { it.name.lowercase() }.map { WikiItem.Resource(it) })
                 .filter(::allowed)
 
@@ -198,7 +198,7 @@ fun WikiTreeBrowser(
                 items(entries, key = { it.id }) { item ->
                     BrowserEntry(
                         item = item,
-                        subtitle = (item as? WikiItem.Resource)?.resource?.filesize?.let(::formatSize),
+                        subtitle = (item as? WikiItem.Resource)?.resource?.filesize?.let(::formatSize) ?: item.secondaryName,
                         disabled = item.id in disabledIds,
                         pickSection = pickSections && item is WikiItem.Section,
                         pickable = item.id !in unpickableIds,
@@ -226,7 +226,8 @@ fun WikiTreeBrowser(
                     val wiki = stringResource(R.string.tree_browser_wiki)
                     BrowserEntry(
                         item = hit.item,
-                        subtitle = hit.folders.joinToString(" › ").ifEmpty { wiki },
+                        subtitle = listOfNotNull(hit.item.secondaryName, hit.folders.joinToString(" › ").ifEmpty { wiki })
+                            .joinToString(" · "),
                         disabled = hit.item.id in disabledIds,
                         pickSection = false,
                         thumbnailLoader = thumbnailLoader,
@@ -274,7 +275,7 @@ private fun BrowserEntry(
             .clickable(enabled = !disabled, onClick = onClick),
         headlineContent = {
             Text(
-                text = item.name,
+                text = item.shownTitle,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = if (disabled) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.onSurface,
