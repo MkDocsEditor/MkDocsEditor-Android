@@ -2,6 +2,7 @@ package de.markusressel.mkdocsrestclient.sync.automerge
 
 import de.markusressel.mkdocsrestclient.moshi
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.ActorInfo
+import de.markusressel.mkdocsrestclient.sync.automerge.protocol.ActorMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.HelloMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.InitialContentMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.MessageEnvelope
@@ -159,8 +160,14 @@ class FakeSyncServer(
                     closeAfterDelivery += connection
                     return
                 }
+                val newActor = hello.actorId !in boundActors
                 val owner = boundActors.getOrPut(hello.actorId) { connection.username }
                 check(owner == connection.username) { "actor ${hello.actorId} belongs to $owner" }
+                if (newActor) {
+                    // like the backend: the others learn whose changes they will get
+                    val actor = ActorMessage(hello.actorId, owner, color = colors[owner])
+                    connections.filter { it != connection }.forEach { send(it, actor) }
+                }
                 connection.syncState = SyncState()
                 send(
                     connection,

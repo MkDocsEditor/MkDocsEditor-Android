@@ -25,6 +25,10 @@ interface EditableTextDocument {
     /** The current state, or null while there is no local copy */
     val version: DocumentVersion?
 
+    /** The username that local edits are made under, null while it is not known */
+    val localAuthor: String?
+        get() = null
+
     /**
      * Applies an edit that was made on the text of an earlier state. Automerge merges it with
      * everything that happened since, like with an edit of another user, so it needs no

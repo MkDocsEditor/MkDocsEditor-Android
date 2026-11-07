@@ -13,6 +13,9 @@ import org.automerge.PatchAction
 import org.automerge.PatchLog
 import org.automerge.SyncState
 import org.automerge.Transaction
+import java.io.ByteArrayOutputStream
+import java.util.zip.DataFormatException
+import java.util.zip.Inflater
 
 /**
  * An Automerge document holding the text of one markdown file in the
@@ -214,6 +217,20 @@ class AutomergeTextDocument private constructor(
     fun save(): ByteArray = document.save()
 
     /**
+     * automerge-java tells neither the patches nor the changes apart by actor, so this reads the actor from the header
+     * of each encoded change.
+     *
+     * @return the actor ids (hex) of the changes that came after [heads], null if they could not be read
+     */
+    fun actorsSince(heads: Array<ChangeHash>): Set<String>? = try {
+        changeActors(document.encodeChangesSince(heads))
+    } catch (e: RuntimeException) {
+        null
+    } catch (e: DataFormatException) {
+        null
+    }
+
+    /**
      * Runs an operation that changes the document and converts its patches to splices.
      */
     private fun trackTextChanges(operation: (PatchLog) -> Unit): List<TextSplice> {
@@ -318,4 +335,88 @@ fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
 fun String.hexToBytes(): ByteArray {
     require(length % 2 == 0) { "invalid hex string: $this" }
     return ByteArray(length / 2) { i -> substring(i * 2, i * 2 + 2).toInt(16).toByte() }
+}
+
+/** The first bytes of each chunk of the Automerge binary format */
+private val CHUNK_MAGIC = byteArrayOf(0x85.toByte(), 0x6f, 0x4a, 0x83.toByte())
+private const val CHUNK_CHANGE = 1
+private const val CHUNK_COMPRESSED_CHANGE = 2
+private const val HASH_LENGTH = 32
+
+/**
+ * Reads the actor of each change from concatenated change chunks, see the Automerge binary format: magic bytes,
+ * checksum, chunk type, length, and then the dependencies and the actor of the change.
+ *
+ * @throws IllegalArgumentException if the bytes are not such chunks
+ */
+internal fun changeActors(bytes: ByteArray): Set<String> {
+    val actors = mutableSetOf<String>()
+    val reader = ByteReader(bytes)
+    while (!reader.atEnd) {
+        require(CHUNK_MAGIC.all { it == reader.byte() }) { "not an Automerge chunk" }
+        reader.skip(4) // checksum
+        val type = reader.byte().toInt()
+        val contents = reader.bytes(reader.uLeb().toInt())
+        val change = when (type) {
+            CHUNK_CHANGE -> contents
+            CHUNK_COMPRESSED_CHANGE -> inflate(contents)
+            else -> throw IllegalArgumentException("chunk type $type is no change")
+        }
+        val header = ByteReader(change)
+        header.skip(header.uLeb().toInt() * HASH_LENGTH) // dependencies
+        actors.add(header.bytes(header.uLeb().toInt()).toHex())
+    }
+    return actors
+}
+
+private fun inflate(bytes: ByteArray): ByteArray {
+    val inflater = Inflater(true)
+    try {
+        inflater.setInput(bytes)
+        val output = ByteArrayOutputStream()
+        val buffer = ByteArray(4096)
+        while (!inflater.finished()) {
+            val count = inflater.inflate(buffer)
+            require(count > 0 || inflater.finished()) { "truncated compressed change" }
+            output.write(buffer, 0, count)
+        }
+        return output.toByteArray()
+    } finally {
+        inflater.end()
+    }
+}
+
+private class ByteReader(private val bytes: ByteArray) {
+    private var position = 0
+
+    val atEnd: Boolean
+        get() = position >= bytes.size
+
+    fun byte(): Byte {
+        require(position < bytes.size) { "unexpected end" }
+        return bytes[position++]
+    }
+
+    fun skip(count: Int) {
+        require(count >= 0 && position + count <= bytes.size) { "unexpected end" }
+        position += count
+    }
+
+    fun bytes(count: Int): ByteArray {
+        val start = position
+        skip(count)
+        return bytes.copyOfRange(start, position)
+    }
+
+    fun uLeb(): Long {
+        var result = 0L
+        var shift = 0
+        while (true) {
+            val byte = byte().toInt()
+            result = result or ((byte and 0x7f).toLong() shl shift)
+            if (byte and 0x80 == 0) return result
+            shift += 7
+            require(shift < 64) { "LEB128 too long" }
+        }
+    }
 }

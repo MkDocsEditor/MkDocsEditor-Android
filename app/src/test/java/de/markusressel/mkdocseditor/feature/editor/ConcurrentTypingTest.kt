@@ -22,7 +22,8 @@ private class TypingClient(val server: FakeSyncServer, name: String) : DocumentS
     var connection = server.connect(session, name)
 
     override fun onTextReplaced(text: String) = controller.onTextReplaced()
-    override fun onRemoteChange(text: String, splices: List<TextSplice>) = controller.onRemoteChange(text, splices)
+    override fun onRemoteChange(text: String, splices: List<TextSplice>, author: String?) =
+        controller.onRemoteChange(text, splices, author)
     override fun onPeersChanged(peers: List<RemotePeer>) = controller.onPeersChanged(peers)
 
     val shownText get() = editor.text
