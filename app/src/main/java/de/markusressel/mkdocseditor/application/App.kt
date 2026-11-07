@@ -24,6 +24,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import de.markusressel.mkdocseditor.service.AccessRequestsWorker
 import de.markusressel.mkdocseditor.service.UnsyncedChangesScheduler
+import de.markusressel.mkdocseditor.service.WikiChangesPushStarter
 import de.markusressel.mkdocseditor.service.WikiChangesSignInTrigger
 import de.markusressel.mkdocseditor.service.WikiChangesWorker
 import javax.inject.Inject
@@ -64,6 +65,9 @@ class App : Application(), Configuration.Provider, SingletonImageLoader.Factory 
     internal lateinit var wikiChangesSignInTrigger: WikiChangesSignInTrigger
 
     @Inject
+    internal lateinit var wikiChangesPushStarter: WikiChangesPushStarter
+
+    @Inject
     internal lateinit var migrateBackendBasicAuthUseCase: MigrateBackendBasicAuthUseCase
 
     @Inject
@@ -102,6 +106,7 @@ class App : Application(), Configuration.Provider, SingletonImageLoader.Factory 
         if (preferencesHolder.wikiChangeNotificationsPreference.persistedValue.value) WikiChangesWorker.schedule(this)
         else WikiChangesWorker.cancel(this)
         wikiChangesSignInTrigger.start(MainScope())
+        wikiChangesPushStarter.start(MainScope())
     }
 
     private fun listenToEvents() {

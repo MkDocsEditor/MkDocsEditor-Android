@@ -192,6 +192,9 @@ dependencies {
     androidTestImplementation(libs.androidx.work.testing)
     testImplementation(libs.androidx.work.testing)
 
+    // UnifiedPush, without Firebase: a distributor app like ntfy delivers the messages
+    implementation(libs.unifiedpush.connector)
+
     // Permissions
     implementation(libs.dexter)
 

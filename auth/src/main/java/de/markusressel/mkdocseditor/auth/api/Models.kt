@@ -34,7 +34,32 @@ data class ServerInfo(
     val require2FA: Boolean = false,
     /** optional API features of this server, see [ServerFeature] */
     val features: List<String> = emptyList(),
+    /** null when push is off */
+    val push: PushInfo? = null,
 )
+
+/**
+ * @param vapidPublicKey the uncompressed P-256 point of the server, base64url without padding
+ */
+@JsonClass(generateAdapter = true)
+data class PushInfo(
+    val vapidPublicKey: String,
+)
+
+/**
+ * A Web Push subscription as `POST /push/subscriptions/` takes it, see docs/push.md of MkDocsEditor-Backend.
+ * Whoever knows the endpoint can send to it, so it never reaches a log.
+ *
+ * @param p256dh the public key of the client, base64url without padding
+ * @param auth the auth secret of the client, base64url without padding
+ */
+data class PushSubscription(
+    val endpoint: String,
+    val p256dh: String,
+    val auth: String,
+) {
+    override fun toString() = "PushSubscription(endpoint=***, p256dh=***, auth=***)"
+}
 
 /**
  * POST /account/device-links/: a single-use token that connects another device
@@ -195,6 +220,7 @@ object AccountRole {
 object ServerFeature {
     const val ACCESS_REQUESTS = "access-requests"
     const val AVATARS = "avatars"
+    const val PUSH = "push"
 }
 
 /** POST /auth/access-requests/. The token is only shown once. */

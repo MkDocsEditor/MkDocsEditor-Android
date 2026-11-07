@@ -146,6 +146,14 @@ interface AuthApi {
      */
     suspend fun revokeOtherSessions(token: String): Int
 
+    // push, see docs/push.md of MkDocsEditor-Backend; only sessions may subscribe
+
+    /** binds the subscription to this session, also when it was subscribed before */
+    suspend fun subscribePush(token: String, subscription: PushSubscription)
+
+    /** an endpoint that is not subscribed changes nothing */
+    suspend fun unsubscribePush(token: String, endpoint: String)
+
     /**
      * Creates a connect link for another device (step-up). The web client does this; the app
      * only needs it for tests.

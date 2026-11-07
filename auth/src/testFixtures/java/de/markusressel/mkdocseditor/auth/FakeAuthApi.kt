@@ -12,6 +12,7 @@ import de.markusressel.mkdocseditor.auth.api.LinkInfo
 import de.markusressel.mkdocseditor.auth.api.LoginResponse
 import de.markusressel.mkdocseditor.auth.api.PasskeyCeremony
 import de.markusressel.mkdocseditor.auth.api.PasskeyInfo
+import de.markusressel.mkdocseditor.auth.api.PushSubscription
 import de.markusressel.mkdocseditor.auth.api.ServerInfo
 import de.markusressel.mkdocseditor.auth.api.SessionInfo
 import de.markusressel.mkdocseditor.auth.api.DeviceLinkCreated
@@ -197,6 +198,19 @@ open class FakeAuthApi : AuthApi {
     }
 
     override suspend fun revokeOtherSessions(token: String) = 2.also { calls += "revokeOthers" }
+
+    var onSubscribePush: (String, PushSubscription) -> Unit = { _, _ -> }
+    var onUnsubscribePush: (String, String) -> Unit = { _, _ -> }
+
+    override suspend fun subscribePush(token: String, subscription: PushSubscription) {
+        calls += "subscribePush:$token:${subscription.endpoint}"
+        onSubscribePush(token, subscription)
+    }
+
+    override suspend fun unsubscribePush(token: String, endpoint: String) {
+        calls += "unsubscribePush:$token:$endpoint"
+        onUnsubscribePush(token, endpoint)
+    }
 }
 
 class InMemoryTokenStore : TokenStore {
