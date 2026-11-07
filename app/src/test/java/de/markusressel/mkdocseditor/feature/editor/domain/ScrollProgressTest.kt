@@ -48,6 +48,27 @@ class ScrollProgressTest {
     }
 
     @Test
+    fun `the front matter runs from the start of the page to the first block, past the title made from it`() {
+        // lines 0 to 4 are the front matter: the renderer puts a title at line 0 and the tags below it
+        val page = SourceHeightMap(
+            PreviewLayout(
+                blocks = listOf(
+                    PreviewLayoutBlock(line = 0, top = 0f),
+                    PreviewLayoutBlock(line = 5, top = 200f),
+                    PreviewLayoutBlock(line = 8, top = 500f),
+                ),
+                scrollHeight = 1000f,
+            ),
+            lineCount = 10,
+        )
+
+        assertEquals(0.0, page.lineAt(0f))
+        assertEquals(2.5, page.lineAt(100f))
+        assertEquals(5.0, page.lineAt(200f))
+        assertEquals(6.5, page.lineAt(350f))
+    }
+
+    @Test
     fun `heights outside the page are its first and its last line`() {
         assertEquals(0.0, map.lineAt(-50f))
         assertEquals(10.0, map.lineAt(5000f))

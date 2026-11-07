@@ -35,6 +35,15 @@ internal class PreviewRenderState {
         render(text)
     }
 
+    /**
+     * Reads only the front matter of a text that nobody sees, unless no page is ready yet or the page shows that text
+     * already, so that the title can follow the text without a render.
+     */
+    fun readMeta(text: String, read: (String) -> Unit) {
+        if (!ready || disposed || rendered == text) return
+        read(text)
+    }
+
     /** the WebView is gone; a page that reports ready after this has nothing to render into */
     fun dispose() {
         disposed = true

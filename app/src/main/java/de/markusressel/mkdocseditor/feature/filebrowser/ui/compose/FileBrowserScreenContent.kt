@@ -47,6 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.common.ui.compose.horizontalBarsAndCutoutPadding
 import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.SignInRequiredBanner
 import de.markusressel.mkdocseditor.feature.common.ui.compose.ExpandableFab
 import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
@@ -101,6 +102,7 @@ internal fun FileBrowserScreenContent(
 
                 if (uiState.loginRequiredBackendId != null) {
                     SignInRequiredBanner(
+                        modifier = Modifier.horizontalBarsAndCutoutPadding(),
                         onSignInClicked = { onUiEvent(UiEvent.SignInClicked) }
                     )
                 }

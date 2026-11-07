@@ -29,6 +29,10 @@ import de.markusressel.mkdocseditor.feature.editor.domain.previewReadingAnchor
  * together, also when they show very different amounts of text. While typing, the caret is the anchor instead, at
  * its height in the editor, so that the page keeps the block being typed in view. Same in the web client.
  *
+ * Folds of the editor only hide lines in the editor. Its view never shows a hidden line, so the page jumps over a
+ * folded section when the editor passes the fold, and while the page scrolls through one, the editor stays at the
+ * line of the fold.
+ *
  * The user can turn it off, then both sides scroll on their own.
  *
  * @param text the text of the editor
@@ -118,7 +122,11 @@ internal class ScrollSync(
         if (edited != null && now() - edited < CARET_ANCHOR_MS) {
             editorCaretAnchor(view, caretLine())?.let { return EditorAnchor(it, caret = true) }
         }
-        return editorReadingAnchor(view)?.let { EditorAnchor(it, caret = false) }
+        val reading = editorReadingAnchor(view) ?: return null
+        // at its bottom the editor shows the end of the text, also when the last lines are folded and the bottom of
+        // the view is at the line of that fold
+        val anchor = if (reading.viewportFraction >= 1f) reading.copy(line = lineCountOf(text()).toDouble()) else reading
+        return EditorAnchor(anchor, caret = false)
     }
 
     fun onEditorAnchor(anchor: EditorAnchor?) {

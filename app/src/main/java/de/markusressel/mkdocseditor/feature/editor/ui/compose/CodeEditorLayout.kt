@@ -60,6 +60,7 @@ import de.markusressel.kodeeditor.library.compose.KodeEditorState
 import de.markusressel.kodehighlighter.core.ui.KodeTextFieldDefaults
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.EditorColorScheme
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.EditorPalette
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.MkDocsFoldProvider
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.MkDocsMarkdownRuleBook
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 
@@ -195,6 +196,8 @@ internal fun CodeEditorLayout(
             // following must not fight the local cursor when an edit of someone else moves it
             keepCursorVisible = following == null,
             languageRuleBook = ruleBook,
+            // the rule book has no language, so the editor would not know what to fold
+            foldProvider = MkDocsFoldProvider,
             colorScheme = colorScheme,
             colors = colors,
             textStyle = textStyle,

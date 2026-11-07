@@ -16,11 +16,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -31,7 +33,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -62,6 +63,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
+import de.markusressel.mkdocseditor.feature.common.ui.compose.barsAndCutout
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
@@ -135,7 +137,7 @@ internal fun CodeEditorScreenContent(
             Column(
                 modifier = Modifier
                     .background(MaterialTheme.colorScheme.primaryContainer)
-                    .windowInsetsPadding(TopAppBarDefaults.windowInsets)
+                    .windowInsetsPadding(WindowInsets.barsAndCutout.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
             ) {
                 AnimatedVisibility(
                     visible = chrome.topBarVisible,
@@ -143,7 +145,7 @@ internal fun CodeEditorScreenContent(
                     exit = shrinkVertically(shrinkTowards = Alignment.Top),
                 ) {
                     MkDocsEditorTopAppBar(
-                        title = uiState.title,
+                        title = uiState.shownTitle,
                         actions = editorTopBarActions(
                             uiState = uiState,
                             splitMode = splitMode,
@@ -237,6 +239,7 @@ internal fun CodeEditorScreenContent(
                             sectionPath = uiState.previewSectionPath,
                             resourceLoader = previewResourceLoader,
                             onLinkClicked = { onUiEvent(CodeEditorViewModel.UiEvent.PreviewLinkClicked(it)) },
+                            onPageMeta = { onUiEvent(CodeEditorViewModel.UiEvent.PageMetaChanged(it)) },
                             syncTarget = { scrollSync.previewTarget },
                             onLayout = scrollSync::onPreviewLayout,
                             onScrolled = { scroll ->

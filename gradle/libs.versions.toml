@@ -15,7 +15,7 @@ androidxWork = "2.12.0"
 annotatedText = "1.0.3"
 annotation = "1.11.0"
 browserVersion = "1.10.0"
-codeHighlighterVersion = "6.0.0"
+codeHighlighterVersion = "7.0.1"
 collectionKtx = "1.7.0"
 commonsVersion = "master-SNAPSHOT"
 composeShimmer = "1.5.0"
@@ -149,30 +149,12 @@ markusressel-commons-android-material = { module = "com.github.markusressel.comm
 markusressel-commons-android-core = { module = "com.github.markusressel.commons:commons_android_core", version.ref = "commonsVersion" }
 markusressel-commons-logging = { module = "com.github.markusressel.commons:commons_logging", version.ref = "commonsVersion" }
 markusressel-commons-core = { module = "com.github.markusressel.commons:commons_core", version.ref = "commonsVersion" }
-markusressel-kodehighlighter-core = { module = "com.github.markusressel.KodeHighlighter:core", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-markdown = { module = "com.github.markusressel.KodeHighlighter:markdown", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-c = { module = "com.github.markusressel.KodeHighlighter:c", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-cpp = { module = "com.github.markusressel.KodeHighlighter:cpp", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-csharp = { module = "com.github.markusressel.KodeHighlighter:csharp", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-dart = { module = "com.github.markusressel.KodeHighlighter:dart", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-diff = { module = "com.github.markusressel.KodeHighlighter:diff", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-go = { module = "com.github.markusressel.KodeHighlighter:go", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-java = { module = "com.github.markusressel.KodeHighlighter:java", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-json = { module = "com.github.markusressel.KodeHighlighter:json", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-kotlin = { module = "com.github.markusressel.KodeHighlighter:kotlin", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-ocaml = { module = "com.github.markusressel.KodeHighlighter:ocaml", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-properties = { module = "com.github.markusressel.KodeHighlighter:properties", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-python = { module = "com.github.markusressel.KodeHighlighter:python", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-rust = { module = "com.github.markusressel.KodeHighlighter:rust", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-swift = { module = "com.github.markusressel.KodeHighlighter:swift", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-toml = { module = "com.github.markusressel.KodeHighlighter:toml", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-xml = { module = "com.github.markusressel.KodeHighlighter:xml", version.ref = "codeHighlighterVersion" }
-markusressel-kodehighlighter-yaml = { module = "com.github.markusressel.KodeHighlighter:yaml", version.ref = "codeHighlighterVersion" }
+markusressel-kodehighlighter = { module = "com.github.markusressel:KodeHighlighter", version.ref = "codeHighlighterVersion" }
 markusressel-typedpreferences = { group = "com.github.markusressel", name = "TypedPreferences", version.ref = "typedPreferences" }
 markusressel-kutepreferences-core = { group = "com.github.markusressel.KutePreferences", name = "core", version.ref = "kutePreferences" }
 markusressel-kutepreferences-ui = { group = "com.github.markusressel.KutePreferences", name = "ui", version.ref = "kutePreferences" }
 
-markusressel-kodeeditor = { group = "com.github.markusressel.KodeEditor", name = "library", version = "8.1.0" }
+markusressel-kodeeditor = { module = "com.github.markusressel:KodeEditor", version = "9.0.0" }
 
 mikepenz-aboutlibraries = { module = "com.mikepenz:aboutlibraries", version.ref = "aboutlibrariesVersion" }
 mikepenz-aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutlibrariesVersion" }

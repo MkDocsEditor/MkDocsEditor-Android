@@ -87,4 +87,31 @@ class PreviewRenderStateTest {
 
         assertEquals(emptyList<String>(), rendered)
     }
+
+    @Test
+    fun `the front matter of a text nobody sees is read without a render`() {
+        val read = mutableListOf<String>()
+        state.onPageReady("one", render, visible = false)
+        state.readMeta("two", read::add)
+
+        assertEquals(emptyList<String>(), rendered)
+        assertEquals(listOf("two"), read)
+    }
+
+    @Test
+    fun `no front matter is read before a page is ready`() {
+        val read = mutableListOf<String>()
+        state.readMeta("text", read::add)
+
+        assertEquals(emptyList<String>(), read)
+    }
+
+    @Test
+    fun `the front matter of the text the page shows is not read again`() {
+        val read = mutableListOf<String>()
+        state.onPageReady("text", render)
+        state.readMeta("text", read::add)
+
+        assertEquals(emptyList<String>(), read)
+    }
 }

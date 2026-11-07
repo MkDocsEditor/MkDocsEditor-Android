@@ -15,6 +15,8 @@ import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.text
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.DialogState as FileBrowserDialogState
 import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRuns
 import de.markusressel.mkdocseditor.feature.editor.domain.GetAuthorshipUseCase
+import de.markusressel.mkdocseditor.feature.editor.domain.PageMeta
+import de.markusressel.mkdocseditor.feature.editor.domain.editorTitle
 import de.markusressel.mkdocseditor.feature.editor.data.ScrollSyncSetting
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.AuthorHighlightMode
 import kotlinx.coroutines.flow.map
@@ -525,6 +527,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 is UiEvent.TextSizeChanged -> preferencesHolder.editorTextSizePreference.persistValue(event.size.coerceIn(EDITOR_TEXT_SIZE_RANGE).toLong())
                 is UiEvent.VisibleRangeChanged -> onVisibleRangeChanged(event.range)
                 is UiEvent.PreviewLinesChanged -> previewLines.value = event.lines
+                is UiEvent.PageMetaChanged -> _uiState.update { it.copy(pageMeta = event.meta) }
             }
         }
     }
@@ -960,7 +963,11 @@ internal class CodeEditorViewModel @Inject constructor(
         val loading: Boolean = false,
 
         val documentId: String? = null,
+        /** the name of the file */
         val title: String = "",
+
+        /** the front matter of the page as the preview last read it, null before it did */
+        val pageMeta: PageMeta? = null,
 
         /** the folder of the document below the wiki root (`a/b`), for paths in the preview */
         val previewSectionPath: String = "",
@@ -1030,6 +1037,10 @@ internal class CodeEditorViewModel @Inject constructor(
     ) {
         val editorShown: Boolean
             get() = editModeActive || editModeOpening || readOnlyEditorShown
+
+        /** the title of the front matter, or the file name */
+        val shownTitle: String
+            get() = editorTitle(pageMeta, title)
     }
 
     sealed class UiEvent {
@@ -1065,6 +1076,9 @@ internal class CodeEditorViewModel @Inject constructor(
 
         /** @param lines the 0-based source lines the rendered page shows, null while it has no room */
         data class PreviewLinesChanged(val lines: IntRange?) : UiEvent()
+
+        /** the preview read the front matter of the text */
+        data class PageMetaChanged(val meta: PageMeta) : UiEvent()
 
         data class FormatClicked(val action: FormatAction) : UiEvent()
         data object InsertLinkClicked : UiEvent()
