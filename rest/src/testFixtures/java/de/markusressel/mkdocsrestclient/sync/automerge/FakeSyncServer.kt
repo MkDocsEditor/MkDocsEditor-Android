@@ -27,6 +27,8 @@ class FakeSyncServer(
     initialText: String,
     documentId: String = "doc-1",
     var readOnly: Boolean = false,
+    /** the actor of the changes the server makes itself, null for a random one */
+    private val actorId: ByteArray? = null,
 ) {
 
     var documentId: String = documentId
@@ -230,7 +232,7 @@ class FakeSyncServer(
     }
 
     private fun createDocument(text: String): AutomergeTextDocument {
-        val doc = Document()
+        val doc = actorId?.let { Document(it) } ?: Document()
         doc.startTransaction().use { tx ->
             val content = tx.set(ObjectId.ROOT, AutomergeTextDocument.CONTENT_KEY, ObjectType.TEXT)
             tx.spliceText(content, 0, 0, text)
