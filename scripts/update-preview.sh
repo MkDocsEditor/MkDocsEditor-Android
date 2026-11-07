@@ -27,7 +27,7 @@ echo "$commit" > "$assets/mkdocs-renderer.version"
 notices="$assets/mkdocs-renderer-notices.txt"
 : > "$notices"
 for package in markdown-it markdown-it-attrs markdown-it-deflist markdown-it-footnote markdown-it-mark \
-    markdown-it-task-lists entities linkify-it mdurl punycode.js uc.micro highlight.js dompurify; do
+    markdown-it-task-lists entities linkify-it mdurl punycode.js uc.micro highlight.js dompurify js-yaml; do
     dir="$work/node_modules/$package"
     version="$(node -p "require('$dir/package.json').version")"
     license="$(find "$dir" -maxdepth 1 -iname 'licen[cs]e*' | sort | head -n 1)"

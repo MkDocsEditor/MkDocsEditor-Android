@@ -1,6 +1,8 @@
 package de.markusressel.mkdocseditor.feature.editor
 
 import android.app.Application
+import androidx.test.core.app.ApplicationProvider
+import de.markusressel.mkdocseditor.R
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
@@ -8,10 +10,13 @@ import androidx.compose.ui.test.assertRangeInfoEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel.UiEvent
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.AuthorHighlightMode
@@ -28,7 +33,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(application = Application::class, sdk = [36], qualifiers = "w411dp-h891dp")
@@ -101,5 +108,23 @@ class EditorViewSheetTest {
             ),
             events,
         )
+    }
+
+    @Test
+    @Config(qualifiers = "w360dp-h780dp-420dpi")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun `each way to show who wrote what fits into its button on a narrow phone`() {
+        show()
+
+        val resources = ApplicationProvider.getApplicationContext<Application>().resources
+        listOf(
+            R.string.editor_author_highlight_off_name,
+            R.string.editor_view_author_strip,
+            R.string.editor_view_author_strip_and_marker,
+        ).map(resources::getString).forEach { name ->
+            val button = composeRule.onNode(hasText(name).and(hasClickAction())).getUnclippedBoundsInRoot()
+            val label = composeRule.onNode(hasText(name), useUnmergedTree = true).getUnclippedBoundsInRoot()
+            assertTrue(label.left >= button.left && label.right <= button.right, "$name runs past its button: $label in $button")
+        }
     }
 }

@@ -150,6 +150,11 @@ dependencies {
 
     // Hilt WorkManager integration
     implementation(libs.hilt.ext.work)
+
+    // the front matter that the preview reads
+    implementation(libs.moshi)
+    ksp(libs.moshi.kotlin.codegen)
+
     // Hilt Compose integration
     implementation(libs.androidx.hilt.navigation.compose)
 
@@ -197,64 +202,8 @@ dependencies {
     // Code editor
     implementation(libs.markusressel.kodeeditor)
 
-    // Syntax Highlighting
-    implementation(libs.markusressel.kodehighlighter.core) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.markdown) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.c) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.cpp) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.csharp) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.dart) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.diff) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.go) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.java) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.json) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.kotlin) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.ocaml) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.properties) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.python) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.rust) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.swift) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.toml) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.xml) {
-        isChanging = true
-    }
-    implementation(libs.markusressel.kodehighlighter.yaml) {
-        isChanging = true
-    }
+    // Syntax Highlighting, with every language. KodeEditor brings the same version, the app uses it directly too.
+    implementation(libs.markusressel.kodehighlighter)
 
     // Tutorial messages
     //implementation("com.github.markusressel:TutorialTooltip:v2.0.0")

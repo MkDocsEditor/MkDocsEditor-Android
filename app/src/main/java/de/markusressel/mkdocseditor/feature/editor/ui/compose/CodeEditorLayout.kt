@@ -195,6 +195,8 @@ internal fun CodeEditorLayout(
             // following must not fight the local cursor when an edit of someone else moves it
             keepCursorVisible = following == null,
             languageRuleBook = ruleBook,
+            // no folding, as before KodeEditor 9; the default folds by the language of the rule book
+            foldProvider = null,
             colorScheme = colorScheme,
             colors = colors,
             textStyle = textStyle,
