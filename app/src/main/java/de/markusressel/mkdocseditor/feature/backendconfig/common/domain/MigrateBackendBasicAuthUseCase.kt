@@ -11,6 +11,9 @@ import javax.inject.Singleton
  * sent them with HTTP Basic auth. The backend now hands out sessions instead, so these
  * credentials are deleted; the username is kept to prefill the login.
  *
+ * The login for the published wiki (HTTP Basic auth too) is gone as well: the wiki now
+ * accepts the session of the web client, so its stored passwords are deleted with them.
+ *
  * Only the credentials are touched: the offline cache and the local Automerge copies of
  * documents (with edits not synced yet) stay, and sync again after the login.
  */
@@ -21,7 +24,7 @@ internal class MigrateBackendBasicAuthUseCase @Inject constructor(
 ) {
     operator fun invoke() {
         try {
-            backendConfigRepository.removeBackendBasicAuth { backendId, username ->
+            backendConfigRepository.removeStoredPasswords { backendId, username ->
                 Timber.i("Removed the stored password of backend $backendId, sign in again")
                 if (username.isNotBlank()) {
                     loginHintStore.setUsername(backendId, username)

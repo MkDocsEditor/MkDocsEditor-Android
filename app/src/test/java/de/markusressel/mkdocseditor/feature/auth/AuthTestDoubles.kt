@@ -20,7 +20,6 @@ fun backendConfig(id: Long, name: String = "Wiki", domain: String = "backend.exa
     description = "",
     serverConfig = BackendServerConfig(domain = domain, port = 443, useSsl = true),
     mkDocsWebConfig = null,
-    mkDocsWebAuthConfig = null,
     isSelected = false,
 )
 

@@ -46,7 +46,6 @@ class BackendConfigEditContentTest {
         isSelected = true,
         serverConfig = null,
         mkDocsWebConfig = null,
-        mkDocsWebAuthConfig = null,
     )
 
     private fun show(state: UiState) {

@@ -54,14 +54,6 @@
           "type": 11,
           "flags": 520,
           "relationTarget": "MkDocsWebConfigEntity"
-        },
-        {
-          "id": "8:8522458317875095964",
-          "name": "mkDocsWebAuthConfigId",
-          "indexId": "5:8308307037444076770",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "UserPasswordAuthConfigEntity"
         }
       ],
       "relations": []
@@ -429,8 +421,12 @@
   "modelVersion": 5,
   "modelVersionParserMinimum": 5,
   "retiredEntityUids": [],
-  "retiredIndexUids": [],
-  "retiredPropertyUids": [],
+  "retiredIndexUids": [
+    8308307037444076770
+  ],
+  "retiredPropertyUids": [
+    8522458317875095964
+  ],
   "retiredRelationUids": [],
   "version": 1
 }

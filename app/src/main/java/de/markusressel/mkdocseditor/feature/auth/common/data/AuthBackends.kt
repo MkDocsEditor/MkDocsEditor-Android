@@ -6,7 +6,6 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfigRepository
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.MkDocsWebConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.baseUrl
@@ -97,7 +96,6 @@ data class ServerSetup(
     val name: String? = null,
     val description: String? = null,
     val wikiUrl: String? = null,
-    val wikiAuth: AuthConfig? = null,
 ) {
     override fun toString() = "ServerSetup(backendUrl=$backendUrl, name=${name ?: suggestedName}, wikiUrl=$wikiUrl)"
 }
@@ -122,7 +120,6 @@ internal object BackendConfigPlanner {
                 name = setup.name?.takeIf { it.isNotBlank() } ?: match.name,
                 description = setup.description?.takeIf { it.isNotBlank() } ?: match.description,
                 mkDocsWebConfig = match.mkDocsWebConfig ?: wiki,
-                mkDocsWebAuthConfig = setup.wikiAuth ?: match.mkDocsWebAuthConfig,
             )
         }
 
@@ -138,7 +135,6 @@ internal object BackendConfigPlanner {
             description = setup.description?.trim().orEmpty(),
             serverConfig = server,
             mkDocsWebConfig = wiki,
-            mkDocsWebAuthConfig = setup.wikiAuth,
             isSelected = false,
         )
     }

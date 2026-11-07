@@ -176,9 +176,6 @@
     <string name="onboarding_name">Name</string>
     <string name="onboarding_name_hint">Leave empty to use the server\'s name</string>
     <string name="onboarding_description">Description</string>
-    <string name="onboarding_wiki_auth_hint">Only if the published wiki itself asks for a username and password (HTTP basic auth):</string>
-    <string name="onboarding_wiki_username">Wiki username</string>
-    <string name="onboarding_wiki_password">Wiki password</string>
     <string name="onboarding_error_address">That is not a valid address.</string>
     <string name="onboarding_error_unreachable">The server cannot be reached. Check the address and your connection.</string>
     <string name="onboarding_error_not_mkdocseditor">No MkDocsEditor web client or backend answers at this address. Enter the address of the web client or the backend.</string>

@@ -31,7 +31,6 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.PasswordField
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel.UiEvent
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigEditViewModel.UiState
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.compose.server.BackendAccountCard
@@ -171,24 +170,6 @@ private fun AdvancedFields(uiState: UiState, onUiEvent: (UiEvent) -> Unit) {
         onValueChange = { onUiEvent(UiEvent.WebAddressChanged(it)) },
         label = stringResource(R.string.server_web_address),
         isError = !uiState.webAddressIsValid,
-    )
-    Text(
-        text = stringResource(R.string.onboarding_wiki_auth_hint),
-        style = MaterialTheme.typography.bodySmall,
-    )
-    OutlinedTextField(
-        modifier = Modifier.fillMaxWidth(),
-        value = uiState.wikiUsername,
-        onValueChange = { onUiEvent(UiEvent.WikiUsernameChanged(it)) },
-        singleLine = true,
-        label = { Text(stringResource(R.string.onboarding_wiki_username)) },
-        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false),
-    )
-    PasswordField(
-        modifier = Modifier.fillMaxWidth(),
-        value = uiState.wikiPassword,
-        onValueChange = { onUiEvent(UiEvent.WikiPasswordChanged(it)) },
-        label = stringResource(R.string.onboarding_wiki_password),
     )
 }
 

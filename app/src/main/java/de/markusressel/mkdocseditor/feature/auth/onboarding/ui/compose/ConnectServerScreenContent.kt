@@ -31,7 +31,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.R
-import de.markusressel.mkdocseditor.feature.auth.common.ui.compose.PasswordField
 import de.markusressel.mkdocseditor.feature.auth.onboarding.ui.ConnectServerViewModel
 import de.markusressel.mkdocseditor.feature.auth.onboarding.ui.ConnectServerViewModel.UiEvent
 import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
@@ -147,21 +146,6 @@ private fun AddressForm(uiState: ConnectServerViewModel.UiState, onUiEvent: (UiE
             value = uiState.description,
             onValueChange = { onUiEvent(UiEvent.DescriptionChanged(it)) },
             label = { Text(stringResource(R.string.onboarding_description)) },
-        )
-        Text(text = stringResource(R.string.onboarding_wiki_auth_hint), style = MaterialTheme.typography.bodySmall)
-        OutlinedTextField(
-            modifier = Modifier.fillMaxWidth(),
-            value = uiState.wikiUsername,
-            onValueChange = { onUiEvent(UiEvent.WikiUsernameChanged(it)) },
-            singleLine = true,
-            label = { Text(stringResource(R.string.onboarding_wiki_username)) },
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false),
-        )
-        PasswordField(
-            modifier = Modifier.fillMaxWidth(),
-            value = uiState.wikiPassword,
-            onValueChange = { onUiEvent(UiEvent.WikiPasswordChanged(it)) },
-            label = stringResource(R.string.onboarding_wiki_password),
         )
     }
 

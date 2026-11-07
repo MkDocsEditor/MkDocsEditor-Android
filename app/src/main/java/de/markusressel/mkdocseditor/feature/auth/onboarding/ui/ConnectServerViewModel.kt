@@ -12,7 +12,6 @@ import de.markusressel.mkdocseditor.feature.auth.common.data.AuthBackends
 import de.markusressel.mkdocseditor.feature.auth.common.data.ServerSetup
 import de.markusressel.mkdocseditor.feature.auth.common.data.UiMessage
 import de.markusressel.mkdocseditor.feature.auth.common.data.toAuthMessage
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,8 +43,6 @@ internal class ConnectServerViewModel @Inject constructor(
                 is UiEvent.AdvancedToggled -> _uiState.update { it.copy(advancedExpanded = !it.advancedExpanded) }
                 is UiEvent.NameChanged -> _uiState.update { it.copy(name = event.text) }
                 is UiEvent.DescriptionChanged -> _uiState.update { it.copy(description = event.text) }
-                is UiEvent.WikiUsernameChanged -> _uiState.update { it.copy(wikiUsername = event.text) }
-                is UiEvent.WikiPasswordChanged -> _uiState.update { it.copy(wikiPassword = event.text) }
                 is UiEvent.ContinueClicked -> onContinue()
                 is UiEvent.DevBackendClicked -> {
                     _uiState.update { it.copy(address = DEV_BACKEND_URL, error = null) }
@@ -82,9 +79,6 @@ internal class ConnectServerViewModel @Inject constructor(
                 is DiscoveryResult.NotMkDocsEditor -> showError(UiMessage(R.string.onboarding_error_not_mkdocseditor))
                 is DiscoveryResult.Found -> {
                     val server = result.server
-                    val wikiAuth = if (state.wikiUsername.isNotBlank() && state.wikiPassword.isNotEmpty()) {
-                        AuthConfig(username = state.wikiUsername.trim(), password = state.wikiPassword)
-                    } else null
                     val config = backends.connect(
                         ServerSetup(
                             backendUrl = server.backendUrl,
@@ -92,7 +86,6 @@ internal class ConnectServerViewModel @Inject constructor(
                             name = state.name.takeIf { it.isNotBlank() },
                             description = state.description.takeIf { it.isNotBlank() },
                             wikiUrl = server.wikiUrl,
-                            wikiAuth = wikiAuth,
                         )
                     )
                     when {
@@ -130,8 +123,6 @@ internal class ConnectServerViewModel @Inject constructor(
         val advancedExpanded: Boolean = false,
         val name: String = "",
         val description: String = "",
-        val wikiUsername: String = "",
-        val wikiPassword: String = "",
         val loading: Boolean = false,
         val error: UiMessage? = null,
         /** set when the server has no admin yet: it needs its setup link */
@@ -147,10 +138,6 @@ internal class ConnectServerViewModel @Inject constructor(
         data object AdvancedToggled : UiEvent
         data class NameChanged(val text: String) : UiEvent
         data class DescriptionChanged(val text: String) : UiEvent
-        data class WikiUsernameChanged(val text: String) : UiEvent
-        data class WikiPasswordChanged(val text: String) : UiEvent {
-            override fun toString() = "WikiPasswordChanged"
-        }
 
         data object ContinueClicked : UiEvent
         data object DevBackendClicked : UiEvent

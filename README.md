@@ -121,8 +121,8 @@ documents. The code works once and for 5 minutes.
 
 Without the web client at hand, open the app and enter the **Server address**: the address of
 the web client (like `wiki.example.com`) or of the backend. The app finds the backend, also
-under `/api/` of the web client's host, and the server's name and the wiki on its own; name, description and a login for the published
-wiki are under **Advanced**. Then sign in with a passkey or your password; password managers
+under `/api/` of the web client's host, and the server's name and the wiki on its own; name and description are under
+**Advanced**. Then sign in with a passkey or your password; password managers
 like Bitwarden fill in and save the login. Invite, setup and reset links from the web client
 open in the app, too.
 
