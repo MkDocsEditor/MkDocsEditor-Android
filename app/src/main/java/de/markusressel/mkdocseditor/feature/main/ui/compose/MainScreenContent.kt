@@ -30,7 +30,6 @@ import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import de.markusressel.mkdocseditor.feature.common.ui.compose.barsAndCutout
-import de.markusressel.mkdocseditor.feature.main.ui.ContentLayoutType
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
 import de.markusressel.mkdocseditor.feature.main.ui.NavigationLayoutType
 import de.markusressel.mkdocseditor.feature.main.ui.compose.tab.AboutTab
@@ -38,7 +37,9 @@ import de.markusressel.mkdocseditor.feature.main.ui.compose.tab.BackendSelection
 import de.markusressel.mkdocseditor.feature.main.ui.compose.tab.DashboardTab
 import de.markusressel.mkdocseditor.feature.main.ui.compose.tab.FileBrowserTab
 import de.markusressel.mkdocseditor.feature.main.ui.compose.tab.SettingsTab
+import de.markusressel.mkdocseditor.ui.activity.MainViewModel
 import de.markusressel.mkdocseditor.ui.activity.UiState
+import kotlinx.coroutines.flow.Flow
 
 val LocalMainScreenOnBack = staticCompositionLocalOf<() -> Unit> { {} }
 
@@ -50,8 +51,8 @@ internal val LocalMainScreenStartTab = staticCompositionLocalOf<NavItem?> { null
 @Composable
 internal fun MainScreenContent(
     navigationType: NavigationLayoutType,
-    contentType: ContentLayoutType,
     uiState: UiState,
+    fileBrowserRequests: Flow<Unit>,
 ) {
     val navigator = LocalNavigator.current
     var globalTabNavigator: TabNavigator? by remember {
@@ -64,7 +65,6 @@ internal fun MainScreenContent(
                 navigator = navigator,
                 tabNavigator = globalTabNavigator,
                 initialTab = uiState.initialTab,
-                contentType = contentType
             )
         }
 
@@ -72,18 +72,11 @@ internal fun MainScreenContent(
             LocalMainScreenOnBack provides onBackPressedCallback,
             LocalMainScreenStartTab provides uiState.initialTab,
         ) {
-            TabNavigator(
-                tab = uiState.initialTab.toTab(
-                    contentType = contentType,
-                )
+            MainTabNavigator(
+                initialTab = uiState.initialTab.toTab(),
+                fileBrowserRequests = fileBrowserRequests,
             ) { tabNavigator ->
                 globalTabNavigator = tabNavigator
-
-                LaunchedEffect(uiState.fileBrowserRequest) {
-                    if (uiState.fileBrowserRequest > 0) {
-                        tabNavigator.current = NavItem.FileBrowser.toTab(contentType = contentType)
-                    }
-                }
 
                 // stays while the keyboard is open: the keyboard slides over it and uncovers it again,
                 // and a bar that comes and goes would make the screen jump
@@ -95,9 +88,7 @@ internal fun MainScreenContent(
                                 // a phone has little room: the about page opens from the settings there
                                 navItems = uiState.bottomBarNavItems.filterIsInstance<NavItem.Primary>(),
                                 onItemSelected = { navItem ->
-                                    tabNavigator.current = navItem.toTab(
-                                        contentType = contentType,
-                                    )
+                                    tabNavigator.current = navItem.toTab()
                                 },
                             )
                         }
@@ -119,9 +110,7 @@ internal fun MainScreenContent(
                                     selectedNavItem = tabNavigator.current.toNavItem(),
                                     navItems = uiState.bottomBarNavItems,
                                     onItemSelected = { navItem ->
-                                        tabNavigator.current = navItem.toTab(
-                                            contentType = contentType,
-                                        )
+                                        tabNavigator.current = navItem.toTab()
                                     },
                                 )
                             }
@@ -135,6 +124,25 @@ internal fun MainScreenContent(
                 }
             }
         }
+    }
+}
+
+/**
+ * The tabs of the main screen. Their navigator, with the screens open in each tab, survives the recreation of the
+ * activity, for example by a rotation. A request for the file browser shows it once, see [MainViewModel.fileBrowserRequests].
+ */
+@Composable
+internal fun MainTabNavigator(
+    initialTab: Tab,
+    fileBrowserRequests: Flow<Unit>,
+    fileBrowserTab: Tab = FileBrowserTab,
+    content: @Composable (TabNavigator) -> Unit,
+) {
+    TabNavigator(tab = initialTab) { tabNavigator ->
+        LaunchedEffect(tabNavigator, fileBrowserRequests) {
+            fileBrowserRequests.collect { tabNavigator.current = fileBrowserTab }
+        }
+        content(tabNavigator)
     }
 }
 
@@ -162,7 +170,6 @@ private fun onBackPressed(
     navigator: Navigator?,
     tabNavigator: TabNavigator?,
     initialTab: NavItem,
-    contentType: ContentLayoutType,
 ) {
     if (navigator != null && navigator.pop()) {
         val consumed = navigator.popUntil { it is BackendSelectionTab || it is DashboardTab || it is FileBrowserTab }
@@ -171,18 +178,14 @@ private fun onBackPressed(
         }
     }
     if (tabNavigator != null) {
-        tabNavigator.current = initialTab.toTab(
-            contentType = contentType,
-        )
+        tabNavigator.current = initialTab.toTab()
     }
 }
 
-private fun NavItem.toTab(
-    contentType: ContentLayoutType,
-): Tab = when (this) {
+private fun NavItem.toTab(): Tab = when (this) {
     is NavItem.BackendSelection -> BackendSelectionTab
     is NavItem.Dashboard -> DashboardTab
-    is NavItem.FileBrowser -> FileBrowserTab(contentType)
+    is NavItem.FileBrowser -> FileBrowserTab
     is NavItem.Settings -> SettingsTab
     is NavItem.About -> AboutTab
 }

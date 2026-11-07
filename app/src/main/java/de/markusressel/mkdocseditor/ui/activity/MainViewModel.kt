@@ -9,10 +9,13 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetIniti
 import de.markusressel.mkdocseditor.feature.join.data.PendingJoin
 import de.markusressel.mkdocseditor.feature.main.data.MainNavigationRequests
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
@@ -39,9 +42,6 @@ internal data class UiState(
     val snackbar: SnackbarData? = null,
 
     val initialTab: NavItem,
-
-    /** counts up to switch to the file browser, see [MainNavigationRequests] */
-    val fileBrowserRequest: Int = 0,
 )
 
 internal sealed class UiEvent {}
@@ -71,6 +71,14 @@ internal class MainViewModel @Inject constructor(
 
     internal val uiState = _uiState.asStateFlow()
 
+    private val _fileBrowserRequests = Channel<Unit>(Channel.BUFFERED)
+
+    /**
+     * Switches to the file browser, see [MainNavigationRequests]. An event, not a state: the view model outlives a
+     * rotation, and a state would switch to the file browser again in the new activity.
+     */
+    internal val fileBrowserRequests: Flow<Unit> = _fileBrowserRequests.receiveAsFlow()
+
     init {
         launch {
             getCurrentBackendConfigFlowUseCase().collect {
@@ -82,7 +90,7 @@ internal class MainViewModel @Inject constructor(
                 // the nav items must include the file browser before it is selected
                 val config = getCurrentBackendConfigFlowUseCase().first()
                 config?.let { updateNavItems(it) }
-                _uiState.update { old -> old.copy(fileBrowserRequest = old.fileBrowserRequest + 1) }
+                _fileBrowserRequests.send(Unit)
                 // signed in now: this is the moment a join link was waiting for
                 config?.let { pendingJoin.release(it.id) }
             }
@@ -91,7 +99,7 @@ internal class MainViewModel @Inject constructor(
             // a document from a notification opens on top of the file browser
             mainNavigationRequests.documentToOpen.filterNotNull().collect {
                 getCurrentBackendConfigFlowUseCase().first()?.let { config -> updateNavItems(config) }
-                _uiState.update { old -> old.copy(fileBrowserRequest = old.fileBrowserRequest + 1) }
+                _fileBrowserRequests.send(Unit)
             }
         }
     }

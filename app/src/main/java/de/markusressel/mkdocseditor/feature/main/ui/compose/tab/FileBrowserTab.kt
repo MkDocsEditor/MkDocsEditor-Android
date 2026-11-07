@@ -6,13 +6,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
-import de.markusressel.mkdocseditor.feature.main.ui.ContentLayoutType
-import de.markusressel.mkdocseditor.feature.main.ui.compose.MkDocsEditorListAndDocumentContent
 import de.markusressel.mkdocseditor.feature.main.ui.compose.MkDocsEditorListOnlyContent
 
-data class FileBrowserTab(
-    private val contentType: ContentLayoutType,
-) : Tab {
+/**
+ * The same tab and the same layout for every window size. A rotation changes the window size, and the
+ * file browser's navigator, with the documents open in it, is only restored at the same place in the
+ * composition.
+ */
+object FileBrowserTab : Tab {
     override val options: TabOptions
         @Composable
         get() = remember {
@@ -25,14 +26,8 @@ data class FileBrowserTab(
 
     @Composable
     override fun Content() {
-        if (contentType == ContentLayoutType.LIST_AND_DOCUMENT) {
-            MkDocsEditorListAndDocumentContent(
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            MkDocsEditorListOnlyContent(
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
+        MkDocsEditorListOnlyContent(
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
