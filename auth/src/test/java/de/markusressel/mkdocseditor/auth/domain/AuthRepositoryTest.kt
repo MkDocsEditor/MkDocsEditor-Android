@@ -146,6 +146,20 @@ class AuthRepositoryTest {
     }
 
     @Test
+    fun `steps before signing out still have the session, and a failing one does not stop it`() = runTest {
+        store.put(7, AuthSession("mds_t", null, "markus"))
+        val steps = mutableListOf<String>()
+        repository.doBeforeSignOut { throw IOException("offline") }
+        repository.doBeforeSignOut { ref -> steps += "${ref.id}:${repository.token(ref.id)}" }
+
+        repository.signOut(backend)
+
+        assertEquals(listOf("7:mds_t"), steps)
+        assertNull(repository.token(7))
+        assertEquals("logout:mds_t", api.calls.single())
+    }
+
+    @Test
     fun `invite redeem creates the session`() = runTest {
         api.onRedeem = { _, username, _ -> okResponse(username = username!!) }
         val link = AuthLink("mdl_x", LinkKind.Invite)

@@ -32,18 +32,21 @@ import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 /**
  * The switch for notifications about changes, and a hint while Android blocks them. Turning it on asks for the
  * permission. The hint opens the notification settings of the app, because Android stops showing the question after
- * the user said no twice.
+ * the user said no twice. Another hint says when the server could push, but no distributor app is installed.
  */
 @Composable
 internal fun WikiChangeNotificationsPreferenceView(
     behavior: BooleanPreferenceBehavior,
     isGranted: () -> Boolean,
+    isDistributorMissing: () -> Boolean,
 ) {
     val context = LocalContext.current
     var granted by remember { mutableStateOf(isGranted()) }
-    // the user may come back from the system settings
+    var distributorMissing by remember { mutableStateOf(isDistributorMissing()) }
+    // the user may come back from the system settings, or after installing a distributor
     LifecycleResumeEffect(Unit) {
         granted = isGranted()
+        distributorMissing = isDistributorMissing()
         onPauseOrDispose {}
     }
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = isGranted() }
@@ -64,7 +67,20 @@ internal fun WikiChangeNotificationsPreferenceView(
                 )
             })
         }
+        if (enabled && distributorMissing) DistributorMissingHint()
     }
+}
+
+@Composable
+private fun DistributorMissingHint() {
+    Text(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        text = stringResource(R.string.wiki_change_notifications_no_distributor),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 @Composable
@@ -85,5 +101,13 @@ private fun NotificationsBlockedHint(onClick: () -> Unit) {
 private fun NotificationsBlockedHintPreview() {
     MkDocsEditorTheme {
         NotificationsBlockedHint(onClick = {})
+    }
+}
+
+@CombinedPreview
+@Composable
+private fun DistributorMissingHintPreview() {
+    MkDocsEditorTheme {
+        DistributorMissingHint()
     }
 }
