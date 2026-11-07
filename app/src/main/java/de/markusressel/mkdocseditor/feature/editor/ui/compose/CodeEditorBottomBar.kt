@@ -67,9 +67,8 @@ internal fun CodeEditorBottomBar(
 
     BottomAppBar(
         modifier = modifier,
-        windowInsets = WindowInsets.barsAndCutout.only(
-            sides = WindowInsetsSides.Left + WindowInsetsSides.Right + WindowInsetsSides.Top
-        )
+        // only the sides: the top holds the status bar, and the bottom is padded by the main screen and the keyboard
+        windowInsets = WindowInsets.barsAndCutout.only(WindowInsetsSides.Horizontal)
     ) {
         // the buttons change the text, so they only show in the edit mode
         Row(
