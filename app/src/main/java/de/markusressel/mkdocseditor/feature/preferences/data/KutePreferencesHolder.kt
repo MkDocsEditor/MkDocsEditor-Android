@@ -235,8 +235,8 @@ class KutePreferencesHolder @Inject constructor(
         KuteNumberPreference(key = context.getString(R.string.editor_text_size_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_format_size),
             title = context.getString(R.string.editor_text_size_title),
-            minimum = 10,
-            maximum = 24,
+            minimum = EDITOR_TEXT_SIZE_RANGE.first,
+            maximum = EDITOR_TEXT_SIZE_RANGE.last,
             defaultValue = DEFAULT_EDITOR_TEXT_SIZE,
             unit = "sp",
             dataProvider = dataProvider)
@@ -257,7 +257,7 @@ class KutePreferencesHolder @Inject constructor(
             onPreferenceChangedListener = { _, _ -> })
     }
 
-    /** whether editor and rendered page of a split scroll together, also toggled in the editor's menu */
+    /** whether editor and rendered page of a split scroll together, also switched in the editor's view sheet */
     val editorScrollSyncPreference by lazy {
         KuteBooleanPreference(key = context.getString(R.string.editor_scroll_sync_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_swap_vertical),
@@ -342,3 +342,6 @@ class KutePreferencesHolder @Inject constructor(
 
 /** the size that the editor uses without a setting */
 const val DEFAULT_EDITOR_TEXT_SIZE = 14L
+
+/** the sizes the editor text can have, in sp; the setting and the view sheet of the editor both offer these */
+val EDITOR_TEXT_SIZE_RANGE = 10..24

@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.feature.common.ui.compose.topbar
 
-import de.markusressel.mkdocseditor.feature.editor.ui.compose.AuthorHighlightMode
 import de.markusressel.mkdocseditor.feature.editor.ui.ConnectionIndicator
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.SplitMode
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
@@ -24,11 +23,9 @@ sealed interface TopAppBarAction {
         data class EditorModeAction(val mode: SplitMode?) : CodeEditor
         data class OnlineUsersAction(val remotePeers: List<RemotePeer>) : CodeEditor
         data class FollowUserAction(val instanceId: String) : CodeEditor
-        data object CursorColorAction : CodeEditor
         data object PageReferencesAction : CodeEditor
-        data class AuthorHighlightAction(val mode: AuthorHighlightMode) : CodeEditor
-        /** @param enabled whether editor and rendered page of the split scroll together */
-        data class ScrollSyncAction(val enabled: Boolean) : CodeEditor
+        /** opens the sheet with the view settings of the editor */
+        data object ViewSettingsAction : CodeEditor
         data class ConnectionAction(val indicator: ConnectionIndicator) : CodeEditor
     }
 

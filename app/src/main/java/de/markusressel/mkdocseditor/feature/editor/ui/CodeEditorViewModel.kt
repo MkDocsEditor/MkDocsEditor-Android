@@ -15,7 +15,6 @@ import de.markusressel.mkdocseditor.feature.filebrowser.ui.compose.dialog.text
 import de.markusressel.mkdocseditor.feature.filebrowser.ui.DialogState as FileBrowserDialogState
 import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRuns
 import de.markusressel.mkdocseditor.feature.editor.domain.GetAuthorshipUseCase
-import de.markusressel.mkdocseditor.feature.editor.domain.ToggleScrollSyncUseCase
 import de.markusressel.mkdocseditor.feature.editor.data.ScrollSyncSetting
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.AuthorHighlightMode
 import kotlinx.coroutines.flow.map
@@ -73,6 +72,7 @@ import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.ShareFile
 import android.content.Context
 import de.markusressel.mkdocseditor.feature.filebrowser.data.DataRepository
 import de.markusressel.mkdocseditor.feature.preferences.data.KutePreferencesHolder
+import de.markusressel.mkdocseditor.feature.preferences.data.EDITOR_TEXT_SIZE_RANGE
 import de.markusressel.mkdocseditor.ui.activity.SnackbarData
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocseditor.util.Resource
@@ -116,8 +116,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private val getAuthorshipUseCase: GetAuthorshipUseCase,
     private val createJoinLinkUseCase: CreateJoinLinkUseCase,
     private val localCursorColor: LocalCursorColor,
-    private val toggleScrollSync: ToggleScrollSyncUseCase,
-    scrollSyncSetting: ScrollSyncSetting,
+    private val scrollSyncSetting: ScrollSyncSetting,
     clientInstanceId: ClientInstanceId,
     moveItemUseCase: MoveItemUseCase,
     getBacklinksUseCase: GetBacklinksUseCase,
@@ -517,10 +516,13 @@ internal class CodeEditorViewModel @Inject constructor(
                 is UiEvent.SnackbarActionClicked -> onSnackbarAction(event.snackbar)
                 is UiEvent.StopFollowingClicked -> stopFollowing()
                 is UiEvent.RetryOpeningClicked -> session.retry()
-                is UiEvent.CursorColorChosen -> {
-                    localCursorColor.set(event.color)
-                    dismissCurrentDialog()
-                }
+                // the view sheet stays open, the editor behind it shows each change
+                is UiEvent.CursorColorChosen -> localCursorColor.set(event.color)
+                is UiEvent.AuthorHighlightChosen -> preferencesHolder.editorAuthorHighlightPreference.persistValue(event.mode.value)
+                is UiEvent.ScrollSyncChanged -> scrollSyncSetting.set(event.enabled)
+                is UiEvent.LineWrappingChanged -> preferencesHolder.editorLineWrappingPreference.persistValue(event.enabled)
+                is UiEvent.LineNumbersChanged -> preferencesHolder.editorLineNumbersPreference.persistValue(event.enabled)
+                is UiEvent.TextSizeChanged -> preferencesHolder.editorTextSizePreference.persistValue(event.size.coerceIn(EDITOR_TEXT_SIZE_RANGE).toLong())
                 is UiEvent.VisibleRangeChanged -> onVisibleRangeChanged(event.range)
                 is UiEvent.PreviewLinesChanged -> previewLines.value = event.lines
             }
@@ -591,19 +593,10 @@ internal class CodeEditorViewModel @Inject constructor(
             is TopAppBarAction.CodeEditor.PinAction -> onItemAction(ItemAction.Pin)
             is TopAppBarAction.CodeEditor.DeleteAction -> onItemAction(ItemAction.Delete)
             is TopAppBarAction.CodeEditor.FollowUserAction -> startFollowing(action.instanceId)
-            is TopAppBarAction.CodeEditor.CursorColorAction -> showDialog(DialogState.CursorColorPicker)
+            is TopAppBarAction.CodeEditor.ViewSettingsAction -> showDialog(DialogState.ViewSettings)
             is TopAppBarAction.CodeEditor.OnlineUsersAction -> Unit
             is TopAppBarAction.CodeEditor.ConnectionAction -> onConnectionIconClicked(action.indicator)
             is TopAppBarAction.CodeEditor.PageReferencesAction -> showPageReferences()
-            is TopAppBarAction.CodeEditor.AuthorHighlightAction -> {
-                val next = action.mode.next()
-                preferencesHolder.editorAuthorHighlightPreference.persistValue(next.value)
-                showMessage(context.getString(R.string.editor_author_highlight_changed, context.getString(next.nameRes)))
-            }
-            is TopAppBarAction.CodeEditor.ScrollSyncAction -> {
-                val enabled = toggleScrollSync()
-                showMessage(context.getString(if (enabled) R.string.editor_scroll_sync_on else R.string.editor_scroll_sync_off))
-            }
         }
     }
 
@@ -881,6 +874,8 @@ internal class CodeEditorViewModel @Inject constructor(
                 editModeOpening = false,
                 fabConfig = old.fabConfig.copy(right = emptyList()),
                 isBottomAppBarVisible = false,
+                // the view settings are for the editor, which goes away
+                currentDialogState = old.currentDialogState.takeIf { it !is DialogState.ViewSettings },
             )
         }
     }
@@ -1060,6 +1055,12 @@ internal class CodeEditorViewModel @Inject constructor(
 
         /** @param color `#rrggbb`, null for the color of the account */
         data class CursorColorChosen(val color: String?) : UiEvent()
+        data class AuthorHighlightChosen(val mode: AuthorHighlightMode) : UiEvent()
+        data class ScrollSyncChanged(val enabled: Boolean) : UiEvent()
+        data class LineWrappingChanged(val enabled: Boolean) : UiEvent()
+        data class LineNumbersChanged(val enabled: Boolean) : UiEvent()
+        /** @param size in sp, within the range of the setting */
+        data class TextSizeChanged(val size: Int) : UiEvent()
         data class VisibleRangeChanged(val range: TextRange?) : UiEvent()
 
         /** @param lines the 0-based source lines the rendered page shows, null while it has no room */
@@ -1130,6 +1131,7 @@ internal class CodeEditorViewModel @Inject constructor(
         /** the links and files of the page, and the pages that link to it */
         data class PageReferencesPanel(val data: PageReferences = PageReferences()) : DialogState
 
-        data object CursorColorPicker : DialogState
+        /** the view settings of the editor, as a sheet below it */
+        data object ViewSettings : DialogState
     }
 }

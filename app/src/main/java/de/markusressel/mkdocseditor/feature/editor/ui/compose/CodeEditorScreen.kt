@@ -164,11 +164,8 @@ internal data class CodeEditorScreen(
                 )
             }
 
-            is CodeEditorViewModel.DialogState.CursorColorPicker -> CursorColorDialog(
-                current = uiState.localColor,
-                onColorChosen = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.CursorColorChosen(it)) },
-                onDismiss = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.DismissDialog) },
-            )
+            // in the content, which knows whether a split is open
+            is CodeEditorViewModel.DialogState.ViewSettings -> Unit
 
             is CodeEditorViewModel.DialogState.PageReferencesPanel -> if (tree != null && documentId != null) {
                 PageReferencesDialog(

@@ -6,7 +6,6 @@ import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRuns
 import de.markusressel.mkdocseditor.feature.editor.domain.LineShare
 import de.markusressel.mkdocseditor.feature.editor.domain.lineShares
 import de.markusressel.mkdocseditor.feature.editor.domain.toAuthorRuns
-import de.markusressel.mkdocseditor.feature.editor.ui.compose.AuthorHighlightMode
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.authorColor
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.fallbackPeerColors
 import de.markusressel.mkdocsrestclient.reference.AuthorshipModel
@@ -131,15 +130,6 @@ class AuthorRunsTest {
             listOf(listOf(LineShare("a", 0.25f), LineShare("b", 0.75f)), listOf(LineShare("c", 1f)), emptyList()),
             shares,
         )
-    }
-
-    @Test
-    fun `the button in the editor goes through all modes`() {
-        val start = AuthorHighlightMode.StripAndMarker
-
-        assertEquals(AuthorHighlightMode.Strip, start.next())
-        assertEquals(AuthorHighlightMode.Off, start.next().next())
-        assertEquals(start, start.next().next().next())
     }
 
     @Test
