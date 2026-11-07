@@ -5,6 +5,8 @@ import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.kotlin
@@ -78,6 +80,11 @@ internal fun Project.configureKotlinAndroid(commonExtension: CommonExtension) {
 
     tasks.withType<Test>().configureEach {
         useJUnitPlatform()
+        // a test that fails only now and then on CI can only be understood from its full message in the log
+        testLogging {
+            events(TestLogEvent.FAILED)
+            exceptionFormat = TestExceptionFormat.FULL
+        }
     }
 }
 
