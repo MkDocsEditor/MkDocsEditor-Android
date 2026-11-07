@@ -364,6 +364,9 @@
 
     <string name="editor_author_highlight_action">Who wrote what: %1$s</string>
     <string name="editor_author_highlight_changed">Who wrote what: %1$s</string>
+    <string name="editor_scroll_sync_action">Sync scrolling</string>
+    <string name="editor_scroll_sync_on">Editor and rendered page scroll together</string>
+    <string name="editor_scroll_sync_off">Editor and rendered page scroll on their own</string>
     <string name="page_references_action">Links and files of this page</string>
     <string name="page_references_title">Links and files</string>
     <string name="page_references_tab_resources">Files</string>

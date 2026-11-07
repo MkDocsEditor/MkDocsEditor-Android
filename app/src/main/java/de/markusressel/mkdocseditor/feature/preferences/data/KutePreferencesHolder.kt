@@ -173,6 +173,7 @@ class KutePreferencesHolder @Inject constructor(
                         editorLineNumbersPreference,
                         editorTextSizePreference,
                         editorAuthorHighlightPreference,
+                        editorScrollSyncPreference,
                     )
                 )
             )
@@ -252,6 +253,16 @@ class KutePreferencesHolder @Inject constructor(
                 R.string.editor_author_highlight_off_value to R.string.editor_author_highlight_off_name,
             ),
             defaultValue = R.string.editor_author_highlight_marker_value,
+            dataProvider = dataProvider,
+            onPreferenceChangedListener = { _, _ -> })
+    }
+
+    /** whether editor and rendered page of a split scroll together, also toggled in the editor's menu */
+    val editorScrollSyncPreference by lazy {
+        KuteBooleanPreference(key = context.getString(R.string.editor_scroll_sync_key),
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_swap_vertical),
+            title = context.getString(R.string.editor_scroll_sync_title),
+            defaultValue = true,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { _, _ -> })
     }

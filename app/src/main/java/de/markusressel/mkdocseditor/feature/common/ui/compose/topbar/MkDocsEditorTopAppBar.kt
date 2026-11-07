@@ -131,6 +131,7 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
                     is TopAppBarAction.CodeEditor.ShareLinkAction,
                     is TopAppBarAction.CodeEditor.ShowInBrowserAction,
                     is TopAppBarAction.CodeEditor.CursorColorAction,
+                    is TopAppBarAction.CodeEditor.ScrollSyncAction,
                     is TopAppBarAction.CodeEditor.MenuDivider,
                     is TopAppBarAction.CodeEditor.RenameAction,
                     is TopAppBarAction.CodeEditor.MoveAction,
