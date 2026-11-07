@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -41,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
@@ -173,14 +177,20 @@ private fun AuthorHighlightButtons(
     SingleChoiceSegmentedButtonRow(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = 24.dp)
+            // all as high as one with two lines
+            .height(IntrinsicSize.Min),
     ) {
         modes.forEachIndexed { index, option ->
             SegmentedButton(
+                modifier = Modifier.fillMaxHeight(),
                 selected = option == mode,
                 onClick = { onModeChosen(option) },
                 shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
-                label = { Text(stringResource(option.shortNameRes), maxLines = 1) },
+                // without the check mark, so that the longest name has room; the color shows the choice
+                icon = {},
+                // on a narrow phone the longest name takes two lines rather than being cut off
+                label = { Text(stringResource(option.shortNameRes), maxLines = 2, textAlign = TextAlign.Center) },
             )
         }
     }
