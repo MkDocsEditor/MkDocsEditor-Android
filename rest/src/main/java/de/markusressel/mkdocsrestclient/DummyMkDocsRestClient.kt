@@ -10,6 +10,7 @@ import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.result.Result
 import de.markusressel.mkdocsrestclient.document.DocumentModel
 import de.markusressel.mkdocsrestclient.mkdocs.MkDocsConfigModel
+import de.markusressel.mkdocsrestclient.qr.QrCodeModel
 import de.markusressel.mkdocsrestclient.mkdocs.MkDocsConfigThemeModel
 import de.markusressel.mkdocsrestclient.mkdocs.MkDocsConfigThemePalette
 import de.markusressel.mkdocsrestclient.reference.BacklinksModel
@@ -273,6 +274,9 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
 
     override suspend fun getFeed(before: String?, limit: Int): Result<FeedPageModel, FuelError> =
         Result.success(FeedPageModel())
+
+    override suspend fun getQrCode(key: String, scan: Boolean): Result<QrCodeModel, FuelError> =
+        Result.error(FuelError.wrap(UnsupportedOperationException("not in the demo")))
 
     override suspend fun getMkDocsConfig(): Result<MkDocsConfigModel, FuelError> {
         return Result.success(

@@ -102,6 +102,12 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import de.markusressel.mkdocseditor.feature.common.data.TransferProgress
 import de.markusressel.mkdocseditor.feature.common.ui.ShownTransfer
+import de.markusressel.mkdocseditor.feature.qr.data.PendingQrKey
+import de.markusressel.mkdocseditor.feature.qr.data.QrCodesSupport
+import de.markusressel.mkdocseditor.feature.qr.domain.QrKey
+import de.markusressel.mkdocseditor.feature.qr.domain.QrKeys
+import de.markusressel.mkdocseditor.feature.qr.domain.QrLookup
+import de.markusressel.mkdocseditor.feature.qr.domain.ResolveQrCodeUseCase
 import javax.inject.Inject
 
 @HiltViewModel
@@ -124,6 +130,9 @@ internal class CodeEditorViewModel @Inject constructor(
     private val createJoinLinkUseCase: CreateJoinLinkUseCase,
     private val localCursorColor: LocalCursorColor,
     private val scrollSyncSetting: ScrollSyncSetting,
+    private val qrCodesSupport: QrCodesSupport,
+    private val pendingQrKey: PendingQrKey,
+    private val resolveQrCode: ResolveQrCodeUseCase,
     savedStateHandle: SavedStateHandle,
     clientInstanceId: ClientInstanceId,
     moveItemUseCase: MoveItemUseCase,
@@ -221,7 +230,10 @@ internal class CodeEditorViewModel @Inject constructor(
             // the user has started on their own work
             if (uiState.value.following != null) stopFollowing()
         },
-        onDocumentChanged = { authorshipRequests.update { it + 1 } },
+        onDocumentChanged = {
+            authorshipRequests.update { it + 1 }
+            refreshQrKeys()
+        },
     )
 
     private val authorshipLoader = AuthorshipLoader(
@@ -297,6 +309,15 @@ internal class CodeEditorViewModel @Inject constructor(
 
         launch {
             session.documentId.filterNotNull().collect { documentId -> loadSplitRatio(documentId) }
+        }
+
+        launch { _uiState.update { it.copy(qrCodesAvailable = qrCodesSupport.isSupported()) } }
+
+        // a key of a sticker without a page, to put on this one
+        launch {
+            combine(pendingQrKey.request, session.documentId) { request, documentId ->
+                request?.takeIf { it.documentId == documentId }
+            }.filterNotNull().collect { if (pendingQrKey.take(it)) showQrCodes(suggested = it.key) }
         }
 
         launch {
@@ -564,6 +585,10 @@ internal class CodeEditorViewModel @Inject constructor(
                 is UiEvent.ChangeJumpShown -> _uiState.update { if (it.changeJump === event.jump) it.copy(changeJump = null) else it }
                 is UiEvent.PreviewLinesChanged -> previewLines.value = event.lines
                 is UiEvent.PageMetaChanged -> _uiState.update { it.copy(pageMeta = event.meta) }
+                is UiEvent.QrKeyChanged -> updateQrDialog { it.copy(key = event.text, problem = qrKeyProblem(event.text, it.keys)) }
+                is UiEvent.QrLabelChanged -> updateQrDialog { it.copy(label = event.text) }
+                is UiEvent.QrAddClicked -> addQrKey()
+                is UiEvent.QrRemoveClicked -> setQrKeys(QrKeys.keysOf(editorText.text).filterNot { it.key == event.key })
             }
         }
     }
@@ -636,6 +661,7 @@ internal class CodeEditorViewModel @Inject constructor(
             is TopAppBarAction.CodeEditor.OnlineUsersAction -> Unit
             is TopAppBarAction.CodeEditor.ConnectionAction -> onConnectionIconClicked(action.indicator)
             is TopAppBarAction.CodeEditor.PageReferencesAction -> showPageReferences()
+            is TopAppBarAction.CodeEditor.QrCodesAction -> showQrCodes()
         }
     }
 
@@ -662,6 +688,71 @@ internal class CodeEditorViewModel @Inject constructor(
             )
         )
         if (session.connectionStatus.value?.connected != true) session.reconnect()
+    }
+
+    /**
+     * Shows the QR codes of the page. The key field starts with [suggested], else with a key made from the file name
+     * while the page has none.
+     */
+    private fun showQrCodes(suggested: String? = null) {
+        val keys = QrKeys.keysOf(editorText.text)
+        val key = suggested ?: if (keys.isEmpty()) QrKeys.suggest(uiState.value.title) else ""
+        showDialog(DialogState.QrCodes(keys = keys, key = key, problem = qrKeyProblem(key, keys)))
+    }
+
+    private fun updateQrDialog(change: (DialogState.QrCodes) -> DialogState.QrCodes) {
+        _uiState.update { old ->
+            val dialog = old.currentDialogState
+            if (dialog is DialogState.QrCodes) old.copy(currentDialogState = change(dialog)) else old
+        }
+    }
+
+    /** the keys follow the text, also while others edit it */
+    private fun refreshQrKeys() {
+        if (uiState.value.currentDialogState !is DialogState.QrCodes) return
+        val keys = QrKeys.keysOf(editorText.text)
+        updateQrDialog { if (it.keys == keys) it else it.copy(keys = keys) }
+    }
+
+    /** what is wrong with [key] without asking the server, null if nothing is */
+    private fun qrKeyProblem(key: String, keys: List<QrKey>): QrKeyProblem? {
+        if (key.isBlank()) return null
+        val normalized = QrKeys.normalize(key) ?: return QrKeyProblem.Invalid
+        return QrKeyProblem.OnPage.takeIf { keys.any { it.key == normalized } }
+    }
+
+    /** adds the key of the dialog, if no other page has it: a key on two pages opens neither */
+    private suspend fun addQrKey() {
+        val dialog = uiState.value.currentDialogState as? DialogState.QrCodes ?: return
+        val key = QrKeys.normalize(dialog.key) ?: return
+        if (dialog.problem != null || dialog.checking) return
+        val documentId = uiState.value.documentId ?: return
+        updateQrDialog { it.copy(checking = true) }
+        val problem = when (val lookup = resolveQrCode(key, scan = false)) {
+            is QrLookup.Found -> QrKeyProblem.Elsewhere(lookup.page.title).takeIf { lookup.page.documentId != documentId }
+            is QrLookup.Conflict -> lookup.pages.firstOrNull { it.documentId != documentId }?.let { QrKeyProblem.Elsewhere(it.title) }
+            is QrLookup.NoPage -> null
+            else -> QrKeyProblem.Unchecked
+        }
+        val keys = QrKeys.keysOf(editorText.text)
+        val shown = uiState.value.currentDialogState as? DialogState.QrCodes
+        // the user typed on while the server was asked
+        if (shown == null || QrKeys.normalize(shown.key) != key) {
+            updateQrDialog { it.copy(checking = false) }
+            return
+        }
+        if (problem != null || keys.any { it.key == key }) {
+            updateQrDialog { it.copy(checking = false, problem = problem ?: QrKeyProblem.OnPage) }
+            return
+        }
+        setQrKeys(keys + QrKey(key, shown.label.trim().takeIf { it.isNotEmpty() }))
+        updateQrDialog { it.copy(key = "", label = "", checking = false, problem = null) }
+    }
+
+    /** writes [keys] into the front matter, as one edit like typing */
+    private fun setQrKeys(keys: List<QrKey>) {
+        editorText.changeTo(QrKeys.withKeys(editorText.text, keys))
+        refreshQrKeys()
     }
 
     /** opens the references panel and loads its data */
@@ -1121,6 +1212,9 @@ internal class CodeEditorViewModel @Inject constructor(
          * There is no connection and no text to show
          */
         val isNoOfflineVersionVisible: Boolean = false,
+
+        /** whether the server has QR codes, see [QrCodesSupport] */
+        val qrCodesAvailable: Boolean = false,
     ) {
         val editorShown: Boolean
             get() = editModeActive || editModeOpening || readOnlyEditorShown
@@ -1169,6 +1263,11 @@ internal class CodeEditorViewModel @Inject constructor(
 
         /** the preview read the front matter of the text */
         data class PageMetaChanged(val meta: PageMeta) : UiEvent()
+
+        data class QrKeyChanged(val text: String) : UiEvent()
+        data class QrLabelChanged(val text: String) : UiEvent()
+        data object QrAddClicked : UiEvent()
+        data class QrRemoveClicked(val key: String) : UiEvent()
 
         data class FormatClicked(val action: FormatAction) : UiEvent()
         data object InsertLinkClicked : UiEvent()
@@ -1240,5 +1339,30 @@ internal class CodeEditorViewModel @Inject constructor(
 
         /** the view settings of the editor, as a sheet below it */
         data object ViewSettings : DialogState
+
+        /**
+         * The QR codes of the page, and adding or removing them
+         *
+         * @param keys the keys in the text
+         * @param key the key to add, as typed
+         * @param checking the server is asked whether another page has [key]
+         */
+        data class QrCodes(
+            val keys: List<QrKey>,
+            val key: String = "",
+            val label: String = "",
+            val problem: QrKeyProblem? = null,
+            val checking: Boolean = false,
+        ) : DialogState
+    }
+
+    /** why a key can't be added */
+    sealed interface QrKeyProblem {
+        data object Invalid : QrKeyProblem
+        data object OnPage : QrKeyProblem
+        data class Elsewhere(val title: String) : QrKeyProblem
+
+        /** the server could not say whether another page has it */
+        data object Unchecked : QrKeyProblem
     }
 }

@@ -56,6 +56,8 @@
                 <data android:path="/connect" />
                 <!-- an invitation into a document, also opened by the web client without the app -->
                 <data android:pathPrefix="/join/" />
+                <!-- a QR code sticker on something in the house (docs/qr.md of the backend) -->
+                <data android:pathPrefix="/q/" />
             </intent-filter>
 
             <!-- fallback: mkdocseditor://invite#mdl_…, mkdocseditor://connect#<payload> -->

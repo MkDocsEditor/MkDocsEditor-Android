@@ -221,6 +221,7 @@ object ServerFeature {
     const val ACCESS_REQUESTS = "access-requests"
     const val AVATARS = "avatars"
     const val PUSH = "push"
+    const val QR_CODES = "qr-codes"
 }
 
 /** POST /auth/access-requests/. The token is only shown once. */
