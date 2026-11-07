@@ -19,11 +19,11 @@ object PickerMarkdown {
     fun cleanUrl(url: String): String = url.trim().replace(" ", "%20").replace("(", "%28").replace(")", "%29")
 
     /**
-     * The default text of a link to an item (like the backend's `GET /link/`): the name,
-     * without the extension for an embedded image's alt text
+     * The default text of a link to an item: the name the lists show, so a page's title, and the
+     * file name without the extension for an embedded image's alt text
      */
     fun defaultLinkText(item: WikiItem, embedded: Boolean = false): String =
-        if (embedded) item.name.replace(Regex("\\.[^.]+$"), "") else item.name
+        if (embedded) item.name.replace(Regex("\\.[^.]+$"), "") else item.shownTitle
 
     /**
      * Markdown for a link from the document at [fromPath] to [item]: `![alt](dest)` for images

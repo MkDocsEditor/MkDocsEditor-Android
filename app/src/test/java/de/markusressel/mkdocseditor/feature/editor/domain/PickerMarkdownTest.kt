@@ -102,10 +102,11 @@ class PickerMarkdownTest {
     }
 
     @Test
-    fun `a link to a page with a title still goes to its file`() {
+    fun `a link to a page with a title shows the title and goes to its file`() {
         val setup = WikiItem.Document(titled.root.documents[0])
         assertEquals("Getting started", setup.shownTitle)
         assertEquals("setup.md", setup.secondaryName)
-        assertEquals("[setup](setup.md)", PickerMarkdown.markdownLink(titled, "notes.md", setup, asLink = true))
+        assertEquals("[Getting started](setup.md)", PickerMarkdown.markdownLink(titled, "notes.md", setup, asLink = true))
+        assertEquals("[Start](setup.md)", PickerMarkdown.markdownLink(titled, "notes.md", setup, text = "Start", asLink = true))
     }
 }
