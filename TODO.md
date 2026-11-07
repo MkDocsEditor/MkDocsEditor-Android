@@ -12,6 +12,7 @@ clients show the same thing.
 | Staying in use | [What's going on page, pinned pages and notifications](#whats-going-on-page-pinned-pages-and-notifications) | Push, better summaries | Yes, the backend and the web client |
 | App-wide | [Settings](#settings) | About row and top bar | No |
 | App-wide | [Download progress outside the file browser](#download-progress-outside-the-file-browser) | Small feature | No |
+| Project | [Code quality checks](#code-quality-checks) | CI setup, Android first | Yes, all six repositories |
 
 Order that fits how they depend on each other (Idea):
 
@@ -164,3 +165,51 @@ If notifications get annoying, people turn them off, and the goal is lost.
 Uploads and downloads in the file browser, and uploads of the image picker, show their bytes and can be cancelled. A
 file opened from the dashboard, from a link in the preview, or for the preview itself still downloads without
 progress. `DownloadResourceUseCase` already reports it; those screens need a place for `TransferProgressBar`.
+
+---
+
+# Project
+
+## Code quality checks
+
+**What I want**
+
+- We change a lot quickly, across six repositories (this app, MkDocsEditor-Backend, MkDocsEditor-Web, KodeEditor,
+  KodeHighlighter and KutePreferences), without always seeing the whole project. CI should show where the code gets
+  worse.
+- No AI-based tools: they cost tokens and need a subscription. Coding agents still have to read the results easily.
+- Free on GitHub Actions; all six repositories are public, so minutes and CodeQL cost nothing. A server in the k3s
+  cluster only if a tool really needs one.
+- Spot degradations, but keep the style of each project, unless a style is bad for reasons we can verify.
+
+**Plan (decided, Markus, 2026-11-07)**
+
+- **Baseline and ratchet.** Each tool records today's findings once as accepted (a baseline file in the repository). CI
+  fails only on new findings, and the counts may only go down. Pure style rules stay off unless they match the code as
+  it is. What stays on is about bugs, security, dead code, complexity and architecture.
+- **Tools per language:**
+
+  | | Kotlin (this app, KodeEditor, KodeHighlighter, KutePreferences) | Go (backend) | TypeScript (web) |
+  |---|---|---|---|
+  | Bugs and smells | detekt with a baseline, Android Lint with `lint-baseline.xml` | golangci-lint with `new-from-rev` (staticcheck, errcheck, gosec, …) | ESLint with typescript-eslint, `tsc --noEmit` in strict mode |
+  | Compose | compose-rules (detekt plugin) | | |
+  | Architecture | Konsist: the rules of AGENTS.md as tests (dependency direction, `XUseCase`, `internal`, ViewModel shape, Timber instead of `android.util.Log`) | go-arch-lint or a small check | dependency-cruiser |
+  | Dead code and dependencies | detekt's unused rules, the Gradle dependency-analysis plugin | `deadcode`, a `go mod tidy` check | knip |
+  | Coverage | Kover, with a floor for the changed lines | `go test -cover` | Vitest coverage |
+  | Security | CodeQL (java-kotlin), Dependabot or Renovate | CodeQL (go), govulncheck | CodeQL (javascript-typescript), `npm audit` |
+  | Duplicates | jscpd | jscpd | jscpd |
+
+- **For coding agents:**
+  - Every tool writes SARIF or JSON into one folder, for example `build/reports/quality/`.
+  - `make quality` runs the same checks locally as CI.
+  - A PR comment lists only the new findings, as `file:line: rule: message`.
+  - SARIF also goes to GitHub code scanning, so findings show inline in the PR.
+  - AGENTS.md gets a section on how to run the checks and how to read them.
+- **Trend:** every master build stores a small `quality.json` with the counts per tool and the coverage. A PR compares
+  itself with the latest one. SonarQube Community in the k3s cluster would add a dashboard with history, but it doesn't
+  comment on PRs, so it waits until the simple trend is not enough.
+- **Rollout:**
+  1. A pilot in this app: detekt with compose-rules, Lint, Konsist, Kover, CodeQL and jscpd, all with baselines. The
+     checks are required, for new findings only.
+  2. KodeEditor, KodeHighlighter and KutePreferences, with the same setup shared as a convention.
+  3. The backend and the web client, each through its own agent, with the same principles.

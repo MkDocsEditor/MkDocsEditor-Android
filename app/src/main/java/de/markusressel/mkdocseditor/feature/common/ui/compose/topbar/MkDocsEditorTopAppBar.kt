@@ -18,7 +18,7 @@ import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesign
 import de.markusressel.mkdocseditor.extensions.common.android.isComposePreview
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.OnlineUsersAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.ConnectionAction
-import de.markusressel.mkdocseditor.feature.editor.ui.compose.AuthorHighlightAction
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.ViewSettingsAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.PageReferencesAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.MoreAction
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.EditorModeAction
@@ -105,10 +105,9 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
                         )
                     }
 
-                    is TopAppBarAction.CodeEditor.AuthorHighlightAction -> {
-                        AuthorHighlightAction(
-                            modifier = Modifier,
-                            mode = action.mode,
+                    is TopAppBarAction.CodeEditor.ViewSettingsAction -> {
+                        ViewSettingsAction(
+                            modifier = Modifier.align(Alignment.CenterVertically),
                             onClick = { onActionClicked(action) },
                         )
                     }
@@ -130,8 +129,6 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
 
                     is TopAppBarAction.CodeEditor.ShareLinkAction,
                     is TopAppBarAction.CodeEditor.ShowInBrowserAction,
-                    is TopAppBarAction.CodeEditor.CursorColorAction,
-                    is TopAppBarAction.CodeEditor.ScrollSyncAction,
                     is TopAppBarAction.CodeEditor.MenuDivider,
                     is TopAppBarAction.CodeEditor.RenameAction,
                     is TopAppBarAction.CodeEditor.MoveAction,

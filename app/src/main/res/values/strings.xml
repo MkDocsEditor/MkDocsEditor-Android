@@ -142,9 +142,9 @@
     <string name="following_user_paused">Following %1$s (paused)</string>
     <string name="follow_stop">Stop following</string>
     <string name="follow_ended">%1$s has left, no longer following.</string>
-    <string name="cursor_color">Cursor color</string>
+    <string name="cursor_color">My cursor color</string>
     <string name="cursor_color_explanation">How you and others see your cursor and selection, until you close the app. Your profile color stays.</string>
-    <string name="cursor_color_reset">Use profile color</string>
+    <string name="cursor_color_reset">Use my account color</string>
     <string name="join_title">Invitation</string>
     <string name="access_request_channel">Access requests</string>
     <string name="wiki_changes_channel">Changes in the wiki</string>
@@ -362,11 +362,10 @@
     <string name="backlinks_line">Line %1$d · %2$s</string>
     <string name="close">Close</string>
 
-    <string name="editor_author_highlight_action">Who wrote what: %1$s</string>
-    <string name="editor_author_highlight_changed">Who wrote what: %1$s</string>
-    <string name="editor_scroll_sync_action">Sync scrolling</string>
-    <string name="editor_scroll_sync_on">Editor and rendered page scroll together</string>
-    <string name="editor_scroll_sync_off">Editor and rendered page scroll on their own</string>
+    <string name="editor_view_settings">View</string>
+    <string name="editor_view_author_strip">Strip</string>
+    <string name="editor_view_author_strip_and_marker">Strip and marker</string>
+    <string name="editor_view_text_size_value">%1$d sp</string>
     <string name="page_references_action">Links and files of this page</string>
     <string name="page_references_title">Links and files</string>
     <string name="page_references_tab_resources">Files</string>

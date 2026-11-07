@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -148,7 +147,7 @@ internal fun CodeEditorScreenContent(
                         actions = editorTopBarActions(
                             uiState = uiState,
                             splitMode = splitMode,
-                            wide = configuration.screenWidthDp >= WIDE_TOP_BAR_DP,
+                            widthDp = configuration.screenWidthDp,
                         ),
                         onActionClicked = {
                             onUiEvent(CodeEditorViewModel.UiEvent.TopAppBarActionClicked(it))
@@ -264,6 +263,15 @@ internal fun CodeEditorScreenContent(
                 )
             }
         }
+
+        if (uiState.currentDialogState is CodeEditorViewModel.DialogState.ViewSettings) {
+            EditorViewSheet(
+                settings = uiState.editorSettings,
+                localColor = uiState.localColor,
+                splitOpen = previewShown,
+                onUiEvent = onUiEvent,
+            )
+        }
     }
 }
 
@@ -272,46 +280,72 @@ internal const val LOADING_INDICATOR_TAG = "editor-loading"
 /** from this width the bar has room for the actions that are toggled or looked at often */
 internal const val WIDE_TOP_BAR_DP = 600
 
+/** what the back button and the paddings of the bar take */
+private const val TOP_BAR_RESERVED_DP = 64
+
+/** the width of each action in the bar */
+private const val TOP_BAR_ACTION_DP = 48
+
+/** the room a title needs to still be read */
+internal const val MIN_TITLE_DP = 140
+
 /**
- * The bar keeps what shows a state (connection, users, mode). The rest goes into the menu: on a phone also the author
- * colors and the references, so that the title still fits.
+ * The bar keeps what shows a state (connection, users, mode) and the view settings, if the title still fits. The menu
+ * holds only actions: on a phone also the references, so that the title still fits.
+ *
+ * @param widthDp the width of the window
  */
 internal fun editorTopBarActions(
     uiState: CodeEditorViewModel.UiState,
     splitMode: SplitMode,
-    wide: Boolean,
+    widthDp: Int,
 ): List<TopAppBarAction.CodeEditor> {
+    val wide = widthDp >= WIDE_TOP_BAR_DP
     val editorShown = uiState.editorShown
-    val authorHighlight = TopAppBarAction.CodeEditor.AuthorHighlightAction(uiState.editorSettings.authorHighlight)
-        .takeIf { editorShown }
-    val references = TopAppBarAction.CodeEditor.PageReferencesAction
-    val menu = listOfNotNull(
-        authorHighlight.takeIf { !wide },
-        references.takeIf { !wide },
-        TopAppBarAction.CodeEditor.ScrollSyncAction(uiState.editorSettings.scrollSync)
-            .takeIf { editorShown && splitMode != SplitMode.Off },
-        TopAppBarAction.CodeEditor.CursorColorAction,
-        TopAppBarAction.CodeEditor.MenuDivider,
-        TopAppBarAction.CodeEditor.ShareLinkAction,
-        TopAppBarAction.CodeEditor.ShowInBrowserAction,
-        TopAppBarAction.CodeEditor.MenuDivider,
-        TopAppBarAction.CodeEditor.RenameAction,
-        TopAppBarAction.CodeEditor.MoveAction,
-        TopAppBarAction.CodeEditor.PinAction,
-        TopAppBarAction.CodeEditor.DeleteAction,
+    val connection = uiState.connectionIndicator?.let { TopAppBarAction.CodeEditor.ConnectionAction(it) }
+    val users = (uiState.remotePeers + uiState.ghosts.map { it.asPeer() }).takeIf { it.isNotEmpty() }
+        ?.let { TopAppBarAction.CodeEditor.OnlineUsersAction(it) }
+    val references = TopAppBarAction.CodeEditor.PageReferencesAction.takeIf { wide }
+    // one place for both, so nothing moves when the mode changes
+    val mode = TopAppBarAction.CodeEditor.EditorModeAction(splitMode.takeIf { editorShown })
+        .takeIf { editorShown || uiState.canEdit }
+    // the settings change only the editor
+    val viewSettings = TopAppBarAction.CodeEditor.ViewSettingsAction.takeIf { editorShown }
+    // the menu button and the view settings come along
+    val actionsWithView = listOfNotNull(connection, users, references, mode).size + 2
+    val viewInBar = wide || widthDp - TOP_BAR_RESERVED_DP - actionsWithView * TOP_BAR_ACTION_DP >= MIN_TITLE_DP
+
+    val menu = withoutStrayDividers(
+        listOfNotNull(
+            viewSettings.takeIf { !viewInBar },
+            TopAppBarAction.CodeEditor.PageReferencesAction.takeIf { !wide },
+            TopAppBarAction.CodeEditor.MenuDivider,
+            TopAppBarAction.CodeEditor.ShareLinkAction,
+            TopAppBarAction.CodeEditor.ShowInBrowserAction,
+            TopAppBarAction.CodeEditor.MenuDivider,
+            TopAppBarAction.CodeEditor.RenameAction,
+            TopAppBarAction.CodeEditor.MoveAction,
+            TopAppBarAction.CodeEditor.PinAction,
+            TopAppBarAction.CodeEditor.DeleteAction,
+        )
     )
     return listOfNotNull(
-        uiState.connectionIndicator?.let { TopAppBarAction.CodeEditor.ConnectionAction(it) },
-        (uiState.remotePeers + uiState.ghosts.map { it.asPeer() }).takeIf { it.isNotEmpty() }
-            ?.let { TopAppBarAction.CodeEditor.OnlineUsersAction(it) },
-        authorHighlight.takeIf { wide },
-        references.takeIf { wide },
-        // one place for both, so nothing moves when the mode changes
-        TopAppBarAction.CodeEditor.EditorModeAction(splitMode.takeIf { editorShown })
-            .takeIf { editorShown || uiState.canEdit },
+        connection,
+        users,
+        viewSettings.takeIf { viewInBar },
+        references,
+        mode,
         TopAppBarAction.CodeEditor.MoreAction(menu),
     )
 }
+
+/** a divider only between two groups, not at the start, the end or next to another one */
+private fun withoutStrayDividers(entries: List<TopAppBarAction.CodeEditor>): List<TopAppBarAction.CodeEditor> =
+    entries.fold(mutableListOf<TopAppBarAction.CodeEditor>()) { kept, entry ->
+        val divider = entry is TopAppBarAction.CodeEditor.MenuDivider
+        if (!divider || (kept.isNotEmpty() && kept.last() !is TopAppBarAction.CodeEditor.MenuDivider)) kept += entry
+        kept
+    }.dropLastWhile { it is TopAppBarAction.CodeEditor.MenuDivider }
 
 private val COMPACT_TOOLBAR_HEIGHT = 56.dp
 internal const val SHORT_SCREEN_HEIGHT_DP = 480
@@ -384,26 +418,23 @@ internal fun ConnectionAction(
 }
 
 @Composable
-internal fun AuthorHighlightAction(
+internal fun ViewSettingsAction(
     modifier: Modifier,
-    mode: AuthorHighlightMode,
     onClick: () -> Unit
 ) {
-    val modeName = stringResource(mode.nameRes)
     IconButton(
-        modifier = modifier.testTag("author-highlight-action"),
+        modifier = modifier.testTag(VIEW_SETTINGS_ACTION_TAG),
         onClick = onClick
     ) {
         Image(
-            asset = if (mode == AuthorHighlightMode.Off) MaterialDesignIconic.Icon.gmi_accounts_outline else MaterialDesignIconic.Icon.gmi_accounts,
-            contentDescription = stringResource(R.string.editor_author_highlight_action, modeName),
-            colorFilter = ColorFilter.tint(
-                if (mode == AuthorHighlightMode.StripAndMarker) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            asset = GoogleMaterial.Icon.gmd_tune,
+            contentDescription = stringResource(R.string.editor_view_settings),
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant)
         )
     }
 }
+
+internal const val VIEW_SETTINGS_ACTION_TAG = "view-settings-action"
 
 @Composable
 internal fun PageReferencesAction(
@@ -447,9 +478,6 @@ internal fun MoreAction(
                 DropdownMenuItem(
                     modifier = Modifier.testTag("menu-${entry::class.simpleName}"),
                     text = { Text(text) },
-                    trailingIcon = (entry as? TopAppBarAction.CodeEditor.ScrollSyncAction)?.let {
-                        { Checkbox(checked = it.enabled, onCheckedChange = null) }
-                    },
                     onClick = {
                         expanded = false
                         onEntryClicked(entry)
@@ -462,11 +490,8 @@ internal fun MoreAction(
 
 @Composable
 private fun menuText(entry: TopAppBarAction.CodeEditor): String? = when (entry) {
-    is TopAppBarAction.CodeEditor.AuthorHighlightAction ->
-        stringResource(R.string.editor_author_highlight_action, stringResource(entry.mode.nameRes))
+    TopAppBarAction.CodeEditor.ViewSettingsAction -> stringResource(R.string.editor_view_settings)
     TopAppBarAction.CodeEditor.PageReferencesAction -> stringResource(R.string.page_references_action)
-    is TopAppBarAction.CodeEditor.ScrollSyncAction -> stringResource(R.string.editor_scroll_sync_action)
-    TopAppBarAction.CodeEditor.CursorColorAction -> stringResource(R.string.cursor_color)
     TopAppBarAction.CodeEditor.ShareLinkAction -> stringResource(R.string.share_document_link)
     TopAppBarAction.CodeEditor.ShowInBrowserAction -> stringResource(R.string.open_in_browser)
     TopAppBarAction.CodeEditor.RenameAction -> stringResource(R.string.item_action_rename)

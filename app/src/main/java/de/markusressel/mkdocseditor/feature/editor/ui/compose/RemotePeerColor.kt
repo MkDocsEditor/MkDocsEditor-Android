@@ -2,7 +2,6 @@ package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.toArgb
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.contrastRatio
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.wcagLuminance
 import de.markusressel.mkdocsrestclient.sync.automerge.RemoteGhost
@@ -115,9 +114,6 @@ internal val RemotePeer.label: String
 /** One entry per client instance, with those of one person next to each other */
 internal fun List<RemotePeer>.instances(): List<RemotePeer> =
     distinctBy { it.instanceId }.sortedWith(compareBy({ it.accountId ?: it.username }, { it.instanceId }))
-
-/** As `#rrggbb`, which is what the server takes */
-internal fun Color.toPeerColorString(): String = "#%06x".format(toArgb() and 0xFFFFFF)
 
 /**
  * Parses a "#RRGGBB" or "#AARRGGBB" color string
