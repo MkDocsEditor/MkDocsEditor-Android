@@ -52,7 +52,7 @@ extensions.configure<ApplicationExtension> {
 
         // host of the web client whose setup/invite/reset links open in the app (App Links)
         val authLinkHost = providers.gradleProperty("mkdocs.authLinkHost")
-            .getOrElse("edit.wiki.markusressel.de")
+            .getOrElse("wiki.markusressel.de")
         manifestPlaceholders["authLinkHost"] = authLinkHost
         // the account screen links there for admin features
         resValue("string", "auth_web_client_url", "https://$authLinkHost/")

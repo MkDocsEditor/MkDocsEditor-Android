@@ -8,7 +8,7 @@ class QrLinkTest {
 
     @Test
     fun `the key of a sticker is read from its URL`() {
-        assertEquals("waschmaschine", QrLink.parse("https://edit.wiki.markusressel.de/q/waschmaschine"))
+        assertEquals("waschmaschine", QrLink.parse("https://wiki.markusressel.de/q/waschmaschine"))
         assertEquals("Heizung", QrLink.parse("https://edit.example.com/q/Heizung?x=1"))
         assertEquals("a b", QrLink.parse("https://edit.example.com/q/a%20b"))
     }

@@ -79,12 +79,15 @@ class ServerDiscovery(
     }
 
     /**
-     * 1. a web client: its config.json names the backend; 2. the backend itself
+     * 1. a web client: its config.json names the backend; 2. the backend itself; 3. the backend under `api/` of the
+     * address, where it is when it shares the host with the web client
      */
     private suspend fun findAt(base: String): DiscoveredServer? {
         var networkError: IOException? = null
+        var isWebClient = false
         try {
             val config = webClientConfig(base)
+            isWebClient = config != null
             val backendUrl = config?.get("backendUrl")?.let { resolve(base, it) }
             if (backendUrl != null) {
                 serverInfo(backendUrl)?.let { info ->
@@ -102,6 +105,20 @@ class ServerDiscovery(
         try {
             serverInfo(base)?.let { info ->
                 return DiscoveredServer(backendUrl = base, info = info, wikiUrl = info.wikiUrl, webClientUrl = info.webClientUrl)
+            }
+        } catch (e: IOException) {
+            networkError = networkError ?: e
+        }
+        // a web client without a backendUrl in its config.json talks to the backend on its own host
+        val sameHost = base + SAME_HOST_API_PATH
+        try {
+            serverInfo(sameHost)?.let { info ->
+                return DiscoveredServer(
+                    backendUrl = sameHost,
+                    info = info,
+                    wikiUrl = info.wikiUrl,
+                    webClientUrl = if (isWebClient) base else info.webClientUrl,
+                )
             }
         } catch (e: IOException) {
             networkError = networkError ?: e
@@ -153,6 +170,9 @@ class ServerDiscovery(
     }
 
     companion object {
+        /** where the backend serves its routes when it shares the host with the web client */
+        internal const val SAME_HOST_API_PATH = "api/"
+
         /**
          * `wiki.example.com` -> `https://wiki.example.com/`; keeps http, ports and paths, drops
          * query and fragment

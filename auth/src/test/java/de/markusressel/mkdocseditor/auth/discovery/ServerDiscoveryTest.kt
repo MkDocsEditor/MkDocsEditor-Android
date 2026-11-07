@@ -79,6 +79,29 @@ class ServerDiscoveryTest {
     }
 
     @Test
+    fun `a web client without a backend url finds the backend under api on its own host`() = runTest {
+        serve(
+            web,
+            mapOf(
+                "/config.json" to (200 to """{"backendUrl": "", "wikiUrl": "https://wiki.example.com/view/"}"""),
+                // the single page app answers every other path with its page
+                "/server-info/" to (200 to "<html>spa fallback</html>"),
+                "/api/server-info/" to (200 to serverInfoJson),
+            ),
+        )
+        val found = assertIs<DiscoveryResult.Found>(discovery.discover(web.url("/").toString())).server
+        assertEquals(web.url("/api/").toString(), found.backendUrl)
+        assertEquals(web.url("/").toString(), found.webClientUrl)
+    }
+
+    @Test
+    fun `a host whose backend is under api is found without a web client`() = runTest {
+        serve(backend, mapOf("/api/server-info/" to (200 to serverInfoJson)))
+        val found = assertIs<DiscoveryResult.Found>(discovery.discover(backend.url("/").toString())).server
+        assertEquals(backend.url("/api/").toString(), found.backendUrl)
+    }
+
+    @Test
     fun `an older backend without server info is found through auth status`() = runTest {
         serve(backend, mapOf("/auth/status/" to (200 to """{"setupRequired": true}""")))
         val found = assertIs<DiscoveryResult.Found>(discovery.discover(backend.url("/").toString())).server
