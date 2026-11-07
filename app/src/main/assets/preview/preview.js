@@ -46,6 +46,8 @@
   // the blocks with a source line, in document order, so their lines and their tops only grow
   var blocks = null
   var lineCount = 1
+  // the source lines, to tell where a block ends
+  var sourceLines = ['']
 
   function sourceBlocks() {
     if (!blocks) blocks = Array.prototype.slice.call(document.querySelectorAll('[data-source-line]'))
@@ -271,6 +273,17 @@
     leaves.forEach(function (block) {
       if (lineOf(block) <= start && (!covering || lineOf(block) >= lineOf(covering))) covering = block
     })
+    // a block has the lines up to the next block without the blank lines behind it, like in the web client, so a
+    // changed blank line does not light up the paragraph above it
+    if (covering) {
+      var next = lineCount
+      leaves.forEach(function (block) {
+        var line = lineOf(block)
+        if (line > lineOf(covering) && line < next) next = line
+      })
+      while (next > lineOf(covering) + 1 && !(sourceLines[next - 1] || '').trim()) next--
+      if (start >= next) covering = null
+    }
     var top = Infinity
     var bottom = -Infinity
     leaves.forEach(function (block) {
@@ -348,7 +361,8 @@
       }
       fitTables()
       blocks = null
-      lineCount = source.split('\n').length
+      sourceLines = source.split('\n')
+      lineCount = sourceLines.length
       layoutChanged()
       showPendingChange()
     },

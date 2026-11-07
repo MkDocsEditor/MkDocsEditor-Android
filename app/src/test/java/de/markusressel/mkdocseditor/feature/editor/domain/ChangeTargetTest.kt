@@ -130,6 +130,9 @@ class ChangeTargetTest {
         assertEquals(listOf("a\r", "b"), SummaryText.lines("a\r\nb"))
         // the first 16 hex digits of SHA-256 of "abc"
         assertEquals("ba7816bf8f01cfea", SummaryText.hash("abc"))
+        // UTF-8 bytes and a kept \r, checked with sha256sum like the web client
+        assertEquals("fadad47a2f205c1a", SummaryText.hash("Grüße\r\n"))
+        assertEquals("e3b0c44298fc1c14", SummaryText.hash(""))
         assertEquals(4, SummaryText.frontMatterLines("---\na: 1\nb: 2\n---\ntext"))
         assertEquals(0, SummaryText.frontMatterLines("---\nnever closed"))
     }
