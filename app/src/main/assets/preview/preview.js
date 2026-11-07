@@ -1,7 +1,8 @@
 /*
  * The app's side of the markdown preview: renders with the renderer of MkDocsEditor-Web
  * (mkdocs-renderer.js, see `make updatePreview`), hands links to the app and marks missing images.
- * It also tells the app where the page is scrolled to, and scrolls to the source line of the editor.
+ * It also tells the app where the page is scrolled to and where its blocks are, and puts the source line of the
+ * editor at a height of the view.
  */
 (function () {
   'use strict'
@@ -71,25 +72,58 @@
     return Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
   }
 
-  /** the page offset of a source line with a fraction, between the tops of the blocks around it */
-  function offsetOfLine(line) {
-    var list = sourceBlocks()
-    var next = firstIndex(list, function (block) { return lineOf(block) > line })
-    var start = next - 1
-    // the first block of a line: a block and the first block in it start at the same line and place
-    while (start > 0 && lineOf(list[start - 1]) === lineOf(list[start])) start--
-    var fromLine = start >= 0 ? lineOf(list[start]) : 0
-    var fromTop = start >= 0 ? list[start].getBoundingClientRect().top + window.scrollY : 0
-    var toLine = next < list.length ? lineOf(list[next]) : lineCount
-    var toTop = next < list.length
-      ? list[next].getBoundingClientRect().top + window.scrollY
-      : document.documentElement.scrollHeight
-    if (toLine <= fromLine) return fromTop
-    return fromTop + ((line - fromLine) / (toLine - fromLine)) * (toTop - fromTop)
+  // the blocks as [line, top from the start of the page], until the content or the size changes
+  var layout = null
+
+  function layoutBlocks() {
+    if (!layout) {
+      var scrollY = window.scrollY
+      layout = sourceBlocks().map(function (block) {
+        return [lineOf(block), block.getBoundingClientRect().top + scrollY]
+      })
+    }
+    return layout
   }
 
-  // the line the app wants at the top, kept for a new render; null once the user scrolls the page
-  var syncLine = null
+  /**
+   * The page offset of a source line with a fraction, piecewise-linear: each block runs from its line to the line of
+   * the next one, and from its top to the top of the next one. Line 0 is at the start of the page, the end of the text
+   * at its end. A nested block that starts at the line of the one before, or above it, adds nothing. The app maps the
+   * other way with the same points (SourceHeightMap), and the web client does the same.
+   */
+  function offsetOfLine(line) {
+    var end = document.documentElement.scrollHeight
+    var fromLine = 0
+    var fromTop = 0
+    var blocks = layoutBlocks()
+    for (var i = 0; i < blocks.length; i++) {
+      var blockLine = blocks[i][0]
+      var blockTop = blocks[i][1]
+      if (blockLine <= fromLine || blockLine >= lineCount || blockTop < fromTop) continue
+      if (blockLine > line) return between(line, fromLine, fromTop, blockLine, blockTop)
+      fromLine = blockLine
+      fromTop = blockTop
+    }
+    return between(line, fromLine, fromTop, Math.max(lineCount, fromLine + 1), Math.max(end, fromTop))
+  }
+
+  function between(line, fromLine, fromTop, toLine, toTop) {
+    var part = Math.min(Math.max((line - fromLine) / (toLine - fromLine), 0), 1)
+    return fromTop + part * (toTop - fromTop)
+  }
+
+  var reportedLayout = null
+
+  function reportLayout() {
+    if (!bridge || !bridge.layout) return
+    var report = JSON.stringify({ blocks: layoutBlocks(), scrollHeight: document.documentElement.scrollHeight })
+    if (report === reportedLayout) return
+    reportedLayout = report
+    bridge.layout(report)
+  }
+
+  // the source line the app wants at a height of the view, kept for a new render; null once the user scrolls the page
+  var syncAnchor = null
   var target = null
   var animating = false
 
@@ -106,14 +140,15 @@
       animating = false
       return
     }
-    // a little of the way each frame: the editor reports one row at a time, this keeps it from stepping
+    // a little of the way each frame: the caret moves a line at a time, this keeps the page from stepping
     window.scrollTo(0, current + distance * 0.35)
     window.requestAnimationFrame(step)
   }
 
-  function scrollToSyncLine(smooth) {
-    if (syncLine === null) return
-    var top = Math.min(Math.max(0, offsetOfLine(syncLine)), maxScroll())
+  function scrollToSyncAnchor(smooth) {
+    if (syncAnchor === null) return
+    var height = offsetOfLine(syncAnchor.line) - syncAnchor.viewportFraction * window.innerHeight
+    var top = Math.min(Math.max(0, height), maxScroll())
     if (!smooth) {
       target = null
       window.scrollTo(0, top)
@@ -175,8 +210,7 @@
       blocks: visible,
       height: height,
       scrollY: scrollY,
-      atTop: scrollY <= 0,
-      atBottom: scrollY > 0 && scrollY >= maxScroll() - 1,
+      scrollHeight: document.documentElement.scrollHeight,
       byUser: userScrolling,
     }))
   }
@@ -191,15 +225,24 @@
     if (userScrolling) {
       userMoves()
       // the user takes over, the editor no longer says where to be
-      syncLine = null
+      syncAnchor = null
       target = null
     }
     scheduleReport()
   }, { passive: true })
+  /** the blocks moved: keeps the source line of the app in place and tells the app */
+  function layoutChanged() {
+    layout = null
+    // an embedded page never scrolls, so there is nothing to keep in place or to report
+    if (embedded) return
+    scrollToSyncAnchor(false)
+    reportLayout()
+    scheduleReport()
+  }
+
   window.addEventListener('resize', function () {
     fitTables()
-    scrollToSyncLine(false)
-    scheduleReport()
+    layoutChanged()
   })
 
   window.MkDocsPreview = {
@@ -213,18 +256,25 @@
       fitTables()
       blocks = null
       lineCount = source.split('\n').length
-      scrollToSyncLine(false)
-      scheduleReport()
+      layoutChanged()
     },
     /**
-     * Scrolls the source line to the top of the view. A line between the starts of two blocks is between their tops.
+     * Scrolls a source line to a height of the view, as far as the page can scroll, and keeps it there when the page
+     * renders again or changes its size, until the user scrolls.
      *
-     * @param line 0-based, with a fraction for a part of the way to the next line
+     * @param line 0-based, with a fraction for a part of the way to the next line, the line count for the end
+     * @param viewportFraction the height of the view, 0 for its top, 1 for its bottom
      * @param smooth moves there over a few frames
      */
-    scrollToLine: function (line, smooth) {
-      syncLine = line
-      scrollToSyncLine(!!smooth)
+    scrollToLine: function (line, viewportFraction, smooth) {
+      if (embedded) return
+      syncAnchor = { line: line, viewportFraction: viewportFraction }
+      scrollToSyncAnchor(!!smooth)
+    },
+    /** Lets go of the source line of the app, so that the page stays where it is when it renders again. */
+    stopSync: function () {
+      syncAnchor = null
+      target = null
     },
   }
 
@@ -232,8 +282,7 @@
   if (window.ResizeObserver && content) {
     new ResizeObserver(function () {
       // images that load later move the blocks
-      scrollToSyncLine(false)
-      scheduleReport()
+      layoutChanged()
       // a preview without its own scrolling grows with its content, so the app needs the height
       if (bridge && bridge.contentHeight) {
         // the whole body with its padding, unrounded: the app rounds up, so not a pixel is left to scroll

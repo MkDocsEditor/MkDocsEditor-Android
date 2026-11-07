@@ -37,6 +37,18 @@ class EditorTopBarActionsTest {
     }
 
     @Test
+    fun `while a split is shown the menu can turn the scroll sync off, without a split it has no such entry`() {
+        val split = menuOf(editorTopBarActions(editing, SplitMode.Vertical, wide = false))
+        val off = editing.copy(editorSettings = EditorSettings(scrollSync = false))
+
+        assertTrue(TopAppBarAction.CodeEditor.ScrollSyncAction(enabled = true) in split)
+        assertTrue(TopAppBarAction.CodeEditor.ScrollSyncAction(enabled = false) in menuOf(editorTopBarActions(off, SplitMode.Horizontal, wide = true)))
+        assertTrue(menuOf(editorTopBarActions(editing, SplitMode.Off, wide = false)).none { it is TopAppBarAction.CodeEditor.ScrollSyncAction })
+        // reading shows only the page
+        assertTrue(menuOf(editorTopBarActions(CodeEditorViewModel.UiState(), SplitMode.Vertical, wide = false)).none { it is TopAppBarAction.CodeEditor.ScrollSyncAction })
+    }
+
+    @Test
     fun `the page can be renamed, moved, pinned and deleted from the menu, last`() {
         val menu = menuOf(editorTopBarActions(CodeEditorViewModel.UiState(), SplitMode.Off, wide = false))
 

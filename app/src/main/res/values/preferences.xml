@@ -54,6 +54,8 @@
     <string name="editor_line_numbers_key" translatable="false">editor_line_numbers</string>
     <string name="editor_line_numbers_title">Show line numbers</string>
     <string name="editor_author_highlight_key" translatable="false">editor_author_highlight</string>
+    <string name="editor_scroll_sync_key" translatable="false">editor_scroll_sync</string>
+    <string name="editor_scroll_sync_title">Sync scrolling in split view</string>
     <string name="editor_author_highlight_title">Show who wrote what</string>
     <string name="editor_author_highlight_marker_value" translatable="false">marker</string>
     <string name="editor_author_highlight_marker_name">Strip and marker</string>

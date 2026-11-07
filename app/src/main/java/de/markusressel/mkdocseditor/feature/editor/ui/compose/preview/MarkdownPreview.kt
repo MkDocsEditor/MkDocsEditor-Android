@@ -24,9 +24,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.rememberEditorPalette
 import de.markusressel.mkdocseditor.feature.editor.domain.PreviewBlock
+import de.markusressel.mkdocseditor.feature.editor.domain.PreviewLayout
+import de.markusressel.mkdocseditor.feature.editor.domain.PreviewLayoutBlock
 import de.markusressel.mkdocseditor.feature.editor.domain.PreviewScroll
+import de.markusressel.mkdocseditor.feature.editor.domain.SyncAnchor
+import de.markusressel.mkdocseditor.feature.editor.ui.compose.ScrollSync
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filterNotNull
 import org.json.JSONException
 import org.json.JSONObject
 import com.github.ajalt.timberkt.Timber
@@ -56,9 +59,11 @@ fun interface PreviewResourceLoader {
  * @param onLinkClicked called with the target of a clicked link, as written in the markdown
  * @param onContentHeight with it, the page tells the height of its content in CSS pixels (dp), for a preview that
  * doesn't scroll itself but grows with its content, inside a column that scrolls. The page then wraps everything to
- * its width, never scrolls, and can't be zoomed, so that every drag goes to the column.
- * @param syncedLine the source line the page should show at its top, read in a snapshot, so that the page moves along
- * when it changes. Null leaves the page where it is.
+ * its width, never scrolls, and can't be zoomed, so that every drag goes to the column. Such a page has no scroll sync.
+ * @param syncTarget the source line the page should show, and at which height, read in a snapshot, so that the page
+ * moves along when it changes. The page keeps it there when it renders again or changes its size, until the user
+ * scrolls it. Null leaves the page where it is.
+ * @param onLayout called when the blocks of the page move, after it renders or changes its size
  * @param onScrolled called when the page scrolls, also when the app scrolls it, or when its content moves
  */
 @SuppressLint("SetJavaScriptEnabled")
@@ -71,7 +76,8 @@ internal fun MarkdownPreview(
     modifier: Modifier = Modifier,
     visible: Boolean = true,
     onContentHeight: ((Int) -> Unit)? = null,
-    syncedLine: (() -> Double?)? = null,
+    syncTarget: (() -> ScrollSync.PreviewTarget?)? = null,
+    onLayout: ((PreviewLayout) -> Unit)? = null,
     onScrolled: ((PreviewScroll) -> Unit)? = null,
 ) {
     val context = LocalContext.current
@@ -90,7 +96,8 @@ internal fun MarkdownPreview(
     val currentOnLinkClicked by rememberUpdatedState(onLinkClicked)
     val currentVisible by rememberUpdatedState(visible)
     val currentOnContentHeight by rememberUpdatedState(onContentHeight)
-    val currentSyncedLine by rememberUpdatedState(syncedLine)
+    val currentSyncTarget by rememberUpdatedState(syncTarget)
+    val currentOnLayout by rememberUpdatedState(onLayout)
     val currentOnScrolled by rememberUpdatedState(onScrolled)
     val growsWithContent = onContentHeight != null
 
@@ -158,11 +165,17 @@ internal fun MarkdownPreview(
                 }
 
                 @JavascriptInterface
+                fun layout(json: String) {
+                    val layout = parsePreviewLayout(json) ?: return
+                    mainHandler.post { currentOnLayout?.invoke(layout) }
+                }
+
+                @JavascriptInterface
                 fun pageReady() {
                     mainHandler.post {
                         state.onPageReady(currentText, ::renderMarkdown, currentVisible)
                         // a new page starts at the top
-                        currentSyncedLine?.invoke()?.let { scrollToLine(it, smooth = false) }
+                        currentSyncTarget?.invoke()?.let { scrollToLine(it.anchor, smooth = false) }
                     }
                 }
             }, "MkDocsPreviewBridge")
@@ -200,9 +213,11 @@ internal fun MarkdownPreview(
     }
 
     LaunchedEffect(webView) {
-        snapshotFlow { currentSyncedLine?.invoke() }
-            .filterNotNull()
-            .collect { webView.scrollToLine(it, smooth = true) }
+        snapshotFlow { currentSyncTarget?.invoke() }
+            .collect { target ->
+                // without a target the page stays where it is, also when it renders again
+                if (target == null) webView.stopSync() else webView.scrollToLine(target.anchor, target.smooth)
+            }
     }
 
     AndroidView(modifier = modifier, factory = { webView })
@@ -214,9 +229,32 @@ internal fun MarkdownPreview(
  */
 internal fun contentHeightDp(cssPixels: Double): Int = ceil(cssPixels).toInt()
 
-private fun WebView.scrollToLine(line: Double, smooth: Boolean) {
+private fun WebView.scrollToLine(anchor: SyncAnchor, smooth: Boolean) {
     // the page may still be loading, and then catches up when it is ready
-    evaluateJavascript("window.MkDocsPreview && MkDocsPreview.scrollToLine($line, $smooth)", null)
+    evaluateJavascript(
+        "window.MkDocsPreview && MkDocsPreview.scrollToLine(${anchor.line}, ${anchor.viewportFraction}, $smooth)",
+        null,
+    )
+}
+
+private fun WebView.stopSync() {
+    evaluateJavascript("window.MkDocsPreview && MkDocsPreview.stopSync()", null)
+}
+
+/** @return null for a report that can't be read */
+private fun parsePreviewLayout(json: String): PreviewLayout? = try {
+    val report = JSONObject(json)
+    val blocks = report.getJSONArray("blocks")
+    PreviewLayout(
+        blocks = List(blocks.length()) { index ->
+            val block = blocks.getJSONArray(index)
+            PreviewLayoutBlock(line = block.getInt(0), top = block.getDouble(1).toFloat())
+        },
+        scrollHeight = report.getDouble("scrollHeight").toFloat(),
+    )
+} catch (e: JSONException) {
+    Timber.w(e) { "The preview reported a layout that can't be read" }
+    null
 }
 
 /** @return null for a report that can't be read */
@@ -230,8 +268,7 @@ private fun parsePreviewScroll(json: String): PreviewScroll? = try {
         },
         height = report.getDouble("height").toFloat(),
         scrollY = report.getDouble("scrollY").toFloat(),
-        atTop = report.getBoolean("atTop"),
-        atBottom = report.getBoolean("atBottom"),
+        scrollHeight = report.getDouble("scrollHeight").toFloat(),
         byUser = report.getBoolean("byUser"),
     )
 } catch (e: JSONException) {

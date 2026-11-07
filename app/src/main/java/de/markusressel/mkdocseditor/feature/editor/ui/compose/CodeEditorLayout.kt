@@ -35,7 +35,9 @@ import de.markusressel.kodeeditor.library.compose.rememberKodeEditorViewState
 import de.markusressel.mkdocseditor.R
 import android.os.SystemClock
 import de.markusressel.mkdocseditor.feature.editor.domain.FOLLOW_PAUSE_MIN_MS
+import de.markusressel.mkdocseditor.feature.editor.domain.EditorScrollView
 import de.markusressel.mkdocseditor.feature.editor.domain.FollowTarget
+import de.markusressel.mkdocseditor.feature.editor.domain.lineOfPosition
 import de.markusressel.mkdocseditor.feature.editor.domain.nextFollowPauseMs
 import de.markusressel.mkdocseditor.feature.editor.domain.followTarget
 import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
@@ -85,14 +87,19 @@ internal fun CodeEditorLayout(
     LaunchedEffect(viewState, scrollSync) {
         snapshotFlow { viewState.visibleRange }.collect { range ->
             currentOnVisibleRangeChanged(range)
-            scrollSync?.onEditorVisibleRange(range)
         }
     }
     LaunchedEffect(viewState, scrollSync) {
         if (scrollSync == null) return@LaunchedEffect
-        // one scroll after the other: a new one that starts near the target would stop the running one short
+        val view = viewState.asScrollView()
+        snapshotFlow { scrollSync.editorAnchorOf(view) { lineOfPosition(state.text, state.selection.end) } }
+            .collect { scrollSync.onEditorAnchor(it) }
+    }
+    LaunchedEffect(viewState, scrollSync) {
+        if (scrollSync == null) return@LaunchedEffect
+        // the page reports every frame of its scroll, so the editor jumps along with it
         snapshotFlow { scrollSync.editorTarget }.filterNotNull().conflate().collect { target ->
-            viewState.scrollToRange(target.first, target.last, animate = true)
+            viewState.scrollToLine(target.line, target.fraction, target.viewportFraction, animate = false)
         }
     }
     LaunchedEffect(jumpRequest) {
@@ -236,6 +243,13 @@ private fun FollowTarget.isIn(visible: TextRange): Boolean = when (this) {
     is FollowTarget.Position -> position in visible.start..visible.end
 }
 
+private fun KodeEditorViewState.asScrollView() = object : EditorScrollView {
+    override val scrollOffset: Float? get() = verticalScrollOffset
+    override val maxScrollOffset: Float? get() = maxVerticalScrollOffset
+    override fun lineAt(viewportFraction: Float): Double? =
+        this@asScrollView.lineAt(viewportFraction)?.let { it.line + it.fraction.toDouble() }
+}
+
 private suspend fun KodeEditorViewState.scrollTo(target: FollowTarget, animate: Boolean): Boolean = when (target) {
     is FollowTarget.Range -> scrollToRange(target.top, target.bottom + 1, animate)
     is FollowTarget.Position -> scrollToPosition(target.position, animate)
@@ -256,6 +270,8 @@ internal data class EditorSettings(
     val lineNumbers: Boolean = true,
     val textSize: Int = DEFAULT_EDITOR_TEXT_SIZE.toInt(),
     val authorHighlight: AuthorHighlightMode = AuthorHighlightMode.StripAndMarker,
+    /** whether editor and rendered page of a split scroll together */
+    val scrollSync: Boolean = true,
 )
 
 private val NoAuthorRuns: State<AuthorRuns> = mutableStateOf(AuthorRuns())
