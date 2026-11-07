@@ -200,12 +200,9 @@ dependencies {
     implementation(libs.vanpra.compose.material.dialogs.datetime)
 
     // Code editor
-    implementation(libs.markusressel.kodeeditor) {
-        // it brings the old per-language artifacts of KodeHighlighter, whose classes the single one below has too
-        exclude(group = "com.github.markusressel.KodeHighlighter")
-    }
+    implementation(libs.markusressel.kodeeditor)
 
-    // Syntax Highlighting, with every language
+    // Syntax Highlighting, with every language. KodeEditor brings the same version, the app uses it directly too.
     implementation(libs.markusressel.kodehighlighter)
 
     // Tutorial messages
