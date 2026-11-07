@@ -7,16 +7,34 @@ import de.markusressel.mkdocsrestclient.sync.automerge.DocumentSyncSession
 import de.markusressel.mkdocsrestclient.sync.automerge.FakeSyncServer
 import de.markusressel.mkdocsrestclient.sync.automerge.InMemoryDocumentStore
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
+import de.markusressel.mkdocsrestclient.sync.automerge.toHex
 import de.markusressel.mkdocsrestclient.sync.text.TextSplice
+import java.security.SecureRandom
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.test.fail
+
+/**
+ * Actor ids from a seed instead of the system's random source. Automerge orders concurrent inserts by actor id, so
+ * with random ids a run of the random tests can't be repeated.
+ */
+private class SeededSecureRandom(private val random: Random) : SecureRandom() {
+    /** what this handed out, as hex: the first one is the actor id of the session */
+    val handedOut = mutableListOf<String>()
+
+    override fun nextBytes(bytes: ByteArray) {
+        random.nextBytes(bytes)
+        handedOut += bytes.toHex()
+    }
+}
 
 /** One app: an [EditorTextController] on a session, connected the way `DocumentSession` does it. */
-private class TypingClient(val server: FakeSyncServer, name: String) : DocumentSyncSession.Listener {
-    val session = DocumentSyncSession(server.documentId, InMemoryDocumentStore(), this)
+private class TypingClient(val server: FakeSyncServer, val name: String, ids: Random) : DocumentSyncSession.Listener {
+    private val idSource = SeededSecureRandom(ids)
+    val session = DocumentSyncSession(server.documentId, InMemoryDocumentStore(), this, random = idSource)
     val controller = EditorTextController(editModeActive = { true }).also { it.bind(session) }
     val editor = controller.editorState
     var connection = server.connect(session, name)
@@ -41,6 +59,8 @@ private class TypingClient(val server: FakeSyncServer, name: String) : DocumentS
         session.flushSync()
         server.pump()
     }
+
+    val actorId: String? get() = idSource.handedOut.firstOrNull()
 }
 
 /**
@@ -49,26 +69,61 @@ private class TypingClient(val server: FakeSyncServer, name: String) : DocumentS
  */
 class ConcurrentTypingTest {
 
-    private fun clients(text: String, count: Int = 2): List<TypingClient> {
-        val server = FakeSyncServer(text)
-        val clients = List(count) { TypingClient(server, "user$it") }
+    /** @param ids the seed of all actor ids, so that a run can be repeated */
+    private fun clients(text: String, count: Int = 2, ids: Long = 0): List<TypingClient> {
+        val random = Random(ids)
+        val server = FakeSyncServer(text, actorId = random.nextBytes(16))
+        val clients = List(count) { TypingClient(server, "user$it", random) }
         server.pump()
         return clients
     }
 
-    private fun settle(clients: List<TypingClient>) {
-        repeat(3) {
+    /**
+     * Syncs until every client has the state of the server. [FakeSyncServer.pump] already delivers until nothing is
+     * left, so this takes one round, two when a client still has a change it has not sent.
+     *
+     * @return the rounds it took
+     */
+    private fun settle(clients: List<TypingClient>): Int {
+        val server = clients.first().server
+        for (round in 1..MAX_SETTLE_ROUNDS) {
             clients.forEach { it.session.flushSync() }
-            clients.first().server.pump()
+            server.pump()
+            if (clients.all { it.session.version?.hasHeads(server.document.headsHex) == true }) return round
         }
+        fail("sync did not settle after $MAX_SETTLE_ROUNDS rounds\n${describe(clients)}")
     }
 
     private fun assertAllEqual(clients: List<TypingClient>, message: String = "") {
         val text = clients.first().session.text
+        val state = describe(clients)
         clients.forEach {
-            assertEquals(text, it.session.text, "$message clients differ")
-            assertEquals(text, it.shownText, "$message editor differs from the document")
-            assertEquals(text, it.server.document.text, "$message server differs")
+            assertEquals(text, it.session.text, "$message clients differ\n$state")
+            assertEquals(text, it.shownText, "$message editor differs from the document\n$state")
+            assertEquals(text, it.server.document.text, "$message server differs\n$state")
+        }
+    }
+
+    /** Everything needed to understand a failure, with the typed characters made readable */
+    private fun describe(clients: List<TypingClient>): String {
+        val server = clients.first().server
+        return buildString {
+            appendLine("server: actor ${server.document.actorId.toHex()}, heads ${server.document.headsHex.map { it.take(8) }}")
+            appendLine("  text: ${readable(server.document.text)}")
+            clients.forEach {
+                appendLine("${it.name}: actor ${it.actorId}, heads ${it.session.version}, unsynced ${it.session.hasUnsyncedChanges}")
+                appendLine("  document: ${it.session.text?.let(::readable)}")
+                appendLine("  editor:   ${readable(it.shownText)}")
+            }
+        }
+    }
+
+    /** a typed character as <client.n>, see [letter] */
+    private fun readable(text: String): String = buildString {
+        text.forEach { c ->
+            val owner = ownerOf(c)
+            if (owner < 0) append(if (c == '\n') "\\n" else c.toString())
+            else append("<$owner.${c.code - 0xE000 - owner * 0x800}>")
         }
     }
 
@@ -243,7 +298,7 @@ class ConcurrentTypingTest {
     @Test
     fun `a read-only document refuses input and the editor goes back`() {
         val server = FakeSyncServer("read me", readOnly = true)
-        val a = TypingClient(server, "reader")
+        val a = TypingClient(server, "reader", Random(0))
         server.pump()
         a.type("x")
         assertEquals("read me", a.shownText)
@@ -253,7 +308,7 @@ class ConcurrentTypingTest {
     @Test
     fun `no document means no edits`() {
         val server = FakeSyncServer("text")
-        val a = TypingClient(server, "user")
+        val a = TypingClient(server, "user", Random(0))
         assertNull(a.session.text)
         a.controller.showDetachedText("cached")
         assertEquals("cached", a.shownText)
@@ -273,7 +328,7 @@ class ConcurrentTypingTest {
         for (seed in 0 until 200) {
             val random = Random(seed)
             val count = 2 + random.nextInt(2)
-            val clients = clients("Hello world\nsecond line\n", count)
+            val clients = clients("Hello world\nsecond line\n", count, ids = seed.toLong())
             val typed = IntArray(count)
             clients.forEach { it.moveCaret(random.nextInt(it.shownText.length + 1)) }
             repeat(150) {
@@ -285,8 +340,8 @@ class ConcurrentTypingTest {
                     6 -> if (random.nextInt(8) == 0) client.moveCaret(random.nextInt(client.shownText.length + 1))
                 }
             }
-            settle(clients)
-            assertAllEqual(clients, "seed $seed:")
+            val rounds = settle(clients)
+            assertAllEqual(clients, "seed $seed, $count clients, settled in $rounds rounds:")
             val text = clients.first().shownText
             for (i in 0 until count) {
                 val expected = (0 until typed[i]).map { letter(i, it) }.toSet()
@@ -300,7 +355,7 @@ class ConcurrentTypingTest {
     fun `random typing and deleting converges`() {
         for (seed in 0 until 100) {
             val random = Random(1000 + seed)
-            val clients = clients("0123456789\nabcdefghij\n")
+            val clients = clients("0123456789\nabcdefghij\n", ids = 1000L + seed)
             repeat(150) {
                 val client = clients[random.nextInt(2)]
                 when (random.nextInt(6)) {
@@ -311,8 +366,8 @@ class ConcurrentTypingTest {
                 }
                 assertEquals(client.session.text, client.shownText, "seed $seed")
             }
-            settle(clients)
-            assertAllEqual(clients, "seed $seed:")
+            val rounds = settle(clients)
+            assertAllEqual(clients, "seed ${1000 + seed}, settled in $rounds rounds:")
         }
     }
 
@@ -336,4 +391,8 @@ class ConcurrentTypingTest {
     private fun letter(client: Int, n: Int): Char = (0xE000 + client * 0x800 + n).toChar()
 
     private fun ownerOf(c: Char): Int = if (c.code in 0xE000..0xF7FF) (c.code - 0xE000) / 0x800 else -1
+
+    private companion object {
+        const val MAX_SETTLE_ROUNDS = 20
+    }
 }
