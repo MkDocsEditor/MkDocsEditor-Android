@@ -221,4 +221,56 @@ class ScrollSyncTest {
 
         assertReadingLine(sync.previewTarget)
     }
+
+    /**
+     * An editor whose folds hide lines, like KodeEditor's: it only has rows for the [shown] lines, 100 pixels each, and
+     * shows three of them from the row [top]. Its scroll offsets are those of the rows that are shown.
+     */
+    private class FoldedEditor(private val shown: List<Int>, var top: Double) : EditorScrollView {
+        override val scrollOffset get() = (top * 100).toFloat()
+        override val maxScrollOffset get() = (shown.size - 3) * 100f
+        override fun lineAt(viewportFraction: Float): Double {
+            val row = top + viewportFraction * 3
+            val index = row.toInt().coerceAtMost(shown.lastIndex)
+            // the bottom of the view is the bottom of the last row that is shown
+            return shown[index] + (row - index).coerceAtMost(1.0)
+        }
+    }
+
+    private fun foldedEditorMoves(editor: FoldedEditor) = sync.onEditorAnchor(sync.editorAnchorOf(editor) { 0.0 })
+
+    @Test
+    fun `with the last section folded, the bottom of the editor is still the end of the page`() {
+        // line 5 folds the lines 6 to 9, the end of the text
+        val folded = FoldedEditor(shown = (0..5).toList(), top = 3.0)
+        foldedEditorMoves(folded)
+
+        assertEquals(SyncAnchor(10.0, 1f), sync.previewTarget?.anchor)
+    }
+
+    @Test
+    fun `the page jumps over a folded section when the editor passes its line`() {
+        // line 2 folds the lines 3 to 5
+        val folded = FoldedEditor(shown = listOf(0, 1, 2, 6, 7, 8, 9), top = 1.7)
+        foldedEditorMoves(folded)
+        // the reading line is near the bottom of line 2
+        assertAnchor(SyncAnchor(2.975, 0.425f), sync.previewTarget?.anchor)
+
+        folded.top = 1.8
+        foldedEditorMoves(folded)
+        // and a little further down it is past the fold
+        assertAnchor(SyncAnchor(6.15, 0.45f), sync.previewTarget?.anchor)
+    }
+
+    @Test
+    fun `while the page scrolls through a folded section, the editor at the fold does not move the page back`() {
+        sync.onPreviewScrolled(previewScroll(scrollY = 400f, byUser = true))
+        // line 6 is in a fold of line 5, so the editor stays at line 5
+        assertEquals(6, sync.editorTarget?.line)
+        val folded = FoldedEditor(shown = listOf(0, 1, 2, 3, 4, 5, 9), top = 3.0)
+        foldedEditorMoves(folded)
+
+        assertEquals(ScrollSync.Side.Preview, sync.driver)
+        assertNull(sync.previewTarget)
+    }
 }
