@@ -29,13 +29,6 @@ enum class AuthorHighlightMode(val value: String, @param:StringRes val nameRes: 
     /** the strip, and a light marker on the text itself */
     StripAndMarker("marker", R.string.editor_author_highlight_marker_name);
 
-    /** @return the mode that the button in the editor switches to */
-    fun next() = when (this) {
-        StripAndMarker -> Strip
-        Strip -> Off
-        Off -> StripAndMarker
-    }
-
     companion object {
         fun fromValue(value: String) = entries.firstOrNull { it.value == value } ?: StripAndMarker
     }
