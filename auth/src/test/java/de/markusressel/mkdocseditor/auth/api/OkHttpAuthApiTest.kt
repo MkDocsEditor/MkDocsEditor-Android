@@ -229,6 +229,40 @@ class OkHttpAuthApiTest {
     }
 
     @Test
+    fun `server info with push and the subscription endpoints`() = runTest {
+        respond(200, """{"features": ["push"], "push": {"vapidPublicKey": "BP4z"}}""")
+        assertEquals("BP4z", api.serverInfo().push?.vapidPublicKey)
+        respond(200, """{"features": [], "push": null}""")
+        assertNull(api.serverInfo().push)
+
+        respond(200, """{"subscriptions": []}""")
+        api.subscribePush("mds_t", PushSubscription("https://ntfy.example.com/upAbC", p256dh = "BCVx", auth = "BTBZ"))
+        respond(200, """{"subscriptions": []}""")
+        api.unsubscribePush("mds_t", "https://ntfy.example.com/upAbC")
+
+        server.takeRequest()
+        server.takeRequest()
+        val subscribe = server.takeRequest()
+        assertEquals("POST", subscribe.method)
+        assertEquals("/push/subscriptions/", subscribe.url.encodedPath)
+        assertEquals("Bearer mds_t", subscribe.headers["Authorization"])
+        assertEquals(
+            """{"endpoint":"https://ntfy.example.com/upAbC","keys":{"p256dh":"BCVx","auth":"BTBZ"}}""",
+            subscribe.bodyText(),
+        )
+        val unsubscribe = server.takeRequest()
+        assertEquals("DELETE", unsubscribe.method)
+        assertEquals("/push/subscriptions/", unsubscribe.url.encodedPath)
+        assertEquals("""{"endpoint":"https://ntfy.example.com/upAbC"}""", unsubscribe.bodyText())
+    }
+
+    @Test
+    fun `a push subscription keeps its endpoint and keys out of logs`() {
+        val text = PushSubscription("https://ntfy.example.com/upAbC", p256dh = "BCVx", auth = "BTBZ").toString()
+        assertTrue("upAbC" !in text && "BCVx" !in text && "BTBZ" !in text, text)
+    }
+
+    @Test
     fun `base url with a path prefix`() = runTest {
         val prefixed = OkHttpAuthApi(server.url("/api").toString(), OkHttpClient())
         respond(200, "{}")

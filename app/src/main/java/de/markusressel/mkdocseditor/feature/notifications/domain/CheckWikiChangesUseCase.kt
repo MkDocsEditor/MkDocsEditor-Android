@@ -29,7 +29,7 @@ internal interface WikiChangesNotifier {
 
 /**
  * Reads the feed of the selected server for changes by others to the pages the user cares about: those pinned for
- * everyone or for them, and those they edited. Runs in the background, there is no push yet.
+ * everyone or for them, and those they edited. Runs in the background, about once an hour and after each push.
  */
 internal class CheckWikiChangesUseCase @Inject constructor(
     private val server: WikiChangesServer,

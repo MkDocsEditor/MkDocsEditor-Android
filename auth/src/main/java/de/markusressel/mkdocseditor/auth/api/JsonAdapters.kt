@@ -72,4 +72,10 @@ internal class JsonObjectBuilder(private val writer: JsonWriter) {
     fun putRaw(name: String, json: String) {
         writer.name(name).rawJsonValue(json)
     }
+
+    fun putObject(name: String, block: JsonObjectBuilder.() -> Unit) {
+        writer.name(name).beginObject()
+        block()
+        writer.endObject()
+    }
 }

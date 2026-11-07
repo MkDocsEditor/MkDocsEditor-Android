@@ -301,6 +301,20 @@ class OkHttpAuthApi(
     override suspend fun revokeOtherSessions(token: String): Int =
         http.call("POST", "account/sessions/revoke-others/", token = token, response = revokedAdapter)?.revoked ?: 0
 
+    override suspend fun subscribePush(token: String, subscription: PushSubscription) {
+        http.call<Unit>("POST", "push/subscriptions/", token = token, body = jsonObject {
+            put("endpoint", subscription.endpoint)
+            putObject("keys") {
+                put("p256dh", subscription.p256dh)
+                put("auth", subscription.auth)
+            }
+        })
+    }
+
+    override suspend fun unsubscribePush(token: String, endpoint: String) {
+        http.call<Unit>("DELETE", "push/subscriptions/", token = token, body = jsonObject { put("endpoint", endpoint) })
+    }
+
     private suspend fun loginCall(path: String, body: JsonObjectBuilder.() -> Unit): LoginResponse =
         requireNotNull(http.call("POST", path, body = jsonObject(body), response = loginAdapter))
 
