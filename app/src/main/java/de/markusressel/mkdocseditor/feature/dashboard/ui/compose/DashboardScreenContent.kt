@@ -46,6 +46,7 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.avatar.data.Avatar
 import de.markusressel.mkdocseditor.feature.avatar.ui.compose.UserAvatar
 import de.markusressel.mkdocseditor.feature.common.ui.compose.TabContentScaffold
+import de.markusressel.mkdocseditor.feature.common.ui.compose.TransferProgressBar
 import de.markusressel.mkdocseditor.feature.common.ui.compose.syncStatusText
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
@@ -87,6 +88,11 @@ internal fun DashboardScreenContent(
                 actions = listOf(TopAppBarAction.FileBrowser.Search, TopAppBarAction.FileBrowser.Profile),
                 onActionClicked = { onUiEvent(UiEvent.TopAppBarActionClicked(it)) },
             )
+        },
+        bottomBar = {
+            uiState.download?.let { download ->
+                TransferProgressBar(progress = download, onCancel = { onUiEvent(UiEvent.CancelDownload) })
+            }
         },
     ) { paddingValues ->
         PullToRefreshBox(

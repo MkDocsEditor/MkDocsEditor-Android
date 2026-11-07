@@ -2,6 +2,7 @@ package de.markusressel.mkdocseditor.feature.dashboard.ui
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import de.markusressel.mkdocseditor.R
@@ -11,6 +12,8 @@ import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendCon
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.SyncStatusStore
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetCurrentBackendConfigFlowUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.ObserveServerEventsUseCase
+import de.markusressel.mkdocseditor.feature.common.data.TransferProgress
+import de.markusressel.mkdocseditor.feature.common.ui.ShownTransfer
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.dashboard.data.DashboardStore
 import de.markusressel.mkdocseditor.feature.dashboard.domain.FamilyPinPermission
@@ -89,7 +92,12 @@ internal class DashboardViewModel @Inject constructor(
     private val _events = Channel<DashboardEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
-    val previewResourceLoader = editorResources.previewResourceLoader { wikiTreeHolder.tree.value }
+    /** a file opened from a link of the home page, or an image of it, while it downloads */
+    private val download = ShownTransfer(viewModelScope) { change ->
+        _uiState.update { old -> old.copy(download = change(old.download)) }
+    }
+
+    val previewResourceLoader = editorResources.previewResourceLoader(tree = { wikiTreeHolder.tree.value }, download = download)
 
     private var olderFeed: Job? = null
 
@@ -129,6 +137,7 @@ internal class DashboardViewModel @Inject constructor(
                 is UiEvent.FeedEntryClicked -> openFeedEntry(event.entry)
                 is UiEvent.UnpinClicked -> unpin(event.scope, event.pin)
                 is UiEvent.HomePageLinkClicked -> onLinkClicked(event.href)
+                UiEvent.CancelDownload -> download.cancel()
                 is UiEvent.TopAppBarActionClicked -> when (event.action) {
                     TopAppBarAction.FileBrowser.Search -> _events.send(DashboardEvent.OpenSearch)
                     // the account screen sends the user to the login when there is no session
@@ -304,7 +313,8 @@ internal class DashboardViewModel @Inject constructor(
             is PreviewLinkTarget.Document -> _events.send(DashboardEvent.OpenDocument(target.documentId))
             is PreviewLinkTarget.Section -> mainNavigationRequests.showSection(target.sectionId)
             is PreviewLinkTarget.Resource -> try {
-                shareFileUseCase(downloadResourceUseCase(target.resourceId, target.name))
+                download.track { onProgress -> downloadResourceUseCase(target.resourceId, target.name, onProgress) }
+                    ?.let { shareFileUseCase(it) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -342,6 +352,7 @@ internal class DashboardViewModel @Inject constructor(
      * @param lastSync when the server last answered
      * @param lastSyncFailed the server did not answer the last time
      * @param mayPinForEveryone false for a reader, who can not remove the pins for everyone
+     * @param download a file of a link on the home page, or an image of it, while it downloads
      */
     data class UiState(
         val homePage: HomePageState? = null,
@@ -356,6 +367,7 @@ internal class DashboardViewModel @Inject constructor(
         val lastSync: Date? = null,
         val lastSyncFailed: Boolean = false,
         val mayPinForEveryone: Boolean = true,
+        val download: TransferProgress? = null,
     )
 
     sealed interface UiEvent {
@@ -366,6 +378,9 @@ internal class DashboardViewModel @Inject constructor(
         data class UnpinClicked(val scope: PinScope, val pin: PinModel) : UiEvent
         data class HomePageLinkClicked(val href: String) : UiEvent
         data class TopAppBarActionClicked(val action: TopAppBarAction.FileBrowser) : UiEvent
+
+        /** stops the download that shows at the bottom */
+        data object CancelDownload : UiEvent
     }
 
     private companion object {

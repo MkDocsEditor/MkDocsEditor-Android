@@ -98,6 +98,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import de.markusressel.mkdocseditor.feature.common.data.TransferProgress
+import de.markusressel.mkdocseditor.feature.common.ui.ShownTransfer
 import javax.inject.Inject
 
 @HiltViewModel
@@ -190,8 +191,13 @@ internal class CodeEditorViewModel @Inject constructor(
     /** content URIs for photos taken from the image picker */
     internal val photoUriFactory = editorFiles.photoUriFactory
 
+    /** a file opened from a link in the preview, or an image of the preview, while it downloads */
+    private val download = ShownTransfer(viewModelScope) { change ->
+        _uiState.update { old -> old.copy(download = change(old.download)) }
+    }
+
     /** loads the images of the preview */
-    val previewResourceLoader = editorResources.previewResourceLoader { wikiTreeHolder.tree.value }
+    val previewResourceLoader = editorResources.previewResourceLoader(tree = { wikiTreeHolder.tree.value }, download = download)
 
     /** every new value asks the backend again who wrote what, once the text has settled */
     private val authorshipRequests = MutableStateFlow(0)
@@ -426,7 +432,9 @@ internal class CodeEditorViewModel @Inject constructor(
             }
 
             is PreviewLinkTarget.Resource -> try {
-                val file = downloadResourceUseCase(target.resourceId, target.name)
+                val file = download.track { onProgress ->
+                    downloadResourceUseCase(target.resourceId, target.name, onProgress)
+                } ?: return
                 shareFileUseCase(file)
             } catch (ex: Exception) {
                 Timber.e(ex)
@@ -512,6 +520,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
                 is UiEvent.UploadFiles -> uploadFiles(event.sectionId, event.uris, event.altText)
                 is UiEvent.CancelUploadClicked -> uploadJob?.cancel()
+                is UiEvent.CancelDownloadClicked -> download.cancel()
 
                 is UiEvent.PreviewLinkClicked -> onPreviewLinkClicked(event.href)
                 is UiEvent.SplitRatioChanged -> _uiState.update { it.copy(splitRatio = event.ratio) }
@@ -996,6 +1005,9 @@ internal class CodeEditorViewModel @Inject constructor(
         /** how far the upload of the current file is, null before it starts */
         val uploadProgress: TransferProgress? = null,
 
+        /** a file of a link in the preview, or an image of the preview, while it downloads */
+        val download: TransferProgress? = null,
+
         /**
          * Indicates whether the CodeEditor is in "edit" mode or not
          */
@@ -1109,6 +1121,9 @@ internal class CodeEditorViewModel @Inject constructor(
 
         data class UploadFiles(val sectionId: String, val uris: List<Uri>, val altText: String) : UiEvent()
         data object CancelUploadClicked : UiEvent()
+
+        /** stops the download that shows below the page */
+        data object CancelDownloadClicked : UiEvent()
 
         data class PreviewLinkClicked(val href: String) : UiEvent()
         data class SplitRatioChanged(val ratio: Float) : UiEvent()

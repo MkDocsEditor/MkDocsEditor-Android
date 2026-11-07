@@ -17,12 +17,15 @@ import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.SeekableTransitionState
 import androidx.compose.animation.core.rememberTransition
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.tween
@@ -82,7 +85,13 @@ internal fun FileBrowserScreenContent(
         onUiEvent(if (result == SnackbarResult.ActionPerformed) UiEvent.Refresh else UiEvent.DismissError)
     }
 
-    val folderTransition = rememberFolderTransition(uiState, onUiEvent)
+    var leavingChip by remember { mutableStateOf<LeavingChip?>(null) }
+    val folderTransition = rememberFolderTransition(
+        uiState = uiState,
+        leavingChip = { leavingChip },
+        onLeavingChipChanged = { leavingChip = it },
+        onUiEvent = onUiEvent,
+    )
 
     TabContentScaffold(
         topBar = {
@@ -117,6 +126,7 @@ internal fun FileBrowserScreenContent(
                 SectionPath(
                     modifier = Modifier.fillMaxWidth(),
                     path = uiState.currentSectionPath,
+                    leavingChip = { leavingChip },
                     onSectionClicked = { section -> onUiEvent(UiEvent.PathItemClicked(section)) },
                 )
             }
@@ -215,11 +225,14 @@ private data class BackGesture(
 
 /**
  * The folder that shows, with its animation. A change of [UiState.folderContent] animates to it. While the back
- * gesture is dragged, the stored content of the parent follows the finger instead, with the same animation.
+ * gesture is dragged, the stored content of the parent follows the finger instead, with the same animation. The chip of
+ * the open folder follows the finger as well, also without a stored parent.
  */
 @Composable
 private fun rememberFolderTransition(
     uiState: UiState,
+    leavingChip: () -> LeavingChip?,
+    onLeavingChipChanged: (LeavingChip?) -> Unit,
     onUiEvent: (UiEvent) -> Unit,
 ): SeekableTransitionState<FolderContent?> {
     val transition = remember { SeekableTransitionState(uiState.folderContent) }
@@ -227,6 +240,18 @@ private fun rememberFolderTransition(
     val scope = rememberCoroutineScope()
     val content by rememberUpdatedState(uiState.folderContent)
     val parentPreview by rememberUpdatedState(uiState.parentPreview)
+    val path by rememberUpdatedState(uiState.currentSectionPath)
+    var chipAnimation by remember { mutableStateOf<Job?>(null) }
+
+    // not the progress, which changes with every frame of the gesture
+    val leavingId by remember { derivedStateOf { leavingChip()?.sectionId } }
+    LaunchedEffect(uiState.currentSectionPath, leavingId) {
+        if (leavingId == null || uiState.currentSectionPath.any { it.id == leavingId }) return@LaunchedEffect
+        // the chip is gone from the path, and stays faded until its own animation has removed it
+        delay(FOLDER_ANIMATION_MS.toLong())
+        chipAnimation?.cancel()
+        onLeavingChipChanged(null)
+    }
 
     LaunchedEffect(uiState.folderContent, backGesture) {
         val gesture = backGesture
@@ -244,9 +269,14 @@ private fun rememberFolderTransition(
         val parent = parentPreview
         // without a stored parent there is nothing to show, so the folder only changes once the gesture is released
         if (parent != null) backGesture = BackGesture(fromId = content?.sectionId)
+        val chipId = path.lastOrNull()?.id
+        chipAnimation?.cancel()
         var released = false
         try {
-            progress.collect { event -> if (parent != null) transition.seekTo(event.progress, parent) }
+            progress.collect { event ->
+                if (parent != null) transition.seekTo(event.progress, parent)
+                if (chipId != null) onLeavingChipChanged(LeavingChip(chipId, event.progress))
+            }
             released = true
         } finally {
             if (!released && parent != null) {
@@ -256,6 +286,13 @@ private fun rememberFolderTransition(
                     backGesture = null
                 }
             }
+            val chip = leavingChip()
+            if (!released && chip != null) {
+                chipAnimation = scope.launch {
+                    animateFraction(chip.progress, 0F) { onLeavingChipChanged(chip.copy(progress = it)) }
+                    onLeavingChipChanged(null)
+                }
+            }
         }
         onUiEvent(UiEvent.NavigateUp)
         if (parent != null) {
@@ -263,20 +300,28 @@ private fun rememberFolderTransition(
             // the rest of the way, from where the finger let go
             scope.launch { transition.animateTo(parent) }
         }
+        leavingChip()?.let { chip ->
+            // it stays gone until the path has dropped it
+            chipAnimation = scope.launch {
+                animateFraction(chip.progress, 1F) { onLeavingChipChanged(chip.copy(progress = it)) }
+            }
+        }
     }
 
     return transition
 }
 
 /** Plays a seek back to the start after a cancelled gesture, as fast as the same part of the animation */
-private suspend fun SeekableTransitionState<*>.seekBackToStart() {
-    val start = fraction
+private suspend fun SeekableTransitionState<*>.seekBackToStart() = animateFraction(fraction, 0F) { seekTo(it) }
+
+/** Moves a fraction from [start] to [target] at the speed of the folder animation, one step per frame */
+private suspend fun animateFraction(start: Float, target: Float, onFrame: suspend (Float) -> Unit) {
     val startNanos = withFrameNanos { it }
     do {
         val elapsedMs = (withFrameNanos { it } - startNanos) / 1_000_000
-        val next = fractionWhileReturning(start, elapsedMs)
-        seekTo(next)
-    } while (next > 0F)
+        val next = fractionTowards(start, target, elapsedMs)
+        onFrame(next)
+    } while (next != target)
 }
 
 /**
@@ -284,8 +329,16 @@ private suspend fun SeekableTransitionState<*>.seekBackToStart() {
  * @return how far the transition is, [elapsedMs] after the cancel; at the speed of the folder animation, so a short drag
  * returns quickly
  */
-internal fun fractionWhileReturning(start: Float, elapsedMs: Long): Float =
-    (start - elapsedMs.toFloat() / FOLDER_ANIMATION_MS).coerceIn(0F, start)
+internal fun fractionWhileReturning(start: Float, elapsedMs: Long): Float = fractionTowards(start, 0F, elapsedMs)
+
+/**
+ * @return how far a fraction has come from [start] to [target] after [elapsedMs]. The whole way takes
+ * [FOLDER_ANIMATION_MS], so the rest of a long drag finishes quickly.
+ */
+internal fun fractionTowards(start: Float, target: Float, elapsedMs: Long): Float {
+    val step = elapsedMs.toFloat() / FOLDER_ANIMATION_MS
+    return if (target < start) (start - step).coerceAtLeast(target) else (start + step).coerceAtMost(target)
+}
 
 /**
  * @return whether opening [to] goes deeper: the path of the open folder still contains the folder that was shown, and

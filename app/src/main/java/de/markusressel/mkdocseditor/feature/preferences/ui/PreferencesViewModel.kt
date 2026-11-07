@@ -6,6 +6,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import de.markusressel.kutepreferences.core.KuteNavigator
 import de.markusressel.kutepreferences.ui.vm.KutePreferencesViewModel
 import de.markusressel.kutepreferences.core.preference.bool.BooleanPreferenceBehavior
+import de.markusressel.kutepreferences.core.preference.category.KuteCategoryBehavior
+import de.markusressel.kutepreferences.ui.views.listitems.KuteCategoryView
+import de.markusressel.mkdocseditor.feature.preferences.domain.AboutPreferenceItem
 import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.feature.notifications.data.NotificationPermission
 import de.markusressel.mkdocseditor.feature.preferences.domain.WikiChangeNotificationsPreference
@@ -49,6 +52,11 @@ internal class PreferencesViewModel @Inject constructor(
 
         registry.register<WikiChangeNotificationsPreference, BooleanPreferenceBehavior>(::BooleanPreferenceBehavior) {
             WikiChangeNotificationsPreferenceView(behavior = it, isGranted = notificationPermission::isGranted)
+        }
+
+        // a card like the categories next to it. Its behavior lets a search result highlight it.
+        registry.register<AboutPreferenceItem, KuteCategoryBehavior>({ KuteCategoryBehavior(it.asCategoryCard(), kuteNavigator) }) {
+            KuteCategoryView(behavior = it)
         }
 
         initPreferencesTree(

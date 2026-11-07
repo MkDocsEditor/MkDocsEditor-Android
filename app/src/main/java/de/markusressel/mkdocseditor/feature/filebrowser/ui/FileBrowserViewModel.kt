@@ -48,8 +48,7 @@ import de.markusressel.mkdocseditor.feature.filebrowser.domain.usecase.UploadRes
 import de.markusressel.mkdocseditor.ui.fragment.base.FabConfig
 import de.markusressel.mkdocsrestclient.sync.automerge.LocalDocumentStore
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Deferred
+import de.markusressel.mkdocseditor.feature.common.ui.ShownTransfer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -66,9 +65,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.async
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import de.markusressel.mkdocseditor.feature.common.data.TransferProgress
 import org.mobilenativefoundation.store.store5.StoreReadResponse
@@ -141,8 +137,9 @@ internal class FileBrowserViewModel @Inject constructor(
     private var pendingUpload: Job? = null
 
     /** the upload or download that shows its progress */
-    @Volatile
-    private var shownTransferJob: Job? = null
+    private val shownTransfer = ShownTransfer(viewModelScope) { change ->
+        _uiState.update { old -> old.copy(transfer = change(old.transfer)) }
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun followParentFolder() = launch {
@@ -284,7 +281,7 @@ internal class FileBrowserViewModel @Inject constructor(
         launch {
             when (event) {
                 is UiEvent.DismissError -> setError(null)
-                is UiEvent.CancelTransfer -> shownTransferJob?.cancel()
+                is UiEvent.CancelTransfer -> shownTransfer.cancel()
                 is UiEvent.Refresh -> {
                     refreshRequestedByUser = reloadRequests.value + 1
                     reload()
@@ -483,33 +480,12 @@ internal class FileBrowserViewModel @Inject constructor(
     }
 
     /**
-     * Runs an upload or download that shows its progress, and that the user can cancel. Cancelling only ends the
-     * transfer, not the caller. Several can run, the screen shows the one that reported last.
+     * Runs an upload or download that shows its progress, and that the user can cancel
      *
      * @return the result, null when it was cancelled
      */
-    private suspend fun <T> transfer(block: suspend (onProgress: (TransferProgress) -> Unit) -> T): T? {
-        var shownId: Long? = null
-        lateinit var job: Deferred<T>
-        // lazy: the first progress comes before the network, and must find the job
-        job = viewModelScope.async(start = CoroutineStart.LAZY) {
-            block { progress ->
-                shownId = progress.id
-                shownTransferJob = job
-                _uiState.update { old -> old.copy(transfer = progress) }
-            }
-        }
-        return try {
-            job.await()
-        } catch (e: CancellationException) {
-            // the caller goes on, unless it was cancelled itself
-            currentCoroutineContext().ensureActive()
-            null
-        } finally {
-            if (shownTransferJob === job) shownTransferJob = null
-            _uiState.update { old -> if (old.transfer?.id == shownId) old.copy(transfer = null) else old }
-        }
-    }
+    private suspend fun <T> transfer(block: suspend (onProgress: (TransferProgress) -> Unit) -> T): T? =
+        shownTransfer.track(block = block)
 
     companion object {
         /** ID of the tree root section */
