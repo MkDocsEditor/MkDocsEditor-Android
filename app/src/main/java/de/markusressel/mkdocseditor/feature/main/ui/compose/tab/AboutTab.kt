@@ -2,13 +2,17 @@ package de.markusressel.mkdocseditor.feature.main.ui.compose.tab
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import de.markusressel.mkdocseditor.feature.about.ui.compose.AboutContent
+import de.markusressel.mkdocseditor.feature.common.ui.compose.barsAndCutout
 import de.markusressel.mkdocseditor.feature.main.ui.compose.LocalMainScreenOnBack
 
 object AboutTab : Tab {
@@ -33,7 +37,7 @@ object AboutTab : Tab {
         AboutContent(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
+                .windowInsetsPadding(WindowInsets.barsAndCutout.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
         )
     }
 }

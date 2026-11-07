@@ -85,6 +85,8 @@ internal fun TransferProgressBar(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .testTag(TRANSFER_PROGRESS_TAG)
+            // it can be a bottom bar, and in landscape the navigation bar or the cutout can be at either end
+            .horizontalBarsAndCutoutPadding()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {

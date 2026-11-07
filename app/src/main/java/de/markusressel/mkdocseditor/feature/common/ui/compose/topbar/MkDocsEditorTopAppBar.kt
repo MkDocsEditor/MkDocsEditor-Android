@@ -2,6 +2,9 @@ package de.markusressel.mkdocseditor.feature.common.ui.compose.topbar
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import de.markusressel.mkdocseditor.feature.common.ui.compose.barsAndCutout
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -44,7 +47,7 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
     onBackClicked: (() -> Unit)? = null,
     actions: List<T> = emptyList(),
     onActionClicked: (T) -> Unit = {},
-    windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
+    windowInsets: WindowInsets = WindowInsets.barsAndCutout.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
 ) {
     val defaultNavigationAction: () -> Unit = if (isComposePreview().not()) {
         val navigator = LocalNavigator.currentOrThrow

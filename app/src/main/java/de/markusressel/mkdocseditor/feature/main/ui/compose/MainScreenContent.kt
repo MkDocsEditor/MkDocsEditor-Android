@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -27,6 +29,7 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
+import de.markusressel.mkdocseditor.feature.common.ui.compose.barsAndCutout
 import de.markusressel.mkdocseditor.feature.main.ui.ContentLayoutType
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
 import de.markusressel.mkdocseditor.feature.main.ui.NavigationLayoutType
@@ -123,8 +126,17 @@ internal fun MainScreenContent(
                                 )
                             }
 
-                            // Actual tab content
-                            CurrentTab()
+                            // Actual tab content. Next to the rail it does not touch the start of the screen,
+                            // so it must not make room for a navigation bar or a cutout there a second time
+                            Box(
+                                modifier = if (navigationType == NavigationLayoutType.NAVIGATION_RAIL) {
+                                    Modifier.consumeWindowInsets(WindowInsets.barsAndCutout.only(WindowInsetsSides.Start))
+                                } else {
+                                    Modifier
+                                }
+                            ) {
+                                CurrentTab()
+                            }
                         }
                     }
                 }

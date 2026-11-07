@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.common.ui.compose.horizontalBarsAndCutoutPadding
 import de.markusressel.mkdocseditor.feature.filebrowser.data.SectionItem
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
@@ -68,6 +69,8 @@ internal fun SectionPath(
     Row(
         modifier = modifier
             .background(color = MaterialTheme.colorScheme.primaryContainer)
+            // in landscape the navigation bar or the cutout can be at either end
+            .horizontalBarsAndCutoutPadding()
             .heightIn(min = 48.dp)
             .padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,

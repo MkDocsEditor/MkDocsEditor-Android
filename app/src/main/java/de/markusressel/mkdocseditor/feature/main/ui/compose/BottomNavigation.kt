@@ -1,6 +1,9 @@
 package de.markusressel.mkdocseditor.feature.main.ui.compose
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -14,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.mikepenz.iconics.compose.Image
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
 import de.markusressel.mkdocseditor.R
+import de.markusressel.mkdocseditor.feature.common.ui.compose.barsAndCutout
 import de.markusressel.mkdocseditor.feature.main.ui.NavItem
 
 @Composable
@@ -22,7 +26,10 @@ fun BottomBar(
     navItems: List<NavItem>,
     onItemSelected: (NavItem) -> Unit,
 ) {
-    NavigationBar(modifier = Modifier.fillMaxWidth()) {
+    NavigationBar(
+        modifier = Modifier.fillMaxWidth(),
+        windowInsets = WindowInsets.barsAndCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
+    ) {
         for (item in navItems) {
             NavigationBarItem(
                 icon = {
