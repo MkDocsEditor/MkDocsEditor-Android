@@ -10,15 +10,12 @@ import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.auth.domain.AuthRepository
 import de.markusressel.mkdocseditor.extensions.common.android.launch
 import de.markusressel.mkdocseditor.feature.auth.common.data.ParsedBackendUrl
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.MkDocsWebConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.displayAddress
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.toBackendRef
 import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendConfigUseCase
-import de.markusressel.mkdocseditor.feature.backendconfig.common.domain.GetBackendConfigsUseCase
-import de.markusressel.mkdocseditor.feature.backendconfig.edit.domain.DeleteAuthConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.domain.DeleteBackendConfigUseCase
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.domain.SaveBackendConfigItemsUseCase
 import de.markusressel.mkdocseditor.feature.common.ui.userMessage
@@ -36,8 +33,6 @@ import javax.inject.Inject
 internal class BackendConfigEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getBackendConfigUseCase: GetBackendConfigUseCase,
-    private val getBackendConfigsUseCase: GetBackendConfigsUseCase,
-    private val deleteAuthConfigUseCase: DeleteAuthConfigUseCase,
     private val saveBackendConfigUseCase: SaveBackendConfigItemsUseCase,
     private val deleteBackendConfigUseCase: DeleteBackendConfigUseCase,
     private val authRepository: AuthRepository,
@@ -79,8 +74,6 @@ internal class BackendConfigEditViewModel @Inject constructor(
                 is UiEvent.DescriptionChanged -> edit { it.copy(description = event.text) }
                 is UiEvent.AddressChanged -> edit { it.copy(address = event.text) }
                 is UiEvent.WebAddressChanged -> edit { it.copy(webAddress = event.text) }
-                is UiEvent.WikiUsernameChanged -> edit { it.copy(wikiUsername = event.text) }
-                is UiEvent.WikiPasswordChanged -> edit { it.copy(wikiPassword = event.text) }
 
                 is UiEvent.AdvancedToggled -> _uiState.update { it.copy(advancedExpanded = !it.advancedExpanded) }
                 is UiEvent.MessageShown -> _uiState.update { it.copy(message = null) }
@@ -111,13 +104,6 @@ internal class BackendConfigEditViewModel @Inject constructor(
         val url = ParsedBackendUrl.parse(state.address) ?: return
         val webUrl = state.webAddress.takeIf { it.isNotBlank() }?.let { ParsedBackendUrl.parse(it) ?: return }
         try {
-            val oldWikiAuth = config.mkDocsWebAuthConfig
-            val wikiAuth = when {
-                state.wikiUsername.isBlank() -> null
-                oldWikiAuth?.username == state.wikiUsername && oldWikiAuth.password == state.wikiPassword -> oldWikiAuth
-                // always a new one, because another server may use the old one
-                else -> AuthConfig(username = state.wikiUsername, password = state.wikiPassword)
-            }
             val saved = config.copy(
                 name = state.name.trim(),
                 description = state.description.trim(),
@@ -135,10 +121,8 @@ internal class BackendConfigEditViewModel @Inject constructor(
                         useSsl = it.useSsl,
                     )
                 },
-                mkDocsWebAuthConfig = wikiAuth,
             )
             saveBackendConfigUseCase(saved)
-            if (oldWikiAuth != null && oldWikiAuth != wikiAuth) deleteIfUnused(oldWikiAuth)
             draft = null
             if (needsSignIn(saved)) {
                 _events.send(BackendEditEvent.OpenLogin(saved.id, replaceScreen = true))
@@ -149,11 +133,6 @@ internal class BackendConfigEditViewModel @Inject constructor(
             Timber.e(ex) { "Failed to save the server" }
             showMessage(R.string.server_save_failed)
         }
-    }
-
-    private suspend fun deleteIfUnused(authConfig: AuthConfig) {
-        val inUse = getBackendConfigsUseCase().any { it.mkDocsWebAuthConfig?.id == authConfig.id }
-        if (!inUse) deleteAuthConfigUseCase(authConfig.id)
     }
 
     private suspend fun delete() {
@@ -214,11 +193,6 @@ internal class BackendConfigEditViewModel @Inject constructor(
         data class DescriptionChanged(val text: String) : UiEvent()
         data class AddressChanged(val text: String) : UiEvent()
         data class WebAddressChanged(val text: String) : UiEvent()
-        data class WikiUsernameChanged(val text: String) : UiEvent()
-
-        data class WikiPasswordChanged(val text: String) : UiEvent() {
-            override fun toString() = "WikiPasswordChanged"
-        }
     }
 
     /**
@@ -232,8 +206,6 @@ internal class BackendConfigEditViewModel @Inject constructor(
         val description: String = "",
         val address: String = "",
         val webAddress: String = "",
-        val wikiUsername: String = "",
-        val wikiPassword: String = "",
         val signedInUsername: String? = null,
         val advancedExpanded: Boolean = false,
         val confirmingDelete: Boolean = false,
@@ -263,6 +235,4 @@ internal fun BackendConfigEditViewModel.UiState.withConfig(config: BackendConfig
     description = config.description,
     address = config.serverConfig?.run { displayAddress(domain, port, useSsl) }.orEmpty(),
     webAddress = config.mkDocsWebConfig?.run { displayAddress(domain, port, useSsl) }.orEmpty(),
-    wikiUsername = config.mkDocsWebAuthConfig?.username.orEmpty(),
-    wikiPassword = config.mkDocsWebAuthConfig?.password.orEmpty(),
 )

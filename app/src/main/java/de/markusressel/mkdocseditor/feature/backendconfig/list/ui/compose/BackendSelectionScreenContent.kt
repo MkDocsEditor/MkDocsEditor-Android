@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.BuildConfig
 import de.markusressel.mkdocseditor.feature.auth.onboarding.ui.ConnectServerViewModel
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.MkDocsWebConfig
@@ -103,10 +102,6 @@ private fun BackendSelectionScreenContentPreview() {
                             domain = "mkdocksweb.backend.com",
                             port = 443,
                             useSsl = true,
-                        ),
-                        mkDocsWebAuthConfig = AuthConfig(
-                            username = "test",
-                            password = "test",
                         ),
                     )
                 )

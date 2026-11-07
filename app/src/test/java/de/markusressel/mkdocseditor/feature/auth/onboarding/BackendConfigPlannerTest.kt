@@ -3,7 +3,6 @@ package de.markusressel.mkdocseditor.feature.auth.onboarding
 import de.markusressel.mkdocseditor.feature.auth.backendConfig
 import de.markusressel.mkdocseditor.feature.auth.common.data.BackendConfigPlanner
 import de.markusressel.mkdocseditor.feature.auth.common.data.ServerSetup
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.MkDocsWebConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.baseUrl
 import kotlin.test.Test
@@ -48,16 +47,14 @@ class BackendConfigPlannerTest {
     }
 
     @Test
-    fun `a name and wiki login typed in Advanced win`() {
-        val auth = AuthConfig(username = "reader", password = "secret")
+    fun `a name typed in Advanced wins`() {
         val existing = listOf(backendConfig(7, name = "Old", domain = "backend.wiki.example.com"))
         val config = BackendConfigPlanner.plan(
             existing,
-            ServerSetup(backendUrl = "https://backend.wiki.example.com/", name = "New", description = "Work", wikiAuth = auth),
+            ServerSetup(backendUrl = "https://backend.wiki.example.com/", name = "New", description = "Work"),
         )!!
         assertEquals("New", config.name)
         assertEquals("Work", config.description)
-        assertEquals(auth, config.mkDocsWebAuthConfig)
     }
 
     @Test

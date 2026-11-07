@@ -35,10 +35,29 @@ class BackendConfigPersistenceManager @Inject constructor(
             entity.authConfig.target?.let { backendAuthConfigPersistenceManager.standardOperation().put(it) }
             backendServerConfigPersistenceManager.standardOperation().put(entity.serverConfig.target)
             entity.mkDocsWebConfig.target?.let { mkdDocsWebConfigPersistenceManager.standardOperation().put(it) }
-            entity.mkDocsWebAuthConfig.target?.let { backendAuthConfigPersistenceManager.standardOperation().put(it) }
             id = standardOperation().put(entity)
         }
         return id
+    }
+
+    /**
+     * Deletes every stored password: the HTTP Basic auth of the backend API and the login of the published wiki. Both
+     * gave way to sessions. Older versions linked the wiki login with a relation that no longer exists, so its rows
+     * are only found by deleting all of them.
+     *
+     * @param onRemoved called with the backend config id and the username of each removed backend login
+     */
+    fun removeStoredPasswords(onRemoved: (backendId: Long, username: String) -> Unit) {
+        val authBox = backendAuthConfigPersistenceManager.standardOperation()
+        boxStore.runInTx {
+            standardOperation().all.forEach { config ->
+                val auth = config.authConfig.target ?: return@forEach
+                onRemoved(config.entityId, auth.username)
+                config.authConfig.target = null
+                standardOperation().put(config)
+            }
+            authBox.removeAll()
+        }
     }
 
 }

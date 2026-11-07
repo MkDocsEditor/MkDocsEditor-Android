@@ -39,5 +39,4 @@ data class BackendConfigEntity(
     lateinit var serverConfig: ToOne<BackendServerConfigEntity>
     lateinit var authConfig: ToOne<UserPasswordAuthConfigEntity>
     lateinit var mkDocsWebConfig: ToOne<MkDocsWebConfigEntity>
-    lateinit var mkDocsWebAuthConfig: ToOne<UserPasswordAuthConfigEntity>
 }

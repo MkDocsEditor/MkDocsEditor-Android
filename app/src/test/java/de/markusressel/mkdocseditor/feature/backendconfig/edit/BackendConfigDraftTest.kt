@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.serialization.saved
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.withConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.edit.ui.BackendConfigDraft
@@ -15,7 +14,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
 /** Saved state is a Bundle, so this needs Robolectric */
@@ -34,7 +32,6 @@ class BackendConfigDraftTest {
         isSelected = true,
         serverConfig = null,
         mkDocsWebConfig = null,
-        mkDocsWebAuthConfig = AuthConfig(id = 7, username = "user", password = "secret-password"),
     )
 
     private val edited = UiState().withConfig(stored).copy(
@@ -62,20 +59,5 @@ class BackendConfigDraftTest {
         val restored = Holder(SavedStateHandle.createHandle(handle.savedStateProvider().saveState(), null))
 
         assertNull(restored.draft)
-    }
-
-    @Test
-    fun `a changed username does not keep the stored password`() {
-        val state = UiState().withConfig(stored).withDraft(edited.copy(wikiUsername = "other").toDraft())
-
-        assertEquals("", state.wikiPassword)
-    }
-
-    @Test
-    fun `passwords never reach the saved state or the log`() {
-        val state = edited.copy(wikiPassword = "typed-password")
-
-        assertFalse(state.toDraft().toString().contains("password"))
-        assertFalse(state.toString().contains("password"))
     }
 }

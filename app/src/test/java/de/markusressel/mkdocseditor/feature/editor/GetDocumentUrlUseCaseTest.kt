@@ -10,13 +10,12 @@ import kotlin.test.assertEquals
 
 class GetDocumentUrlUseCaseTest {
 
-    private fun urlOf(domain: String, page: String = "kitchen/oven/"): String? = runBlocking {
+    private fun urlOf(domain: String, page: String = "kitchen/oven/", port: Int = 443): String? = runBlocking {
         val config = BackendConfig(
             name = "wiki",
             description = "",
             serverConfig = null,
-            mkDocsWebConfig = MkDocsWebConfig(domain = domain, port = 443, useSsl = true),
-            mkDocsWebAuthConfig = null,
+            mkDocsWebConfig = MkDocsWebConfig(domain = domain, port = port, useSsl = true),
             isSelected = true,
         )
         GetDocumentUrlUseCase()(config, DocumentEntity(url = page))
@@ -36,5 +35,10 @@ class GetDocumentUrlUseCaseTest {
     @Test
     fun `the index page links to the site itself`() {
         assertEquals("https://wiki.example.com/view/", urlOf("wiki.example.com/view", page = "index/"))
+    }
+
+    @Test
+    fun `the link carries no login, the wiki accepts the session of the web client`() {
+        assertEquals("https://wiki.example.com:8443/view/kitchen/oven/", urlOf("wiki.example.com/view", port = 8443))
     }
 }

@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.feature.editor.domain
 
-import androidx.core.text.htmlEncode
 import de.markusressel.mkdocseditor.data.persistence.entity.DocumentEntity
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import javax.inject.Inject
@@ -20,24 +19,14 @@ internal class GetDocumentUrlUseCase @Inject constructor(
             else -> "http"
         }
 
-        val authConfig = backendConfig.mkDocsWebAuthConfig
-        val username = authConfig?.username
-        val password = authConfig?.password
-        val basicAuthInUrl = "${username?.htmlEncode()}:${password?.htmlEncode()}"
-
         val pagePath = when (entity.url) {
             "index/" -> ""
             else -> entity.url
             // this value is already url encoded
         }
 
-        val result = listOfNotNull(
-            "$protocol://",
-            "$basicAuthInUrl@".takeUnless { username.isNullOrBlank() || password.isNullOrBlank() },
-            "${hostWithPort(domain, mkdDocsWebConfig.port, mkdDocsWebConfig.useSsl)}${sitePath(domain)}$pagePath"
-        ).joinToString(separator = "")
-
-        return result
+        // no credentials: the wiki accepts the session of the web client and sends others to its login
+        return "$protocol://${hostWithPort(domain, mkdDocsWebConfig.port, mkdDocsWebConfig.useSsl)}${sitePath(domain)}$pagePath"
     }
 }
 

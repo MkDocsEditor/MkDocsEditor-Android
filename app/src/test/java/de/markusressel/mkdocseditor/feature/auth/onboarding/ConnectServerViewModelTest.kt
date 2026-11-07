@@ -8,7 +8,6 @@ import de.markusressel.mkdocseditor.feature.auth.FakeAuthBackends
 import de.markusressel.mkdocseditor.feature.auth.onboarding.ui.ConnectServerViewModel
 import de.markusressel.mkdocseditor.feature.auth.onboarding.ui.ConnectServerViewModel.ConnectServerEvent
 import de.markusressel.mkdocseditor.feature.auth.onboarding.ui.ConnectServerViewModel.UiEvent
-import de.markusressel.mkdocseditor.feature.backendconfig.common.data.AuthConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -81,12 +80,9 @@ class ConnectServerViewModelTest {
         start()
         viewModel.onUiEvent(UiEvent.AdvancedToggled)
         viewModel.onUiEvent(UiEvent.NameChanged("Work"))
-        viewModel.onUiEvent(UiEvent.WikiUsernameChanged("reader"))
-        viewModel.onUiEvent(UiEvent.WikiPasswordChanged("secret"))
         submit("edit.wiki.example.com")
         val config = backends.configs.single()
         assertEquals("Work", config.name)
-        assertEquals(AuthConfig(username = "reader", password = "secret"), config.mkDocsWebAuthConfig)
     }
 
     @Test

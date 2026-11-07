@@ -1,7 +1,6 @@
 package de.markusressel.mkdocseditor.feature.backendconfig.common.data
 
 import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeDocumentSyncManager
-import de.markusressel.mkdocseditor.data.persistence.BackendAuthConfigPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.BackendConfigPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.BackendServerConfigPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.MkdDocsWebConfigPersistenceManager
@@ -9,7 +8,6 @@ import de.markusressel.mkdocseditor.data.persistence.entity.BackendConfigEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendConfigEntity_
 import de.markusressel.mkdocseditor.data.persistence.entity.BackendServerConfigEntity
 import de.markusressel.mkdocseditor.data.persistence.entity.MkDocsWebConfigEntity
-import de.markusressel.mkdocseditor.data.persistence.entity.UserPasswordAuthConfigEntity
 import io.objectbox.kotlin.flow
 import io.objectbox.kotlin.query
 import io.objectbox.kotlin.toFlow
@@ -23,7 +21,6 @@ internal class BackendConfigRepository @Inject constructor(
     private val backendConfigPersistenceManager: BackendConfigPersistenceManager,
     private val backendServerConfigPersistenceManager: BackendServerConfigPersistenceManager,
     private val mkdDocsWebConfigPersistenceManager: MkdDocsWebConfigPersistenceManager,
-    private val backendAuthConfigPersistenceManager: BackendAuthConfigPersistenceManager,
     private val wikiScope: WikiScope,
 ) {
 
@@ -37,15 +34,8 @@ internal class BackendConfigRepository @Inject constructor(
             .flow()
     }
 
-    fun getAuthConfigs() = backendAuthConfigPersistenceManager.standardOperation().all.toList()
-
     fun addOrUpdate(config: BackendConfig): Long {
         return backendConfigPersistenceManager.add(config.toBackendConfigEntity())
-    }
-
-    fun addOrUpdate(config: AuthConfig): Long {
-        return backendAuthConfigPersistenceManager.standardOperation()
-            .put(config.toBackendAuthConfigEntity())
     }
 
     fun addOrUpdate(serverConfig: BackendServerConfig): Long {
@@ -67,15 +57,7 @@ internal class BackendConfigRepository @Inject constructor(
         serverConfig.target = this@toBackendConfigEntity.serverConfig?.toBackendServerConfigEntity()
         mkDocsWebConfig.target =
             this@toBackendConfigEntity.mkDocsWebConfig?.toMkDocsWebConfigEntity()
-        mkDocsWebAuthConfig.target =
-            this@toBackendConfigEntity.mkDocsWebAuthConfig?.toBackendAuthConfigEntity()
     }
-
-    private fun AuthConfig.toBackendAuthConfigEntity() = UserPasswordAuthConfigEntity(
-        entityId = id,
-        username = username,
-        password = password,
-    )
 
     private fun BackendServerConfig.toBackendServerConfigEntity() = BackendServerConfigEntity(
         entityId = id,
@@ -93,10 +75,6 @@ internal class BackendConfigRepository @Inject constructor(
 
     fun getBackendConfig(id: Long): BackendConfigEntity? {
         return backendConfigPersistenceManager.standardOperation().get(id)
-    }
-
-    fun deleteAuthConfig(id: Long): Boolean {
-        return backendAuthConfigPersistenceManager.standardOperation().remove(id)
     }
 
     fun selectBackendConfig(config: BackendConfig) {
@@ -118,27 +96,12 @@ internal class BackendConfigRepository @Inject constructor(
     }
 
     /**
-     * Removes the stored HTTP Basic credentials of the backend API from every backend config,
-     * see [MigrateBackendBasicAuthUseCase].
+     * Removes all stored passwords, see [MigrateBackendBasicAuthUseCase].
      *
      * @param onRemoved called with the backend config id and the username of the removed credentials
      */
-    fun removeBackendBasicAuth(onRemoved: (backendId: Long, username: String) -> Unit) {
-        val configBox = backendConfigPersistenceManager.standardOperation()
-        val authBox = backendAuthConfigPersistenceManager.standardOperation()
-        configBox.store.runInTx {
-            val configs = configBox.all
-            configs.forEach { config ->
-                val auth = config.authConfig.target ?: return@forEach
-                onRemoved(config.entityId, auth.username)
-                config.authConfig.target = null
-                configBox.put(config)
-            }
-            // credentials still used for the MkDocs website stay
-            val stillUsed = configs.mapNotNull { it.mkDocsWebAuthConfig.targetId.takeIf { id -> id != 0L } }.toSet()
-            authBox.all.filter { it.entityId !in stillUsed }.forEach { authBox.remove(it) }
-        }
-    }
+    fun removeStoredPasswords(onRemoved: (backendId: Long, username: String) -> Unit) =
+        backendConfigPersistenceManager.removeStoredPasswords(onRemoved)
 
     fun unsyncedPages(config: BackendConfig): Int = wikiScope.unsyncedPages(config.id, config.origin())
 
