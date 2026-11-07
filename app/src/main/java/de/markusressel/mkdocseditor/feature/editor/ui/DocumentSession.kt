@@ -363,8 +363,8 @@ internal class DocumentSession(
             }
         }
 
-        override fun onRemoteChange(text: String, splices: List<TextSplice>) {
-            this@DocumentSession.text.onRemoteChange(text, splices)
+        override fun onRemoteChange(text: String, splices: List<TextSplice>, author: String?) {
+            this@DocumentSession.text.onRemoteChange(text, splices, author)
             host.onRemoteChange()
         }
 

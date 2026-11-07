@@ -58,6 +58,48 @@ class AuthorRunsTest {
     }
 
     @Test
+    fun `an insert with an author gets a run of that author`() {
+        assertEquals(
+            listOf(AuthorRun(0, 2, "a"), AuthorRun(2, 4, "c"), AuthorRun(4, 7, "a"), AuthorRun(7, 12, "b")),
+            ab.applied(2, 0, 2, author = "c").runs,
+        )
+    }
+
+    @Test
+    fun `an insert next to a run of the same author merges with it`() {
+        assertEquals(listOf(AuthorRun(0, 7, "a"), AuthorRun(7, 12, "b")), ab.applied(5, 0, 2, author = "a").runs)
+        assertEquals(listOf(AuthorRun(0, 5, "a"), AuthorRun(5, 12, "b")), ab.applied(10, 0, 2, author = "b").runs)
+    }
+
+    @Test
+    fun `an insert inside the run of another author splits it`() {
+        assertEquals(
+            listOf(AuthorRun(0, 5, "a"), AuthorRun(5, 7, "b"), AuthorRun(7, 9, "a"), AuthorRun(9, 12, "b")),
+            ab.applied(7, 0, 2, author = "a").runs,
+        )
+    }
+
+    @Test
+    fun `a delete is the same with an author`() {
+        assertEquals(ab.applied(3, 4, 0), ab.applied(3, 4, 0, author = "c"))
+        assertEquals(ab.applied(0, 5, 0), ab.applied(0, 5, 0, author = "c"))
+    }
+
+    @Test
+    fun `a replacement with an author puts its run where the old text was`() {
+        assertEquals(
+            listOf(AuthorRun(0, 3, "a"), AuthorRun(3, 4, "c"), AuthorRun(4, 7, "b")),
+            ab.applied(3, 4, 1, author = "c").runs,
+        )
+    }
+
+    @Test
+    fun `an insert with an author into text without runs gets a run of its own`() {
+        assertEquals(listOf(AuthorRun(3, 5, "c")), AuthorRuns().applied(3, 0, 2, author = "c").runs)
+        assertEquals(AuthorRuns(), AuthorRuns().applied(3, 2, 0, author = "c"))
+    }
+
+    @Test
     fun `no runs stay no runs, so an edit does not look like all the text`() {
         assertEquals(AuthorRuns(), AuthorRuns().applied(0, 0, 3))
     }

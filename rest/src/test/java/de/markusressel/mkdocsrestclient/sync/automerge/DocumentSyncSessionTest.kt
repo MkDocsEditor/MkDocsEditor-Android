@@ -3,6 +3,7 @@ package de.markusressel.mkdocsrestclient.sync.automerge
 import de.markusressel.mkdocsrestclient.sync.text.TextSplice
 import de.markusressel.mkdocsrestclient.sync.text.applySplices
 import java.io.File
+import java.util.zip.Deflater
 import kotlin.io.path.createTempDirectory
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -27,6 +28,7 @@ class DocumentSyncSessionTest {
         var deleted = false
         var renamedTo: String? = null
         val remoteSplices = mutableListOf<TextSplice>()
+        val remoteAuthors = mutableListOf<String?>()
         var serverAnswers = 0
 
         override fun onServerAnswered() {
@@ -37,10 +39,11 @@ class DocumentSyncSessionTest {
             editorText = text
         }
 
-        override fun onRemoteChange(text: String, splices: List<TextSplice>) {
+        override fun onRemoteChange(text: String, splices: List<TextSplice>, author: String?) {
             // the splices must turn the shown text into the new one
             assertEquals(text, editorText!!.applySplices(splices))
             remoteSplices += splices
+            remoteAuthors += author
             editorText = text
         }
 
@@ -84,6 +87,63 @@ class DocumentSyncSessionTest {
         assertTrue(onLocalTextChanged(newText))
         listener.editorText = newText
         flushSync()
+    }
+
+    @Test
+    fun `a remote change names its author, a change of the server does not`() {
+        val server = FakeSyncServer("text")
+        val aliceListener = EditorListener()
+        val alice = DocumentSyncSession(server.documentId, InMemoryDocumentStore(), aliceListener)
+        val bobListener = EditorListener()
+        val bob = DocumentSyncSession(server.documentId, InMemoryDocumentStore(), bobListener)
+        server.connect(alice, username = "alice")
+        server.pump()
+        server.connect(bob, username = "bob")
+        server.pump()
+        assertEquals("alice", alice.localAuthor)
+
+        bob.type("text by bob", bobListener)
+        server.pump()
+        assertEquals("text by bob", aliceListener.editorText)
+        assertEquals(listOf<String?>("bob"), aliceListener.remoteAuthors)
+
+        server.edit("text by bob, and the disk")
+        server.pump()
+        assertEquals(listOf("bob", null), aliceListener.remoteAuthors)
+    }
+
+    @Test
+    fun `the actors of changes are read from their encoded form`() {
+        val document = AutomergeTextDocument.load(FakeSyncServer("").document.save(), "aa".repeat(16).hexToBytes())
+        val start = document.heads
+        document.applyLocalText("one")
+        val other = AutomergeTextDocument.load(document.save(), "bb".repeat(16).hexToBytes())
+        other.applyLocalText("one two")
+        document.merge(other)
+
+        assertEquals(setOf("aa".repeat(16), "bb".repeat(16)), document.actorsSince(start))
+        assertEquals(emptySet(), document.actorsSince(document.heads))
+    }
+
+    @Test
+    fun `the actor of a compressed change is read too`() {
+        val document = AutomergeTextDocument.load(FakeSyncServer("").document.save(), "aa".repeat(16).hexToBytes())
+        val start = document.heads
+        document.applyLocalText("text")
+        val chunk = document.document.encodeChangesSince(start)
+        // magic and checksum, the type, a length of one byte, and the contents
+        assertEquals(1, chunk[8].toInt())
+        val contents = chunk.copyOfRange(10, chunk.size)
+        assertEquals(contents.size, chunk[9].toInt())
+        val deflater = Deflater(Deflater.DEFAULT_COMPRESSION, true)
+        deflater.setInput(contents)
+        deflater.finish()
+        val compressed = ByteArray(1024).let { it.copyOf(deflater.deflate(it)) }
+        deflater.end()
+
+        val compressedChunk = chunk.copyOfRange(0, 8) + byteArrayOf(2, compressed.size.toByte()) + compressed
+
+        assertEquals(setOf("aa".repeat(16)), changeActors(compressedChunk))
     }
 
     @Test
