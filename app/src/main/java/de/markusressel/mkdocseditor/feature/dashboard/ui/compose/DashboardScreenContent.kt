@@ -96,23 +96,26 @@ internal fun DashboardScreenContent(
             isRefreshing = uiState.loading,
             onRefresh = { onUiEvent(UiEvent.Refresh) },
         ) {
-            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            // the tab scrolls as a whole in both layouts, so pull-to-refresh only starts at its top; the home page
+            // grows with its content and never scrolls itself
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+            ) {
                 if (maxWidth >= TWO_COLUMNS_DP.dp) {
-                    Row(modifier = Modifier.fillMaxSize()) {
-                        // the page scrolls itself here, and can be zoomed
+                    Row(modifier = Modifier.fillMaxWidth()) {
                         HomePageCard(
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(8.dp),
                             state = uiState.homePage,
-                            growsWithContent = false,
                             previewResourceLoader = previewResourceLoader,
                             onUiEvent = onUiEvent,
                         )
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .verticalScroll(rememberScrollState())
                                 .padding(8.dp),
                         ) {
                             PinsAndFeed(uiState, onUiEvent)
@@ -121,14 +124,12 @@ internal fun DashboardScreenContent(
                 } else {
                     Column(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
+                            .fillMaxWidth()
                             .padding(8.dp),
                     ) {
                         HomePageCard(
                             modifier = Modifier.fillMaxWidth(),
                             state = uiState.homePage,
-                            growsWithContent = true,
                             previewResourceLoader = previewResourceLoader,
                             onUiEvent = onUiEvent,
                         )
@@ -141,13 +142,11 @@ internal fun DashboardScreenContent(
 }
 
 /**
- * @param growsWithContent the card is as high as the page, for a column that scrolls; otherwise the page fills the card
- * and scrolls itself
+ * The card is as high as the page, so the tab around it scrolls, not the page
  */
 @Composable
 private fun HomePageCard(
     state: HomePageState?,
-    growsWithContent: Boolean,
     previewResourceLoader: PreviewResourceLoader,
     onUiEvent: (UiEvent) -> Unit,
     modifier: Modifier = Modifier,
@@ -182,18 +181,14 @@ private fun HomePageCard(
             is HomePageState.Shown -> {
                 var contentHeight by remember { mutableIntStateOf(0) }
                 MarkdownPreview(
-                    modifier = if (growsWithContent) {
-                        Modifier
-                            .fillMaxWidth()
-                            .height(contentHeight.coerceAtLeast(MIN_PAGE_HEIGHT_DP).dp)
-                    } else {
-                        Modifier.fillMaxSize()
-                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(contentHeight.coerceAtLeast(MIN_PAGE_HEIGHT_DP).dp),
                     text = state.text,
                     sectionPath = "",
                     resourceLoader = previewResourceLoader,
                     onLinkClicked = { onUiEvent(UiEvent.HomePageLinkClicked(it)) },
-                    onContentHeight = if (growsWithContent) ({ contentHeight = it }) else null,
+                    onContentHeight = { contentHeight = it },
                 )
             }
         }
