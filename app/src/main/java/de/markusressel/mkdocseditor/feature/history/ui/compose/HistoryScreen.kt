@@ -25,11 +25,13 @@ import de.markusressel.mkdocseditor.feature.main.data.rememberMainNavigationRequ
  *
  * @param canRestore whether the account may edit the document, and so bring back an old text
  * @param canRevert whether it may also undo a single change, which needs `revert` on the server
+ * @param canRestoreSection whether it may also bring back a single section, which needs `blame` on the server
  */
 data class HistoryScreen(
     val documentId: String,
     val canRestore: Boolean,
     val canRevert: Boolean = false,
+    val canRestoreSection: Boolean = false,
 ) : Screen {
 
     @Composable
@@ -41,7 +43,7 @@ data class HistoryScreen(
         val uiState by viewModel.uiState.collectAsState()
 
         LaunchedEffect(viewModel, documentId) {
-            viewModel.initialize(documentId, canRestore, canRevert)
+            viewModel.initialize(documentId, canRestore, canRevert, canRestoreSection)
         }
 
         LaunchedEffect(viewModel) {
@@ -62,6 +64,11 @@ data class HistoryScreen(
                         val top = context.getString(R.string.history_page_start)
                         val headings = event.headings.joinToString(", ") { it ?: top }
                         Toast.makeText(context, context.getString(R.string.history_undo_conflict, headings), Toast.LENGTH_LONG).show()
+                    }
+                    is HistoryEvent.SectionMissing -> {
+                        val text = if (event.inRevision) R.string.history_section_missing_in_version
+                        else R.string.history_section_missing_now
+                        Toast.makeText(context, context.getString(text, event.heading), Toast.LENGTH_LONG).show()
                     }
                     is HistoryEvent.Close -> navigator.pop()
                 }

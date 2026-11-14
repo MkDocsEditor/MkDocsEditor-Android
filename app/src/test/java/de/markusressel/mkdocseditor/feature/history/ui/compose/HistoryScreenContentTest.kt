@@ -5,7 +5,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.Navigator
@@ -140,5 +142,42 @@ class HistoryScreenContentTest {
         }
 
         composeRule.onNodeWithText("Restore this version").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a hunk of an older version can restore its section, but not above the first heading`() {
+        val top = hunk.copy(heading = null, lines = listOf(DiffLineModel(DiffOp.ADDED, "intro")))
+        val older = entries + HistoryEntryModel(revision = "0", time = Date(0), author = anna, message = "Initial", path = "a.md")
+        val events = mutableListOf<UiEvent>()
+        composeRule.setContent {
+            Shown {
+                HistoryScreenContent(
+                    UiState(
+                        loading = false, entries = older, expanded = "a",
+                        diffs = mapOf("a" to DiffState.Loaded(listOf(top, hunk))), canRestoreSection = true,
+                    ),
+                    onUiEvent = { events += it },
+                )
+            }
+        }
+
+        // below the small test window, so clicked through its semantics
+        composeRule.onNodeWithText("Restore “Install”").performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals(listOf<UiEvent>(UiEvent.RestoreSectionClicked(older[1], hunk)), events)
+        composeRule.onNodeWithText("Restore “”").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the newest entry has no section to restore`() {
+        composeRule.setContent {
+            Shown {
+                HistoryScreenContent(
+                    UiState(loading = false, entries = entries, expanded = "b", diffs = mapOf("b" to DiffState.Loaded(listOf(hunk))), canRestoreSection = true),
+                    onUiEvent = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Restore “Install”").assertDoesNotExist()
     }
 }

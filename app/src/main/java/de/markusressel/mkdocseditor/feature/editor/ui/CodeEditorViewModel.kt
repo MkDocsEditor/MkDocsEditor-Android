@@ -324,7 +324,8 @@ internal class CodeEditorViewModel @Inject constructor(
         launch {
             val history = serverFeatures.has(ServerFeature.HISTORY)
             val revert = serverFeatures.has(ServerFeature.REVERT)
-            _uiState.update { it.copy(historyAvailable = history, revertAvailable = revert) }
+            val blame = serverFeatures.has(ServerFeature.BLAME)
+            _uiState.update { it.copy(historyAvailable = history, revertAvailable = revert, blameAvailable = blame) }
         }
 
         // a key of a sticker without a page, to put on this one
@@ -688,6 +689,7 @@ internal class CodeEditorViewModel @Inject constructor(
                         documentId = it,
                         canRestore = uiState.value.canEdit,
                         canRevert = uiState.value.canEdit && uiState.value.revertAvailable,
+                        canRestoreSection = uiState.value.canEdit && uiState.value.blameAvailable,
                     )
                 )
             }
@@ -1278,6 +1280,9 @@ internal class CodeEditorViewModel @Inject constructor(
         /** whether the server can undo a single change of the history */
         val revertAvailable: Boolean = false,
 
+        /** whether the server tells who last changed each line, and can restore a single section */
+        val blameAvailable: Boolean = false,
+
         /** what others changed since the user last looked at the page, null if nothing; see [SeenChangesUseCase] */
         val changesSinceSeen: DocumentChangesModel? = null,
     ) {
@@ -1380,7 +1385,12 @@ internal class CodeEditorViewModel @Inject constructor(
     sealed interface NavigationRequest {
         data class Login(val backendId: Long) : NavigationRequest
         data class OpenDocument(val documentId: String) : NavigationRequest
-        data class OpenHistory(val documentId: String, val canRestore: Boolean, val canRevert: Boolean) : NavigationRequest
+        data class OpenHistory(
+            val documentId: String,
+            val canRestore: Boolean,
+            val canRevert: Boolean,
+            val canRestoreSection: Boolean,
+        ) : NavigationRequest
         /** leave the editor, e.g. to show a folder in the file browser */
         data object Close : NavigationRequest
         data class ShareLink(val link: String) : NavigationRequest {
