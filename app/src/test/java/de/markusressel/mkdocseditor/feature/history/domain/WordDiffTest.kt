@@ -16,6 +16,12 @@ class WordDiffTest {
     }
 
     @Test
+    fun `lines with little in common get no marks`() {
+        assertEquals(WordChanges(emptyList(), emptyList()), wordChanges("Then reboot.", "Wait for it to finish."))
+        assertEquals(listOf(Highlight(5, 12)), wordChanges("Some text.", "Some better text.").added)
+    }
+
+    @Test
     fun `an emptied line is marked as a whole`() {
         assertEquals(WordChanges(listOf(Highlight(0, 3)), emptyList()), wordChanges("abc", ""))
     }

@@ -40,6 +40,23 @@ internal val HistoryEntryModel.people: List<HistoryAuthorModel>
     get() = (listOf(author) + coAuthors).distinctBy { it.accountId.ifEmpty { it.email } }
 
 /**
+ * The people of an entry, each with the agents they made the changes with: "Bob via Claude Code, Anna". An agent
+ * without its person among them, or from a backend that only sends token names, goes with the author.
+ *
+ * @return each person with the names of their agents
+ */
+internal val HistoryEntryModel.peopleWithAgents: List<Pair<HistoryAuthorModel, List<String>>>
+    get() {
+        val people = people
+        val known = agents.filter { agent -> people.any { it.isAccount && it.accountId == agent.accountId } }
+        val homeless = agentNames - known.map { it.name }.toSet()
+        return people.mapIndexed { index, person ->
+            val own = known.filter { person.isAccount && it.accountId == person.accountId }.map { it.name }
+            person to (own + if (index == 0) homeless else emptyList()).distinct()
+        }
+    }
+
+/**
  * The names of the agents of an entry. A backend before `agents` only has the token names.
  */
 internal val HistoryEntryModel.agentNames: List<String>

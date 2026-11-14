@@ -56,7 +56,7 @@ import de.markusressel.mkdocseditor.feature.history.domain.Highlight
 import de.markusressel.mkdocseditor.feature.history.domain.agentNames
 import de.markusressel.mkdocseditor.feature.history.domain.notableMessage
 import de.markusressel.mkdocseditor.feature.history.domain.pairChangedLines
-import de.markusressel.mkdocseditor.feature.history.domain.people
+import de.markusressel.mkdocseditor.feature.history.domain.peopleWithAgents
 import de.markusressel.mkdocseditor.feature.history.domain.shownName
 import de.markusressel.mkdocseditor.feature.history.domain.wordChanges
 import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel.DiffState
@@ -223,12 +223,13 @@ private fun EntryAvatar(entry: HistoryEntryModel) {
 private fun authorColor(author: HistoryAuthorModel): Color =
     parsePeerColor(author.color) ?: fallbackPeerColor(author.username.ifEmpty { author.name })
 
-/** "Anna, Bob via Claude Code" */
+/** "Bob via Claude Code, Anna" */
 @Composable
 private fun whoText(entry: HistoryEntryModel): String {
-    val people = entry.people.joinToString(", ") { it.shownName }
-    val agents = entry.agentNames
-    return if (agents.isEmpty()) people else stringResource(R.string.history_via, people, agents.joinToString(", "))
+    val via = stringResource(R.string.history_via)
+    return entry.peopleWithAgents.joinToString(", ") { (person, agents) ->
+        if (agents.isEmpty()) person.shownName else via.format(person.shownName, agents.joinToString(", "))
+    }
 }
 
 @Composable
@@ -238,12 +239,12 @@ private fun summaryText(summary: HistorySummaryModel?): String? {
     return if (summary.headings.isEmpty()) lines else "$lines · ${summary.headings.joinToString(", ")}"
 }
 
+/** a commit from a server whose clock is a little ahead is "now", not "in 0 minutes" */
 @Composable
-private fun relativeTime(time: Date): String = DateUtils.getRelativeTimeSpanString(
-    time.time,
-    System.currentTimeMillis(),
-    DateUtils.MINUTE_IN_MILLIS,
-).toString()
+private fun relativeTime(time: Date): String {
+    val now = System.currentTimeMillis()
+    return DateUtils.getRelativeTimeSpanString(minOf(time.time, now), now, DateUtils.MINUTE_IN_MILLIS).toString()
+}
 
 @Composable
 private fun EntryDiff(diff: DiffState?, onUiEvent: (UiEvent) -> Unit) {

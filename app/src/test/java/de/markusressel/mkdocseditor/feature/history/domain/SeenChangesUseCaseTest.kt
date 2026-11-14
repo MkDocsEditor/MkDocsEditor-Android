@@ -75,6 +75,13 @@ class SeenChangesUseCaseTest {
     }
 
     @Test
+    fun `the account itself is left out of the names, next to someone else`() = runTest {
+        answer = Result.success(changes(listOf(carol, alice)))
+
+        assertEquals(listOf(alice), useCase.open("d1")?.authors)
+    }
+
+    @Test
     fun `a page seen for the first time has no news, but is marked`() = runTest {
         answer = Result.success(DocumentChangesModel(since = null, seenToken = "now"))
 

@@ -24,15 +24,16 @@ internal class SeenChangesUseCase @Inject constructor(
      * The changes to tell about when the page opens. The page counts as seen as soon as they are shown, with the token
      * of this answer, so an edit that arrives while reading stays news.
      *
-     * @return null if there is nothing to tell: the page was never seen, nothing changed, only the account itself
-     * changed it, or the server can't say
+     * @return the changes with only the authors that are news, null if there is nothing to tell: the page was never
+     * seen, nothing changed, only the account itself changed it, or the server can't say
      */
     suspend fun open(documentId: String): DocumentChangesModel? {
         val changes = changes(documentId) ?: return null
         markSeen(documentId, changes.seenToken)
         if (changes.since == null || changes.hunks.isEmpty()) return null
         val own = ownUsername()
-        return changes.takeIf { it.authors.any { author -> author.isNewsFor(own) } }
+        val others = changes.authors.filter { it.isNewsFor(own) }
+        return if (others.isEmpty()) null else changes.copy(authors = others)
     }
 
     /** The page as it is now counts as seen, when the account leaves it: its own edits are no news later. */

@@ -854,17 +854,29 @@ internal class CodeEditorViewModel @Inject constructor(
         session.setDocument(documentId)
         if (documentId != null && seenChangesAsked != documentId) {
             seenChangesAsked = documentId
-            launch { _uiState.update { it.copy(changesSinceSeen = seenChanges.open(documentId)) } }
+            launch {
+                // not inside update: it runs its block again when the state changed meanwhile, and each run marks seen
+                val changes = seenChanges.open(documentId)
+                _uiState.update { it.copy(changesSinceSeen = changes) }
+                seenChangesOpened = true
+            }
         }
     }
 
     /** the document whose changes since the last visit were asked for, once per editor */
     private var seenChangesAsked: String? = null
 
-    /** the page as it is now counts as seen when the user leaves it, see [SeenChangesUseCase.leave] */
+    /** whether the changes since the last visit are known; marking the page seen before that would swallow them */
+    private var seenChangesOpened = false
+
+    /**
+     * The page as it is now counts as seen when the user closes it, see [SeenChangesUseCase.leave]. Not on ON_STOP: the
+     * screen gets one while it opens.
+     */
     private fun leavePage() {
+        if (!seenChangesOpened) return
         val documentId = uiState.value.documentId ?: seenChangesAsked ?: return
-        // also after the editor is closed: it is a short request, and without it the own edits come back as news
+        // after the editor is closed: it is a short request, and without it the own edits come back as news
         launch(NonCancellable) { seenChanges.leave(documentId) }
     }
 
@@ -1002,7 +1014,6 @@ internal class CodeEditorViewModel @Inject constructor(
      */
     internal fun onStop() {
         session.persist()
-        leavePage()
     }
 
     override fun onCleared() {
