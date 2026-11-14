@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.domain
 
+import de.markusressel.mkdocsrestclient.sync.automerge.RemoteAgent
 import de.markusressel.mkdocsrestclient.sync.automerge.RemoteGhost
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePosition
@@ -20,6 +21,7 @@ class SenderPositionTest {
         lastActiveAt: String? = null,
         viewport: RemoteViewport? = null,
         instance: String = account,
+        agent: RemoteAgent? = null,
     ) = RemotePeer(
         clientId = "c",
         username = "u",
@@ -30,6 +32,7 @@ class SenderPositionTest {
         lastActiveAt = lastActiveAt,
         viewport = viewport,
         instanceId = instance,
+        agent = agent,
     )
 
     private fun ghost(
@@ -48,6 +51,15 @@ class SenderPositionTest {
         viewport = viewport,
         remainingMs = remainingMs,
     )
+
+    @Test
+    fun `a join link follows the sender and not their agent that edits right now`() {
+        val peers = listOf(
+            peer("sender", 1, "2026-11-05T10:00:00Z", instance = "phone"),
+            peer("sender", null, "2026-11-05T10:05:00Z", instance = "agent", agent = RemoteAgent("t1", "Claude Code")),
+        )
+        assertEquals("phone", joinFollowInstance(peers, emptyList(), "sender", instance = null))
+    }
 
     @Test
     fun `follows the connection of the instance that moved last`() {

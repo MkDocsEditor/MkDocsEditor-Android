@@ -2,6 +2,7 @@ package de.markusressel.mkdocsrestclient.sync.automerge
 
 import de.markusressel.mkdocsrestclient.moshi
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.ActorInfo
+import de.markusressel.mkdocsrestclient.sync.automerge.protocol.AgentMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.ActorMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.DocumentRenamedMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.ErrorMessage
@@ -59,6 +60,15 @@ data class RemotePeer(
     val instanceColor: String? = null,
     /** version of the profile picture of [accountId], null without one */
     val avatar: String? = null,
+    /** set when this is an AI agent of [accountId], which has no cursor and no viewport */
+    val agent: RemoteAgent? = null,
+)
+
+/** An AI agent that works with an app token of an account */
+data class RemoteAgent(
+    val tokenId: String,
+    /** the name of the app token */
+    val name: String,
 )
 
 /** The text another user is looking at, as UTF-16 indices of the first and the last visible character */
@@ -90,7 +100,10 @@ data class RemoteGhost(
     val deviceName: String? = null,
     val instanceColor: String? = null,
     val avatar: String? = null,
+    val agent: RemoteAgent? = null,
 )
+
+private fun AgentMessage.toRemote() = RemoteAgent(tokenId, name)
 
 /** A new id of a client instance, which the server expects as 32 lowercase hex characters */
 fun newInstanceId(random: SecureRandom = SecureRandom()): String =
@@ -198,6 +211,7 @@ class DocumentSyncSession(
         val deviceName: String?,
         val instanceColor: String?,
         val avatar: String?,
+        val agent: RemoteAgent?,
     )
 
     private class Peer(
@@ -356,7 +370,7 @@ class DocumentSyncSession(
             MessageType.PRESENCE_SNAPSHOT -> onPresenceSnapshot(parse(text))
             MessageType.PRESENCE_LEAVE -> onPresenceLeave(parse(text))
             MessageType.ACTOR -> parse<ActorMessage>(text).let {
-                actors[it.actorId] = ActorInfo(it.actorId, it.username, it.displayName, it.color)
+                actors[it.actorId] = ActorInfo(it.actorId, it.username, it.displayName, it.color, it.agent)
                 reportAuthorColors()
             }
 
@@ -637,6 +651,7 @@ class DocumentSyncSession(
                 deviceName = ghost.deviceName,
                 instanceColor = ghost.instanceColor,
                 avatar = ghost.avatar,
+                agent = ghost.agent?.toRemote(),
             )
         }
         notifyGhosts()
@@ -664,6 +679,7 @@ class DocumentSyncSession(
                 deviceName = message.deviceName,
                 instanceColor = message.instanceColor,
                 avatar = message.avatar ?: left?.presence?.avatar,
+                agent = left?.presence?.agent?.toRemote(),
             )
             notifyGhosts()
         }
@@ -686,6 +702,7 @@ class DocumentSyncSession(
                     deviceName = ghost.deviceName,
                     instanceColor = ghost.instanceColor,
                     avatar = ghost.avatar,
+                    agent = ghost.agent,
                 )
             }
         )
@@ -785,6 +802,7 @@ class DocumentSyncSession(
                     deviceName = peer.presence.deviceName,
                     instanceColor = peer.presence.instanceColor,
                     avatar = peer.presence.avatar,
+                    agent = peer.presence.agent?.toRemote(),
                 )
             }
         )

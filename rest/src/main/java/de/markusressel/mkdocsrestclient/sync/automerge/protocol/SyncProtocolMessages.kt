@@ -83,6 +83,8 @@ data class PresenceMessage(
     val instanceColor: String? = null,
     /** version of the profile picture of the account, null without one */
     val avatar: String? = null,
+    /** set when an AI agent with an app token of the account is this connection */
+    val agent: AgentMessage? = null,
     val type: String = MessageType.PRESENCE,
 )
 
@@ -94,6 +96,14 @@ data class LocalPresenceMessage(
     val viewport: ViewportMessage?,
     val instanceColor: String?,
     val type: String = MessageType.PRESENCE,
+)
+
+/** An AI agent that works with an app token of an account. It has no cursor and no viewport. */
+@JsonClass(generateAdapter = true)
+data class AgentMessage(
+    val tokenId: String,
+    /** the name of the app token */
+    val name: String,
 )
 
 /** Cursors of the first and the last visible character */
@@ -138,6 +148,7 @@ data class GhostMessage(
     val selections: List<SelectionMessage> = emptyList(),
     val viewport: ViewportMessage? = null,
     val avatar: String? = null,
+    val agent: AgentMessage? = null,
 )
 
 @JsonClass(generateAdapter = true)
@@ -173,6 +184,8 @@ data class ActorInfo(
     val username: String,
     val displayName: String? = null,
     val color: String? = null,
+    /** set when the changes of this actor come from an AI agent of the account */
+    val agent: AgentMessage? = null,
 )
 
 @JsonClass(generateAdapter = true)
@@ -181,6 +194,7 @@ data class ActorMessage(
     val username: String,
     val displayName: String? = null,
     val color: String? = null,
+    val agent: AgentMessage? = null,
     val type: String = MessageType.ACTOR,
 )
 

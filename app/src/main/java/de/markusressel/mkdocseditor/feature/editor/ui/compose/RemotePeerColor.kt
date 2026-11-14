@@ -146,4 +146,5 @@ internal fun RemoteGhost.asPeer() = RemotePeer(
     deviceName = deviceName,
     instanceColor = instanceColor,
     avatar = avatar,
+    agent = agent,
 )

@@ -14,9 +14,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.SmartToy
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,12 +31,14 @@ import androidx.compose.ui.unit.dp
 import de.markusressel.mkdocseditor.feature.avatar.ui.compose.UserAvatar
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocseditor.util.compose.CombinedPreview
+import de.markusressel.mkdocsrestclient.sync.automerge.RemoteAgent
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 
 private const val MAX_VISIBLE_USERS = 3
 
 /**
- * Shows the other client instances in this document as colored circles with the initial of their user
+ * Shows the other client instances in this document as colored circles with the initial of their user, AI agents as a
+ * robot
  *
  * @param remotePeers the other connections in this document
  */
@@ -50,13 +56,24 @@ internal fun OnlineUsersAction(
         )
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
             remotePeers.instances().forEach { user ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.follow_user, user.label)) },
-                    onClick = {
-                        menuOpen = false
-                        onFollowClicked(user.instanceId)
-                    },
-                )
+                val agent = user.agent
+                if (agent != null) {
+                    // an agent has no cursor or viewport to follow
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.online_agent, agent.name, user.name)) },
+                        leadingIcon = { AgentAvatar(modifier = Modifier.size(24.dp), color = user.composeColor) },
+                        enabled = false,
+                        onClick = {},
+                    )
+                } else {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.follow_user, user.label)) },
+                        onClick = {
+                            menuOpen = false
+                            onFollowClicked(user.instanceId)
+                        },
+                    )
+                }
             }
         }
     }
@@ -75,12 +92,16 @@ private fun OnlineUsersBadges(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         users.take(MAX_VISIBLE_USERS).forEach { user ->
-            UserAvatar(
-                modifier = Modifier.badge(),
-                name = user.name,
-                color = user.composeColor,
-                avatar = user.avatarModel,
-            )
+            if (user.agent != null) {
+                AgentAvatar(modifier = Modifier.badge(), color = user.composeColor)
+            } else {
+                UserAvatar(
+                    modifier = Modifier.badge(),
+                    name = user.name,
+                    color = user.composeColor,
+                    avatar = user.avatarModel,
+                )
+            }
         }
 
         if (users.size > MAX_VISIBLE_USERS) {
@@ -113,6 +134,22 @@ private fun OnlineUserBadge(
     }
 }
 
+/** An AI agent: a robot in the color of its person */
+@Composable
+private fun AgentAvatar(modifier: Modifier = Modifier, color: Color) {
+    Box(
+        modifier = modifier.background(color, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.SmartToy,
+            contentDescription = null,
+            tint = labelTextColorOn(color),
+            modifier = Modifier.fillMaxSize(0.7f),
+        )
+    }
+}
+
 /** the ring keeps overlapping badges apart */
 @Composable
 private fun Modifier.badge() = this
@@ -132,6 +169,7 @@ private fun OnlineUsersActionPreview() {
                     displayName = null,
                     color = null,
                     selections = emptyList(),
+                    agent = if (index == 1) RemoteAgent(tokenId = "t1", name = "Claude Code") else null,
                 )
             }
         )
