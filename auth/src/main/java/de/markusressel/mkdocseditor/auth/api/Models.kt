@@ -222,6 +222,15 @@ object ServerFeature {
     const val AVATARS = "avatars"
     const val PUSH = "push"
     const val QR_CODES = "qr-codes"
+
+    /** `GET /document/{id}/changes/` and `PUT /document/{id}/seen/` */
+    const val CHANGES = "changes"
+
+    /** the revision history with summaries, agents and diffs as JSON; needs git on the server */
+    const val HISTORY = "history"
+
+    /** `POST /document/{id}/history/{revision}/revert/` */
+    const val REVERT = "revert"
 }
 
 /** POST /auth/access-requests/. The token is only shown once. */

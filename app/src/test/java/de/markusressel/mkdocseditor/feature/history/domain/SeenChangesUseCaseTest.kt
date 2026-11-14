@@ -5,7 +5,10 @@ import com.github.kittinunf.fuel.core.Response
 import com.github.kittinunf.result.Result
 import de.markusressel.mkdocseditor.auth.FakeAuthApi
 import de.markusressel.mkdocseditor.auth.InMemoryTokenStore
+import de.markusressel.mkdocseditor.auth.api.ServerFeature
+import de.markusressel.mkdocseditor.auth.api.ServerInfo
 import de.markusressel.mkdocseditor.auth.domain.AuthRepository
+import de.markusressel.mkdocseditor.feature.common.data.ServerFeatures
 import de.markusressel.mkdocseditor.auth.token.AuthSession
 import de.markusressel.mkdocseditor.feature.auth.FakeAuthBackends
 import de.markusressel.mkdocseditor.feature.auth.backendConfig
@@ -44,18 +47,17 @@ class SeenChangesUseCaseTest {
         }
     }
 
-    private val useCase = SeenChangesUseCase(
-        restClient = client,
-        backends = FakeAuthBackends().apply {
-            configs += backendConfig(1)
-            selectedId = 1
-        },
-        authRepository = AuthRepository(
-            InMemoryTokenStore().apply { put(1, AuthSession("t", null, "carol")) },
-            { FakeAuthApi() },
-            deviceName = "Pixel 8",
-        ),
+    private var serverFeatures = listOf(ServerFeature.CHANGES)
+    private val backends = FakeAuthBackends().apply {
+        configs += backendConfig(1)
+        selectedId = 1
+    }
+    private val authRepository = AuthRepository(
+        InMemoryTokenStore().apply { put(1, AuthSession("t", null, "carol")) },
+        { FakeAuthApi().apply { onServerInfo = { ServerInfo(name = "Wiki", features = serverFeatures) } } },
+        deviceName = "Pixel 8",
     )
+    private val useCase = SeenChangesUseCase(client, backends, authRepository, ServerFeatures(backends, authRepository))
 
     @Test
     fun `changes of someone else are told, and the page counts as seen with the token of the answer`() = runTest {
@@ -102,6 +104,26 @@ class SeenChangesUseCaseTest {
 
         assertNull(useCase.open("d1"))
         useCase.leave("d1")
+        assertEquals(emptyList(), seen)
+    }
+
+    @Test
+    fun `a server without the changes feature is not asked`() = runTest {
+        serverFeatures = emptyList()
+        var asked = false
+        val useCase = SeenChangesUseCase(
+            object : IMkDocsRestClient by client {
+                override suspend fun getDocumentChanges(documentId: String, since: String?): Result<DocumentChangesModel, FuelError> {
+                    asked = true
+                    return answer
+                }
+            },
+            backends, authRepository, ServerFeatures(backends, authRepository),
+        )
+
+        assertNull(useCase.open("d1"))
+        useCase.leave("d1")
+        assertEquals(false, asked)
         assertEquals(emptyList(), seen)
     }
 

@@ -2,6 +2,7 @@ package de.markusressel.mkdocsrestclient.history
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
+import com.squareup.moshi.Moshi
 import java.util.Date
 
 /**
@@ -109,3 +110,34 @@ enum class DiffOp {
     @Json(name = "+")
     ADDED,
 }
+
+/**
+ * The error body of a revert that changed nothing
+ *
+ * @param code `revert-conflict` when later changes touched the same lines, `nothing-to-revert` when the change is gone
+ */
+@JsonClass(generateAdapter = true)
+data class RevertErrorModel(
+    val code: String? = null,
+    val details: RevertConflictModel? = null,
+) {
+    companion object {
+        const val CONFLICT = "revert-conflict"
+        const val NOTHING_TO_REVERT = "nothing-to-revert"
+
+        private val adapter by lazy { Moshi.Builder().build().adapter(RevertErrorModel::class.java) }
+
+        /** the error in a response body, null when the body is not one */
+        fun parse(body: ByteArray): RevertErrorModel? = try {
+            adapter.fromJson(String(body, Charsets.UTF_8))
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
+
+/** @param headings the distinct headings of the sections where later changes are in the way */
+@JsonClass(generateAdapter = true)
+data class RevertConflictModel(
+    val headings: List<String?> = emptyList(),
+)

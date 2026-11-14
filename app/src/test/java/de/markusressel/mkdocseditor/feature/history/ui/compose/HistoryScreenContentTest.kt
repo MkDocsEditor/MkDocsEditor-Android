@@ -96,6 +96,39 @@ class HistoryScreenContentTest {
     }
 
     @Test
+    fun `editors on a server with revert can undo a change, but not the first version`() {
+        val events = mutableListOf<UiEvent>()
+        composeRule.setContent {
+            Shown {
+                HistoryScreenContent(
+                    UiState(
+                        loading = false, entries = entries, expanded = "b",
+                        diffs = mapOf("b" to DiffState.Loaded(listOf(hunk)), "a" to DiffState.FirstVersion), canRevert = true,
+                    ),
+                    onUiEvent = { events += it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Undo this change").performClick()
+        assertEquals(listOf<UiEvent>(UiEvent.UndoClicked(entries[0])), events)
+    }
+
+    @Test
+    fun `the first version can not be undone`() {
+        composeRule.setContent {
+            Shown {
+                HistoryScreenContent(
+                    UiState(loading = false, entries = entries, expanded = "a", diffs = mapOf("a" to DiffState.FirstVersion), canRevert = true),
+                    onUiEvent = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Undo this change").assertDoesNotExist()
+    }
+
+    @Test
     fun `the newest entry can not be restored, it is the text as it is`() {
         composeRule.setContent {
             Shown {

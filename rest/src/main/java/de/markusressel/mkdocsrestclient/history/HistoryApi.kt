@@ -51,6 +51,14 @@ interface HistoryApi {
     /** Marks the text of [seenToken] as seen by the signed in account. A token the document no longer knows answers 409. */
     suspend fun putDocumentSeen(documentId: String, seenToken: String): Result<SeenModel, FuelError>
 
+    /**
+     * Undoes the changes of one commit in the live text; later changes stay. Editors, admins and write tokens only.
+     *
+     * @return the entry of the revert commit. A 409 `revert-conflict` (see [RevertErrorModel]) or `nothing-to-revert`
+     * changes nothing, 400 is the commit that created the file.
+     */
+    suspend fun revertDocumentRevision(documentId: String, revision: String): Result<HistoryEntryModel, FuelError>
+
     /** Sets the live text to the one of [revision], as an edit of the signed in account. Editors and admins only. */
     suspend fun restoreDocumentRevision(documentId: String, revision: String): Result<String, FuelError>
 }
@@ -100,6 +108,13 @@ class HistoryApiImpl(
             method = Method.PUT,
             jsonData = SeenRequestModel(seenToken),
             kind = RequestKind.Quick,
+        )
+
+    override suspend fun revertDocumentRevision(documentId: String, revision: String): Result<HistoryEntryModel, FuelError> =
+        requestManager.doRequest(
+            url = "/document/$documentId/history/$revision/revert/",
+            method = Method.POST,
+            kind = RequestKind.LongAction,
         )
 
     override suspend fun restoreDocumentRevision(documentId: String, revision: String): Result<String, FuelError> =

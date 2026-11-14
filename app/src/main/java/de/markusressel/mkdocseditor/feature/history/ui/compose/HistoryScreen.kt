@@ -11,6 +11,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.hilt.getViewModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorScreen
 import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel
 import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel.HistoryEvent
@@ -23,10 +24,12 @@ import de.markusressel.mkdocseditor.feature.main.data.rememberMainNavigationRequ
  * The revision history of a document, see [HistoryViewModel]
  *
  * @param canRestore whether the account may edit the document, and so bring back an old text
+ * @param canRevert whether it may also undo a single change, which needs `revert` on the server
  */
 data class HistoryScreen(
     val documentId: String,
     val canRestore: Boolean,
+    val canRevert: Boolean = false,
 ) : Screen {
 
     @Composable
@@ -38,7 +41,7 @@ data class HistoryScreen(
         val uiState by viewModel.uiState.collectAsState()
 
         LaunchedEffect(viewModel, documentId) {
-            viewModel.initialize(documentId, canRestore)
+            viewModel.initialize(documentId, canRestore, canRevert)
         }
 
         LaunchedEffect(viewModel) {
@@ -55,6 +58,11 @@ data class HistoryScreen(
                         }
                     }
                     is HistoryEvent.Message -> Toast.makeText(context, event.text, Toast.LENGTH_LONG).show()
+                    is HistoryEvent.UndoConflict -> {
+                        val top = context.getString(R.string.history_page_start)
+                        val headings = event.headings.joinToString(", ") { it ?: top }
+                        Toast.makeText(context, context.getString(R.string.history_undo_conflict, headings), Toast.LENGTH_LONG).show()
+                    }
                     is HistoryEvent.Close -> navigator.pop()
                 }
             }
