@@ -48,14 +48,18 @@ internal fun authorColor(author: String, knownColors: Map<String, String?>): Col
  *
  * @param lines the shares of each line
  * @param widthPx the width of the strip
+ * @param onLineTapped gets the 0-based line; false places the cursor like any tap on the bar
  */
 internal class AuthorStripColumn(
     private val lines: List<List<LineShare>>,
     private val widthPx: Int,
     private val colorOf: (String) -> Color,
+    private val onLineTapped: (Int) -> Boolean = { false },
 ) : KodeEditorGutterColumn {
 
     override fun width(lineCount: Int) = widthPx
+
+    override fun onTap(line: Int): Boolean = onLineTapped(line)
 
     override fun DrawScope.drawCell(cell: GutterCell) {
         var top = 0f
@@ -65,6 +69,14 @@ internal class AuthorStripColumn(
             top += height
         }
     }
+}
+
+/** [column] as it is, with [onLineTapped] for taps on it */
+internal class TappableGutterColumn(
+    private val column: KodeEditorGutterColumn,
+    private val onLineTapped: (Int) -> Boolean,
+) : KodeEditorGutterColumn by column {
+    override fun onTap(line: Int): Boolean = onLineTapped(line)
 }
 
 /** A light marker on the text of each author */

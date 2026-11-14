@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.feature.history.ui.compose
 
-import android.text.format.DateUtils
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -273,14 +272,6 @@ private fun summaryText(summary: HistorySummaryModel?): String? {
     summary ?: return null
     val lines = "+${summary.linesAdded} −${summary.linesRemoved}"
     return if (summary.headings.isEmpty()) lines else "$lines · ${summary.headings.joinToString(", ")}"
-}
-
-/** within the last minute, or from a server whose clock is a little ahead, it is "just now", not "in 0 minutes" */
-@Composable
-private fun relativeTime(time: Date): String {
-    val now = System.currentTimeMillis()
-    if (now - time.time < DateUtils.MINUTE_IN_MILLIS) return stringResource(R.string.history_just_now)
-    return DateUtils.getRelativeTimeSpanString(time.time, now, DateUtils.MINUTE_IN_MILLIS).toString()
 }
 
 @Composable

@@ -476,6 +476,11 @@
     <string name="history_section_restored">Section restored</string>
     <string name="history_section_missing_in_version">“%1$s” is not in this version.</string>
     <string name="history_section_missing_now">“%1$s” is no longer in the page. Restore the whole version instead.</string>
+    <string name="line_author_title_line">Line %1$d</string>
+    <string name="line_author_title_lines">Lines %1$d–%2$d</string>
+    <string name="line_author_unknown">Unknown</string>
+    <string name="line_author_pending">Not saved in the history yet</string>
+    <string name="line_author_none">Nobody known changed this line yet</string>
     <string name="changes_since_seen_banner">Changed by %1$s since you were here</string>
     <string name="changes_since_seen_title">Changes since your last visit</string>
     <string name="changes_since_seen_dismiss">Hide</string>
