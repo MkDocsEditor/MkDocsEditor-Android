@@ -2,8 +2,10 @@ package de.markusressel.mkdocseditor.feature.editor.ui
 
 import de.markusressel.mkdocseditor.auth.api.ServerFeature
 import de.markusressel.mkdocseditor.feature.common.data.ServerFeatures
+import de.markusressel.mkdocseditor.feature.history.domain.LineAuthorUseCase
 import de.markusressel.mkdocseditor.feature.history.domain.SeenChangesUseCase
 import de.markusressel.mkdocseditor.feature.history.domain.changeLocation
+import de.markusressel.mkdocsrestclient.history.BlameBlockModel
 import de.markusressel.mkdocsrestclient.history.DiffHunkModel
 import de.markusressel.mkdocsrestclient.history.DocumentChangesModel
 import kotlinx.coroutines.NonCancellable
@@ -141,6 +143,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private val pendingQrKey: PendingQrKey,
     private val resolveQrCode: ResolveQrCodeUseCase,
     private val seenChanges: SeenChangesUseCase,
+    private val lineAuthor: LineAuthorUseCase,
     private val serverFeatures: ServerFeatures,
     savedStateHandle: SavedStateHandle,
     clientInstanceId: ClientInstanceId,
@@ -324,7 +327,8 @@ internal class CodeEditorViewModel @Inject constructor(
         launch {
             val history = serverFeatures.has(ServerFeature.HISTORY)
             val revert = serverFeatures.has(ServerFeature.REVERT)
-            _uiState.update { it.copy(historyAvailable = history, revertAvailable = revert) }
+            val blame = serverFeatures.has(ServerFeature.BLAME)
+            _uiState.update { it.copy(historyAvailable = history, revertAvailable = revert, blameAvailable = blame) }
         }
 
         // a key of a sticker without a page, to put on this one
@@ -517,6 +521,11 @@ internal class CodeEditorViewModel @Inject constructor(
                 is UiEvent.DismissDialog -> dismissCurrentDialog()
                 is UiEvent.ChangesSinceSeenClicked -> uiState.value.changesSinceSeen?.let { showDialog(DialogState.ChangesSinceSeen(it)) }
                 is UiEvent.ChangesSinceSeenDismissed -> _uiState.update { it.copy(changesSinceSeen = null) }
+                is UiEvent.AuthorLineClicked -> showLineAuthor(event.line)
+                is UiEvent.LineAuthorHistoryClicked -> {
+                    dismissCurrentDialog()
+                    openHistory()
+                }
                 is UiEvent.ChangeHunkClicked -> {
                     dismissCurrentDialog()
                     jumpToChange(event.hunk.changeLocation())
@@ -682,15 +691,29 @@ internal class CodeEditorViewModel @Inject constructor(
             is TopAppBarAction.CodeEditor.ConnectionAction -> onConnectionIconClicked(action.indicator)
             is TopAppBarAction.CodeEditor.PageReferencesAction -> showPageReferences()
             is TopAppBarAction.CodeEditor.QrCodesAction -> showQrCodes()
-            is TopAppBarAction.CodeEditor.HistoryAction -> uiState.value.documentId?.let {
-                _navigationEvents.send(
-                    NavigationRequest.OpenHistory(
-                        documentId = it,
-                        canRestore = uiState.value.canEdit,
-                        canRevert = uiState.value.canEdit && uiState.value.revertAvailable,
-                    )
-                )
-            }
+            is TopAppBarAction.CodeEditor.HistoryAction -> openHistory()
+        }
+    }
+
+    private suspend fun openHistory() {
+        val documentId = uiState.value.documentId ?: return
+        _navigationEvents.send(
+            NavigationRequest.OpenHistory(
+                documentId = documentId,
+                canRestore = uiState.value.canEdit,
+                canRevert = uiState.value.canEdit && uiState.value.revertAvailable,
+                canRestoreSection = uiState.value.canEdit && uiState.value.blameAvailable,
+            )
+        )
+    }
+
+    /** @param line 0-based */
+    private suspend fun showLineAuthor(line: Int) {
+        val documentId = uiState.value.documentId ?: return
+        when (val answer = lineAuthor(documentId, line)) {
+            is LineAuthorUseCase.Answer.Found -> showDialog(DialogState.LineAuthor(answer.block))
+            LineAuthorUseCase.Answer.Unknown -> showMessage(context.getString(R.string.line_author_none))
+            is LineAuthorUseCase.Answer.Failed -> showMessage(context.getString(answer.message))
         }
     }
 
@@ -1278,6 +1301,9 @@ internal class CodeEditorViewModel @Inject constructor(
         /** whether the server can undo a single change of the history */
         val revertAvailable: Boolean = false,
 
+        /** whether the server tells who last changed each line, and can restore a single section */
+        val blameAvailable: Boolean = false,
+
         /** what others changed since the user last looked at the page, null if nothing; see [SeenChangesUseCase] */
         val changesSinceSeen: DocumentChangesModel? = null,
     ) {
@@ -1296,6 +1322,10 @@ internal class CodeEditorViewModel @Inject constructor(
         data object ChangesSinceSeenClicked : UiEvent()
         data object ChangesSinceSeenDismissed : UiEvent()
         data class ChangeHunkClicked(val hunk: DiffHunkModel) : UiEvent()
+
+        /** a line of the author strip, 0-based */
+        data class AuthorLineClicked(val line: Int) : UiEvent()
+        data object LineAuthorHistoryClicked : UiEvent()
 
         data class ItemActionClicked(val item: WikiItem, val action: ItemAction) : UiEvent()
         data class ItemMovePreviewRequested(val parentId: String?, val name: String?) : UiEvent()
@@ -1380,7 +1410,12 @@ internal class CodeEditorViewModel @Inject constructor(
     sealed interface NavigationRequest {
         data class Login(val backendId: Long) : NavigationRequest
         data class OpenDocument(val documentId: String) : NavigationRequest
-        data class OpenHistory(val documentId: String, val canRestore: Boolean, val canRevert: Boolean) : NavigationRequest
+        data class OpenHistory(
+            val documentId: String,
+            val canRestore: Boolean,
+            val canRevert: Boolean,
+            val canRestoreSection: Boolean,
+        ) : NavigationRequest
         /** leave the editor, e.g. to show a folder in the file browser */
         data object Close : NavigationRequest
         data class ShareLink(val link: String) : NavigationRequest {
@@ -1413,6 +1448,9 @@ internal class CodeEditorViewModel @Inject constructor(
 
         /** what changed since the last visit, hunk by hunk */
         data class ChangesSinceSeen(val changes: DocumentChangesModel) : DialogState
+
+        /** who last changed a block of lines, and when */
+        data class LineAuthor(val block: BlameBlockModel) : DialogState
 
         /**
          * The QR codes of the page, and adding or removing them

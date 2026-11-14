@@ -1,6 +1,5 @@
 package de.markusressel.mkdocseditor.feature.history.ui.compose
 
-import android.text.format.DateUtils
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -121,6 +120,7 @@ internal fun HistoryScreenContent(
                             canRestore = uiState.canRestore && entry != uiState.entries.first(),
                             // the oldest one created the page, which is undone by deleting it
                             canUndo = uiState.canRevert && entry != uiState.entries.last(),
+                            canRestoreSection = uiState.canRestoreSection && entry != uiState.entries.first(),
                             onUiEvent = onUiEvent,
                         )
                         HorizontalDivider()
@@ -144,6 +144,11 @@ internal fun HistoryScreenContent(
                 stringResource(R.string.history_undo_text, whoText(entry), relativeTime(entry.time)),
                 stringResource(R.string.history_undo),
             )
+            is Confirm.RestoreSection -> Triple(
+                stringResource(R.string.history_restore_section_title),
+                stringResource(R.string.history_restore_section_text, confirm.section.heading, relativeTime(entry.time)),
+                stringResource(R.string.history_restore),
+            )
         }
         AlertDialog(
             onDismissRequest = { onUiEvent(UiEvent.ConfirmDismissed) },
@@ -164,6 +169,7 @@ private fun HistoryEntry(
     diff: DiffState?,
     canRestore: Boolean,
     canUndo: Boolean,
+    canRestoreSection: Boolean,
     onUiEvent: (UiEvent) -> Unit,
 ) {
     Column(
@@ -197,7 +203,14 @@ private fun HistoryEntry(
         }
         if (expanded) {
             Spacer(Modifier.size(8.dp))
-            EntryDiff(diff, onUiEvent)
+            EntryDiff(
+                diff = diff,
+                onHunkClicked = { onUiEvent(UiEvent.HunkClicked(it)) },
+                // a hunk above the first heading has no section to restore
+                onRestoreSection = if (canRestoreSection) {
+                    { hunk -> onUiEvent(UiEvent.RestoreSectionClicked(entry, hunk)) }
+                } else null,
+            )
             Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (canUndo) {
                     OutlinedButton(onClick = { onUiEvent(UiEvent.UndoClicked(entry)) }) {
@@ -261,16 +274,12 @@ private fun summaryText(summary: HistorySummaryModel?): String? {
     return if (summary.headings.isEmpty()) lines else "$lines · ${summary.headings.joinToString(", ")}"
 }
 
-/** within the last minute, or from a server whose clock is a little ahead, it is "just now", not "in 0 minutes" */
 @Composable
-private fun relativeTime(time: Date): String {
-    val now = System.currentTimeMillis()
-    if (now - time.time < DateUtils.MINUTE_IN_MILLIS) return stringResource(R.string.history_just_now)
-    return DateUtils.getRelativeTimeSpanString(time.time, now, DateUtils.MINUTE_IN_MILLIS).toString()
-}
-
-@Composable
-private fun EntryDiff(diff: DiffState?, onUiEvent: (UiEvent) -> Unit) {
+private fun EntryDiff(
+    diff: DiffState?,
+    onHunkClicked: (DiffHunkModel) -> Unit,
+    onRestoreSection: ((DiffHunkModel) -> Unit)?,
+) {
     when (diff) {
         null, DiffState.Loading -> LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         is DiffState.Failed -> Text(stringResource(diff.message), color = MaterialTheme.colorScheme.error)
@@ -279,7 +288,13 @@ private fun EntryDiff(diff: DiffState?, onUiEvent: (UiEvent) -> Unit) {
             Text(stringResource(R.string.history_no_text_changes), style = MaterialTheme.typography.bodySmall)
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                diff.hunks.forEach { hunk -> Hunk(hunk, onClick = { onUiEvent(UiEvent.HunkClicked(hunk)) }) }
+                diff.hunks.forEach { hunk ->
+                    Hunk(
+                        hunk = hunk,
+                        onClick = { onHunkClicked(hunk) },
+                        onRestoreSection = onRestoreSection?.takeIf { hunk.heading != null }?.let { { it(hunk) } },
+                    )
+                }
             }
         }
     }
@@ -287,7 +302,7 @@ private fun EntryDiff(diff: DiffState?, onUiEvent: (UiEvent) -> Unit) {
 
 /** inline, as Markdown source; a long line scrolls sideways instead of wrapping, so the columns stay */
 @Composable
-internal fun Hunk(hunk: DiffHunkModel, onClick: () -> Unit) {
+internal fun Hunk(hunk: DiffHunkModel, onClick: () -> Unit, onRestoreSection: (() -> Unit)? = null) {
     val lines = remember(hunk) { diffLineTexts(hunk.lines) }
     Column(
         modifier = Modifier
@@ -328,6 +343,16 @@ internal fun Hunk(hunk: DiffHunkModel, onClick: () -> Unit) {
                     text = text,
                     style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                     softWrap = false,
+                )
+            }
+        }
+        if (onRestoreSection != null) {
+            // names the section, because the hunk can reach into the next one
+            TextButton(modifier = Modifier.align(Alignment.End), onClick = onRestoreSection) {
+                Text(
+                    text = stringResource(R.string.history_restore_section_action, hunk.heading.orEmpty()),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

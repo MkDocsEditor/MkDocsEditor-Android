@@ -61,6 +61,23 @@ interface HistoryApi {
 
     /** Sets the live text to the one of [revision], as an edit of the signed in account. Editors and admins only. */
     suspend fun restoreDocumentRevision(documentId: String, revision: String): Result<String, FuelError>
+
+    /**
+     * Sets one section of the live text to the one of [revision]: the heading and the lines below it up to the next
+     * heading of the same or a higher level. Editors and admins only. A 409 `section-not-found` (see
+     * [SectionRestoreErrorModel]) changes nothing.
+     *
+     * @param headingOccurrence which of the headings with this text, 1 for the first
+     */
+    suspend fun restoreDocumentSection(
+        documentId: String,
+        revision: String,
+        heading: String,
+        headingOccurrence: Int,
+    ): Result<String, FuelError>
+
+    /** @return who last changed each line of the live text */
+    suspend fun getDocumentBlame(documentId: String): Result<BlameModel, FuelError>
 }
 
 class HistoryApiImpl(
@@ -123,4 +140,19 @@ class HistoryApiImpl(
             method = Method.POST,
             kind = RequestKind.LongAction,
         )
+
+    override suspend fun restoreDocumentSection(
+        documentId: String,
+        revision: String,
+        heading: String,
+        headingOccurrence: Int,
+    ): Result<String, FuelError> =
+        requestManager.doJsonRequest(
+            url = "/document/$documentId/history/$revision/restore/",
+            method = Method.POST,
+            jsonData = SectionRestoreRequestModel(heading, headingOccurrence),
+        )
+
+    override suspend fun getDocumentBlame(documentId: String): Result<BlameModel, FuelError> =
+        requestManager.doRequest(url = "/document/$documentId/blame/", method = Method.GET)
 }

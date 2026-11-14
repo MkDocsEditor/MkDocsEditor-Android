@@ -266,6 +266,8 @@ internal fun CodeEditorScreenContent(
                             // the editor goes to a change while it is shown, else the page while reading
                             changeJump = uiState.changeJump,
                             onChangeJumpShown = { onUiEvent(CodeEditorViewModel.UiEvent.ChangeJumpShown(it)) },
+                            onAuthorLineClicked = { line: Int -> onUiEvent(CodeEditorViewModel.UiEvent.AuthorLineClicked(line)) }
+                                .takeIf { uiState.blameAvailable && uiState.documentId != null },
                         )
                     },
                     preview = {

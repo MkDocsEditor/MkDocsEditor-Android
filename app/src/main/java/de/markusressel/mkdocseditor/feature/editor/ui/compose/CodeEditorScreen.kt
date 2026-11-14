@@ -32,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.qr.domain.QrLink
 import de.markusressel.mkdocseditor.feature.history.ui.compose.ChangesSinceSeenSheet
+import de.markusressel.mkdocseditor.feature.history.ui.compose.LineAuthorSheet
 import de.markusressel.mkdocseditor.feature.history.ui.compose.HistoryScreen
 import de.markusressel.mkdocseditor.feature.qr.ui.compose.PageQrCodesDialog
 
@@ -107,7 +108,12 @@ internal data class CodeEditorScreen(
 
                     is CodeEditorViewModel.NavigationRequest.OpenHistory ->
                         navigator.push(
-                            HistoryScreen(documentId = request.documentId, canRestore = request.canRestore, canRevert = request.canRevert)
+                            HistoryScreen(
+                                documentId = request.documentId,
+                                canRestore = request.canRestore,
+                                canRevert = request.canRevert,
+                                canRestoreSection = request.canRestoreSection,
+                            )
                         )
 
                     is CodeEditorViewModel.NavigationRequest.Close -> navigator.pop()
@@ -197,6 +203,13 @@ internal data class CodeEditorScreen(
             is CodeEditorViewModel.DialogState.ChangesSinceSeen -> ChangesSinceSeenSheet(
                 changes = dialogState.changes,
                 onHunkClicked = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.ChangeHunkClicked(it)) },
+                onDismiss = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.DismissDialog) },
+            )
+
+            is CodeEditorViewModel.DialogState.LineAuthor -> LineAuthorSheet(
+                block = dialogState.block,
+                onOpenHistory = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.LineAuthorHistoryClicked) }
+                    .takeIf { uiState.historyAvailable },
                 onDismiss = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.DismissDialog) },
             )
 

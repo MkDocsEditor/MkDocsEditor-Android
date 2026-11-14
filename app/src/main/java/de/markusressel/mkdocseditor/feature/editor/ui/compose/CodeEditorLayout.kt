@@ -98,6 +98,7 @@ internal fun CodeEditorLayout(
     restoreToCursor: Boolean = false,
     changeJump: CodeEditorViewModel.ChangeJump? = null,
     onChangeJumpShown: (CodeEditorViewModel.ChangeJump) -> Unit = {},
+    onAuthorLineClicked: ((Int) -> Unit)? = null,
 ) {
     val viewState = rememberKodeEditorViewState()
     val currentOnVisibleRangeChanged by rememberUpdatedState(onVisibleRangeChanged)
@@ -238,12 +239,18 @@ internal fun CodeEditorLayout(
     val colorOf: (String) -> Color = { authorColor(it, authorColors()) }
     val stripWidth = with(LocalDensity.current) { AUTHOR_STRIP_WIDTH.roundToPx() }
     val runs = authorRuns.value
+    val currentOnAuthorLineClicked by rememberUpdatedState(onAuthorLineClicked)
+    val onGutterTapped: (Int) -> Boolean = { line -> currentOnAuthorLineClicked?.let { it(line); true } ?: false }
     val authorStrip = if (settings.authorHighlight != AuthorHighlightMode.Off && runs.runs.isNotEmpty()) {
         remember(runs, stripWidth) {
-            AuthorStripColumn(lineShares(state.text, runs.runs), stripWidth, colorOf)
+            AuthorStripColumn(lineShares(state.text, runs.runs), stripWidth, colorOf, onGutterTapped)
         }
     } else {
         null
+    }
+    // the strip is too narrow to hit, so the line numbers next to it tell who wrote a line as well
+    val numbers = lineNumbers.takeIf { settings.lineNumbers }?.let { numbers ->
+        if (authorStrip == null) numbers else remember(numbers) { TappableGutterColumn(numbers, onGutterTapped) }
     }
 
     CompositionLocalProvider(
@@ -275,7 +282,7 @@ internal fun CodeEditorLayout(
             enabled = true,
             readOnly = readOnly,
             lineWrapping = settings.lineWrapping,
-            gutterColumns = listOfNotNull(lineNumbers.takeIf { settings.lineNumbers }, authorStrip),
+            gutterColumns = listOfNotNull(numbers, authorStrip),
             overlay = { layout ->
                 changeHighlight?.let { ChangeHighlight(layout, it, highlightColor, { changeHighlightAlpha.value }) }
                 if (settings.authorHighlight == AuthorHighlightMode.StripAndMarker) {

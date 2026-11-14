@@ -13,6 +13,8 @@ import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import de.markusressel.mkdocsrestclient.history.DiffHunkModel
 import de.markusressel.mkdocsrestclient.history.HistoryEntryModel
 import de.markusressel.mkdocsrestclient.history.RevertErrorModel
+import de.markusressel.mkdocsrestclient.history.SectionNotFoundModel
+import de.markusressel.mkdocsrestclient.history.SectionRestoreErrorModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,10 +40,10 @@ internal class HistoryViewModel @Inject constructor(
 
     private var documentId: String? = null
 
-    fun initialize(documentId: String, canRestore: Boolean, canRevert: Boolean = false) {
+    fun initialize(documentId: String, canRestore: Boolean, canRevert: Boolean = false, canRestoreSection: Boolean = false) {
         if (this.documentId != null) return
         this.documentId = documentId
-        _uiState.update { it.copy(canRestore = canRestore, canRevert = canRevert) }
+        _uiState.update { it.copy(canRestore = canRestore, canRevert = canRevert, canRestoreSection = canRestoreSection) }
         launch { load() }
     }
 
@@ -52,10 +54,15 @@ internal class HistoryViewModel @Inject constructor(
             is UiEvent.HunkClicked -> launch { _events.send(HistoryEvent.OpenInEditor(event.hunk.changeLocation())) }
             is UiEvent.RestoreClicked -> _uiState.update { it.copy(confirm = Confirm.Restore(event.entry)) }
             is UiEvent.UndoClicked -> _uiState.update { it.copy(confirm = Confirm.Undo(event.entry)) }
+            is UiEvent.RestoreSectionClicked -> event.hunk.heading?.let { heading ->
+                val section = Section(heading, event.hunk.headingOccurrence.coerceAtLeast(1))
+                _uiState.update { it.copy(confirm = Confirm.RestoreSection(event.entry, section)) }
+            }
             is UiEvent.ConfirmDismissed -> _uiState.update { it.copy(confirm = null) }
             is UiEvent.Confirmed -> when (val confirm = uiState.value.confirm) {
                 is Confirm.Restore -> launch { restore(confirm.entry) }
                 is Confirm.Undo -> launch { undo(confirm.entry) }
+                is Confirm.RestoreSection -> launch { restoreSection(confirm.entry, confirm.section) }
                 null -> Unit
             }
             is UiEvent.BackClicked -> launch { _events.send(HistoryEvent.Close) }
@@ -124,6 +131,30 @@ internal class HistoryViewModel @Inject constructor(
         }
     }
 
+    /** Sets one section of the page to its text in [entry]; the rest of the page stays */
+    private suspend fun restoreSection(entry: HistoryEntryModel, section: Section) {
+        val documentId = documentId ?: return
+        _uiState.update { it.copy(confirm = null, working = true) }
+        val result = restClient.restoreDocumentSection(documentId, entry.revision, section.heading, section.occurrence)
+        _uiState.update { it.copy(working = false) }
+        when (result) {
+            is Result.Success -> {
+                _events.send(HistoryEvent.Message(R.string.history_section_restored))
+                load()
+            }
+            is Result.Failure -> {
+                val error = SectionRestoreErrorModel.parse(result.error.response.data)
+                val message = if (error?.code == SectionRestoreErrorModel.SECTION_NOT_FOUND) {
+                    HistoryEvent.SectionMissing(section.heading, inRevision = error.details?.missingIn == SectionNotFoundModel.REVISION)
+                } else {
+                    Timber.w(result.error, "restore of a section of %s to %s", documentId, entry.revision)
+                    HistoryEvent.Message(result.error.userMessage())
+                }
+                _events.send(message)
+            }
+        }
+    }
+
     /** Undoes the changes of one entry; later changes stay. A conflict or a change that is gone changes nothing. */
     private suspend fun undo(entry: HistoryEntryModel) {
         val documentId = documentId ?: return
@@ -159,7 +190,13 @@ internal class HistoryViewModel @Inject constructor(
 
         /** the changes of [entry] are taken back */
         data class Undo(override val entry: HistoryEntryModel) : Confirm
+
+        /** one section of the page becomes the one of [entry] */
+        data class RestoreSection(override val entry: HistoryEntryModel, val section: Section) : Confirm
     }
+
+    /** a section of the page: its heading, the [occurrence]th one with this text */
+    internal data class Section(val heading: String, val occurrence: Int)
 
     internal sealed interface DiffState {
         data object Loading : DiffState
@@ -184,6 +221,7 @@ internal class HistoryViewModel @Inject constructor(
         val diffs: Map<String, DiffState> = emptyMap(),
         val canRestore: Boolean = false,
         val canRevert: Boolean = false,
+        val canRestoreSection: Boolean = false,
         val confirm: Confirm? = null,
         val working: Boolean = false,
     )
@@ -194,6 +232,7 @@ internal class HistoryViewModel @Inject constructor(
         data class HunkClicked(val hunk: DiffHunkModel) : UiEvent
         data class RestoreClicked(val entry: HistoryEntryModel) : UiEvent
         data class UndoClicked(val entry: HistoryEntryModel) : UiEvent
+        data class RestoreSectionClicked(val entry: HistoryEntryModel, val hunk: DiffHunkModel) : UiEvent
         data object ConfirmDismissed : UiEvent
         data object Confirmed : UiEvent
         data object BackClicked : UiEvent
@@ -205,6 +244,8 @@ internal class HistoryViewModel @Inject constructor(
 
         /** later changes in these sections are in the way, null for the part above the first heading */
         data class UndoConflict(val headings: List<String?>) : HistoryEvent
+        /** the section is not in the text of the entry, or with [inRevision] false, not in the page anymore */
+        data class SectionMissing(val heading: String, val inRevision: Boolean) : HistoryEvent
         data object Close : HistoryEvent
     }
 }

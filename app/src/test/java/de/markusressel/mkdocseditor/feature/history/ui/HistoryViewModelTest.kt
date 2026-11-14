@@ -50,6 +50,8 @@ class HistoryViewModelTest {
     private val restored = mutableListOf<String>()
     private val reverted = mutableListOf<String>()
     private var revertAnswer: Result<HistoryEntryModel, FuelError> = Result.success(entry("d"))
+    private val restoredSections = mutableListOf<Triple<String, String, Int>>()
+    private var sectionAnswer: Result<String, FuelError> = Result.success("")
     private var historyRequests = 0
     private val events = mutableListOf<HistoryEvent>()
 
@@ -72,6 +74,16 @@ class HistoryViewModelTest {
         override suspend fun restoreDocumentRevision(documentId: String, revision: String): Result<String, FuelError> {
             restored += revision
             return Result.success("")
+        }
+
+        override suspend fun restoreDocumentSection(
+            documentId: String,
+            revision: String,
+            heading: String,
+            headingOccurrence: Int,
+        ): Result<String, FuelError> {
+            restoredSections += Triple(revision, heading, headingOccurrence)
+            return sectionAnswer
         }
     }
 
@@ -167,7 +179,7 @@ class HistoryViewModelTest {
         assertEquals(emptyList(), restored)
     }
 
-    private fun conflict(body: String) = Result.error(
+    private fun <T : Any> conflict(body: String): Result<T, FuelError> = Result.error(
         FuelError.wrap(
             RuntimeException("409"),
             Response(
@@ -215,5 +227,41 @@ class HistoryViewModelTest {
         viewModel.onUiEvent(UiEvent.Confirmed)
 
         assertEquals(listOf<HistoryEvent>(HistoryEvent.Message(R.string.history_undo_nothing)), events)
+    }
+
+    @Test
+    fun `a section comes back after confirming, and the history reloads`() = runTest {
+        val viewModel = viewModel()
+        viewModel.onUiEvent(UiEvent.RestoreSectionClicked(entry("b"), hunk.copy(headingOccurrence = 2)))
+
+        assertEquals(emptyList(), restoredSections, "not before confirming")
+        viewModel.onUiEvent(UiEvent.Confirmed)
+
+        assertEquals(listOf(Triple("b", "Setup", 2)), restoredSections)
+        assertEquals(emptyList(), restored)
+        assertEquals(2, historyRequests)
+        assertEquals(listOf<HistoryEvent>(HistoryEvent.Message(R.string.history_section_restored)), events)
+    }
+
+    @Test
+    fun `a hunk above the first heading has no section to restore`() = runTest {
+        val viewModel = viewModel()
+        viewModel.onUiEvent(UiEvent.RestoreSectionClicked(entry("b"), hunk.copy(heading = null)))
+
+        assertNull(viewModel.uiState.value.confirm)
+    }
+
+    @Test
+    fun `a section that is gone from the page says so`() = runTest {
+        // the answer of a real backend (MkDocsEditor-Backend#101) has "revision" here, the other case is "current"
+        sectionAnswer = conflict(
+            """{"name":"Conflict","code":"section-not-found","message":"the document has no such section","details":{"in":"current"}}"""
+        )
+        val viewModel = viewModel()
+        viewModel.onUiEvent(UiEvent.RestoreSectionClicked(entry("b"), hunk))
+        viewModel.onUiEvent(UiEvent.Confirmed)
+
+        assertEquals(listOf<HistoryEvent>(HistoryEvent.SectionMissing("Setup", inRevision = false)), events)
+        assertEquals(1, historyRequests)
     }
 }
