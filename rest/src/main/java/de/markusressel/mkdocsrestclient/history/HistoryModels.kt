@@ -94,21 +94,29 @@ data class DiffHunkModel(
     val offset: Int? = null,
 )
 
+/**
+ * @param sign `" "`, `"-"` or `"+"` as sent. Kept as text: Moshi reads the JSON names of enum constants by reflection,
+ * and R8 drops those annotations in the release build, so every diff failed to parse there.
+ */
 @JsonClass(generateAdapter = true)
 data class DiffLineModel(
-    val op: DiffOp,
+    @Json(name = "op") val sign: String,
     val text: String,
-)
+) {
+    constructor(op: DiffOp, text: String) : this(op.sign, text)
 
-enum class DiffOp {
-    @Json(name = " ")
-    CONTEXT,
+    val op: DiffOp get() = DiffOp.of(sign)
+}
 
-    @Json(name = "-")
-    REMOVED,
+enum class DiffOp(val sign: String) {
+    CONTEXT(" "),
+    REMOVED("-"),
+    ADDED("+");
 
-    @Json(name = "+")
-    ADDED,
+    companion object {
+        /** an unknown sign is shown as unchanged */
+        fun of(sign: String): DiffOp = entries.firstOrNull { it.sign == sign } ?: CONTEXT
+    }
 }
 
 /**
