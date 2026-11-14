@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
+import de.markusressel.mkdocseditor.feature.history.ui.compose.ChangesSinceSeenBanner
 import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRuns
 import de.markusressel.mkdocseditor.feature.editor.domain.visibleSourceLines
 import androidx.compose.animation.AnimatedVisibility
@@ -228,6 +229,13 @@ internal fun CodeEditorScreenContent(
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 EditorBanners(uiState)
+                uiState.changesSinceSeen?.let { changes ->
+                    ChangesSinceSeenBanner(
+                        changes = changes,
+                        onClick = { onUiEvent(CodeEditorViewModel.UiEvent.ChangesSinceSeenClicked) },
+                        onDismiss = { onUiEvent(CodeEditorViewModel.UiEvent.ChangesSinceSeenDismissed) },
+                    )
+                }
 
                 EditorPanes(
                     modifier = Modifier.weight(1f),
@@ -258,6 +266,8 @@ internal fun CodeEditorScreenContent(
                             // the editor goes to a change while it is shown, else the page while reading
                             changeJump = uiState.changeJump,
                             onChangeJumpShown = { onUiEvent(CodeEditorViewModel.UiEvent.ChangeJumpShown(it)) },
+                            onAuthorLineClicked = { line: Int -> onUiEvent(CodeEditorViewModel.UiEvent.AuthorLineClicked(line)) }
+                                .takeIf { uiState.blameAvailable && uiState.documentId != null },
                         )
                     },
                     preview = {
@@ -399,6 +409,7 @@ internal fun editorTopBarActions(
         listOfNotNull(
             viewSettings.takeIf { !viewInBar },
             TopAppBarAction.CodeEditor.PageReferencesAction.takeIf { !wide },
+            TopAppBarAction.CodeEditor.HistoryAction.takeIf { uiState.historyAvailable },
             TopAppBarAction.CodeEditor.MenuDivider,
             TopAppBarAction.CodeEditor.ShareLinkAction,
             TopAppBarAction.CodeEditor.ShowInBrowserAction,
@@ -576,6 +587,7 @@ private fun menuText(entry: TopAppBarAction.CodeEditor): String? = when (entry) 
     TopAppBarAction.CodeEditor.ShareLinkAction -> stringResource(R.string.share_document_link)
     TopAppBarAction.CodeEditor.ShowInBrowserAction -> stringResource(R.string.open_in_browser)
     TopAppBarAction.CodeEditor.QrCodesAction -> stringResource(R.string.qr_codes_action)
+    TopAppBarAction.CodeEditor.HistoryAction -> stringResource(R.string.history_action)
     TopAppBarAction.CodeEditor.RenameAction -> stringResource(R.string.item_action_rename)
     TopAppBarAction.CodeEditor.MoveAction -> stringResource(R.string.item_action_move)
     TopAppBarAction.CodeEditor.PinAction -> stringResource(R.string.item_action_pin)

@@ -3,6 +3,11 @@
 package de.markusressel.mkdocsrestclient
 
 import de.markusressel.mkdocsrestclient.dashboard.FeedPageModel
+import de.markusressel.mkdocsrestclient.history.BlameModel
+import de.markusressel.mkdocsrestclient.history.DocumentChangesModel
+import de.markusressel.mkdocsrestclient.history.HistoryDiffModel
+import de.markusressel.mkdocsrestclient.history.SeenModel
+import de.markusressel.mkdocsrestclient.history.HistoryEntryModel
 import de.markusressel.mkdocsrestclient.dashboard.PinScope
 import de.markusressel.mkdocsrestclient.dashboard.PinsModel
 import de.markusressel.mkdocsrestclient.reference.AuthorshipModel
@@ -274,6 +279,40 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
 
     override suspend fun getFeed(before: String?, limit: Int): Result<FeedPageModel, FuelError> =
         Result.success(FeedPageModel())
+
+    override suspend fun getDocumentHistory(documentId: String, limit: Int): Result<List<HistoryEntryModel>, FuelError> =
+        Result.success(emptyList())
+
+    override suspend fun getDocumentRevisionContent(documentId: String, revision: String): Result<String, FuelError> =
+        Result.success("")
+
+    override suspend fun getDocumentRevisionDiff(documentId: String, from: String, to: String): Result<String, FuelError> =
+        Result.success("")
+
+    override suspend fun getDocumentRevisionDiffHunks(documentId: String, from: String, to: String): Result<HistoryDiffModel, FuelError> =
+        Result.success(HistoryDiffModel(from, to))
+
+    override suspend fun getDocumentChanges(documentId: String, since: String?): Result<DocumentChangesModel, FuelError> =
+        Result.success(DocumentChangesModel(seenToken = ""))
+
+    override suspend fun putDocumentSeen(documentId: String, seenToken: String): Result<SeenModel, FuelError> =
+        Result.success(SeenModel(Date(), seenToken))
+
+    override suspend fun revertDocumentRevision(documentId: String, revision: String): Result<HistoryEntryModel, FuelError> =
+        Result.error(FuelError.wrap(UnsupportedOperationException()))
+
+    override suspend fun restoreDocumentRevision(documentId: String, revision: String): Result<String, FuelError> =
+        Result.success("")
+
+    override suspend fun restoreDocumentSection(
+        documentId: String,
+        revision: String,
+        heading: String,
+        headingOccurrence: Int,
+    ): Result<String, FuelError> = Result.success("")
+
+    override suspend fun getDocumentBlame(documentId: String): Result<BlameModel, FuelError> =
+        Result.success(BlameModel(revision = "", lines = 0))
 
     override suspend fun getQrCode(key: String, scan: Boolean): Result<QrCodeModel, FuelError> =
         Result.error(FuelError.wrap(UnsupportedOperationException("not in the demo")))
