@@ -14,9 +14,13 @@ private const val MAX_TOKENS = 400
 
 private val token = Regex("""\w+|\s+|[^\w\s]""")
 
+/** Below this share of unchanged text, two lines are different lines and not one changed line */
+private const val MIN_UNCHANGED_SHARE = 0.4
+
 /**
  * Which words of [old] were removed and which of [new] were added. Words, spaces and single signs count as units, so a
- * change marks whole words.
+ * change marks whole words. Lines with little in common get no marks: the line color says enough, and marks on nearly
+ * every word only hide the few that stayed.
  */
 internal fun wordChanges(old: String, new: String): WordChanges {
     val a = token.findAll(old).toList()
@@ -42,7 +46,14 @@ internal fun wordChanges(old: String, new: String): WordChanges {
             else -> removed += a[i++].range
         }
     }
-    return WordChanges(removed.merged(), added.merged())
+    val changes = WordChanges(removed.merged(), added.merged())
+    val unchanged = old.length - changes.removed.sumOf { it.end - it.start }
+    val longer = maxOf(old.length, new.length)
+    return if (longer > 0 && old.isNotEmpty() && new.isNotEmpty() && unchanged < MIN_UNCHANGED_SHARE * longer) {
+        WordChanges(emptyList(), emptyList())
+    } else {
+        changes
+    }
 }
 
 private fun whole(text: String) = if (text.isEmpty()) null else Highlight(0, text.length)

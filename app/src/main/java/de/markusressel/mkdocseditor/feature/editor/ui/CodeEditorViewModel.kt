@@ -1,5 +1,10 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
+import de.markusressel.mkdocseditor.feature.history.domain.SeenChangesUseCase
+import de.markusressel.mkdocseditor.feature.history.domain.changeLocation
+import de.markusressel.mkdocsrestclient.history.DiffHunkModel
+import de.markusressel.mkdocsrestclient.history.DocumentChangesModel
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.transformWhile
 import de.markusressel.mkdocseditor.feature.editor.domain.ChangeLocation
 import de.markusressel.mkdocsrestclient.dashboard.PinScope
@@ -133,6 +138,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private val qrCodesSupport: QrCodesSupport,
     private val pendingQrKey: PendingQrKey,
     private val resolveQrCode: ResolveQrCodeUseCase,
+    private val seenChanges: SeenChangesUseCase,
     savedStateHandle: SavedStateHandle,
     clientInstanceId: ClientInstanceId,
     moveItemUseCase: MoveItemUseCase,
@@ -501,6 +507,12 @@ internal class CodeEditorViewModel @Inject constructor(
         launch {
             when (event) {
                 is UiEvent.DismissDialog -> dismissCurrentDialog()
+                is UiEvent.ChangesSinceSeenClicked -> uiState.value.changesSinceSeen?.let { showDialog(DialogState.ChangesSinceSeen(it)) }
+                is UiEvent.ChangesSinceSeenDismissed -> _uiState.update { it.copy(changesSinceSeen = null) }
+                is UiEvent.ChangeHunkClicked -> {
+                    dismissCurrentDialog()
+                    jumpToChange(event.hunk.changeLocation())
+                }
                 is UiEvent.ItemActionClicked -> itemActions.onActionClicked(
                     event.item, event.action, openElsewhere = uiState.value.remotePeers.isNotEmpty(),
                 )
@@ -840,6 +852,32 @@ internal class CodeEditorViewModel @Inject constructor(
      */
     fun setCurrentDocumentId(documentId: String?) {
         session.setDocument(documentId)
+        if (documentId != null && seenChangesAsked != documentId) {
+            seenChangesAsked = documentId
+            launch {
+                // not inside update: it runs its block again when the state changed meanwhile, and each run marks seen
+                val changes = seenChanges.open(documentId)
+                _uiState.update { it.copy(changesSinceSeen = changes) }
+                seenChangesOpened = true
+            }
+        }
+    }
+
+    /** the document whose changes since the last visit were asked for, once per editor */
+    private var seenChangesAsked: String? = null
+
+    /** whether the changes since the last visit are known; marking the page seen before that would swallow them */
+    private var seenChangesOpened = false
+
+    /**
+     * The page as it is now counts as seen when the user closes it, see [SeenChangesUseCase.leave]. Not on ON_STOP: the
+     * screen gets one while it opens.
+     */
+    private fun leavePage() {
+        if (!seenChangesOpened) return
+        val documentId = uiState.value.documentId ?: seenChangesAsked ?: return
+        // after the editor is closed: it is a short request, and without it the own edits come back as news
+        launch(NonCancellable) { seenChanges.leave(documentId) }
     }
 
     /**
@@ -979,6 +1017,7 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     override fun onCleared() {
+        leavePage()
         session.close()
         super.onCleared()
     }
@@ -1218,6 +1257,9 @@ internal class CodeEditorViewModel @Inject constructor(
 
         /** whether the server has QR codes, see [QrCodesSupport] */
         val qrCodesAvailable: Boolean = false,
+
+        /** what others changed since the user last looked at the page, null if nothing; see [SeenChangesUseCase] */
+        val changesSinceSeen: DocumentChangesModel? = null,
     ) {
         val editorShown: Boolean
             get() = editModeActive || editModeOpening || readOnlyEditorShown
@@ -1229,6 +1271,11 @@ internal class CodeEditorViewModel @Inject constructor(
 
     sealed class UiEvent {
         data object DismissDialog : UiEvent()
+
+        /** the banner about the changes since the last visit */
+        data object ChangesSinceSeenClicked : UiEvent()
+        data object ChangesSinceSeenDismissed : UiEvent()
+        data class ChangeHunkClicked(val hunk: DiffHunkModel) : UiEvent()
 
         data class ItemActionClicked(val item: WikiItem, val action: ItemAction) : UiEvent()
         data class ItemMovePreviewRequested(val parentId: String?, val name: String?) : UiEvent()
@@ -1343,6 +1390,9 @@ internal class CodeEditorViewModel @Inject constructor(
 
         /** the view settings of the editor, as a sheet below it */
         data object ViewSettings : DialogState
+
+        /** what changed since the last visit, hunk by hunk */
+        data class ChangesSinceSeen(val changes: DocumentChangesModel) : DialogState
 
         /**
          * The QR codes of the page, and adding or removing them

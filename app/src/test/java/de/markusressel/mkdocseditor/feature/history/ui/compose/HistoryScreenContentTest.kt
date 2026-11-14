@@ -43,7 +43,7 @@ class HistoryScreenContentTest {
     private val entries = listOf(
         HistoryEntryModel(
             revision = "b", time = Date(), author = anna, coAuthors = listOf(bob), message = "Update a.md", path = "a.md",
-            agents = listOf(HistoryAgentModel("Claude Code", "a1")), summary = HistorySummaryModel(1, 1, listOf("Install")),
+            agents = listOf(HistoryAgentModel("Claude Code", "a2")), summary = HistorySummaryModel(1, 1, listOf("Install")),
         ),
         HistoryEntryModel(revision = "a", time = Date(0), author = anna, message = "Restore a.md to 0123456789ab", path = "a.md"),
     )
@@ -69,6 +69,7 @@ class HistoryScreenContentTest {
         }
 
         composeRule.onNodeWithText("Anna, Bob via Claude Code").assertExists()
+        composeRule.onNodeWithText("Anna via Claude Code, Bob").assertDoesNotExist()
         composeRule.onNodeWithText("+1 −1 · Install", substring = true).assertExists()
         composeRule.onNodeWithText("Restore a.md to 0123456789ab").assertExists()
         composeRule.onNodeWithText("Update a.md").assertDoesNotExist()

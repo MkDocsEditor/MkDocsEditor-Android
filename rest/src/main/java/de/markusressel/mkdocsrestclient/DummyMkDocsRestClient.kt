@@ -3,7 +3,9 @@
 package de.markusressel.mkdocsrestclient
 
 import de.markusressel.mkdocsrestclient.dashboard.FeedPageModel
+import de.markusressel.mkdocsrestclient.history.DocumentChangesModel
 import de.markusressel.mkdocsrestclient.history.HistoryDiffModel
+import de.markusressel.mkdocsrestclient.history.SeenModel
 import de.markusressel.mkdocsrestclient.history.HistoryEntryModel
 import de.markusressel.mkdocsrestclient.dashboard.PinScope
 import de.markusressel.mkdocsrestclient.dashboard.PinsModel
@@ -288,6 +290,12 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
 
     override suspend fun getDocumentRevisionDiffHunks(documentId: String, from: String, to: String): Result<HistoryDiffModel, FuelError> =
         Result.success(HistoryDiffModel(from, to))
+
+    override suspend fun getDocumentChanges(documentId: String, since: String?): Result<DocumentChangesModel, FuelError> =
+        Result.success(DocumentChangesModel(seenToken = ""))
+
+    override suspend fun putDocumentSeen(documentId: String, seenToken: String): Result<SeenModel, FuelError> =
+        Result.success(SeenModel(Date(), seenToken))
 
     override suspend fun restoreDocumentRevision(documentId: String, revision: String): Result<String, FuelError> =
         Result.success("")

@@ -76,6 +76,16 @@ class HistoryTextTest {
     }
 
     @Test
+    fun `an agent goes with its own person, one of an unknown person or without account with the author`() {
+        val bob = author("bob", "a2")
+        val agents = listOf(HistoryAgentModel("Claude Code", "a2"), HistoryAgentModel("Script", "a9"))
+        val withAgents = entry(author("anna", "a1"), listOf(bob), agents = agents).peopleWithAgents
+
+        assertEquals(listOf("anna" to listOf("Script"), "bob" to listOf("Claude Code")), withAgents.map { (p, a) -> p.shownName to a })
+        assertEquals(listOf("Claude Code"), entry(appTokens = listOf("Claude Code")).peopleWithAgents.single().second)
+    }
+
+    @Test
     fun `the standard message of an edit is left out, others are shown`() {
         assertNull(entry().notableMessage)
         assertEquals("Restore guide/setup.md to 9d8af8092333", entry(message = "Restore guide/setup.md to 9d8af8092333").notableMessage)
