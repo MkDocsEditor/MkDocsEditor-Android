@@ -551,6 +551,26 @@ class DocumentSyncSessionTest {
     }
 
     @Test
+    fun `peers of a snapshot and of a presence name their agent`() {
+        val listener = EditorListener()
+        val (server, session) = connectedSession(listener)
+
+        session.onMessage(
+            """{"type":"presence-snapshot","documentId":"${server.documentId}","peers":[
+                {"documentId":"${server.documentId}","clientId":"agent-0123456789ab","instanceId":"i1","accountId":"a1","username":"bob","deviceName":"Claude Code",
+                 "agent":{"tokenId":"t1","name":"Claude Code"},"selections":[]}
+            ]}"""
+        )
+        assertEquals(RemoteAgent("t1", "Claude Code"), listener.peers.single().agent)
+
+        session.onMessage(
+            """{"type":"presence","documentId":"${server.documentId}","clientId":"c2","instanceId":"i2","accountId":"a1","username":"bob",
+                "selections":[]}"""
+        )
+        assertEquals(null, listener.peers.single { it.instanceId == "i2" }.agent)
+    }
+
+    @Test
     fun `hello names the instance and its color, the same after a reconnect`() {
         val session = DocumentSyncSession("doc", InMemoryDocumentStore(), EditorListener(), instanceId = "0f".repeat(16))
         session.updateLocalColor("#112233")

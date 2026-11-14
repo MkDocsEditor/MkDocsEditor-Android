@@ -24,8 +24,8 @@ internal fun isPresent(peers: List<RemotePeer>, ghosts: List<RemoteGhost>, insta
     peers.any { it.instanceId == instanceId } || ghosts.any { it.instanceId == instanceId }
 
 /**
- * Who a join link follows: the instance it names, else the instance of the sender that was active last. A ghost with more
- * time left has left later.
+ * Who a join link follows: the instance it names, else the instance of the sender that was active last, never one of
+ * their AI agents. A ghost with more time left has left later.
  *
  * @return null if the sender is fully away
  */
@@ -36,8 +36,9 @@ internal fun joinFollowInstance(
     instance: String?,
 ): String? {
     if (instance != null && isPresent(peers, ghosts, instance)) return instance
-    return peers.filter { it.accountId == from }.maxByOrNull { it.lastActiveAt.orEmpty() }?.instanceId
-        ?: ghosts.filter { it.accountId == from }.maxByOrNull { it.remainingMs }?.instanceId
+    // an agent of the sender has no cursor or viewport, and while it edits it is the one that was active last
+    return peers.filter { it.accountId == from && it.agent == null }.maxByOrNull { it.lastActiveAt.orEmpty() }?.instanceId
+        ?: ghosts.filter { it.accountId == from && it.agent == null }.maxByOrNull { it.remainingMs }?.instanceId
 }
 
 /** @return null while there is nothing to look at: no connection of the instance has a viewport or a cursor */
