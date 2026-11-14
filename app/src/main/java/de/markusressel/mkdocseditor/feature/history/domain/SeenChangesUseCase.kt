@@ -1,7 +1,9 @@
 package de.markusressel.mkdocseditor.feature.history.domain
 
 import com.github.kittinunf.result.Result
+import de.markusressel.mkdocseditor.auth.api.ServerFeature
 import de.markusressel.mkdocseditor.auth.domain.AuthRepository
+import de.markusressel.mkdocseditor.feature.common.data.ServerFeatures
 import de.markusressel.mkdocseditor.feature.auth.common.data.AuthBackends
 import de.markusressel.mkdocsrestclient.IMkDocsRestClient
 import de.markusressel.mkdocsrestclient.history.ChangeAuthorModel
@@ -12,12 +14,13 @@ import javax.inject.Inject
 
 /**
  * What changed in a page since the account last looked at it (`GET /document/{id}/changes/`), and marking it as seen.
- * The server keeps the mark, so all devices and the web client agree. A server without it tells nothing.
+ * The server keeps the mark, so all devices and the web client agree. A server without `changes` is not asked.
  */
 internal class SeenChangesUseCase @Inject constructor(
     private val restClient: IMkDocsRestClient,
     private val backends: AuthBackends,
     private val authRepository: AuthRepository,
+    private val features: ServerFeatures,
 ) {
 
     /**
@@ -28,6 +31,7 @@ internal class SeenChangesUseCase @Inject constructor(
      * seen, nothing changed, only the account itself changed it, or the server can't say
      */
     suspend fun open(documentId: String): DocumentChangesModel? {
+        if (!features.has(ServerFeature.CHANGES)) return null
         val changes = changes(documentId) ?: return null
         markSeen(documentId, changes.seenToken)
         if (changes.since == null || changes.hunks.isEmpty()) return null
@@ -38,6 +42,7 @@ internal class SeenChangesUseCase @Inject constructor(
 
     /** The page as it is now counts as seen, when the account leaves it: its own edits are no news later. */
     suspend fun leave(documentId: String) {
+        if (!features.has(ServerFeature.CHANGES)) return
         changes(documentId)?.let { markSeen(documentId, it.seenToken) }
     }
 

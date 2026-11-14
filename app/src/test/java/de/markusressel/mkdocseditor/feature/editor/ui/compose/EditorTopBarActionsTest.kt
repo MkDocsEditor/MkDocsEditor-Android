@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 
 class EditorTopBarActionsTest {
 
-    private val editing = CodeEditorViewModel.UiState(editModeActive = true)
+    private val editing = CodeEditorViewModel.UiState(editModeActive = true, historyAvailable = true)
 
     /** a phone in portrait */
     private val phone = 411
@@ -97,6 +97,15 @@ class EditorTopBarActionsTest {
             // the view settings may open the sheet from there, but no setting is changed in the menu itself
             assertTrue(menu.all { it in actionsOnly }, "$split at $width dp: $menu")
         }
+    }
+
+    @Test
+    fun `the history is in the menu only when the server has it`() {
+        val without = menuOf(editorTopBarActions(editing.copy(historyAvailable = false), SplitMode.Off, widthDp = phone))
+        val with = menuOf(editorTopBarActions(editing, SplitMode.Off, widthDp = phone))
+
+        assertTrue(TopAppBarAction.CodeEditor.HistoryAction !in without)
+        assertTrue(TopAppBarAction.CodeEditor.HistoryAction in with)
     }
 
     @Test

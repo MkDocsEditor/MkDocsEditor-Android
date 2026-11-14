@@ -462,6 +462,14 @@
     <string name="history_restore_text">The page gets the text it had %1$s, after the change of %2$s. Everyone sees it as an edit, which can be undone.</string>
     <string name="history_restore">Restore</string>
     <string name="history_restored">Version restored</string>
+    <string name="history_just_now">just now</string>
+    <string name="history_undo_action">Undo this change</string>
+    <string name="history_undo_title">Undo this change?</string>
+    <string name="history_undo_text">The change of %1$s from %2$s is taken back. Later changes stay. Everyone sees it as an edit, which can be undone.</string>
+    <string name="history_undo">Undo</string>
+    <string name="history_undone">Change undone</string>
+    <string name="history_undo_nothing">This change is not in the page anymore.</string>
+    <string name="history_undo_conflict">Can\'t undo: later changes in %1$s are in the way.</string>
     <string name="changes_since_seen_banner">Changed by %1$s since you were here</string>
     <string name="changes_since_seen_title">Changes since your last visit</string>
     <string name="changes_since_seen_dismiss">Hide</string>

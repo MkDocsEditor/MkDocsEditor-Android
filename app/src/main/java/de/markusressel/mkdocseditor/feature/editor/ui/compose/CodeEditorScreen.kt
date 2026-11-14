@@ -106,7 +106,9 @@ internal data class CodeEditorScreen(
                         navigator.push(CodeEditorScreen(documentId = request.documentId))
 
                     is CodeEditorViewModel.NavigationRequest.OpenHistory ->
-                        navigator.push(HistoryScreen(documentId = request.documentId, canRestore = request.canRestore))
+                        navigator.push(
+                            HistoryScreen(documentId = request.documentId, canRestore = request.canRestore, canRevert = request.canRevert)
+                        )
 
                     is CodeEditorViewModel.NavigationRequest.Close -> navigator.pop()
 

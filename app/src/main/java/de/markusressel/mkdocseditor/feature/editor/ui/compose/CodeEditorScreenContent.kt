@@ -407,7 +407,7 @@ internal fun editorTopBarActions(
         listOfNotNull(
             viewSettings.takeIf { !viewInBar },
             TopAppBarAction.CodeEditor.PageReferencesAction.takeIf { !wide },
-            TopAppBarAction.CodeEditor.HistoryAction,
+            TopAppBarAction.CodeEditor.HistoryAction.takeIf { uiState.historyAvailable },
             TopAppBarAction.CodeEditor.MenuDivider,
             TopAppBarAction.CodeEditor.ShareLinkAction,
             TopAppBarAction.CodeEditor.ShowInBrowserAction,

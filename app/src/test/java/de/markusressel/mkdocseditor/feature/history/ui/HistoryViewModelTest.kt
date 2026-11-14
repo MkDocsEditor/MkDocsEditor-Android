@@ -2,6 +2,7 @@ package de.markusressel.mkdocseditor.feature.history.ui
 
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Response
+import com.github.kittinunf.fuel.core.requests.DefaultBody
 import com.github.kittinunf.result.Result
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.editor.domain.ChangeLocation
@@ -26,6 +27,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import java.io.ByteArrayInputStream
 import java.net.URL
 import java.util.Date
 import kotlin.test.Test
@@ -46,6 +48,8 @@ class HistoryViewModelTest {
     private var history: Result<List<HistoryEntryModel>, FuelError> = Result.success(listOf(entry("c"), entry("b"), entry("a")))
     private val diffRequests = mutableListOf<Pair<String, String>>()
     private val restored = mutableListOf<String>()
+    private val reverted = mutableListOf<String>()
+    private var revertAnswer: Result<HistoryEntryModel, FuelError> = Result.success(entry("d"))
     private var historyRequests = 0
     private val events = mutableListOf<HistoryEvent>()
 
@@ -58,6 +62,11 @@ class HistoryViewModelTest {
         override suspend fun getDocumentRevisionDiffHunks(documentId: String, from: String, to: String): Result<HistoryDiffModel, FuelError> {
             diffRequests += from to to
             return Result.success(HistoryDiffModel(from, to, listOf(hunk)))
+        }
+
+        override suspend fun revertDocumentRevision(documentId: String, revision: String): Result<HistoryEntryModel, FuelError> {
+            reverted += revision
+            return revertAnswer
         }
 
         override suspend fun restoreDocumentRevision(documentId: String, revision: String): Result<String, FuelError> {
@@ -74,7 +83,7 @@ class HistoryViewModelTest {
 
     private fun TestScope.viewModel(canRestore: Boolean = true) = HistoryViewModel(client).also { viewModel ->
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.events.collect { events += it } }
-        viewModel.initialize("d1", canRestore)
+        viewModel.initialize("d1", canRestore, canRevert = true)
     }
 
     @Test
@@ -139,10 +148,10 @@ class HistoryViewModelTest {
         viewModel.onUiEvent(UiEvent.RestoreClicked(entry("b")))
         assertEquals(emptyList(), restored)
 
-        viewModel.onUiEvent(UiEvent.RestoreConfirmed)
+        viewModel.onUiEvent(UiEvent.Confirmed)
 
         assertEquals(listOf("b"), restored)
-        assertNull(viewModel.uiState.value.confirmRestore)
+        assertNull(viewModel.uiState.value.confirm)
         assertEquals(2, historyRequests)
         assertEquals(listOf<HistoryEvent>(HistoryEvent.Message(R.string.history_restored)), events)
     }
@@ -152,9 +161,59 @@ class HistoryViewModelTest {
         val viewModel = viewModel()
         viewModel.onUiEvent(UiEvent.RestoreClicked(entry("b")))
 
-        viewModel.onUiEvent(UiEvent.RestoreDismissed)
-        viewModel.onUiEvent(UiEvent.RestoreConfirmed)
+        viewModel.onUiEvent(UiEvent.ConfirmDismissed)
+        viewModel.onUiEvent(UiEvent.Confirmed)
 
         assertEquals(emptyList(), restored)
+    }
+
+    private fun conflict(body: String) = Result.error(
+        FuelError.wrap(
+            RuntimeException("409"),
+            Response(
+                url = URL("http://localhost/"),
+                statusCode = 409,
+                body = DefaultBody.from({ ByteArrayInputStream(body.toByteArray()) }, { body.length.toLong() }),
+            ),
+        )
+    )
+
+    @Test
+    fun `a change is undone after confirming, and the history reloads`() = runTest {
+        val viewModel = viewModel()
+        viewModel.onUiEvent(UiEvent.UndoClicked(entry("b")))
+        assertEquals(emptyList(), reverted)
+
+        viewModel.onUiEvent(UiEvent.Confirmed)
+
+        assertEquals(listOf("b"), reverted)
+        assertEquals(emptyList(), restored)
+        assertEquals(2, historyRequests)
+        assertEquals(listOf<HistoryEvent>(HistoryEvent.Message(R.string.history_undone)), events)
+    }
+
+    @Test
+    fun `an undo in the way of later changes names their sections`() = runTest {
+        // the answer of a real backend (MkDocsEditor-Backend#99)
+        revertAnswer = conflict(
+            """{"name":"Conflict","code":"revert-conflict","message":"later edits changed the same lines, edit the document by hand",""" +
+                """"details":{"conflicts":[{"heading":"Setup","headingOccurrence":1,"line":3}],"headings":["Setup"]}}"""
+        )
+        val viewModel = viewModel()
+        viewModel.onUiEvent(UiEvent.UndoClicked(entry("b")))
+        viewModel.onUiEvent(UiEvent.Confirmed)
+
+        assertEquals(listOf<HistoryEvent>(HistoryEvent.UndoConflict(listOf("Setup"))), events)
+        assertEquals(1, historyRequests)
+    }
+
+    @Test
+    fun `an undo of a change that is gone says so`() = runTest {
+        revertAnswer = conflict("""{"name":"Conflict","code":"nothing-to-revert","message":"the change of this revision is not in the document anymore"}""")
+        val viewModel = viewModel()
+        viewModel.onUiEvent(UiEvent.UndoClicked(entry("b")))
+        viewModel.onUiEvent(UiEvent.Confirmed)
+
+        assertEquals(listOf<HistoryEvent>(HistoryEvent.Message(R.string.history_undo_nothing)), events)
     }
 }

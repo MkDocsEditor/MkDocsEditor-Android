@@ -297,6 +297,9 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
     override suspend fun putDocumentSeen(documentId: String, seenToken: String): Result<SeenModel, FuelError> =
         Result.success(SeenModel(Date(), seenToken))
 
+    override suspend fun revertDocumentRevision(documentId: String, revision: String): Result<HistoryEntryModel, FuelError> =
+        Result.error(FuelError.wrap(UnsupportedOperationException()))
+
     override suspend fun restoreDocumentRevision(documentId: String, revision: String): Result<String, FuelError> =
         Result.success("")
 

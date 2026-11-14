@@ -59,6 +59,7 @@ import de.markusressel.mkdocseditor.feature.history.domain.pairChangedLines
 import de.markusressel.mkdocseditor.feature.history.domain.peopleWithAgents
 import de.markusressel.mkdocseditor.feature.history.domain.shownName
 import de.markusressel.mkdocseditor.feature.history.domain.wordChanges
+import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel.Confirm
 import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel.DiffState
 import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel.UiEvent
 import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel.UiState
@@ -94,7 +95,7 @@ internal fun HistoryScreenContent(
         },
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            if (uiState.loading || uiState.restoring) {
+            if (uiState.loading || uiState.working) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
             val problem = uiState.problem
@@ -118,6 +119,8 @@ internal fun HistoryScreenContent(
                             diff = uiState.diffs[entry.revision],
                             // the newest entry is the text as it is
                             canRestore = uiState.canRestore && entry != uiState.entries.first(),
+                            // the oldest one created the page, which is undone by deleting it
+                            canUndo = uiState.canRevert && entry != uiState.entries.last(),
                             onUiEvent = onUiEvent,
                         )
                         HorizontalDivider()
@@ -127,16 +130,28 @@ internal fun HistoryScreenContent(
         }
     }
 
-    uiState.confirmRestore?.let { entry ->
+    uiState.confirm?.let { confirm ->
+        val entry = confirm.entry
+        val (title, text, action) = when (confirm) {
+            is Confirm.Restore -> Triple(
+                stringResource(R.string.history_restore_title),
+                stringResource(R.string.history_restore_text, relativeTime(entry.time), entry.author.shownName),
+                stringResource(R.string.history_restore),
+            )
+            // the diff of the entry is open above, so the dialog names who and when
+            is Confirm.Undo -> Triple(
+                stringResource(R.string.history_undo_title),
+                stringResource(R.string.history_undo_text, whoText(entry), relativeTime(entry.time)),
+                stringResource(R.string.history_undo),
+            )
+        }
         AlertDialog(
-            onDismissRequest = { onUiEvent(UiEvent.RestoreDismissed) },
-            title = { Text(stringResource(R.string.history_restore_title)) },
-            text = { Text(stringResource(R.string.history_restore_text, relativeTime(entry.time), entry.author.shownName)) },
-            confirmButton = {
-                TextButton(onClick = { onUiEvent(UiEvent.RestoreConfirmed) }) { Text(stringResource(R.string.history_restore)) }
-            },
+            onDismissRequest = { onUiEvent(UiEvent.ConfirmDismissed) },
+            title = { Text(title) },
+            text = { Text(text) },
+            confirmButton = { TextButton(onClick = { onUiEvent(UiEvent.Confirmed) }) { Text(action) } },
             dismissButton = {
-                TextButton(onClick = { onUiEvent(UiEvent.RestoreDismissed) }) { Text(stringResource(android.R.string.cancel)) }
+                TextButton(onClick = { onUiEvent(UiEvent.ConfirmDismissed) }) { Text(stringResource(android.R.string.cancel)) }
             },
         )
     }
@@ -148,6 +163,7 @@ private fun HistoryEntry(
     expanded: Boolean,
     diff: DiffState?,
     canRestore: Boolean,
+    canUndo: Boolean,
     onUiEvent: (UiEvent) -> Unit,
 ) {
     Column(
@@ -182,11 +198,17 @@ private fun HistoryEntry(
         if (expanded) {
             Spacer(Modifier.size(8.dp))
             EntryDiff(diff, onUiEvent)
-            if (canRestore) {
-                OutlinedButton(
-                    modifier = Modifier.padding(top = 8.dp),
-                    onClick = { onUiEvent(UiEvent.RestoreClicked(entry)) },
-                ) { Text(stringResource(R.string.history_restore_action)) }
+            Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (canUndo) {
+                    OutlinedButton(onClick = { onUiEvent(UiEvent.UndoClicked(entry)) }) {
+                        Text(stringResource(R.string.history_undo_action))
+                    }
+                }
+                if (canRestore) {
+                    OutlinedButton(onClick = { onUiEvent(UiEvent.RestoreClicked(entry)) }) {
+                        Text(stringResource(R.string.history_restore_action))
+                    }
+                }
             }
         }
     }
@@ -239,11 +261,12 @@ private fun summaryText(summary: HistorySummaryModel?): String? {
     return if (summary.headings.isEmpty()) lines else "$lines · ${summary.headings.joinToString(", ")}"
 }
 
-/** a commit from a server whose clock is a little ahead is "now", not "in 0 minutes" */
+/** within the last minute, or from a server whose clock is a little ahead, it is "just now", not "in 0 minutes" */
 @Composable
 private fun relativeTime(time: Date): String {
     val now = System.currentTimeMillis()
-    return DateUtils.getRelativeTimeSpanString(minOf(time.time, now), now, DateUtils.MINUTE_IN_MILLIS).toString()
+    if (now - time.time < DateUtils.MINUTE_IN_MILLIS) return stringResource(R.string.history_just_now)
+    return DateUtils.getRelativeTimeSpanString(time.time, now, DateUtils.MINUTE_IN_MILLIS).toString()
 }
 
 @Composable
@@ -363,7 +386,7 @@ private fun HistoryScreenContentPreview() {
         HistoryScreenContent(
             uiState = UiState(
                 loading = false, entries = entries, expanded = "b", diffs = mapOf("b" to DiffState.Loaded(listOf(hunk))),
-                canRestore = true,
+                canRestore = true, canRevert = true,
             ),
             onUiEvent = {},
         )
