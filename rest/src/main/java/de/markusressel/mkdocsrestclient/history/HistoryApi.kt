@@ -42,6 +42,15 @@ interface HistoryApi {
         to: String = REVISION_CURRENT,
     ): Result<HistoryDiffModel, FuelError>
 
+    /**
+     * @param since a seen token, null for the last look of the signed in account
+     * @return what changed since then; a token the document no longer knows answers 409 `unknown-revision`
+     */
+    suspend fun getDocumentChanges(documentId: String, since: String? = null): Result<DocumentChangesModel, FuelError>
+
+    /** Marks the text of [seenToken] as seen by the signed in account. A token the document no longer knows answers 409. */
+    suspend fun putDocumentSeen(documentId: String, seenToken: String): Result<SeenModel, FuelError>
+
     /** Sets the live text to the one of [revision], as an edit of the signed in account. Editors and admins only. */
     suspend fun restoreDocumentRevision(documentId: String, revision: String): Result<String, FuelError>
 }
@@ -76,6 +85,21 @@ class HistoryApiImpl(
             url = "/document/$documentId/history/diff/",
             urlParameters = listOf("from" to from, "to" to to, "format" to "json"),
             method = Method.GET,
+        )
+
+    override suspend fun getDocumentChanges(documentId: String, since: String?): Result<DocumentChangesModel, FuelError> =
+        requestManager.doRequest(
+            url = "/document/$documentId/changes/",
+            urlParameters = listOfNotNull(since?.let { "since" to it }),
+            method = Method.GET,
+        )
+
+    override suspend fun putDocumentSeen(documentId: String, seenToken: String): Result<SeenModel, FuelError> =
+        requestManager.doJsonRequest(
+            url = "/document/$documentId/seen/",
+            method = Method.PUT,
+            jsonData = SeenRequestModel(seenToken),
+            kind = RequestKind.Quick,
         )
 
     override suspend fun restoreDocumentRevision(documentId: String, revision: String): Result<String, FuelError> =

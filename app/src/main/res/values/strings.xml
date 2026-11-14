@@ -462,4 +462,7 @@
     <string name="history_restore_text">The page gets the text it had %1$s, after the change of %2$s. Everyone sees it as an edit, which can be undone.</string>
     <string name="history_restore">Restore</string>
     <string name="history_restored">Version restored</string>
+    <string name="changes_since_seen_banner">Changed by %1$s since you were here</string>
+    <string name="changes_since_seen_title">Changes since your last visit</string>
+    <string name="changes_since_seen_dismiss">Hide</string>
 </resources>

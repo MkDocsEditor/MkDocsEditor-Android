@@ -31,6 +31,7 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.ResourcePic
 import androidx.compose.ui.res.stringResource
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.qr.domain.QrLink
+import de.markusressel.mkdocseditor.feature.history.ui.compose.ChangesSinceSeenSheet
 import de.markusressel.mkdocseditor.feature.history.ui.compose.HistoryScreen
 import de.markusressel.mkdocseditor.feature.qr.ui.compose.PageQrCodesDialog
 
@@ -190,6 +191,12 @@ internal data class CodeEditorScreen(
 
             // in the content, which knows whether a split is open
             is CodeEditorViewModel.DialogState.ViewSettings -> Unit
+
+            is CodeEditorViewModel.DialogState.ChangesSinceSeen -> ChangesSinceSeenSheet(
+                changes = dialogState.changes,
+                onHunkClicked = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.ChangeHunkClicked(it)) },
+                onDismiss = { viewModel.onUiEvent(CodeEditorViewModel.UiEvent.DismissDialog) },
+            )
 
             is CodeEditorViewModel.DialogState.PageReferencesPanel -> if (tree != null && documentId != null) {
                 PageReferencesDialog(

@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
+import de.markusressel.mkdocseditor.feature.history.ui.compose.ChangesSinceSeenBanner
 import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRuns
 import de.markusressel.mkdocseditor.feature.editor.domain.visibleSourceLines
 import androidx.compose.animation.AnimatedVisibility
@@ -228,6 +229,13 @@ internal fun CodeEditorScreenContent(
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 EditorBanners(uiState)
+                uiState.changesSinceSeen?.let { changes ->
+                    ChangesSinceSeenBanner(
+                        changes = changes,
+                        onClick = { onUiEvent(CodeEditorViewModel.UiEvent.ChangesSinceSeenClicked) },
+                        onDismiss = { onUiEvent(CodeEditorViewModel.UiEvent.ChangesSinceSeenDismissed) },
+                    )
+                }
 
                 EditorPanes(
                     modifier = Modifier.weight(1f),
