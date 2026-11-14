@@ -449,4 +449,17 @@
     <string name="qr_codes_error_elsewhere">“%1$s” has this code. Remove it there first.</string>
     <string name="qr_codes_error_unchecked">Can\'t ask the server whether another page has this code. Try again with a connection.</string>
 
+    <string name="history_action">History</string>
+    <string name="history_title">History</string>
+    <string name="history_empty">This page has no history yet.</string>
+    <string name="history_via">%1$s via %2$s</string>
+    <string name="history_first_version">The first version of this page.</string>
+    <string name="history_no_text_changes">The text did not change.</string>
+    <string name="history_page_start">Top of the page</string>
+    <string name="history_open_in_editor">Open</string>
+    <string name="history_restore_action">Restore this version</string>
+    <string name="history_restore_title">Restore this version?</string>
+    <string name="history_restore_text">The page gets the text it had %1$s, after the change of %2$s. Everyone sees it as an edit, which can be undone.</string>
+    <string name="history_restore">Restore</string>
+    <string name="history_restored">Version restored</string>
 </resources>

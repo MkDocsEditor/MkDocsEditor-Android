@@ -35,6 +35,13 @@ interface HistoryApi {
         to: String = REVISION_CURRENT,
     ): Result<String, FuelError>
 
+    /** The same as [getDocumentRevisionDiff], as hunks with the heading of each one */
+    suspend fun getDocumentRevisionDiffHunks(
+        documentId: String,
+        from: String,
+        to: String = REVISION_CURRENT,
+    ): Result<HistoryDiffModel, FuelError>
+
     /** Sets the live text to the one of [revision], as an edit of the signed in account. Editors and admins only. */
     suspend fun restoreDocumentRevision(documentId: String, revision: String): Result<String, FuelError>
 }
@@ -57,6 +64,17 @@ class HistoryApiImpl(
         requestManager.doRequest(
             url = "/document/$documentId/history/diff/",
             urlParameters = listOf("from" to from, "to" to to),
+            method = Method.GET,
+        )
+
+    override suspend fun getDocumentRevisionDiffHunks(
+        documentId: String,
+        from: String,
+        to: String,
+    ): Result<HistoryDiffModel, FuelError> =
+        requestManager.doRequest(
+            url = "/document/$documentId/history/diff/",
+            urlParameters = listOf("from" to from, "to" to to, "format" to "json"),
             method = Method.GET,
         )
 

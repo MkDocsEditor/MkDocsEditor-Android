@@ -26,6 +26,8 @@ sealed interface TopAppBarAction {
         data object PageReferencesAction : CodeEditor
         /** the QR code stickers of the page */
         data object QrCodesAction : CodeEditor
+        /** the revision history of the page */
+        data object HistoryAction : CodeEditor
         /** opens the sheet with the view settings of the editor */
         data object ViewSettingsAction : CodeEditor
         data class ConnectionAction(val indicator: ConnectionIndicator) : CodeEditor

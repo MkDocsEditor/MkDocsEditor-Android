@@ -662,6 +662,9 @@ internal class CodeEditorViewModel @Inject constructor(
             is TopAppBarAction.CodeEditor.ConnectionAction -> onConnectionIconClicked(action.indicator)
             is TopAppBarAction.CodeEditor.PageReferencesAction -> showPageReferences()
             is TopAppBarAction.CodeEditor.QrCodesAction -> showQrCodes()
+            is TopAppBarAction.CodeEditor.HistoryAction -> uiState.value.documentId?.let {
+                _navigationEvents.send(NavigationRequest.OpenHistory(it, canRestore = uiState.value.canEdit))
+            }
         }
     }
 
@@ -1310,6 +1313,7 @@ internal class CodeEditorViewModel @Inject constructor(
     sealed interface NavigationRequest {
         data class Login(val backendId: Long) : NavigationRequest
         data class OpenDocument(val documentId: String) : NavigationRequest
+        data class OpenHistory(val documentId: String, val canRestore: Boolean) : NavigationRequest
         /** leave the editor, e.g. to show a folder in the file browser */
         data object Close : NavigationRequest
         data class ShareLink(val link: String) : NavigationRequest {

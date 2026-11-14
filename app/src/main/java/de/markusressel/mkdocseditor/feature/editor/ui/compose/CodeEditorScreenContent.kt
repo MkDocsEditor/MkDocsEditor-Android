@@ -399,6 +399,7 @@ internal fun editorTopBarActions(
         listOfNotNull(
             viewSettings.takeIf { !viewInBar },
             TopAppBarAction.CodeEditor.PageReferencesAction.takeIf { !wide },
+            TopAppBarAction.CodeEditor.HistoryAction,
             TopAppBarAction.CodeEditor.MenuDivider,
             TopAppBarAction.CodeEditor.ShareLinkAction,
             TopAppBarAction.CodeEditor.ShowInBrowserAction,
@@ -576,6 +577,7 @@ private fun menuText(entry: TopAppBarAction.CodeEditor): String? = when (entry) 
     TopAppBarAction.CodeEditor.ShareLinkAction -> stringResource(R.string.share_document_link)
     TopAppBarAction.CodeEditor.ShowInBrowserAction -> stringResource(R.string.open_in_browser)
     TopAppBarAction.CodeEditor.QrCodesAction -> stringResource(R.string.qr_codes_action)
+    TopAppBarAction.CodeEditor.HistoryAction -> stringResource(R.string.history_action)
     TopAppBarAction.CodeEditor.RenameAction -> stringResource(R.string.item_action_rename)
     TopAppBarAction.CodeEditor.MoveAction -> stringResource(R.string.item_action_move)
     TopAppBarAction.CodeEditor.PinAction -> stringResource(R.string.item_action_pin)

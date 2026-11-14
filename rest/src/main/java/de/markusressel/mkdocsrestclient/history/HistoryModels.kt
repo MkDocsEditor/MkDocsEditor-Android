@@ -1,5 +1,6 @@
 package de.markusressel.mkdocsrestclient.history
 
+import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import java.util.Date
 
@@ -8,6 +9,8 @@ import java.util.Date
  * initial import.
  *
  * @param username the current username of the account
+ * @param displayName the current name of the account, like in the feed; null from a backend before it
+ * @param avatar the version of the profile picture, null without one
  */
 @JsonClass(generateAdapter = true)
 data class HistoryAuthorModel(
@@ -15,6 +18,9 @@ data class HistoryAuthorModel(
     val email: String,
     val username: String = "",
     val accountId: String = "",
+    val displayName: String? = null,
+    val color: String? = null,
+    val avatar: String? = null,
 ) {
     val isAccount: Boolean get() = accountId.isNotEmpty()
 }
@@ -35,4 +41,71 @@ data class HistoryEntryModel(
     val message: String,
     val path: String,
     val appTokens: List<String> = emptyList(),
+    /** the AI agents the changes were made with, with the account each one belongs to */
+    val agents: List<HistoryAgentModel> = emptyList(),
+    /** null from a backend before it */
+    val summary: HistorySummaryModel? = null,
 )
+
+/** An AI agent that changed a document, with an app token of [accountId] */
+@JsonClass(generateAdapter = true)
+data class HistoryAgentModel(
+    /** the name of the app token */
+    val name: String,
+    val accountId: String = "",
+)
+
+/** @param headings the headings of the changed sections, as in the feed */
+@JsonClass(generateAdapter = true)
+data class HistorySummaryModel(
+    val linesAdded: Int = 0,
+    val linesRemoved: Int = 0,
+    val headings: List<String> = emptyList(),
+)
+
+/** `GET /document/{id}/history/diff/?format=json` */
+@JsonClass(generateAdapter = true)
+data class HistoryDiffModel(
+    val from: String,
+    val to: String,
+    val hunks: List<DiffHunkModel> = emptyList(),
+)
+
+/**
+ * Changed lines with up to 3 unchanged ones around them
+ *
+ * @param heading the heading of the section, as in the feed: computed on the new text, and for lines that were only
+ * removed the heading above where they were. Null before the first heading.
+ * @param headingOccurrence which of the headings with this text, from 1
+ * @param oldStart the first line in the old text, from 1
+ * @param offset [newStart] minus the line of [heading], or [newStart] - 1 without one, as in the feed; null from a
+ * backend before it
+ */
+@JsonClass(generateAdapter = true)
+data class DiffHunkModel(
+    val heading: String? = null,
+    val headingOccurrence: Int = 0,
+    val oldStart: Int,
+    val oldLines: Int,
+    val newStart: Int,
+    val newLines: Int,
+    val lines: List<DiffLineModel> = emptyList(),
+    val offset: Int? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class DiffLineModel(
+    val op: DiffOp,
+    val text: String,
+)
+
+enum class DiffOp {
+    @Json(name = " ")
+    CONTEXT,
+
+    @Json(name = "-")
+    REMOVED,
+
+    @Json(name = "+")
+    ADDED,
+}

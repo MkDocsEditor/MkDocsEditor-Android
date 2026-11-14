@@ -133,6 +133,7 @@ fun <T : TopAppBarAction> MkDocsEditorTopAppBar(
                     is TopAppBarAction.CodeEditor.ShareLinkAction,
                     is TopAppBarAction.CodeEditor.ShowInBrowserAction,
                     is TopAppBarAction.CodeEditor.QrCodesAction,
+                    is TopAppBarAction.CodeEditor.HistoryAction,
                     is TopAppBarAction.CodeEditor.MenuDivider,
                     is TopAppBarAction.CodeEditor.RenameAction,
                     is TopAppBarAction.CodeEditor.MoveAction,
