@@ -59,6 +59,12 @@ interface HistoryApi {
      */
     suspend fun revertDocumentRevision(documentId: String, revision: String): Result<HistoryEntryModel, FuelError>
 
+    /**
+     * Whether [revertDocumentRevision] would work on the live text now; changes nothing. 400 is the commit that created
+     * the file.
+     */
+    suspend fun checkDocumentRevert(documentId: String, revision: String): Result<RevertCheckModel, FuelError>
+
     /** Sets the live text to the one of [revision], as an edit of the signed in account. Editors and admins only. */
     suspend fun restoreDocumentRevision(documentId: String, revision: String): Result<String, FuelError>
 
@@ -133,6 +139,9 @@ class HistoryApiImpl(
             method = Method.POST,
             kind = RequestKind.LongAction,
         )
+
+    override suspend fun checkDocumentRevert(documentId: String, revision: String): Result<RevertCheckModel, FuelError> =
+        requestManager.doRequest(url = "/document/$documentId/history/$revision/revert/", method = Method.GET)
 
     override suspend fun restoreDocumentRevision(documentId: String, revision: String): Result<String, FuelError> =
         requestManager.doRequest(

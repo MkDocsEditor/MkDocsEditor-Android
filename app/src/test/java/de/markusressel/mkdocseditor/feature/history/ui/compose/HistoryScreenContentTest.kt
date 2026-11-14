@@ -13,6 +13,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.Navigator
 import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel.DiffState
 import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel.UiEvent
+import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel.UndoCheck
 import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel.UiState
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
 import de.markusressel.mkdocsrestclient.history.DiffHunkModel
@@ -179,5 +180,41 @@ class HistoryScreenContentTest {
         }
 
         composeRule.onNodeWithText("Restore “Install”").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a change that can't be undone says why instead of offering the undo`() {
+        composeRule.setContent {
+            Shown {
+                HistoryScreenContent(
+                    UiState(
+                        loading = false, entries = entries, expanded = "b", diffs = mapOf("b" to DiffState.Loaded(listOf(hunk))),
+                        canRevert = true, undoChecks = mapOf("b" to UndoCheck.Conflict(listOf("Install"))),
+                    ),
+                    onUiEvent = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Can't undo: later changes in Install are in the way.").assertExists()
+        composeRule.onNodeWithText("Undo this change").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a change undone already says so`() {
+        composeRule.setContent {
+            Shown {
+                HistoryScreenContent(
+                    UiState(
+                        loading = false, entries = entries, expanded = "b", diffs = mapOf("b" to DiffState.Loaded(listOf(hunk))),
+                        canRevert = true, undoChecks = mapOf("b" to UndoCheck.Gone),
+                    ),
+                    onUiEvent = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Can't undo: this change was undone already or edited away.").assertExists()
+        composeRule.onNodeWithText("Undo this change").assertDoesNotExist()
     }
 }

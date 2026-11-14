@@ -136,6 +136,20 @@ data class RevertErrorModel(
     }
 }
 
+/**
+ * Whether a revert would work now, from `GET /document/{id}/history/{revision}/revert/`. Others may edit before the
+ * revert, so it can still fail.
+ *
+ * @param code [RevertErrorModel.CONFLICT] or [RevertErrorModel.NOTHING_TO_REVERT] when not [possible]
+ * @param details the sections in the way, for a conflict
+ */
+@JsonClass(generateAdapter = true)
+data class RevertCheckModel(
+    val possible: Boolean,
+    val code: String? = null,
+    val details: RevertConflictModel? = null,
+)
+
 /** @param headings the distinct headings of the sections where later changes are in the way */
 @JsonClass(generateAdapter = true)
 data class RevertConflictModel(

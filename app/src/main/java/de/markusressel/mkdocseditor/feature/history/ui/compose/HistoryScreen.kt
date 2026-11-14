@@ -26,12 +26,14 @@ import de.markusressel.mkdocseditor.feature.main.data.rememberMainNavigationRequ
  * @param canRestore whether the account may edit the document, and so bring back an old text
  * @param canRevert whether it may also undo a single change, which needs `revert` on the server
  * @param canRestoreSection whether it may also bring back a single section, which needs `blame` on the server
+ * @param canCheckRevert whether the server tells before an undo whether it would work (`revert-check`)
  */
 data class HistoryScreen(
     val documentId: String,
     val canRestore: Boolean,
     val canRevert: Boolean = false,
     val canRestoreSection: Boolean = false,
+    val canCheckRevert: Boolean = false,
 ) : Screen {
 
     @Composable
@@ -43,7 +45,7 @@ data class HistoryScreen(
         val uiState by viewModel.uiState.collectAsState()
 
         LaunchedEffect(viewModel, documentId) {
-            viewModel.initialize(documentId, canRestore, canRevert, canRestoreSection)
+            viewModel.initialize(documentId, canRestore, canRevert, canRestoreSection, canCheckRevert)
         }
 
         LaunchedEffect(viewModel) {

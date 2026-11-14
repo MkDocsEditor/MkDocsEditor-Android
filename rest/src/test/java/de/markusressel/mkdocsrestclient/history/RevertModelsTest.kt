@@ -4,6 +4,7 @@ import de.markusressel.mkdocsrestclient.toEntity
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /** Real answers of a backend with revert (MkDocsEditor-Backend#99) */
 class RevertModelsTest {
@@ -32,6 +33,23 @@ class RevertModelsTest {
 
         assertEquals(RevertErrorModel.CONFLICT, error?.code)
         assertEquals(listOf<String?>("Setup"), error?.details?.headings)
+    }
+
+    @Test
+    fun `a check tells whether a revert would work, and why not`() {
+        // real answers of a backend with revert-check (MkDocsEditor-Backend#104)
+        assertTrue("""{"possible":true}""".toEntity<RevertCheckModel>().possible)
+
+        val gone = """{"possible":false,"code":"nothing-to-revert"}""".toEntity<RevertCheckModel>()
+        assertEquals(RevertErrorModel.NOTHING_TO_REVERT, gone.code)
+        assertNull(gone.details)
+
+        val conflict = """
+            {"possible":false,"code":"revert-conflict",
+             "details":{"conflicts":[{"heading":"Install","headingOccurrence":1,"line":7}],"headings":["Install"]}}
+        """.trimIndent().toEntity<RevertCheckModel>()
+        assertEquals(RevertErrorModel.CONFLICT, conflict.code)
+        assertEquals(listOf<String?>("Install"), conflict.details?.headings)
     }
 
     @Test

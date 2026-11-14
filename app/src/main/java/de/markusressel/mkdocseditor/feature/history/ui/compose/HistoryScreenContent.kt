@@ -60,6 +60,7 @@ import de.markusressel.mkdocseditor.feature.history.domain.shownName
 import de.markusressel.mkdocseditor.feature.history.domain.wordChanges
 import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel.Confirm
 import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel.DiffState
+import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel.UndoCheck
 import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel.UiEvent
 import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel.UiState
 import de.markusressel.mkdocseditor.feature.theme.MkDocsEditorTheme
@@ -120,6 +121,7 @@ internal fun HistoryScreenContent(
                             canRestore = uiState.canRestore && entry != uiState.entries.first(),
                             // the oldest one created the page, which is undone by deleting it
                             canUndo = uiState.canRevert && entry != uiState.entries.last(),
+                            undoCheck = uiState.undoChecks[entry.revision],
                             canRestoreSection = uiState.canRestoreSection && entry != uiState.entries.first(),
                             onUiEvent = onUiEvent,
                         )
@@ -169,6 +171,7 @@ private fun HistoryEntry(
     diff: DiffState?,
     canRestore: Boolean,
     canUndo: Boolean,
+    undoCheck: UndoCheck?,
     canRestoreSection: Boolean,
     onUiEvent: (UiEvent) -> Unit,
 ) {
@@ -211,9 +214,29 @@ private fun HistoryEntry(
                     { hunk -> onUiEvent(UiEvent.RestoreSectionClicked(entry, hunk)) }
                 } else null,
             )
+            // why the change can't be undone, instead of a button that would only say so after the tap
+            val undoProblem = when (undoCheck) {
+                UndoCheck.Gone -> stringResource(R.string.history_undo_gone)
+                is UndoCheck.Conflict -> {
+                    val top = stringResource(R.string.history_page_start)
+                    stringResource(R.string.history_undo_conflict, undoCheck.headings.joinToString(", ") { it ?: top })
+                }
+                else -> null
+            }.takeIf { canUndo }
+            if (undoProblem != null) {
+                Text(
+                    modifier = Modifier.padding(top = 8.dp),
+                    text = undoProblem,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (canUndo) {
-                    OutlinedButton(onClick = { onUiEvent(UiEvent.UndoClicked(entry)) }) {
+                if (canUndo && undoProblem == null) {
+                    OutlinedButton(
+                        enabled = undoCheck != UndoCheck.Checking,
+                        onClick = { onUiEvent(UiEvent.UndoClicked(entry)) },
+                    ) {
                         Text(stringResource(R.string.history_undo_action))
                     }
                 }
