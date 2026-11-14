@@ -3,6 +3,7 @@
 package de.markusressel.mkdocsrestclient
 
 import de.markusressel.mkdocsrestclient.dashboard.FeedPageModel
+import de.markusressel.mkdocsrestclient.history.HistoryEntryModel
 import de.markusressel.mkdocsrestclient.dashboard.PinScope
 import de.markusressel.mkdocsrestclient.dashboard.PinsModel
 import de.markusressel.mkdocsrestclient.reference.AuthorshipModel
@@ -274,6 +275,18 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
 
     override suspend fun getFeed(before: String?, limit: Int): Result<FeedPageModel, FuelError> =
         Result.success(FeedPageModel())
+
+    override suspend fun getDocumentHistory(documentId: String, limit: Int): Result<List<HistoryEntryModel>, FuelError> =
+        Result.success(emptyList())
+
+    override suspend fun getDocumentRevisionContent(documentId: String, revision: String): Result<String, FuelError> =
+        Result.success("")
+
+    override suspend fun getDocumentRevisionDiff(documentId: String, from: String, to: String): Result<String, FuelError> =
+        Result.success("")
+
+    override suspend fun restoreDocumentRevision(documentId: String, revision: String): Result<String, FuelError> =
+        Result.success("")
 
     override suspend fun getQrCode(key: String, scan: Boolean): Result<QrCodeModel, FuelError> =
         Result.error(FuelError.wrap(UnsupportedOperationException("not in the demo")))
