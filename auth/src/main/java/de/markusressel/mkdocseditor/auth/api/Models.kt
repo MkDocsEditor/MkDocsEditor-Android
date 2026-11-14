@@ -232,6 +232,9 @@ object ServerFeature {
     /** `POST /document/{id}/history/{revision}/revert/` */
     const val REVERT = "revert"
 
+    /** `GET /document/{id}/history/{revision}/revert/`: whether a revert would work */
+    const val REVERT_CHECK = "revert-check"
+
     /** `GET /document/{id}/blame/` and the restore of a single section */
     const val BLAME = "blame"
 }

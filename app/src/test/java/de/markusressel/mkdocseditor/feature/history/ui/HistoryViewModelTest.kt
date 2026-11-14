@@ -17,6 +17,9 @@ import de.markusressel.mkdocsrestclient.history.DiffOp
 import de.markusressel.mkdocsrestclient.history.HistoryAuthorModel
 import de.markusressel.mkdocsrestclient.history.HistoryDiffModel
 import de.markusressel.mkdocsrestclient.history.HistoryEntryModel
+import de.markusressel.mkdocsrestclient.history.RevertCheckModel
+import de.markusressel.mkdocsrestclient.history.RevertConflictModel
+import de.markusressel.mkdocseditor.feature.history.ui.HistoryViewModel.UndoCheck
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -52,6 +55,8 @@ class HistoryViewModelTest {
     private var revertAnswer: Result<HistoryEntryModel, FuelError> = Result.success(entry("d"))
     private val restoredSections = mutableListOf<Triple<String, String, Int>>()
     private var sectionAnswer: Result<String, FuelError> = Result.success("")
+    private var checkAnswer: Result<RevertCheckModel, FuelError> = Result.success(RevertCheckModel(possible = true))
+    private val checked = mutableListOf<String>()
     private var historyRequests = 0
     private val events = mutableListOf<HistoryEvent>()
 
@@ -64,6 +69,11 @@ class HistoryViewModelTest {
         override suspend fun getDocumentRevisionDiffHunks(documentId: String, from: String, to: String): Result<HistoryDiffModel, FuelError> {
             diffRequests += from to to
             return Result.success(HistoryDiffModel(from, to, listOf(hunk)))
+        }
+
+        override suspend fun checkDocumentRevert(documentId: String, revision: String): Result<RevertCheckModel, FuelError> {
+            checked += revision
+            return checkAnswer
         }
 
         override suspend fun revertDocumentRevision(documentId: String, revision: String): Result<HistoryEntryModel, FuelError> {
@@ -93,10 +103,11 @@ class HistoryViewModelTest {
     @AfterEach
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun TestScope.viewModel(canRestore: Boolean = true) = HistoryViewModel(client).also { viewModel ->
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.events.collect { events += it } }
-        viewModel.initialize("d1", canRestore, canRevert = true)
-    }
+    private fun TestScope.viewModel(canRestore: Boolean = true, canCheckRevert: Boolean = false) =
+        HistoryViewModel(client).also { viewModel ->
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.events.collect { events += it } }
+            viewModel.initialize("d1", canRestore, canRevert = true, canCheckRevert = canCheckRevert)
+        }
 
     @Test
     fun `the history of the document is listed newest first`() = runTest {
@@ -263,5 +274,51 @@ class HistoryViewModelTest {
 
         assertEquals(listOf<HistoryEvent>(HistoryEvent.SectionMissing("Setup", inRevision = false)), events)
         assertEquals(1, historyRequests)
+    }
+
+    @Test
+    fun `an opened entry asks each time whether its change can be undone`() = runTest {
+        checkAnswer = Result.success(RevertCheckModel(possible = false, code = "nothing-to-revert"))
+        val viewModel = viewModel(canCheckRevert = true)
+
+        viewModel.onUiEvent(UiEvent.EntryClicked("b"))
+        assertEquals(UndoCheck.Gone, viewModel.uiState.value.undoChecks["b"])
+
+        checkAnswer = Result.success(
+            RevertCheckModel(possible = false, code = "revert-conflict", details = RevertConflictModel(listOf("Install", null)))
+        )
+        viewModel.onUiEvent(UiEvent.EntryClicked("b"))
+        viewModel.onUiEvent(UiEvent.EntryClicked("b"))
+
+        assertEquals(UndoCheck.Conflict(listOf("Install", null)), viewModel.uiState.value.undoChecks["b"])
+        assertEquals(listOf("b", "b"), checked)
+    }
+
+    @Test
+    fun `the first version and a server without the check are not asked`() = runTest {
+        viewModel(canCheckRevert = true).onUiEvent(UiEvent.EntryClicked("a"))
+        viewModel(canCheckRevert = false).onUiEvent(UiEvent.EntryClicked("b"))
+
+        assertEquals(emptyList(), checked)
+    }
+
+    @Test
+    fun `a failed check leaves the undo to tell`() = runTest {
+        checkAnswer = Result.error(FuelError.wrap(RuntimeException("500"), Response(URL("http://localhost/"), statusCode = 500)))
+        val viewModel = viewModel(canCheckRevert = true)
+
+        viewModel.onUiEvent(UiEvent.EntryClicked("b"))
+
+        assertEquals(UndoCheck.Possible, viewModel.uiState.value.undoChecks["b"])
+    }
+
+    @Test
+    fun `after an undo the open entry is asked again`() = runTest {
+        val viewModel = viewModel(canCheckRevert = true)
+        viewModel.onUiEvent(UiEvent.EntryClicked("b"))
+        viewModel.onUiEvent(UiEvent.UndoClicked(entry("b")))
+        viewModel.onUiEvent(UiEvent.Confirmed)
+
+        assertEquals(listOf("b", "b"), checked)
     }
 }

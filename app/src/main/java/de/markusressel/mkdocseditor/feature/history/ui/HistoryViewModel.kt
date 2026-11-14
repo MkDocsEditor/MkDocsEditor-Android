@@ -39,10 +39,18 @@ internal class HistoryViewModel @Inject constructor(
     internal val events = _events.receiveAsFlow()
 
     private var documentId: String? = null
+    private var canCheckRevert = false
 
-    fun initialize(documentId: String, canRestore: Boolean, canRevert: Boolean = false, canRestoreSection: Boolean = false) {
+    fun initialize(
+        documentId: String,
+        canRestore: Boolean,
+        canRevert: Boolean = false,
+        canRestoreSection: Boolean = false,
+        canCheckRevert: Boolean = false,
+    ) {
         if (this.documentId != null) return
         this.documentId = documentId
+        this.canCheckRevert = canCheckRevert
         _uiState.update { it.copy(canRestore = canRestore, canRevert = canRevert, canRestoreSection = canRestoreSection) }
         launch { load() }
     }
@@ -74,7 +82,11 @@ internal class HistoryViewModel @Inject constructor(
         _uiState.update { it.copy(loading = true, problem = null) }
         when (val result = restClient.getDocumentHistory(documentId)) {
             // diffs stay: a revision never changes, but a new entry moves the parent of none of the old ones
-            is Result.Success -> _uiState.update { it.copy(loading = false, entries = result.value) }
+            // an undo or restore changed the text, so what could be undone is asked again
+            is Result.Success -> {
+                _uiState.update { it.copy(loading = false, entries = result.value, undoChecks = emptyMap()) }
+                uiState.value.expanded?.let { checkUndo(it) }
+            }
             is Result.Failure -> {
                 Timber.w(result.error, "history of %s", documentId)
                 _uiState.update { it.copy(loading = false, problem = result.error.userMessage()) }
@@ -89,7 +101,36 @@ internal class HistoryViewModel @Inject constructor(
         }
         _uiState.update { it.copy(expanded = revision) }
         if (uiState.value.diffs[revision] !is DiffState.Loaded) launch { loadDiff(revision) }
+        launch { checkUndo(revision) }
     }
+
+    /**
+     * Asks whether the change of an entry can be undone, each time it opens: others may have edited the page since.
+     * The oldest entry created the page and is not asked about.
+     */
+    private suspend fun checkUndo(revision: String) {
+        val documentId = documentId ?: return
+        if (!canCheckRevert || !uiState.value.canRevert || uiState.value.entries.lastOrNull()?.revision == revision) return
+        setUndoCheck(revision, UndoCheck.Checking)
+        val check = when (val result = restClient.checkDocumentRevert(documentId, revision)) {
+            is Result.Success -> when {
+                result.value.possible -> UndoCheck.Possible
+                result.value.code == RevertErrorModel.CONFLICT -> UndoCheck.Conflict(result.value.details?.headings.orEmpty())
+                result.value.code == RevertErrorModel.NOTHING_TO_REVERT -> UndoCheck.Gone
+                // a reason this app doesn't know yet: the undo itself tells
+                else -> UndoCheck.Possible
+            }
+            is Result.Failure -> {
+                // the undo itself still says why it fails
+                Timber.w(result.error, "revert check of %s at %s", documentId, revision)
+                UndoCheck.Possible
+            }
+        }
+        setUndoCheck(revision, check)
+    }
+
+    private fun setUndoCheck(revision: String, check: UndoCheck) =
+        _uiState.update { it.copy(undoChecks = it.undoChecks + (revision to check)) }
 
     /** the diff of a commit is the one from the entry below it, the commit before on this file */
     private suspend fun loadDiff(revision: String) {
@@ -198,6 +239,18 @@ internal class HistoryViewModel @Inject constructor(
     /** a section of the page: its heading, the [occurrence]th one with this text */
     internal data class Section(val heading: String, val occurrence: Int)
 
+    /** whether the change of an entry can be undone now */
+    internal sealed interface UndoCheck {
+        data object Checking : UndoCheck
+        data object Possible : UndoCheck
+
+        /** undone already, or edited away by hand */
+        data object Gone : UndoCheck
+
+        /** later changes in these sections are in the way, null for the part above the first heading */
+        data class Conflict(val headings: List<String?>) : UndoCheck
+    }
+
     internal sealed interface DiffState {
         data object Loading : DiffState
         data class Loaded(val hunks: List<DiffHunkModel>) : DiffState
@@ -222,6 +275,8 @@ internal class HistoryViewModel @Inject constructor(
         val canRestore: Boolean = false,
         val canRevert: Boolean = false,
         val canRestoreSection: Boolean = false,
+        /** by revision; without an entry the undo is offered and tells itself whether it worked */
+        val undoChecks: Map<String, UndoCheck> = emptyMap(),
         val confirm: Confirm? = null,
         val working: Boolean = false,
     )

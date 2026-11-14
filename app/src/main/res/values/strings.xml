@@ -469,6 +469,7 @@
     <string name="history_undo">Undo</string>
     <string name="history_undone">Change undone</string>
     <string name="history_undo_nothing">This change is not in the page anymore.</string>
+    <string name="history_undo_gone">Can\'t undo: this change was undone already or edited away.</string>
     <string name="history_undo_conflict">Can\'t undo: later changes in %1$s are in the way.</string>
     <string name="history_restore_section_action">Restore “%1$s”</string>
     <string name="history_restore_section_title">Restore this section?</string>

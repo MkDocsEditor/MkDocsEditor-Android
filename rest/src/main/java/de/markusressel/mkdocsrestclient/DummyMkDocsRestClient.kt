@@ -8,6 +8,7 @@ import de.markusressel.mkdocsrestclient.history.DocumentChangesModel
 import de.markusressel.mkdocsrestclient.history.HistoryDiffModel
 import de.markusressel.mkdocsrestclient.history.SeenModel
 import de.markusressel.mkdocsrestclient.history.HistoryEntryModel
+import de.markusressel.mkdocsrestclient.history.RevertCheckModel
 import de.markusressel.mkdocsrestclient.dashboard.PinScope
 import de.markusressel.mkdocsrestclient.dashboard.PinsModel
 import de.markusressel.mkdocsrestclient.reference.AuthorshipModel
@@ -303,6 +304,9 @@ class DummyMkDocsRestClient : IMkDocsRestClient {
 
     override suspend fun restoreDocumentRevision(documentId: String, revision: String): Result<String, FuelError> =
         Result.success("")
+
+    override suspend fun checkDocumentRevert(documentId: String, revision: String): Result<RevertCheckModel, FuelError> =
+        Result.success(RevertCheckModel(possible = false))
 
     override suspend fun restoreDocumentSection(
         documentId: String,

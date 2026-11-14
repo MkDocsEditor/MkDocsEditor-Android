@@ -113,6 +113,7 @@ internal data class CodeEditorScreen(
                                 canRestore = request.canRestore,
                                 canRevert = request.canRevert,
                                 canRestoreSection = request.canRestoreSection,
+                                canCheckRevert = request.canCheckRevert,
                             )
                         )
 

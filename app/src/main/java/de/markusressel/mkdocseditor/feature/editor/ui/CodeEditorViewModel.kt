@@ -328,7 +328,10 @@ internal class CodeEditorViewModel @Inject constructor(
             val history = serverFeatures.has(ServerFeature.HISTORY)
             val revert = serverFeatures.has(ServerFeature.REVERT)
             val blame = serverFeatures.has(ServerFeature.BLAME)
-            _uiState.update { it.copy(historyAvailable = history, revertAvailable = revert, blameAvailable = blame) }
+            val revertCheck = serverFeatures.has(ServerFeature.REVERT_CHECK)
+            _uiState.update {
+                it.copy(historyAvailable = history, revertAvailable = revert, blameAvailable = blame, revertCheckAvailable = revertCheck)
+            }
         }
 
         // a key of a sticker without a page, to put on this one
@@ -703,6 +706,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 canRestore = uiState.value.canEdit,
                 canRevert = uiState.value.canEdit && uiState.value.revertAvailable,
                 canRestoreSection = uiState.value.canEdit && uiState.value.blameAvailable,
+                canCheckRevert = uiState.value.revertCheckAvailable,
             )
         )
     }
@@ -1304,6 +1308,9 @@ internal class CodeEditorViewModel @Inject constructor(
         /** whether the server tells who last changed each line, and can restore a single section */
         val blameAvailable: Boolean = false,
 
+        /** whether the server tells before an undo whether it would work */
+        val revertCheckAvailable: Boolean = false,
+
         /** what others changed since the user last looked at the page, null if nothing; see [SeenChangesUseCase] */
         val changesSinceSeen: DocumentChangesModel? = null,
     ) {
@@ -1415,6 +1422,7 @@ internal class CodeEditorViewModel @Inject constructor(
             val canRestore: Boolean,
             val canRevert: Boolean,
             val canRestoreSection: Boolean,
+            val canCheckRevert: Boolean,
         ) : NavigationRequest
         /** leave the editor, e.g. to show a folder in the file browser */
         data object Close : NavigationRequest
