@@ -63,8 +63,8 @@ class EditorTopBarActionsTest {
         assertTrue(TopAppBarAction.CodeEditor.PageReferencesAction in actions)
         val menu = menuOf(actions)
         assertTrue(TopAppBarAction.CodeEditor.ViewSettingsAction !in menu && TopAppBarAction.CodeEditor.PageReferencesAction !in menu)
-        // no divider without a group before it
-        assertEquals(TopAppBarAction.CodeEditor.ShareLinkAction, menu.first())
+        // the history stays in the menu, it opens a screen of its own
+        assertEquals(TopAppBarAction.CodeEditor.HistoryAction, menu.first())
     }
 
     @Test
@@ -82,6 +82,7 @@ class EditorTopBarActionsTest {
         val actionsOnly = setOf(
             TopAppBarAction.CodeEditor.ViewSettingsAction,
             TopAppBarAction.CodeEditor.PageReferencesAction,
+            TopAppBarAction.CodeEditor.HistoryAction,
             TopAppBarAction.CodeEditor.MenuDivider,
             TopAppBarAction.CodeEditor.ShareLinkAction,
             TopAppBarAction.CodeEditor.ShowInBrowserAction,

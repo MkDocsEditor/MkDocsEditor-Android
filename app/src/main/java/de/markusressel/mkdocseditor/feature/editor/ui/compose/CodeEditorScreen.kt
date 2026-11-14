@@ -31,6 +31,7 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.ResourcePic
 import androidx.compose.ui.res.stringResource
 import de.markusressel.mkdocseditor.R
 import de.markusressel.mkdocseditor.feature.qr.domain.QrLink
+import de.markusressel.mkdocseditor.feature.history.ui.compose.HistoryScreen
 import de.markusressel.mkdocseditor.feature.qr.ui.compose.PageQrCodesDialog
 
 internal data class CodeEditorScreen(
@@ -102,6 +103,9 @@ internal data class CodeEditorScreen(
 
                     is CodeEditorViewModel.NavigationRequest.OpenDocument ->
                         navigator.push(CodeEditorScreen(documentId = request.documentId))
+
+                    is CodeEditorViewModel.NavigationRequest.OpenHistory ->
+                        navigator.push(HistoryScreen(documentId = request.documentId, canRestore = request.canRestore))
 
                     is CodeEditorViewModel.NavigationRequest.Close -> navigator.pop()
 
