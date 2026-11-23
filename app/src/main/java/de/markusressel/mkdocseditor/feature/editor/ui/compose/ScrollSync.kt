@@ -117,6 +117,14 @@ internal class ScrollSync(
     private var editorTop by mutableStateOf(restored?.editorTop)
     private var pageTop by mutableStateOf(restored?.pageTop)
 
+    /** the zoom of the editor, null before its first layout */
+    var editorZoom by mutableStateOf<Float?>(null)
+        private set
+
+    /** the zoom the editor goes to together with [editorRestore], from a saved view */
+    var zoomRestore: Float? = null
+        private set
+
     /** the user moved a side, or the screen was recreated: a saved view must not take the place away then */
     private var placed = restored != null
 
@@ -144,6 +152,7 @@ internal class ScrollSync(
     fun onEditorDriving() {
         driver = Side.Editor
         editorRestore = null
+        zoomRestore = null
         placed = true
     }
 
@@ -151,10 +160,11 @@ internal class ScrollSync(
      * Puts both sides where the user was the last time the document was open, unless something else has placed them
      * already. Like after a recreation.
      */
-    fun restoreSaved(editorLine: Double?, pageLine: Double?) {
+    fun restoreSaved(editorLine: Double?, pageLine: Double?, zoom: Float? = null) {
         if (placed) return
         placed = true
         editorLine?.let {
+            zoomRestore = zoom
             editorRestore = SyncAnchor(it, 0f)
             editorTop = it
         }
@@ -168,6 +178,12 @@ internal class ScrollSync(
     /** the editor went back to [editorRestore], or can't */
     fun onEditorRestored() {
         editorRestore = null
+        zoomRestore = null
+    }
+
+    fun onEditorZoom(zoom: Float?) {
+        if (zoom == null || editorRestore != null) return
+        editorZoom = zoom
     }
 
     /** the source line at the top of the editor, null before its first layout */

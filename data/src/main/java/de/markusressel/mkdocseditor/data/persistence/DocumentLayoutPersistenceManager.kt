@@ -15,6 +15,7 @@ import javax.inject.Singleton
 data class SavedDocumentView(
     val editorTopLine: Double?,
     val pageTopLine: Double?,
+    val editorZoom: Float?,
     val selectionStartLine: Int,
     val selectionStartColumn: Int,
     val selectionEndLine: Int,
@@ -44,6 +45,7 @@ class DocumentLayoutPersistenceManager @Inject constructor(
         SavedDocumentView(
             editorTopLine = it.editorTopLine,
             pageTopLine = it.pageTopLine,
+            editorZoom = it.editorZoom,
             selectionStartLine = it.selectionStartLine,
             selectionStartColumn = it.selectionStartColumn,
             selectionEndLine = it.selectionEndLine,
@@ -60,6 +62,7 @@ class DocumentLayoutPersistenceManager @Inject constructor(
             entity.viewSavedAt = now
             entity.editorTopLine = view.editorTopLine
             entity.pageTopLine = view.pageTopLine
+            entity.editorZoom = view.editorZoom
             entity.selectionStartLine = view.selectionStartLine
             entity.selectionStartColumn = view.selectionStartColumn
             entity.selectionEndLine = view.selectionEndLine
@@ -88,7 +91,7 @@ class DocumentLayoutPersistenceManager @Inject constructor(
     private fun forgetView(entity: DocumentLayoutEntity) {
         if (entity.splitRatio > 0f) {
             standardOperation().put(
-                entity.copy(viewSavedAt = 0, editorTopLine = null, pageTopLine = null, anchorText = null)
+                entity.copy(viewSavedAt = 0, editorTopLine = null, pageTopLine = null, editorZoom = null, anchorText = null)
             )
         } else {
             standardOperation().remove(entity)

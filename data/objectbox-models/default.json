@@ -389,7 +389,7 @@
     },
     {
       "id": "9:5198137635493741022",
-      "lastPropertyId": "12:4165562351969804590",
+      "lastPropertyId": "13:580618767410109262",
       "name": "DocumentLayoutEntity",
       "properties": [
         {
@@ -456,6 +456,11 @@
           "id": "12:4165562351969804590",
           "name": "anchorText",
           "type": 9
+        },
+        {
+          "id": "13:580618767410109262",
+          "name": "editorZoom",
+          "type": 7
         }
       ],
       "relations": []
