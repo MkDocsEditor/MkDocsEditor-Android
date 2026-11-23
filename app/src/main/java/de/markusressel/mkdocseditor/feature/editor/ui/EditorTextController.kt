@@ -4,6 +4,12 @@ import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRuns
 import de.markusressel.mkdocseditor.feature.editor.domain.toAuthorRuns
 import de.markusressel.mkdocsrestclient.reference.AuthorshipModel
 import androidx.compose.runtime.State
+import de.markusressel.mkdocsrestclient.sync.automerge.RemoteSelection
+import de.markusressel.mkdocsrestclient.sync.automerge.AgentReveal
+import de.markusressel.mkdocseditor.feature.editor.domain.AgentReveals
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.TextRange
 import de.markusressel.kodeeditor.library.compose.KodeEditorListener
@@ -63,7 +69,31 @@ internal class EditorTextController(
 
     private var reportedSelection = editorState.selection
 
+    /** the peers as the document reports them, see [peers] */
+    private var reportedPeers = emptyList<RemotePeer>()
+
     private val _peers = mutableStateOf(emptyList<RemotePeer>())
+
+    /** text of agents that is still being typed out */
+    private val reveals = AgentReveals()
+
+    private val _revealing = mutableStateOf(false)
+
+    /** whether text of agents is being typed out, then [stepReveals] has to be called every [AgentReveals.STEP_MS] */
+    val revealing: State<Boolean> = _revealing
+
+    /**
+     * Whether live changes of agents may be typed out: the editor is shown and visible, the setting "Animate edits of
+     * others" is on, and the system does not remove animations. Turned off, the rest shows at once.
+     */
+    var revealAllowed: Boolean = false
+        set(value) {
+            field = value
+            if (!value && !reveals.isEmpty) {
+                reveals.finishAll()
+                showReveals()
+            }
+        }
 
     /**
      * The other users, resolved against the text of the document. This is snapshot state and not
@@ -126,7 +156,11 @@ internal class EditorTextController(
                 val selection = editorState.selection
                 if (selection == reportedSelection) return
                 reportedSelection = selection
-                if (!applyingDocument) onSelectionChanged(selection)
+                if (!applyingDocument) {
+                    // a tap on the text that is being typed out shows it at once; a cursor elsewhere does not
+                    if (selection.collapsed && reveals.onTap(selection.start)) showReveals()
+                    onSelectionChanged(selection)
+                }
             }
         })
     }
@@ -134,6 +168,8 @@ internal class EditorTextController(
     /** Connects the editor to another document */
     fun bind(document: EditableTextDocument) {
         this.document = document
+        reveals.finishAll()
+        showReveals()
         // a fade of the old document would show on the text of the new one
         editorState.finishAppearing()
         showInEditor { editorState.setText(document.text.orEmpty(), TextRange.Zero) }
@@ -187,8 +223,9 @@ internal class EditorTextController(
      * @param text the text of the document after the change
      * @param splices the change, each one refers to the text after the one before it
      * @param author who made all of [splices], null if not known
+     * @param agentReveals live changes of agents among [splices], whose text is typed out if [revealAllowed]
      */
-    fun onRemoteChange(text: String, splices: List<TextSplice>, author: String? = null) {
+    fun onRemoteChange(text: String, splices: List<TextSplice>, author: String? = null, agentReveals: List<AgentReveal> = emptyList()) {
         var fits = true
         showInEditor {
             editorState.applyRemote(
@@ -196,6 +233,16 @@ internal class EditorTextController(
                 appear = true,
                 appearTag = author.orEmpty(),
             )
+            // in the same call, so the text of an agent never shows for a frame before it is hidden
+            var revealsChanged = false
+            splices.forEach { revealsChanged = reveals.onEdit(it.index, it.deleteCount, it.insert.length) || revealsChanged }
+            agentReveals.forEach {
+                // a new change of the same agent finishes its running reveal first
+                val running = it.clientId in reveals.heads
+                if (revealAllowed) reveals.start(it.clientId, it.instanceId, it.ranges) else reveals.finish(it.clientId)
+                revealsChanged = revealsChanged || running || it.clientId in reveals.heads
+            }
+            if (revealsChanged || agentReveals.isNotEmpty()) showReveals()
             // an edit on a wrong base text would change the wrong characters of the document
             if (editorState.text != text) {
                 Timber.e("The editor differs from the document after a remote change")
@@ -203,7 +250,11 @@ internal class EditorTextController(
                 fits = false
             }
         }
-        if (!fits) return forgetAuthors()
+        if (!fits) {
+            reveals.finishAll()
+            showReveals()
+            return forgetAuthors()
+        }
         splices.forEach { moveAuthors(it.index, it.deleteCount, it.insert.length, author) }
     }
 
@@ -227,9 +278,33 @@ internal class EditorTextController(
     }
 
     fun onPeersChanged(peers: List<RemotePeer>) {
-        _peers.value = peers
+        reportedPeers = peers
         _authorColors.value = authorColors + peers.associate { it.username to it.color }
+        publishPeers()
+    }
+
+    /** An agent that types out its text has its cursor at the head of what is shown, and no viewport to jump to. */
+    private fun publishPeers() {
+        val heads = reveals.heads
+        _peers.value = if (heads.isEmpty()) reportedPeers else reportedPeers.map { peer ->
+            heads[peer.clientId]?.let { peer.copy(selections = listOf(RemoteSelection(it, it)), viewport = null) } ?: peer
+        }
         onPeersChanged()
+    }
+
+    /** Moves the reveals on, see [revealing] */
+    fun stepReveals(elapsedMs: Long) {
+        if (reveals.isEmpty) return
+        val text = editorState.text
+        reveals.step(elapsedMs, text).forEach { editorState.appear(it.start, it.end, it.tag) }
+        showReveals()
+    }
+
+    /** hides what is still to be typed out, keeping its space */
+    private fun showReveals() {
+        editorState.setRangeStyles(reveals.hiddenRanges.map { AnnotatedString.Range(HIDDEN, it.first, it.last + 1) })
+        _revealing.value = !reveals.isEmpty
+        publishPeers()
     }
 
     fun select(start: Int, end: Int) {
@@ -309,6 +384,9 @@ internal class EditorTextController(
         if (applied) {
             documentText = editorState.text
             moveAuthors(splice.start, splice.removedLength, splice.inserted.length, document.localAuthor)
+            // typing into text that is still hidden shows it
+            reveals.onEdit(splice.start, splice.removedLength, splice.inserted.length)
+            if (!reveals.isEmpty || editorState.rangeStyles.isNotEmpty()) showReveals()
             onLocalEdit()
         } else {
             onTextReplaced()
@@ -336,6 +414,9 @@ internal class EditorTextController(
         documentText = editorState.text
     }
 }
+
+/** the text an agent has not typed yet keeps its space */
+private val HIDDEN = SpanStyle(color = Color.Transparent)
 
 /** There is no document open */
 private object NoDocument : EditableTextDocument {

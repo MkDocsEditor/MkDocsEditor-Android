@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
+import de.markusressel.mkdocseditor.feature.editor.domain.AgentReveals
 import de.markusressel.mkdocseditor.feature.editor.domain.placeIn
 import de.markusressel.mkdocseditor.feature.editor.domain.captureView
 import de.markusressel.mkdocseditor.data.persistence.SavedDocumentView
@@ -337,6 +338,18 @@ internal class CodeEditorViewModel @Inject constructor(
         }
 
         launch { _uiState.update { it.copy(qrCodesAvailable = qrCodesSupport.isSupported()) } }
+        // types out the text of agents while there is some
+        launch {
+            snapshotFlow { editorText.revealing.value }.collectLatest { revealing ->
+                var last = SystemClock.uptimeMillis()
+                while (revealing) {
+                    delay(AgentReveals.STEP_MS)
+                    val now = SystemClock.uptimeMillis()
+                    editorText.stepReveals(now - last)
+                    last = now
+                }
+            }
+        }
         launch {
             val history = serverFeatures.has(ServerFeature.HISTORY)
             val revert = serverFeatures.has(ServerFeature.REVERT)
@@ -1122,6 +1135,11 @@ internal class CodeEditorViewModel @Inject constructor(
             }
             viewRestoreDone = true
         }
+    }
+
+    /** see [EditorTextController.revealAllowed] */
+    internal fun onRevealAllowed(allowed: Boolean) {
+        editorText.revealAllowed = allowed
     }
 
     /** the source lines at the top of the editor and of the page, null for a side that was never shown */

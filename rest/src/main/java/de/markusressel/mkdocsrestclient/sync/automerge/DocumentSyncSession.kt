@@ -2,6 +2,7 @@ package de.markusressel.mkdocsrestclient.sync.automerge
 
 import de.markusressel.mkdocsrestclient.moshi
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.ActorInfo
+import de.markusressel.mkdocsrestclient.sync.automerge.protocol.AgentChangeMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.AgentMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.ActorMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.DocumentRenamedMessage
@@ -105,6 +106,18 @@ data class RemoteGhost(
 
 private fun AgentMessage.toRemote() = RemoteAgent(tokenId, name)
 
+/**
+ * Text an agent inserted with a live change, which the app may type out
+ *
+ * @param clientId the connection of the agent
+ * @param ranges UTF-16 ranges of the text after the change that reports them, in the order of the text
+ */
+data class AgentReveal(
+    val clientId: String,
+    val instanceId: String,
+    val ranges: List<IntRange>,
+)
+
 /** How long a client waits for a revision of an agent it does not have yet, the wait limit of docs/agent-presence.md */
 const val AGENT_WAIT_MS = 30_000L
 
@@ -156,8 +169,9 @@ class DocumentSyncSession(
          * @param splices the changes, relative to the previous text, applied in order
          * @param author the username of whoever made all of them, null if that is not known or they come from several
          * users
+         * @param reveals live changes of agents among them, see `agent-change` in docs/agent-presence.md of the backend
          */
-        fun onRemoteChange(text: String, splices: List<TextSplice>, author: String?) {}
+        fun onRemoteChange(text: String, splices: List<TextSplice>, author: String?, reveals: List<AgentReveal> = emptyList()) {}
 
         fun onReadOnlyChanged(readOnly: Boolean) {}
 
@@ -230,6 +244,12 @@ class DocumentSyncSession(
         /** a new epoch makes the revision of the focus unknown for good */
         var focusDropped = false
     }
+
+    /** an `agent-change` whose change has not arrived yet */
+    private class PendingAgentChange(val message: AgentChangeMessage, val receivedAt: Long)
+
+    /** by the hash of the change */
+    private val pendingAgentChanges = LinkedHashMap<String, PendingAgentChange>()
 
     private class ResolvedFocus(val selection: RemoteSelection, val viewport: RemoteViewport?)
 
@@ -392,6 +412,7 @@ class DocumentSyncSession(
             MessageType.DOCUMENT_DELETED -> listener.onDocumentDeleted()
             MessageType.ERROR -> parse<ErrorMessage>(text).let { listener.onServerError(it.code, it.message) }
             MessageType.HEARTBEAT -> Unit
+            MessageType.AGENT_CHANGE -> onAgentChange(parse(text))
             // unknown types must be ignored
             else -> Unit
         }
@@ -486,6 +507,8 @@ class DocumentSyncSession(
      */
     fun sendHeartbeat() {
         sendMessage(HeartbeatMessage())
+        // a change that does not come within the wait limit shows at once when it comes
+        pendingAgentChanges.values.removeAll { now() - it.receivedAt >= AGENT_WAIT_MS }
         // the focus of an agent that waits for its revision falls back after the wait limit
         val waiting = peers.values.filter { it.focusWaitingSince != null }
         if (waiting.isNotEmpty()) {
@@ -567,6 +590,8 @@ class DocumentSyncSession(
                 document.applyLocalSplices(unsynced)
                 local = LocalCopy(document, actorId, message.epoch, serverHeads)
                 // their revisions are of the old lineage
+                // their changes are of the old lineage, they never arrive
+                pendingAgentChanges.clear()
                 val agents = peers.values.filter { it.presence.agent?.focus != null }
                 agents.forEach {
                     it.focusDropped = true
@@ -628,7 +653,9 @@ class DocumentSyncSession(
         val splices = current.document.receiveSyncMessage(state, Base64.getDecoder().decode(message.syncMessage))
         if (splices.isNotEmpty()) {
             markDirty()
-            listener.onRemoteChange(current.document.text, splices, authorOf(current.document.actorsSince(before)))
+            listener.onRemoteChange(
+                current.document.text, splices, authorOf(current.document.actorsSince(before)), arrivedAgentChanges(current.document),
+            )
             resolvePeers()
         }
         flushSync()
@@ -769,6 +796,35 @@ class DocumentSyncSession(
             selection = RemoteSelection(anchor = position(focus.from), head = position(focus.to)),
             viewport = focus.viewport?.let { RemoteViewport(position(it.top), position(it.bottom)) },
         )
+    }
+
+    /**
+     * A live change of an agent is announced before the sync that carries it. It waits for that sync; a change that is
+     * already here was shown at once.
+     */
+    private fun onAgentChange(message: AgentChangeMessage) {
+        if (message.documentId != documentId) return
+        val document = local?.document ?: return
+        if (document.hasHeads(listOf(message.change))) return
+        pendingAgentChanges[message.change] = PendingAgentChange(message, now())
+    }
+
+    /** the announced changes that the last sync brought, with what they inserted in the text of now */
+    private fun arrivedAgentChanges(document: AutomergeTextDocument): List<AgentReveal> {
+        if (pendingAgentChanges.isEmpty()) return emptyList()
+        val arrived = pendingAgentChanges.values.filter { document.hasHeads(listOf(it.message.change)) }
+        return arrived.mapNotNull { pending ->
+            pendingAgentChanges.remove(pending.message.change)
+            val message = pending.message
+            val base = message.base.split('.').filter { it.isNotEmpty() }
+            val ranges = try {
+                document.insertedSince(base, message.change)
+            } catch (e: RuntimeException) {
+                Timber.w(e, "Could not find what an agent inserted")
+                return@mapNotNull null
+            }
+            if (ranges.isEmpty()) null else AgentReveal(message.clientId, message.instanceId ?: message.clientId, ranges)
+        }
     }
 
     private fun resolve(viewport: ViewportMessage?): RemoteViewport? {

@@ -39,7 +39,7 @@ class DocumentSyncSessionTest {
             editorText = text
         }
 
-        override fun onRemoteChange(text: String, splices: List<TextSplice>, author: String?) {
+        override fun onRemoteChange(text: String, splices: List<TextSplice>, author: String?, reveals: List<AgentReveal>) {
             // the splices must turn the shown text into the new one
             assertEquals(text, editorText!!.applySplices(splices))
             remoteSplices += splices

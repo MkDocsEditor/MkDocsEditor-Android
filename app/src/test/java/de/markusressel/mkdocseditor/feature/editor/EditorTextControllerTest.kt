@@ -7,6 +7,7 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.text.TextRange
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatAction
 import de.markusressel.mkdocseditor.feature.editor.ui.EditorTextController
+import de.markusressel.mkdocsrestclient.sync.automerge.AgentReveal
 import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeTextDocument
 import de.markusressel.mkdocsrestclient.sync.automerge.DocumentVersion
 import de.markusressel.mkdocsrestclient.sync.automerge.EditableTextDocument
@@ -331,5 +332,44 @@ class EditorTextControllerTest {
         controller.onRemoteChange("zabcdy", document.remoteEdit("zabcdy"), author = null)
 
         assertEquals(listOf(AuthorRun(0, 1, "bob"), AuthorRun(5, 6, null)), controller.authorRuns.value.runs)
+    }
+
+    @Test
+    fun `the text of an agent is hidden in the call that applies it, and typing into it shows it`() {
+        val document = TestDocument("hello world")
+        val controller = controller()
+        controller.bind(document)
+        controller.revealAllowed = true
+        controller.onPeersChanged(listOf(RemotePeer("agent-1", "bob", null, null, listOf(RemoteSelection(17, 17)))))
+
+        val splices = document.remoteEdit("hello brave world")
+        controller.onRemoteChange(document.text, splices, "bob", listOf(AgentReveal("agent-1", "i1", listOf(6 until 12))))
+
+        assertEquals(listOf(6 to 12), controller.editorState.rangeStyles.map { it.start to it.end })
+        assertTrue(controller.revealing.value)
+        // the agent's cursor is at the head of what is shown
+        assertEquals(listOf(RemoteSelection(6, 6)), controller.peers.value.single().selections)
+
+        controller.stepReveals(30)
+        assertEquals(listOf(7 to 12), controller.editorState.rangeStyles.map { it.start to it.end })
+
+        controller.select(12, 12)
+        controller.editorState.replaceSelection("!")
+        assertEquals(emptyList(), controller.editorState.rangeStyles)
+        assertFalse(controller.revealing.value)
+        assertEquals(listOf(RemoteSelection(17, 17)), controller.peers.value.single().selections)
+    }
+
+    @Test
+    fun `without animations the text of an agent shows at once`() {
+        val document = TestDocument("hello world")
+        val controller = controller()
+        controller.bind(document)
+
+        val splices = document.remoteEdit("hello brave world")
+        controller.onRemoteChange(document.text, splices, "bob", listOf(AgentReveal("agent-1", "i1", listOf(6 until 12))))
+
+        assertEquals(emptyList(), controller.editorState.rangeStyles)
+        assertFalse(controller.revealing.value)
     }
 }

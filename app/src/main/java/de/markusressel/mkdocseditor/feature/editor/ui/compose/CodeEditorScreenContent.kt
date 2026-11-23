@@ -1,5 +1,7 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
+import androidx.compose.runtime.collectAsState
+import android.animation.ValueAnimator
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -106,6 +108,7 @@ internal fun CodeEditorScreenContent(
     previewResourceLoader: PreviewResourceLoader = PreviewResourceLoader { null },
     // not an event: it comes with every frame of a scroll
     onViewMoved: (editorTop: Double?, pageTop: Double?, editorZoom: Float?) -> Unit = { _, _, _ -> },
+    onRevealAllowed: (Boolean) -> Unit = {},
 ) {
     // from the window and not from the space of the editor: the keyboard takes away height, and that must
     // not close the page or change the arrangement while typing
@@ -125,6 +128,14 @@ internal fun CodeEditorScreenContent(
         scrollSync.restoreSaved(view.editorTop, view.pageTop, view.editorZoom)
         onUiEvent(CodeEditorViewModel.UiEvent.RestoredViewShown(view))
     }
+    // the text of agents is typed out only where it can be seen, and only for those who want animations
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
+    // the system setting that removes animations; read again when the app comes back, it is changed outside of it
+    val animationsOn = remember(lifecycleState) { ValueAnimator.areAnimatorsEnabled() }
+    val revealAllowed = editorShown && uiState.editorSettings.animateRemoteEdits && animationsOn &&
+        lifecycleState.isAtLeast(Lifecycle.State.RESUMED)
+    val currentOnRevealAllowed by rememberUpdatedState(onRevealAllowed)
+    LaunchedEffect(revealAllowed) { currentOnRevealAllowed(revealAllowed) }
     val currentOnViewMoved by rememberUpdatedState(onViewMoved)
     LaunchedEffect(scrollSync) {
         snapshotFlow { scrollSync.positions to scrollSync.editorZoom }.distinctUntilChanged().collect { (positions, zoom) ->
