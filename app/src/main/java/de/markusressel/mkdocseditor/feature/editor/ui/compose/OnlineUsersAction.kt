@@ -58,12 +58,21 @@ internal fun OnlineUsersAction(
             remotePeers.instances().forEach { user ->
                 val agent = user.agent
                 if (agent != null) {
-                    // an agent has no cursor or viewport to follow
+                    // only with a focus, which servers before the feature `agent-focus` never send
+                    val followable = user.selections.isNotEmpty() || user.viewport != null
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.online_agent, agent.name, user.name)) },
+                        text = {
+                            Text(
+                                if (followable) stringResource(R.string.follow_agent, agent.name, user.name)
+                                else stringResource(R.string.online_agent, agent.name, user.name)
+                            )
+                        },
                         leadingIcon = { AgentAvatar(modifier = Modifier.size(24.dp), color = user.composeColor) },
-                        enabled = false,
-                        onClick = {},
+                        enabled = followable,
+                        onClick = {
+                            menuOpen = false
+                            onFollowClicked(user.instanceId)
+                        },
                     )
                 } else {
                     DropdownMenuItem(

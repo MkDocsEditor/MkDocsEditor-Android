@@ -130,6 +130,25 @@ class AutomergeLibraryTest {
     }
 
     @Test
+    fun `only a fork tells that the document does not have some heads`() {
+        val (doc, text) = newTextDocument("abc")
+        val other = Document.load(doc.save())
+        other.startTransaction().use { tx ->
+            tx.spliceText(text, 3, 0, "d")
+            tx.commit()
+        }
+
+        // the text at unknown heads comes back without an error, empty
+        assertEquals("", doc.text(text, other.heads).get())
+        assertEquals(
+            "invalid hash ${other.heads.single().bytes.joinToString("") { "%02x".format(it) }}",
+            assertFailsWith<RuntimeException> { doc.fork(other.heads) }.message,
+        )
+        doc.merge(other)
+        assertEquals("abcd", doc.fork(other.heads).text(text).get())
+    }
+
+    @Test
     fun `the patches of a diff count code points and follow each other in the order of the text`() {
         val (doc, text) = newTextDocument("0😀23456789")
         val base = doc.heads

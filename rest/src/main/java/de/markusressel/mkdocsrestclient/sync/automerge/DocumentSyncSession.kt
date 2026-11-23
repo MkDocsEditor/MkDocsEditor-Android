@@ -60,7 +60,7 @@ data class RemotePeer(
     val instanceColor: String? = null,
     /** version of the profile picture of [accountId], null without one */
     val avatar: String? = null,
-    /** set when this is an AI agent of [accountId], which has no cursor and no viewport */
+    /** set when this is an AI agent of [accountId]. Its focus, if it has one, is in [selections] and [viewport]. */
     val agent: RemoteAgent? = null,
 )
 
@@ -104,6 +104,9 @@ data class RemoteGhost(
 )
 
 private fun AgentMessage.toRemote() = RemoteAgent(tokenId, name)
+
+/** How long a client waits for a revision of an agent it does not have yet, the wait limit of docs/agent-presence.md */
+const val AGENT_WAIT_MS = 30_000L
 
 /** A new id of a client instance, which the server expects as 32 lowercase hex characters */
 fun newInstanceId(random: SecureRandom = SecureRandom()): String =
@@ -217,7 +220,18 @@ class DocumentSyncSession(
     private class Peer(
         val presence: PresenceMessage,
         var resolved: List<RemoteSelection>,
-    )
+    ) {
+        /** where the focus of an agent is in the current text, see [resolveFocus] */
+        var focus: ResolvedFocus? = null
+
+        /** since when the revision of the focus is missing */
+        var focusWaitingSince: Long? = null
+
+        /** a new epoch makes the revision of the focus unknown for good */
+        var focusDropped = false
+    }
+
+    private class ResolvedFocus(val selection: RemoteSelection, val viewport: RemoteViewport?)
 
     var documentId: String = documentId
         private set
@@ -472,6 +486,12 @@ class DocumentSyncSession(
      */
     fun sendHeartbeat() {
         sendMessage(HeartbeatMessage())
+        // the focus of an agent that waits for its revision falls back after the wait limit
+        val waiting = peers.values.filter { it.focusWaitingSince != null }
+        if (waiting.isNotEmpty()) {
+            waiting.forEach { resolveFocus(it, previous = it.focus) }
+            notifyPeers()
+        }
     }
 
     /**
@@ -546,6 +566,13 @@ class DocumentSyncSession(
                 )
                 document.applyLocalSplices(unsynced)
                 local = LocalCopy(document, actorId, message.epoch, serverHeads)
+                // their revisions are of the old lineage
+                val agents = peers.values.filter { it.presence.agent?.focus != null }
+                agents.forEach {
+                    it.focusDropped = true
+                    resolveFocus(it, previous = null)
+                }
+                if (agents.isNotEmpty()) notifyPeers()
                 markDirty()
                 listener.onTextReplaced(document.text)
             }
@@ -622,7 +649,10 @@ class DocumentSyncSession(
 
     private fun onPresence(message: PresenceMessage) {
         val clientId = message.clientId ?: return
-        peers[clientId] = Peer(message, resolve(message, previous = peers[clientId]?.resolved))
+        val previous = peers[clientId]
+        peers[clientId] = Peer(message, resolve(message, previous = previous?.resolved)).also {
+            resolveFocus(it, previous = previous?.focus)
+        }
         notifyPeers()
         // it is back
         if (ghosts.remove(message.instanceId ?: clientId) != null) notifyGhosts()
@@ -634,7 +664,7 @@ class DocumentSyncSession(
         peers.clear()
         message.peers.forEach { presence ->
             val clientId = presence.clientId ?: return@forEach
-            peers[clientId] = Peer(presence, resolve(presence, previous = null))
+            peers[clientId] = Peer(presence, resolve(presence, previous = null)).also { resolveFocus(it, previous = null) }
         }
         notifyPeers()
         ghosts.clear()
@@ -705,6 +735,39 @@ class DocumentSyncSession(
                     agent = ghost.agent,
                 )
             }
+        )
+    }
+
+    /**
+     * Places the focus of an agent in the current text. Its indexes are of the text at its revision, so they move with
+     * what people edited since. A revision that has not arrived yet keeps the place the agent had before, and after
+     * [AGENT_WAIT_MS] the indexes count in the current text.
+     */
+    private fun resolveFocus(peer: Peer, previous: ResolvedFocus?) {
+        val focus = peer.presence.agent?.focus
+        val document = local?.document
+        if (focus == null || peer.focusDropped || document == null) {
+            peer.focus = null
+            peer.focusWaitingSince = null
+            return
+        }
+        val heads = focus.heads
+        val position: (Int) -> Int
+        if (document.hasHeads(heads)) {
+            peer.focusWaitingSince = null
+            position = { document.positionSince(heads, it) }
+        } else {
+            val since = peer.focusWaitingSince ?: now().also { peer.focusWaitingSince = it }
+            if (now() - since < AGENT_WAIT_MS) {
+                peer.focus = previous
+                return
+            }
+            peer.focusWaitingSince = null
+            position = document::positionOfCodePoint
+        }
+        peer.focus = ResolvedFocus(
+            selection = RemoteSelection(anchor = position(focus.from), head = position(focus.to)),
+            viewport = focus.viewport?.let { RemoteViewport(position(it.top), position(it.bottom)) },
         )
     }
 
@@ -780,7 +843,10 @@ class DocumentSyncSession(
         if (peers.isEmpty()) {
             return
         }
-        peers.values.forEach { it.resolved = resolve(it.presence, it.resolved) }
+        peers.values.forEach {
+            it.resolved = resolve(it.presence, it.resolved)
+            resolveFocus(it, previous = it.focus)
+        }
         notifyPeers()
     }
 
@@ -794,10 +860,11 @@ class DocumentSyncSession(
                     username = peer.presence.username.orEmpty(),
                     displayName = peer.presence.displayName,
                     color = peer.presence.color,
-                    selections = peer.resolved,
+                    // an agent has no selections, its focus is drawn and followed like them
+                    selections = peer.focus?.let { listOf(it.selection) } ?: peer.resolved,
                     accountId = peer.presence.accountId,
                     lastActiveAt = peer.presence.lastActiveAt,
-                    viewport = resolve(peer.presence.viewport),
+                    viewport = peer.focus?.viewport ?: resolve(peer.presence.viewport),
                     instanceId = peer.presence.instanceId ?: peer.presence.clientId.orEmpty(),
                     deviceName = peer.presence.deviceName,
                     instanceColor = peer.presence.instanceColor,

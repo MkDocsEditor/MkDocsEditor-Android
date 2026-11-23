@@ -107,9 +107,10 @@ internal val RemotePeer.avatarModel: Avatar?
 internal val RemotePeer.name: String
     get() = displayName?.takeIf { it.isNotBlank() } ?: username
 
-/** The name with the device, which tells apart several instances of one person */
+/** The name with the device, which tells apart several instances of one person. An agent goes by its own name first. */
 internal val RemotePeer.label: String
-    get() = listOfNotNull(name, deviceName?.takeIf { it.isNotBlank() }).joinToString(" · ")
+    get() = agent?.let { "${it.name} · $name" }
+        ?: listOfNotNull(name, deviceName?.takeIf { it.isNotBlank() }).joinToString(" · ")
 
 /** One entry per client instance, with those of one person next to each other */
 internal fun List<RemotePeer>.instances(): List<RemotePeer> =

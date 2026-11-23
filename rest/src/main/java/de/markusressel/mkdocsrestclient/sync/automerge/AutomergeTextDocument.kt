@@ -214,6 +214,58 @@ class AutomergeTextDocument private constructor(
         }
     }
 
+    /** heads (hex) this document is known to have, they never go away */
+    private val knownHeads = HashSet<String>()
+
+    /**
+     * Whether this document has every change of the heads (hex). automerge-java has no call for it: the text at
+     * unknown heads is empty without an error, only a fork at them fails.
+     */
+    fun hasHeads(headsHex: List<String>): Boolean {
+        if (knownHeads.containsAll(headsHex)) return true
+        return try {
+            document.fork(headsHex.map { RestoredChangeHash(it.hexToBytes()) as ChangeHash }.toTypedArray()).free()
+            knownHeads.addAll(headsHex)
+            true
+        } catch (e: RuntimeException) {
+            false
+        } catch (e: IllegalArgumentException) {
+            false
+        }
+    }
+
+    /**
+     * Where a position of an earlier state of the text is now: before the same character, also when people edited since.
+     * The state must be one this document has, see [hasHeads].
+     *
+     * @param headsHex the earlier state
+     * @param index in Unicode code points of the text at [headsHex], as the server counts
+     * @return a UTF-16 position in the current text
+     */
+    fun positionSince(headsHex: List<String>, index: Int): Int {
+        val heads = headsHex.map { RestoredChangeHash(it.hexToBytes()) as ChangeHash }.toTypedArray()
+        val length = document.length(contentId, heads).toInt()
+        if (length == 0) return 0
+        val clamped = index.coerceIn(0, length)
+        val codePoint = try {
+            // there is no cursor behind the last character: the one of the last character, and behind it
+            if (clamped == length) {
+                document.lookupCursorIndex(contentId, document.makeCursor(contentId, (length - 1).toLong(), heads)).toInt() + 1
+            } else {
+                document.lookupCursorIndex(contentId, document.makeCursor(contentId, clamped.toLong(), heads)).toInt()
+            }
+        } catch (e: RuntimeException) {
+            return positionOfCodePoint(index)
+        }
+        return positionOfCodePoint(codePoint)
+    }
+
+    /** @return the UTF-16 position of a code point index in the current text, clamped to it */
+    fun positionOfCodePoint(index: Int): Int {
+        val current = text
+        return current.offsetByCodePoints(0, index.coerceIn(0, current.codePointCount(0, current.length)))
+    }
+
     fun save(): ByteArray = document.save()
 
     /**

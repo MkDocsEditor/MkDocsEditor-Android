@@ -149,6 +149,8 @@
     <string name="more_actions">More</string>
     <string name="follow_user">Follow %1$s</string>
     <string name="online_agent">%1$s (agent of %2$s)</string>
+    <!-- name of the agent, name of its person -->
+    <string name="follow_agent">Follow %1$s (agent of %2$s)</string>
     <string name="following_user">Following %1$s</string>
     <string name="following_user_paused">Following %1$s (paused)</string>
     <string name="follow_stop">Stop following</string>
