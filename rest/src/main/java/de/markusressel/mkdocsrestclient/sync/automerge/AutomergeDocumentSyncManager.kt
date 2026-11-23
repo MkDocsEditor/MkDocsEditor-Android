@@ -177,6 +177,10 @@ class AutomergeDocumentSyncManager(
 
     override fun onLocalViewportChanged(top: Int?, bottom: Int?) = presence.onViewport(top, bottom)
 
+    override fun onPresenceIndexesChanged(enabled: Boolean) {
+        session.sendPresenceIndexes = enabled
+    }
+
     /**
      * Writes the local copy to disk now. Call when the app goes to the background.
      */

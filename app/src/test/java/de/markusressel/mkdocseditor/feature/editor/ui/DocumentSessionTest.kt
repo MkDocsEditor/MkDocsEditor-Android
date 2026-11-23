@@ -54,6 +54,10 @@ class DocumentSessionTest {
         override fun onLocalViewportChanged(top: Int?, bottom: Int?) = Unit
         override val instanceIdInUse: String? = null
         var localColor: String? = null
+        var presenceIndexes = false
+        override fun onPresenceIndexesChanged(enabled: Boolean) {
+            presenceIndexes = enabled
+        }
         override fun onLocalColorChanged(color: String?) {
             localColor = color
         }
@@ -217,6 +221,16 @@ class DocumentSessionTest {
 
         f.session.onLocalColorChanged(null)
         assertNull(f.document.localColor)
+    }
+
+    @Test
+    fun `a server that takes indexes before the document opens gets them once it is open`() = test { f ->
+        f.session.onPresenceIndexesChanged(true)
+        f.open()
+        assertTrue(f.document.presenceIndexes)
+
+        f.session.onPresenceIndexesChanged(false)
+        assertFalse(f.document.presenceIndexes)
     }
 
     @Test

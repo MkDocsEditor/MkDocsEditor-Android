@@ -237,6 +237,9 @@ object ServerFeature {
 
     /** `GET /document/{id}/blame/` and the restore of a single section */
     const val BLAME = "blame"
+
+    /** presence carries the position as indexes too, so agents can see where people are */
+    const val PRESENCE_INDEXES = "presence-indexes"
 }
 
 /** POST /auth/access-requests/. The token is only shown once. */

@@ -96,8 +96,31 @@ data class LocalPresenceMessage(
     val selections: List<SelectionMessage>,
     val viewport: ViewportMessage?,
     val instanceColor: String?,
+    /** the same position as indexes, for the server; null clears the last one */
+    val at: PresenceIndexesMessage? = null,
     val type: String = MessageType.PRESENCE,
 )
+
+/**
+ * The position of this client as code point indexes of the text at [revision], for servers with the feature
+ * `presence-indexes`, see "Indexes" in docs/sync-protocol.md of the backend. The server keeps it and never relays it.
+ *
+ * @param revision the heads of the local document, joined with `.`
+ * @param selections the same as the selections of the presence, in the same order
+ * @param viewport the visible text, `top` and `bottom` inclusive
+ */
+@JsonClass(generateAdapter = true)
+data class PresenceIndexesMessage(
+    val revision: String,
+    val selections: List<IndexSelectionMessage>,
+    val viewport: IndexViewportMessage?,
+)
+
+@JsonClass(generateAdapter = true)
+data class IndexSelectionMessage(val anchor: Int, val head: Int)
+
+@JsonClass(generateAdapter = true)
+data class IndexViewportMessage(val top: Int, val bottom: Int)
 
 /**
  * An AI agent that works with an app token of an account. Instead of selections it can have a [focus], see
