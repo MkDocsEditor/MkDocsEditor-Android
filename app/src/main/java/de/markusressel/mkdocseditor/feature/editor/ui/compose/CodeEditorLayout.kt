@@ -69,6 +69,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import de.markusressel.kodeeditor.library.compose.KodeEditor
 import de.markusressel.kodeeditor.library.compose.KodeEditorDefaults
+import de.markusressel.kodeeditor.library.compose.KodeEditorAnimations
+import de.markusressel.kodeeditor.library.compose.KodeEditorAppearance
 import de.markusressel.kodeeditor.library.compose.KodeEditorState
 import de.markusressel.kodehighlighter.core.ui.KodeTextFieldDefaults
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.EditorColorScheme
@@ -282,6 +284,7 @@ internal fun CodeEditorLayout(
             enabled = true,
             readOnly = readOnly,
             lineWrapping = settings.lineWrapping,
+            animations = if (settings.animateRemoteEdits) RemoteEditsFadeIn else KodeEditorAnimations(),
             gutterColumns = listOfNotNull(numbers, authorStrip),
             overlay = { layout ->
                 changeHighlight?.let { ChangeHighlight(layout, it, highlightColor, { changeHighlightAlpha.value }) }
@@ -389,8 +392,12 @@ internal data class EditorSettings(
     val authorHighlight: AuthorHighlightMode = AuthorHighlightMode.StripAndMarker,
     /** whether editor and rendered page of a split scroll together */
     val scrollSync: Boolean = true,
+    /** whether text that others type fades in. The system setting for animations can still turn it off */
+    val animateRemoteEdits: Boolean = true,
 )
 
+/** how text that others type fades in */
+internal val RemoteEditsFadeIn = KodeEditorAnimations(appearance = KodeEditorAppearance())
 private val NoAuthorRuns: State<AuthorRuns> = mutableStateOf(AuthorRuns())
 private val AUTHOR_STRIP_WIDTH = 3.dp
 private const val GHOST_ALPHA = 0.4f
