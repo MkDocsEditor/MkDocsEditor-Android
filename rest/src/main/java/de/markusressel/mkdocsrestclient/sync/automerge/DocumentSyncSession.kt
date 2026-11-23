@@ -17,6 +17,9 @@ import de.markusressel.mkdocsrestclient.sync.automerge.protocol.PresenceMessage
 import java.util.concurrent.TimeUnit
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.LastPositionMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.LocalPresenceMessage
+import de.markusressel.mkdocsrestclient.sync.automerge.protocol.PresenceIndexesMessage
+import de.markusressel.mkdocsrestclient.sync.automerge.protocol.IndexViewportMessage
+import de.markusressel.mkdocsrestclient.sync.automerge.protocol.IndexSelectionMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.ViewportMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.PresenceSnapshotMessage
 import de.markusressel.mkdocsrestclient.sync.automerge.protocol.SelectionMessage
@@ -299,6 +302,17 @@ class DocumentSyncSession(
 
     /** the last selection set with [updateLocalSelection] */
     private var localSelection: Pair<Int, Int>? = null
+
+    /**
+     * Whether presence carries the position as indexes too (`at`), for a server that lists `presence-indexes`. It tells
+     * agents where people are, see "Indexes" in docs/sync-protocol.md of the backend.
+     */
+    var sendPresenceIndexes: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            sendPresence()
+        }
 
     /**
      * The current text of the local copy, or null if there is none yet
@@ -949,8 +963,30 @@ class DocumentSyncSession(
             Timber.e(e, "Could not create the cursors of the local presence")
             return
         }
-        val message = LocalPresenceMessage(documentId = documentId, selections = selections, viewport = viewport, instanceColor = localColor)
+        val at = if (sendPresenceIndexes) presenceIndexes(document) else null
+        val message = LocalPresenceMessage(
+            documentId = documentId,
+            selections = selections,
+            viewport = viewport,
+            instanceColor = localColor,
+            at = at,
+        )
         send?.invoke(moshi.adapter(LocalPresenceMessage::class.java).serializeNulls().toJson(message))
+    }
+
+    /** the local selection and viewport as code points of the text at the current heads, the same the cursors point at */
+    private fun presenceIndexes(document: AutomergeTextDocument): PresenceIndexesMessage {
+        val text = document.text
+        val selections = localSelection?.let { (anchor, head) ->
+            listOf(IndexSelectionMessage(document.codePointIndex(text, anchor), document.codePointIndex(text, head)))
+        } ?: emptyList()
+        val viewport = localViewport?.let { (top, bottom) ->
+            val first = document.codePointIndex(text, top)
+            // inclusive: the last visible character, 0 and 0 for an empty text
+            val last = document.codePointIndex(text, bottom).coerceAtMost(maxOf(0, text.codePointCount(0, text.length) - 1))
+            IndexViewportMessage(first, last.coerceAtLeast(first))
+        }
+        return PresenceIndexesMessage(revision = document.headsHex.joinToString("."), selections = selections, viewport = viewport)
     }
 
     private fun markDirty() {

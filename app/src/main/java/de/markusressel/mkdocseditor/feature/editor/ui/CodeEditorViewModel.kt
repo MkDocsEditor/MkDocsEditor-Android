@@ -339,6 +339,7 @@ internal class CodeEditorViewModel @Inject constructor(
         }
 
         launch { _uiState.update { it.copy(qrCodesAvailable = qrCodesSupport.isSupported()) } }
+        launch { session.onPresenceIndexesChanged(serverFeatures.has(ServerFeature.PRESENCE_INDEXES)) }
         // types out the text of agents while there is some
         launch {
             snapshotFlow { editorText.revealing.value }.collectLatest { revealing ->

@@ -241,6 +241,9 @@ internal class DocumentSession(
     /** kept here as well, a document that opens later has to start with it */
     private var localColor: String? = null
 
+    /** see [onPresenceIndexesChanged] */
+    private var presenceIndexes = false
+
     /** the backend of the open document */
     var backendId: Long? = null
         private set
@@ -346,6 +349,7 @@ internal class DocumentSession(
         }
         syncedDocument = document
         document.onLocalColorChanged(localColor)
+        document.onPresenceIndexesChanged(presenceIndexes)
         // show the local copy right away, it may hold edits made offline
         text.bind(document)
         localCopyAvailable.value = document.hasLocalCopy
@@ -551,6 +555,12 @@ internal class DocumentSession(
     /** the id of this editor on the server */
     val instanceIdInUse: String
         get() = syncedDocument?.instanceIdInUse ?: instanceId
+
+    /** @param enabled whether the server takes the position as indexes too, for agents (`presence-indexes`) */
+    fun onPresenceIndexesChanged(enabled: Boolean) {
+        presenceIndexes = enabled
+        syncedDocument?.onPresenceIndexesChanged(enabled)
+    }
 
     fun onLocalColorChanged(color: String?) {
         localColor = color

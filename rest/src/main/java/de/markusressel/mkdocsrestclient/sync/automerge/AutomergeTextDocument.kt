@@ -315,6 +315,18 @@ class AutomergeTextDocument private constructor(
         }
     }
 
+    /**
+     * @return the code point index of a UTF-16 position in [text], clamped to it. A position between the two halves of
+     * a surrogate pair means that character.
+     */
+    fun codePointIndex(text: String, position: Int): Int {
+        var clamped = position.coerceIn(0, text.length)
+        if (clamped in 1 until text.length && text[clamped].isLowSurrogate() && text[clamped - 1].isHighSurrogate()) {
+            clamped--
+        }
+        return text.codePointCount(0, clamped)
+    }
+
     /** @return the UTF-16 position of a code point index in the current text, clamped to it */
     fun positionOfCodePoint(index: Int): Int {
         val current = text

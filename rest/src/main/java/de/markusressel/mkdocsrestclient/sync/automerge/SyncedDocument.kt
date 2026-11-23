@@ -26,6 +26,9 @@ interface SyncedDocument : EditableTextDocument {
     /** @param color what other users see this client in, `#rrggbb`, null for the color of the account */
     fun onLocalColorChanged(color: String?)
 
+    /** @param enabled whether presence carries the position as indexes too, see [DocumentSyncSession.sendPresenceIndexes] */
+    fun onPresenceIndexesChanged(enabled: Boolean)
+
     /** Writes the local copy to disk right away */
     fun persistNow()
 
