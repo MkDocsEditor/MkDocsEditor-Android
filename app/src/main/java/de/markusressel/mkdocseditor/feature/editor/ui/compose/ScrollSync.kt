@@ -110,11 +110,15 @@ internal class ScrollSync(
      * page's reading line. Null when there is none, or once it is there. Until then the editor does not drive the page:
      * its first layouts are at the top.
      */
-    var editorRestore: SyncAnchor? = restored?.editorTop?.let { SyncAnchor(it, 0f) }
+    var editorRestore by mutableStateOf(restored?.editorTop?.let { SyncAnchor(it, 0f) })
         private set
 
-    private var editorTop: Double? = restored?.editorTop
-    private var pageTop: Double? = restored?.pageTop
+    // states, so that the screen can save them for the next time the document opens
+    private var editorTop by mutableStateOf(restored?.editorTop)
+    private var pageTop by mutableStateOf(restored?.pageTop)
+
+    /** the user moved a side, or the screen was recreated: a saved view must not take the place away then */
+    private var placed = restored != null
 
     /** what to keep for a recreation of the screen */
     val positions: Positions
@@ -140,6 +144,25 @@ internal class ScrollSync(
     fun onEditorDriving() {
         driver = Side.Editor
         editorRestore = null
+        placed = true
+    }
+
+    /**
+     * Puts both sides where the user was the last time the document was open, unless something else has placed them
+     * already. Like after a recreation.
+     */
+    fun restoreSaved(editorLine: Double?, pageLine: Double?) {
+        if (placed) return
+        placed = true
+        editorLine?.let {
+            editorRestore = SyncAnchor(it, 0f)
+            editorTop = it
+        }
+        pageLine?.let {
+            pageTop = it
+            previewTarget = PreviewTarget(SyncAnchor(it, 0f), smooth = false)
+            pageRestore = previewTarget
+        }
     }
 
     /** the editor went back to [editorRestore], or can't */
@@ -191,6 +214,7 @@ internal class ScrollSync(
     }
 
     fun onPreviewScrolled(scroll: PreviewScroll) {
+        if (scroll.byUser) placed = true
         if (scroll.byUser && pageRestore != null) {
             // the user takes over, and a page that loads again must not go back to the line
             if (previewTarget === pageRestore) previewTarget = null

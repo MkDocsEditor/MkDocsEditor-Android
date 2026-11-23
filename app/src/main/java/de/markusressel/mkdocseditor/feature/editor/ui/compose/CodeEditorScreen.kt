@@ -146,6 +146,7 @@ internal data class CodeEditorScreen(
             authorColors = viewModel::editorAuthorColors,
             onUiEvent = viewModel::onUiEvent,
             previewResourceLoader = viewModel.previewResourceLoader,
+            onViewMoved = viewModel::onViewMoved,
         )
 
         ItemDialogs(

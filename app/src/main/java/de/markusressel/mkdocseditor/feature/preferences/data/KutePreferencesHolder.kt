@@ -176,6 +176,7 @@ class KutePreferencesHolder @Inject constructor(
                         editorAuthorHighlightPreference,
                         editorScrollSyncPreference,
                         editorAnimateRemoteEditsPreference,
+                        editorRestoreViewPreference,
                     )
                 )
             )
@@ -274,6 +275,16 @@ class KutePreferencesHolder @Inject constructor(
         KuteBooleanPreference(key = context.getString(R.string.editor_animate_remote_edits_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_flare),
             title = context.getString(R.string.editor_animate_remote_edits_title),
+            defaultValue = true,
+            dataProvider = dataProvider,
+            onPreferenceChangedListener = { _, _ -> })
+    }
+
+    /** whether a document opens where the user left it, see [de.markusressel.mkdocseditor.feature.editor.domain.placeIn] */
+    val editorRestoreViewPreference by lazy {
+        KuteBooleanPreference(key = context.getString(R.string.editor_restore_view_key),
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_bookmark),
+            title = context.getString(R.string.editor_restore_view_title),
             defaultValue = true,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { _, _ -> })

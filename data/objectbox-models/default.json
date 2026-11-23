@@ -389,7 +389,7 @@
     },
     {
       "id": "9:5198137635493741022",
-      "lastPropertyId": "3:1612526012496116529",
+      "lastPropertyId": "12:4165562351969804590",
       "name": "DocumentLayoutEntity",
       "properties": [
         {
@@ -409,13 +409,60 @@
           "id": "3:1612526012496116529",
           "name": "splitRatio",
           "type": 7
+        },
+        {
+          "id": "4:8357334238748915467",
+          "name": "viewSavedAt",
+          "indexId": "17:3397646590802226693",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "5:1631993325913724669",
+          "name": "editorTopLine",
+          "type": 8
+        },
+        {
+          "id": "6:1469667654736574850",
+          "name": "pageTopLine",
+          "type": 8
+        },
+        {
+          "id": "7:3752649710907276980",
+          "name": "selectionStartLine",
+          "type": 5
+        },
+        {
+          "id": "8:3117574201501549560",
+          "name": "selectionStartColumn",
+          "type": 5
+        },
+        {
+          "id": "9:1103726926119593722",
+          "name": "selectionEndLine",
+          "type": 5
+        },
+        {
+          "id": "10:4898333341942659432",
+          "name": "selectionEndColumn",
+          "type": 5
+        },
+        {
+          "id": "11:782400504871627886",
+          "name": "anchorLine",
+          "type": 5
+        },
+        {
+          "id": "12:4165562351969804590",
+          "name": "anchorText",
+          "type": 9
         }
       ],
       "relations": []
     }
   ],
   "lastEntityId": "9:5198137635493741022",
-  "lastIndexId": "16:521181462789065324",
+  "lastIndexId": "17:3397646590802226693",
   "lastRelationId": "1:4945763545727530783",
   "lastSequenceId": "0:0",
   "modelVersion": 5,
