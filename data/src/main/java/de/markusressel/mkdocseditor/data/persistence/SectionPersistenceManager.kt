@@ -16,6 +16,7 @@ class SectionPersistenceManager @Inject constructor(
     private val documentPersistenceManager: DocumentPersistenceManager,
     private val documentContentPersistenceManager: DocumentContentPersistenceManager,
     private val resourcePersistenceManager: ResourcePersistenceManager,
+    private val documentLayoutPersistenceManager: DocumentLayoutPersistenceManager,
 ) : PersistenceManagerBase<SectionEntity>(database, SectionEntity::class) {
 
     /**
@@ -29,8 +30,8 @@ class SectionPersistenceManager @Inject constructor(
     fun findByIdFlow(sectionId: String): Flow<SectionEntity?> = observeFirst(byId(sectionId))
 
     /**
-     * Replaces the whole tree with the given one. The cached content of the documents stays, unless a document is not
-     * part of the new tree.
+     * Replaces the whole tree with the given one. The cached content and the layout of the documents stay, unless a
+     * document is not part of the new tree.
      */
     fun insertOrUpdateRoot(newData: SectionEntity) {
         boxStore.runInTx {
@@ -41,6 +42,7 @@ class SectionPersistenceManager @Inject constructor(
             val documentIds = mutableListOf<String>()
             insert(newData, documentIds)
             documentContentPersistenceManager.deleteAllExcept(documentIds)
+            documentLayoutPersistenceManager.deleteAllExcept(documentIds)
         }
     }
 

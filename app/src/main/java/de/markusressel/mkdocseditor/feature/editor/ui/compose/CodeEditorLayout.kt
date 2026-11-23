@@ -56,6 +56,7 @@ import de.markusressel.mkdocseditor.feature.editor.ui.CodeEditorViewModel
 import de.markusressel.mkdocsrestclient.sync.automerge.RemoteGhost
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import androidx.compose.runtime.rememberUpdatedState
 import kotlinx.coroutines.withTimeoutOrNull
@@ -127,21 +128,24 @@ internal fun CodeEditorLayout(
             .collect { scrollSync.onEditorTop(it) }
     }
     LaunchedEffect(viewState, scrollSync) {
-        val anchor = scrollSync?.editorRestore ?: return@LaunchedEffect
-        val line = anchor.line
-        // after a recreation back to the line at the top, after reading to the page's line, once the editor is laid out
-        // and has the text, which comes later after process death. The end of the text is a line too.
-        withTimeoutOrNull(RESTORE_WAIT_MS) {
-            snapshotFlow { viewState.visibleRange != null && lineCountOf(state.text) >= line }.first { it }
-            if (restoreToCursor) {
-                // the editor gets its focus back, and the keyboard opens at the cursor
-                viewState.scrollToPosition(state.selection.end, animate = false)
-            } else {
-                val target = editorTargetOf(anchor, lineCountOf(state.text))
-                viewState.scrollToLine(target.line, target.fraction, target.viewportFraction, animate = false)
+        if (scrollSync == null) return@LaunchedEffect
+        // a saved view can come after the editor is shown, it is read from the database
+        snapshotFlow { scrollSync.editorRestore }.filterNotNull().collectLatest { anchor ->
+            val line = anchor.line
+            // after a recreation back to the line at the top, after reading to the page's line, once the editor is laid
+            // out and has the text, which comes later after process death. The end of the text is a line too.
+            withTimeoutOrNull(RESTORE_WAIT_MS) {
+                snapshotFlow { viewState.visibleRange != null && lineCountOf(state.text) >= line }.first { it }
+                if (restoreToCursor) {
+                    // the editor gets its focus back, and the keyboard opens at the cursor
+                    viewState.scrollToPosition(state.selection.end, animate = false)
+                } else {
+                    val target = editorTargetOf(anchor, lineCountOf(state.text))
+                    viewState.scrollToLine(target.line, target.fraction, target.viewportFraction, animate = false)
+                }
             }
+            scrollSync.onEditorRestored()
         }
-        scrollSync.onEditorRestored()
     }
     LaunchedEffect(jumpRequest) {
         jumpRequest?.let { viewState.scrollToPosition(it.position, animate = false) }

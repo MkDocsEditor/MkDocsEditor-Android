@@ -323,6 +323,36 @@ class ScrollSyncTest {
     }
 
     @Test
+    fun `a saved view puts both sides back at their lines`() {
+        sync.restoreSaved(editorLine = 3.0, pageLine = 5.0)
+
+        assertEquals(SyncAnchor(3.0, 0f), sync.editorRestore)
+        assertAnchor(SyncAnchor(5.0, 0f), sync.previewTarget?.anchor)
+        assertEquals(ScrollSync.Positions(editorTop = 3.0, pageTop = 5.0), sync.positions)
+    }
+
+    @Test
+    fun `a saved view comes too late once the user moved a side`() {
+        sync.onPreviewScrolled(previewScroll(scrollY = 400f, byUser = true))
+        sync.restoreSaved(editorLine = 3.0, pageLine = 1.0)
+        assertNull(sync.editorRestore)
+
+        val other = ScrollSync(text = { text }, now = { time })
+        other.onEditorDriving()
+        other.restoreSaved(editorLine = 3.0, pageLine = 1.0)
+        assertNull(other.editorRestore)
+        assertNull(other.previewTarget)
+    }
+
+    @Test
+    fun `after a recreation the saved view does not count`() {
+        val restored = restoredSync(ScrollSync.Positions(editorTop = 3.0, pageTop = 5.0))
+        restored.restoreSaved(editorLine = 8.0, pageLine = 8.0)
+
+        assertEquals(SyncAnchor(3.0, 0f), restored.editorRestore)
+    }
+
+    @Test
     fun `it keeps the source line at the top of both sides, for a recreation of the screen`() {
         sync.onEditorTop(3.0)
         sync.onPreviewScrolled(previewScroll(400f, byUser = true))

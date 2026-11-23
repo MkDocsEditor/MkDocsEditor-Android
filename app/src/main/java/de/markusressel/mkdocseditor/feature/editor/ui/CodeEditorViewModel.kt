@@ -1,5 +1,8 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
+import de.markusressel.mkdocseditor.feature.editor.domain.placeIn
+import de.markusressel.mkdocseditor.feature.editor.domain.captureView
+import de.markusressel.mkdocseditor.data.persistence.SavedDocumentView
 import de.markusressel.mkdocseditor.auth.api.ServerFeature
 import de.markusressel.mkdocseditor.feature.common.data.ServerFeatures
 import de.markusressel.mkdocseditor.feature.history.domain.LineAuthorUseCase
@@ -175,6 +178,13 @@ internal class CodeEditorViewModel @Inject constructor(
 
     private var saveJob: Job? = null
 
+    // the view of the document for the next time it opens, see restoreViewOnce
+    private var viewRestoreStarted = false
+    private var viewRestoreDone = false
+    private var viewRestoreSkipped = false
+    private var viewSaveJob: Job? = null
+    private var viewLines: Pair<Double?, Double?> = null to null
+
     private val openedByJoinLink = MutableStateFlow(false)
 
     private val visibleRange = MutableStateFlow<TextRange?>(null)
@@ -236,6 +246,7 @@ internal class CodeEditorViewModel @Inject constructor(
         onSelectionChanged = {
             session.onLocalSelectionChanged(it.start, it.end)
             onOwnCursorPlaced()
+            scheduleViewSave()
         },
         onEdited = { saveEditorState() },
         onLocalEdit = {
@@ -245,6 +256,7 @@ internal class CodeEditorViewModel @Inject constructor(
         onDocumentChanged = {
             authorshipRequests.update { it + 1 }
             refreshQrKeys()
+            restoreViewOnce()
         },
     )
 
@@ -589,6 +601,7 @@ internal class CodeEditorViewModel @Inject constructor(
                 is UiEvent.PreviewLinkClicked -> onPreviewLinkClicked(event.href)
                 is UiEvent.SplitRatioChanged -> _uiState.update { it.copy(splitRatio = event.ratio) }
                 is UiEvent.SplitRatioChangeFinished -> saveSplitRatio()
+                is UiEvent.RestoredViewShown -> _uiState.update { if (it.restoredView === event.view) it.copy(restoredView = null) else it }
 
                 is UiEvent.ReferenceClicked -> {
                     dismissCurrentDialog()
@@ -942,6 +955,8 @@ internal class CodeEditorViewModel @Inject constructor(
      * @param change from the arguments of the screen
      */
     fun onOpenedAtChange(change: ChangeLocation?) {
+        // the change is what the user wants to see, not where they were
+        if (change != null) viewRestoreSkipped = true
         changeJumpArguments.take(change)?.let { jumpToChange(it) }
     }
 
@@ -1060,6 +1075,7 @@ internal class CodeEditorViewModel @Inject constructor(
     }
 
     override fun onCleared() {
+        saveViewOnLeave()
         leavePage()
         session.close()
         super.onCleared()
@@ -1079,6 +1095,67 @@ internal class CodeEditorViewModel @Inject constructor(
             delay(SAVE_DELAY_MS)
             dataRepository.saveEditorState(documentId = documentId, text = text, selection = selection)
         }
+    }
+
+    /**
+     * Puts the editor and the page where the user was the last time, once the text is there. Not when the document
+     * was opened at a change or by a join link, and not while following: those say where to look.
+     */
+    private fun restoreViewOnce() {
+        if (viewRestoreStarted) return
+        val documentId = session.documentId.value ?: return
+        // the editor is empty while the document opens, and the view would be clamped to that
+        if (editorText.text.isEmpty()) return
+        viewRestoreStarted = true
+        launch {
+            val saved = if (restoreViewEnabled()) dataRepository.getView(documentId) else null
+            if (saved != null && !viewRestoreSkipped && !openedByJoinLink.value && uiState.value.following == null) {
+                val placed = saved.placeIn(editorText.text)
+                // the user may have placed the cursor already
+                if (editorText.selection.collapsed && editorText.selection.start == 0) {
+                    editorText.select(placed.selectionStart, placed.selectionEnd)
+                }
+                viewLines = placed.editorTop to placed.pageTop
+                _uiState.update { it.copy(restoredView = RestoredView(placed.editorTop, placed.pageTop)) }
+            }
+            viewRestoreDone = true
+        }
+    }
+
+    /** the source lines at the top of the editor and of the page, null for a side that was never shown */
+    internal fun onViewMoved(editorTop: Double?, pageTop: Double?) {
+        viewLines = editorTop to pageTop
+        scheduleViewSave()
+    }
+
+    private fun restoreViewEnabled() = preferencesHolder.editorRestoreViewPreference.persistedValue.value
+
+    private fun scheduleViewSave() {
+        // before, it would overwrite the saved view with the top of the text
+        if (!viewRestoreDone) return
+        viewSaveJob?.cancel()
+        viewSaveJob = launch {
+            delay(VIEW_SAVE_DELAY_MS)
+            currentView()?.let { (documentId, view) -> saveView(documentId, view) }
+        }
+    }
+
+    /** the screen goes away: what it shows now, also within the delay of [scheduleViewSave] */
+    private fun saveViewOnLeave() {
+        if (!viewRestoreDone) return
+        val (documentId, view) = currentView() ?: return
+        launch(NonCancellable) { saveView(documentId, view) }
+    }
+
+    private fun currentView(): Pair<String, SavedDocumentView>? {
+        val documentId = session.documentId.value ?: return null
+        val (editorTop, pageTop) = viewLines
+        val selection = editorText.selection
+        return documentId to captureView(editorText.text, editorTop, pageTop, selection.start, selection.end)
+    }
+
+    private suspend fun saveView(documentId: String, view: SavedDocumentView) {
+        if (restoreViewEnabled()) dataRepository.saveView(documentId, view)
     }
 
     private suspend fun onShareLinkClicked() {
@@ -1134,6 +1211,9 @@ internal class CodeEditorViewModel @Inject constructor(
 
     companion object {
         private const val SAVE_DELAY_MS = 2_000L
+
+        /** how long the view has to rest before it is saved */
+        private const val VIEW_SAVE_DELAY_MS = 1_000L
 
         /** how long to wait for the sender of a join link to show up, they may have looked away for a moment */
         private const val SENDER_WAIT_MS = 5_000L
@@ -1193,6 +1273,9 @@ internal class CodeEditorViewModel @Inject constructor(
 
     /** A class and not just an index: going to the same place twice has to go there twice */
     internal class JumpRequest(val position: Int)
+
+    /** the source lines at the top of the editor and of the page, see [ScrollSync.restoreSaved] */
+    internal class RestoredView(val editorTop: Double?, val pageTop: Double?)
 
     /**
      * The change that the page was opened at: its line goes to the top, and the changed lines light up for a moment. A
@@ -1274,6 +1357,9 @@ internal class CodeEditorViewModel @Inject constructor(
 
         /** where the editor should go, once */
         val jumpRequest: JumpRequest? = null,
+
+        /** where the user was the last time the document was open, until the screen took it */
+        val restoredView: RestoredView? = null,
 
         /** the change the editor, or the page while reading, should go to, until one of them is there */
         val changeJump: ChangeJump? = null,
@@ -1396,6 +1482,8 @@ internal class CodeEditorViewModel @Inject constructor(
         data class PreviewLinkClicked(val href: String) : UiEvent()
         data class SplitRatioChanged(val ratio: Float) : UiEvent()
         data object SplitRatioChangeFinished : UiEvent()
+
+        data class RestoredViewShown(val view: RestoredView) : UiEvent()
 
         /** selects a reference of the page in the editor */
         data class ReferenceClicked(val reference: ReferenceModel) : UiEvent()

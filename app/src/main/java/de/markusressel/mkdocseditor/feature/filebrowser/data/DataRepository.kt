@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import com.github.ajalt.timberkt.Timber
 import de.markusressel.mkdocseditor.data.persistence.DocumentContentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.DocumentLayoutPersistenceManager
+import de.markusressel.mkdocseditor.data.persistence.SavedDocumentView
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.ResourcePersistenceManager
 import de.markusressel.mkdocseditor.data.persistence.SectionPersistenceManager
@@ -269,6 +270,14 @@ class DataRepository @Inject constructor(
 
     suspend fun saveSplitRatio(documentId: String, ratio: Float) = withContext(Dispatchers.IO) {
         documentLayoutPersistenceManager.saveSplitRatio(documentId, ratio)
+    }
+
+    suspend fun getView(documentId: String): SavedDocumentView? = withContext(Dispatchers.IO) {
+        documentLayoutPersistenceManager.getView(documentId)
+    }
+
+    suspend fun saveView(documentId: String, view: SavedDocumentView) = withContext(Dispatchers.IO) {
+        documentLayoutPersistenceManager.saveView(documentId, view)
     }
 
     suspend fun saveEditorState(

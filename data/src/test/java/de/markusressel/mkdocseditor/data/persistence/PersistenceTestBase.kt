@@ -22,6 +22,7 @@ abstract class PersistenceTestBase {
     protected lateinit var contents: DocumentContentPersistenceManager
     protected lateinit var resources: ResourcePersistenceManager
     protected lateinit var sections: SectionPersistenceManager
+    protected lateinit var layouts: DocumentLayoutPersistenceManager
 
     @BeforeEach
     fun openDatabase() {
@@ -31,7 +32,8 @@ abstract class PersistenceTestBase {
         documents = DocumentPersistenceManager(database)
         contents = DocumentContentPersistenceManager(database, documents)
         resources = ResourcePersistenceManager(database)
-        sections = SectionPersistenceManager(database, documents, contents, resources)
+        layouts = DocumentLayoutPersistenceManager(database)
+        sections = SectionPersistenceManager(database, documents, contents, resources, layouts)
     }
 
     @AfterEach

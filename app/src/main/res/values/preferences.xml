@@ -58,6 +58,8 @@
     <string name="editor_scroll_sync_title">Sync scrolling in split view</string>
     <string name="editor_animate_remote_edits_key" translatable="false">editor_animate_remote_edits</string>
     <string name="editor_animate_remote_edits_title">Animate edits of others</string>
+    <string name="editor_restore_view_key" translatable="false">editor_restore_view</string>
+    <string name="editor_restore_view_title">Restore the editor view</string>
     <string name="editor_author_highlight_title">Show who wrote what</string>
     <string name="editor_author_highlight_marker_value" translatable="false">marker</string>
     <string name="editor_author_highlight_marker_name">Strip and marker</string>
