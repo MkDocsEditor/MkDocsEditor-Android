@@ -129,6 +129,10 @@ internal fun CodeEditorLayout(
     }
     LaunchedEffect(viewState, scrollSync) {
         if (scrollSync == null) return@LaunchedEffect
+        snapshotFlow { viewState.zoom }.collect { scrollSync.onEditorZoom(it) }
+    }
+    LaunchedEffect(viewState, scrollSync) {
+        if (scrollSync == null) return@LaunchedEffect
         // a saved view can come after the editor is shown, it is read from the database
         snapshotFlow { scrollSync.editorRestore }.filterNotNull().collectLatest { anchor ->
             val line = anchor.line
@@ -136,6 +140,8 @@ internal fun CodeEditorLayout(
             // out and has the text, which comes later after process death. The end of the text is a line too.
             withTimeoutOrNull(RESTORE_WAIT_MS) {
                 snapshotFlow { viewState.visibleRange != null && lineCountOf(state.text) >= line }.first { it }
+                // first: a zoom keeps the middle of the view, not the line at the top
+                scrollSync.zoomRestore?.let { viewState.zoomTo(it, animate = false) }
                 if (restoreToCursor) {
                     // the editor gets its focus back, and the keyboard opens at the cursor
                     viewState.scrollToPosition(state.selection.end, animate = false)

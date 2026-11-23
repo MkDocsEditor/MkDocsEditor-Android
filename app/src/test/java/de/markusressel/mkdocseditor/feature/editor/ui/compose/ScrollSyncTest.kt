@@ -332,6 +332,21 @@ class ScrollSyncTest {
     }
 
     @Test
+    fun `a saved view brings back the zoom of the editor, which counts once the editor is there`() {
+        sync.restoreSaved(editorLine = 3.0, pageLine = 5.0, zoom = 1.5f)
+        assertEquals(1.5f, sync.zoomRestore)
+
+        // the zoom of the new editor before it got there
+        sync.onEditorZoom(1f)
+        assertNull(sync.editorZoom)
+
+        sync.onEditorRestored()
+        assertNull(sync.zoomRestore)
+        sync.onEditorZoom(2f)
+        assertEquals(2f, sync.editorZoom)
+    }
+
+    @Test
     fun `a saved view comes too late once the user moved a side`() {
         sync.onPreviewScrolled(previewScroll(scrollY = 400f, byUser = true))
         sync.restoreSaved(editorLine = 3.0, pageLine = 1.0)

@@ -105,7 +105,7 @@ internal fun CodeEditorScreenContent(
     onUiEvent: (CodeEditorViewModel.UiEvent) -> Unit,
     previewResourceLoader: PreviewResourceLoader = PreviewResourceLoader { null },
     // not an event: it comes with every frame of a scroll
-    onViewMoved: (editorTop: Double?, pageTop: Double?) -> Unit = { _, _ -> },
+    onViewMoved: (editorTop: Double?, pageTop: Double?, editorZoom: Float?) -> Unit = { _, _, _ -> },
 ) {
     // from the window and not from the space of the editor: the keyboard takes away height, and that must
     // not close the page or change the arrangement while typing
@@ -122,12 +122,14 @@ internal fun CodeEditorScreenContent(
     // where the user was the last time the document was open, read from the database after the screen came up
     LaunchedEffect(uiState.restoredView) {
         val view = uiState.restoredView ?: return@LaunchedEffect
-        scrollSync.restoreSaved(view.editorTop, view.pageTop)
+        scrollSync.restoreSaved(view.editorTop, view.pageTop, view.editorZoom)
         onUiEvent(CodeEditorViewModel.UiEvent.RestoredViewShown(view))
     }
     val currentOnViewMoved by rememberUpdatedState(onViewMoved)
     LaunchedEffect(scrollSync) {
-        snapshotFlow { scrollSync.positions }.distinctUntilChanged().collect { currentOnViewMoved(it.editorTop, it.pageTop) }
+        snapshotFlow { scrollSync.positions to scrollSync.editorZoom }.distinctUntilChanged().collect { (positions, zoom) ->
+            currentOnViewMoved(positions.editorTop, positions.pageTop, zoom)
+        }
     }
     SideEffect {
         scrollSync.enabled = uiState.editorSettings.scrollSync

@@ -22,6 +22,8 @@ data class DocumentLayoutEntity(
     var editorTopLine: Double? = null,
     /** the source line at the top of the rendered page */
     var pageTopLine: Double? = null,
+    /** the zoom of the editor, null if the editor was not shown */
+    var editorZoom: Float? = null,
     var selectionStartLine: Int = 0,
     var selectionStartColumn: Int = 0,
     var selectionEndLine: Int = 0,

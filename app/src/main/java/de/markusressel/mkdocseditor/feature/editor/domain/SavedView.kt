@@ -9,10 +9,12 @@ import kotlin.math.floor
  *
  * @param editorTop the source line at the top of the editor, null if the editor was never shown
  * @param pageTop the source line at the top of the rendered page
+ * @param editorZoom the zoom of the editor, null if the editor was never shown
  */
 internal data class PlacedView(
     val editorTop: Double?,
     val pageTop: Double?,
+    val editorZoom: Float?,
     val selectionStart: Int,
     val selectionEnd: Int,
 )
@@ -22,7 +24,14 @@ internal data class PlacedView(
  * of the view as an anchor: others may change the text until the document is opened again, and a line above that
  * grows or shrinks moves the place only by lines, which the anchor finds again.
  */
-internal fun captureView(text: String, editorTop: Double?, pageTop: Double?, selectionStart: Int, selectionEnd: Int): SavedDocumentView {
+internal fun captureView(
+    text: String,
+    editorTop: Double?,
+    pageTop: Double?,
+    editorZoom: Float?,
+    selectionStart: Int,
+    selectionEnd: Int,
+): SavedDocumentView {
     val lines = text.split('\n')
     val (startLine, startColumn) = lineAndColumn(lines, selectionStart)
     val (endLine, endColumn) = lineAndColumn(lines, selectionEnd)
@@ -33,6 +42,7 @@ internal fun captureView(text: String, editorTop: Double?, pageTop: Double?, sel
     return SavedDocumentView(
         editorTopLine = editorTop,
         pageTopLine = pageTop,
+        editorZoom = editorZoom,
         selectionStartLine = startLine,
         selectionStartColumn = startColumn,
         selectionEndLine = endLine,
@@ -58,6 +68,7 @@ internal fun SavedDocumentView.placeIn(text: String): PlacedView {
     return PlacedView(
         editorTop = editorTopLine?.let { (it + shift).coerceIn(0.0, lineCount) },
         pageTop = pageTopLine?.let { (it + shift).coerceIn(0.0, lineCount) },
+        editorZoom = editorZoom,
         selectionStart = offsetOf(text, lines, selectionStartLine + shift, selectionStartColumn),
         selectionEnd = offsetOf(text, lines, selectionEndLine + shift, selectionEndColumn),
     )

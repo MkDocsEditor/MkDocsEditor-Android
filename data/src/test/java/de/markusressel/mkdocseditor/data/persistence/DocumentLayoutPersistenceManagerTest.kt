@@ -10,6 +10,7 @@ class DocumentLayoutPersistenceManagerTest : PersistenceTestBase() {
     private fun view(top: Double) = SavedDocumentView(
         editorTopLine = top,
         pageTopLine = top + 1,
+        editorZoom = 1.5f,
         selectionStartLine = 2,
         selectionStartColumn = 3,
         selectionEndLine = 4,

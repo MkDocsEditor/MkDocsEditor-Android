@@ -184,6 +184,7 @@ internal class CodeEditorViewModel @Inject constructor(
     private var viewRestoreSkipped = false
     private var viewSaveJob: Job? = null
     private var viewLines: Pair<Double?, Double?> = null to null
+    private var viewZoom: Float? = null
 
     private val openedByJoinLink = MutableStateFlow(false)
 
@@ -1116,15 +1117,18 @@ internal class CodeEditorViewModel @Inject constructor(
                     editorText.select(placed.selectionStart, placed.selectionEnd)
                 }
                 viewLines = placed.editorTop to placed.pageTop
-                _uiState.update { it.copy(restoredView = RestoredView(placed.editorTop, placed.pageTop)) }
+                viewZoom = placed.editorZoom
+                _uiState.update { it.copy(restoredView = RestoredView(placed.editorTop, placed.pageTop, placed.editorZoom)) }
             }
             viewRestoreDone = true
         }
     }
 
     /** the source lines at the top of the editor and of the page, null for a side that was never shown */
-    internal fun onViewMoved(editorTop: Double?, pageTop: Double?) {
+    internal fun onViewMoved(editorTop: Double?, pageTop: Double?, editorZoom: Float?) {
         viewLines = editorTop to pageTop
+        // a document read on the page only keeps the zoom of the last time
+        if (editorZoom != null) viewZoom = editorZoom
         scheduleViewSave()
     }
 
@@ -1151,7 +1155,7 @@ internal class CodeEditorViewModel @Inject constructor(
         val documentId = session.documentId.value ?: return null
         val (editorTop, pageTop) = viewLines
         val selection = editorText.selection
-        return documentId to captureView(editorText.text, editorTop, pageTop, selection.start, selection.end)
+        return documentId to captureView(editorText.text, editorTop, pageTop, viewZoom, selection.start, selection.end)
     }
 
     private suspend fun saveView(documentId: String, view: SavedDocumentView) {
@@ -1275,7 +1279,7 @@ internal class CodeEditorViewModel @Inject constructor(
     internal class JumpRequest(val position: Int)
 
     /** the source lines at the top of the editor and of the page, see [ScrollSync.restoreSaved] */
-    internal class RestoredView(val editorTop: Double?, val pageTop: Double?)
+    internal class RestoredView(val editorTop: Double?, val pageTop: Double?, val editorZoom: Float?)
 
     /**
      * The change that the page was opened at: its line goes to the top, and the changed lines light up for a moment. A
