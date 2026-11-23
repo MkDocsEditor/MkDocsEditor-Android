@@ -35,6 +35,13 @@
     <string name="about_title">About</string>
     <!-- version name, version code (the CI run), build type -->
     <string name="about_version">Version %1$s (%2$d, %3$s)</string>
+    <!-- the version above, and the commit it was built from -->
+    <string name="about_version_commit">%1$s · %2$s</string>
+    <string name="about_version_show_changes">Show what\'s new</string>
+    <string name="whats_new_title">What\'s new</string>
+    <!-- number of the pull request, the day it was merged -->
+    <string name="whats_new_entry">#%1$d · %2$s</string>
+    <string name="whats_new_empty">No changes are known for this build.</string>
 
     <string name="unknown_error">Something went wrong. Please try again.</string>
     <string name="retry">Retry</string>

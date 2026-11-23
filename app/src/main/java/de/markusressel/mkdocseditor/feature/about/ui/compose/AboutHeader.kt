@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.about.ui.compose
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,10 +20,12 @@ import de.markusressel.mkdocseditor.util.compose.CombinedPreview
 
 /**
  * @param version the version of this build, see [de.markusressel.mkdocseditor.feature.about.data.appVersionText]
+ * @param onVersionClick shows what is new in this version
  */
 @Composable
 internal fun AboutHeader(
     version: String,
+    onVersionClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -47,7 +50,10 @@ internal fun AboutHeader(
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                modifier = Modifier.padding(top = 4.dp),
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .clickable(onClickLabel = stringResource(R.string.about_version_show_changes), onClick = onVersionClick)
+                    .padding(4.dp),
                 text = version,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -60,6 +66,6 @@ internal fun AboutHeader(
 @Composable
 private fun AboutHeaderPreview() {
     MkDocsEditorTheme {
-        AboutHeader(version = "Version 0.1.0 (1234, release)")
+        AboutHeader(version = "Version 0.1.0 (1234, release) · 699a5bc", onVersionClick = {})
     }
 }
