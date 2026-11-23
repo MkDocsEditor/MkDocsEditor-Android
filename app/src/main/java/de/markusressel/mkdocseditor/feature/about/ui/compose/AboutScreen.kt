@@ -44,6 +44,7 @@ object AboutScreen : Screen {
             },
         ) { paddingValues ->
             AboutContent(
+                onShowChanges = { navigator.push(WhatsNewScreen) },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
@@ -54,9 +55,12 @@ object AboutScreen : Screen {
 
 /**
  * The app, its version and the libraries it uses
+ *
+ * @param onShowChanges opens [WhatsNewScreen]
  */
 @Composable
 fun AboutContent(
+    onShowChanges: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val libraries by produceLibraries(R.raw.aboutlibraries)
@@ -75,6 +79,7 @@ fun AboutContent(
             item {
                 AboutHeader(
                     version = version,
+                    onVersionClick = onShowChanges,
                     modifier = Modifier.padding(8.dp)
                 )
             }

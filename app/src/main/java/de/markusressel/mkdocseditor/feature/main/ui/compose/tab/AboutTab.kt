@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import de.markusressel.mkdocseditor.feature.about.ui.compose.AboutContent
+import de.markusressel.mkdocseditor.feature.about.ui.compose.WhatsNewScreen
 import de.markusressel.mkdocseditor.feature.common.ui.compose.barsAndCutout
 import de.markusressel.mkdocseditor.feature.main.ui.compose.LocalMainScreenOnBack
 
@@ -34,7 +37,9 @@ object AboutTab : Tab {
             onBack = onBack,
         )
 
+        val navigator = LocalNavigator.currentOrThrow
         AboutContent(
+            onShowChanges = { navigator.push(WhatsNewScreen) },
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.barsAndCutout.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))

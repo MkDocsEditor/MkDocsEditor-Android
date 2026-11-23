@@ -40,6 +40,40 @@ abstract class SetManifestVersionCode : DefaultTask() {
     }
 }
 
+/**
+ * Writes `changelog.json` for the "What's new" list: the commit of this build and the last pull requests merged before
+ * it, from the subjects of their squash commits ("Title (#123)"). The web client generates the same file, so keep the
+ * format in sync with MkDocsEditor-Web. An asset and not BuildConfig, so a new commit does not compile the app again.
+ */
+abstract class GenerateChangelog : DefaultTask() {
+    /** `git log --first-parent --format=%H%x1f%cs%x1f%s`, empty without git */
+    @get:Input
+    abstract val gitLog: Property<String>
+
+    @get:OutputDirectory
+    abstract val outputDirectory: DirectoryProperty
+
+    @TaskAction
+    fun run() {
+        val commits = gitLog.get().lines().filter { it.isNotBlank() }.map { it.split('\u001f', limit = 3) }.filter { it.size == 3 }
+        val pullRequest = Regex("""^(.*) \(#(\d+)\)$""")
+        val changes = commits.mapNotNull { (_, date, subject) ->
+            pullRequest.matchEntire(subject)?.let { match ->
+                mapOf("number" to match.groupValues[2].toInt(), "title" to match.groupValues[1], "date" to date)
+            }
+        }.take(50)
+        val changelog = mapOf("commit" to commits.firstOrNull()?.first()?.take(7), "changes" to changes)
+        outputDirectory.get().file("changelog.json").asFile.writeText(groovy.json.JsonOutput.toJson(changelog))
+    }
+}
+
+// first-parent: the commits of master, one per merged pull request. A shallow clone without git gives an empty list.
+val gitLogOutput = providers.exec {
+    commandLine("git", "log", "--first-parent", "-n", "200", "--format=%H%x1f%cs%x1f%s", "HEAD")
+    workingDir = rootDir
+    isIgnoreExitValue = true
+}.standardOutput.asText
+
 extensions.configure<ApplicationExtension> {
     namespace = "de.markusressel.mkdocseditor"
 
@@ -87,6 +121,11 @@ extensions.configure<ApplicationAndroidComponentsExtension> {
         variant.artifacts.use(setVersionCode)
             .wiredWithFiles(SetManifestVersionCode::mergedManifest, SetManifestVersionCode::updatedManifest)
             .toTransform(SingleArtifact.MERGED_MANIFEST)
+
+        val generateChangelog = tasks.register<GenerateChangelog>("generate${variant.name.replaceFirstChar { it.uppercase() }}Changelog") {
+            gitLog.set(gitLogOutput)
+        }
+        variant.sources.assets?.addGeneratedSourceDirectory(generateChangelog, GenerateChangelog::outputDirectory)
 
         val appExtension = extensions.getByType<ApplicationExtension>()
         val versionName = appExtension.defaultConfig.versionName
