@@ -98,12 +98,41 @@ data class LocalPresenceMessage(
     val type: String = MessageType.PRESENCE,
 )
 
-/** An AI agent that works with an app token of an account. It has no cursor and no viewport. */
+/**
+ * An AI agent that works with an app token of an account. Instead of selections it can have a [focus], see
+ * docs/agent-presence.md of the backend.
+ */
 @JsonClass(generateAdapter = true)
 data class AgentMessage(
     val tokenId: String,
     /** the name of the app token */
     val name: String,
+    /** where it works or points, null for none or a server before the feature `agent-focus` */
+    val focus: AgentFocusMessage? = null,
+)
+
+/**
+ * The place an agent works at. Unlike everywhere else, indexes and not cursors: the server can't make cursors.
+ *
+ * @param revision the state of the text the indexes are in, heads (hex) joined with `.`
+ * @param from the start of the selection, in Unicode code points
+ * @param to behind its end, the same as [from] for a cursor
+ */
+@JsonClass(generateAdapter = true)
+data class AgentFocusMessage(
+    val revision: String,
+    val from: Int,
+    val to: Int,
+    val viewport: AgentViewportMessage? = null,
+) {
+    val heads: List<String> get() = revision.split('.').filter { it.isNotEmpty() }
+}
+
+/** The first and the last character the agent shows, both included, in Unicode code points */
+@JsonClass(generateAdapter = true)
+data class AgentViewportMessage(
+    val top: Int,
+    val bottom: Int,
 )
 
 /** Cursors of the first and the last visible character */
