@@ -285,6 +285,44 @@ class ScrollSyncTest {
     }
 
     @Test
+    fun `while only the page is shown, the editor comes in at the page's reading line`() {
+        sync.active = false
+        sync.editorShown = false
+        sync.onPreviewScrolled(previewScroll(scrollY = 400f, byUser = true))
+
+        assertAnchor(SyncAnchor(6.0, 0.5f), sync.editorRestore)
+        assertNull(sync.editorTarget)
+        // and so does a recreation
+        assertEquals(5.0, sync.positions.editorTop)
+    }
+
+    @Test
+    fun `the page stays where it is when the editor comes in next to it`() {
+        sync.active = false
+        sync.editorShown = false
+        sync.onPreviewScrolled(previewScroll(scrollY = 400f, byUser = false))
+
+        sync.editorShown = true
+        sync.active = true
+        assertNull(sync.previewTarget)
+
+        sync.onEditorRestored()
+        sync.onEditorDriving()
+        editorMoves()
+        assertReadingLine(sync.previewTarget)
+    }
+
+    @Test
+    fun `also with the sync turned off, the editor comes in at the page`() {
+        sync.enabled = false
+        sync.active = false
+        sync.editorShown = false
+        sync.onPreviewScrolled(previewScroll(scrollY = 800f, byUser = true))
+
+        assertAnchor(SyncAnchor(10.0, 1f), sync.editorRestore)
+    }
+
+    @Test
     fun `it keeps the source line at the top of both sides, for a recreation of the screen`() {
         sync.onEditorTop(3.0)
         sync.onPreviewScrolled(previewScroll(400f, byUser = true))
@@ -298,7 +336,7 @@ class ScrollSyncTest {
 
         assertAnchor(SyncAnchor(5.0, 0f), restored.previewTarget?.anchor)
         assertEquals(false, restored.previewTarget?.smooth)
-        assertEquals(3.0, restored.editorRestore)
+        assertEquals(SyncAnchor(3.0, 0f), restored.editorRestore)
     }
 
     @Test

@@ -116,6 +116,7 @@ internal fun CodeEditorScreenContent(
     }
     SideEffect {
         scrollSync.enabled = uiState.editorSettings.scrollSync
+        scrollSync.editorShown = editorShown
         scrollSync.active = editorShown && previewShown
     }
 

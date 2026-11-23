@@ -40,6 +40,9 @@ import de.markusressel.mkdocseditor.feature.editor.domain.previewReadingAnchor
  * puts both back at the same line, see [Positions]. A line and not a pixel offset, because the new width wraps the
  * text differently.
  *
+ * While only the page is shown, the editor opens where the page is scrolled to, with the page's reading line at the
+ * same height. Also when the user turned the sync off: else it would open at the top.
+ *
  * @param text the text of the editor
  * @param now the clock for the time after an edit
  * @param restored where both sides were before the screen was recreated
@@ -83,6 +86,9 @@ internal class ScrollSync(
             }
         }
 
+    /** whether the editor is shown, see [onPreviewScrolled] */
+    var editorShown: Boolean = true
+
     /** whether the editor and the page are both shown */
     var active: Boolean = false
         set(value) {
@@ -100,10 +106,11 @@ internal class ScrollSync(
     private var pageRestore: PreviewTarget? = previewTarget
 
     /**
-     * The line the editor goes back to after a recreation, null when there is none, or once it is there. Until then the
-     * editor does not drive the page: its first layouts are at the top.
+     * Where the editor goes when it comes in: after a recreation its line at the top, after only the page was shown the
+     * page's reading line. Null when there is none, or once it is there. Until then the editor does not drive the page:
+     * its first layouts are at the top.
      */
-    var editorRestore: Double? = restored?.editorTop
+    var editorRestore: SyncAnchor? = restored?.editorTop?.let { SyncAnchor(it, 0f) }
         private set
 
     private var editorTop: Double? = restored?.editorTop
@@ -192,6 +199,16 @@ internal class ScrollSync(
         // a page that has just loaded is at the top until it gets to the line it goes back to, and stays there
         if (pageRestore == null || previewTarget !== pageRestore) {
             map?.let { pageTop = it.lineAt(scroll.scrollY) }
+            val map = map
+            if (!editorShown && map != null) {
+                editorRestore = previewReadingAnchor(map, scroll)
+                // a recreation opens the editor at the page too
+                editorTop = pageTop
+                // and the page stays where it is when the editor comes in next to it
+                driver = Side.Preview
+                editorAnchor = null
+                previewTarget = null
+            }
         }
         // the page also reports the scrolls that the app makes, and those must not drive
         if (!scroll.byUser || !active || !enabled) return
