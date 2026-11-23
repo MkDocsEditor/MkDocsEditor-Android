@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
+import de.markusressel.mkdocsrestclient.sync.automerge.AgentReveal
 import com.github.ajalt.timberkt.Timber
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendConfig
 import de.markusressel.mkdocseditor.feature.backendconfig.common.data.BackendServerConfig
@@ -378,8 +379,8 @@ internal class DocumentSession(
             }
         }
 
-        override fun onRemoteChange(text: String, splices: List<TextSplice>, author: String?) {
-            this@DocumentSession.text.onRemoteChange(text, splices, author)
+        override fun onRemoteChange(text: String, splices: List<TextSplice>, author: String?, reveals: List<AgentReveal>) {
+            this@DocumentSession.text.onRemoteChange(text, splices, author, reveals)
             host.onRemoteChange()
         }
 

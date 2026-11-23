@@ -20,6 +20,7 @@ object MessageType {
     const val DOCUMENT_RENAMED = "document-renamed"
     const val DOCUMENT_DELETED = "document-deleted"
     const val ERROR = "error"
+    const val AGENT_CHANGE = "agent-change"
 }
 
 /**
@@ -127,6 +128,23 @@ data class AgentFocusMessage(
 ) {
     val heads: List<String> get() = revision.split('.').filter { it.isNotEmpty() }
 }
+
+/**
+ * A change of an agent that clients may type out, sent before the sync that carries it
+ *
+ * @param base the heads before the change, joined with `.`
+ * @param change the hash of the change
+ */
+@JsonClass(generateAdapter = true)
+data class AgentChangeMessage(
+    val documentId: String,
+    val clientId: String,
+    val base: String,
+    val change: String,
+    val instanceId: String? = null,
+    val agent: AgentMessage? = null,
+    val type: String = MessageType.AGENT_CHANGE,
+)
 
 /** The first and the last character the agent shows, both included, in Unicode code points */
 @JsonClass(generateAdapter = true)

@@ -260,6 +260,61 @@ class AutomergeTextDocument private constructor(
         return positionOfCodePoint(codePoint)
     }
 
+    /**
+     * What a change inserted, as ranges of the current text. The patches of a diff are sequential, so they are placed
+     * in the text of the change first, then followed to the text of now like [positionSince].
+     *
+     * @param baseHex the heads before the change
+     * @param changeHex the hash of the change
+     * @return UTF-16 ranges, start included and end excluded, in the order of the text
+     */
+    fun insertedSince(baseHex: List<String>, changeHex: String): List<IntRange> {
+        val base = baseHex.map { RestoredChangeHash(it.hexToBytes()) as ChangeHash }.toTypedArray()
+        val change = arrayOf(RestoredChangeHash(changeHex.hexToBytes()) as ChangeHash)
+        // code point ranges in the text at the change, as [start, end)
+        val ranges = mutableListOf<IntArray>()
+        document.diff(base, change).forEach { patch ->
+            when (val action = patch.action) {
+                is PatchAction.SpliceText -> {
+                    val at = action.index.toInt()
+                    val length = action.text.codePointCount(0, action.text.length)
+                    ranges.forEach { range ->
+                        if (range[0] >= at) range[0] += length
+                        if (range[1] > at || (range[1] == at && range[0] > at)) range[1] += length
+                    }
+                    // next to an inserted range it is one range
+                    val touching = ranges.firstOrNull { it[1] == at }
+                    if (touching != null) touching[1] += length else ranges += intArrayOf(at, at + length)
+                }
+
+                is PatchAction.DeleteList -> {
+                    val at = action.index.toInt()
+                    val end = at + action.length.toInt()
+                    fun moved(position: Int) = when {
+                        position <= at -> position
+                        position >= end -> position - (end - at)
+                        else -> at
+                    }
+                    ranges.forEach { range ->
+                        range[0] = moved(range[0])
+                        range[1] = moved(range[1])
+                    }
+                    ranges.removeAll { it[0] >= it[1] }
+                }
+
+                else -> Unit
+            }
+        }
+        val current = text
+        return ranges.sortedBy { it[0] }.mapNotNull { (start, end) ->
+            val from = positionSince(listOf(changeHex), start)
+            // the cursor of the last inserted character, and behind it
+            val last = positionSince(listOf(changeHex), end - 1)
+            val to = if (last < current.length) last + Character.charCount(current.codePointAt(last)) else last
+            if (to > from) from until to else null
+        }
+    }
+
     /** @return the UTF-16 position of a code point index in the current text, clamped to it */
     fun positionOfCodePoint(index: Int): Int {
         val current = text

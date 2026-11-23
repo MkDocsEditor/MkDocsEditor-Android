@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor
 
+import de.markusressel.mkdocsrestclient.sync.automerge.AgentReveal
 import androidx.compose.ui.text.TextRange
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatAction
 import de.markusressel.mkdocseditor.feature.editor.ui.EditorTextController
@@ -40,7 +41,7 @@ private class TypingClient(val server: FakeSyncServer, val name: String, ids: Ra
     var connection = server.connect(session, name)
 
     override fun onTextReplaced(text: String) = controller.onTextReplaced()
-    override fun onRemoteChange(text: String, splices: List<TextSplice>, author: String?) =
+    override fun onRemoteChange(text: String, splices: List<TextSplice>, author: String?, reveals: List<AgentReveal>) =
         controller.onRemoteChange(text, splices, author)
     override fun onPeersChanged(peers: List<RemotePeer>) = controller.onPeersChanged(peers)
 

@@ -164,7 +164,7 @@ class LiveBackendSyncTest {
             editorText = text
         }
 
-        override fun onRemoteChange(text: String, splices: List<TextSplice>, author: String?) {
+        override fun onRemoteChange(text: String, splices: List<TextSplice>, author: String?, reveals: List<AgentReveal>) {
             assertEquals(text, editorText!!.applySplices(splices))
             editorText = text
         }
