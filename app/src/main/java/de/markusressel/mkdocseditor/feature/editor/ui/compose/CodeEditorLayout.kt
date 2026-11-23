@@ -275,6 +275,9 @@ internal fun CodeEditorLayout(
             backgroundColor = ownColor?.copy(alpha = 0.3f) ?: palette.selection,
         )
     ) {
+        val remoteCursors = remember(remotePeers.value, ghosts, palette) {
+            remoteCursorsOf(remotePeers.value, ghosts.map { it.asPeer() }, palette.background, palette.text)
+        }
         Box(modifier = modifier) {
         KodeEditor(
             modifier = Modifier.fillMaxSize(),
@@ -301,24 +304,17 @@ internal fun CodeEditorLayout(
             animations = if (settings.animateRemoteEdits) RemoteEditsFadeIn else KodeEditorAnimations(),
             gutterColumns = listOfNotNull(numbers, authorStrip),
             onTextLayout = { currentOnLayout(it) },
+            remoteCursors = remoteCursors.cursors,
+            remoteCursorLabel = { cursor ->
+                remoteCursors.peerOf(cursor)?.let { (peer, colors) ->
+                    RemotePeerLabel(name = peer.label, avatar = peer.avatarModel, colors = colors)
+                }
+            },
             overlay = { layout ->
                 changeHighlight?.let { ChangeHighlight(layout, it, highlightColor, { changeHighlightAlpha.value }) }
                 if (settings.authorHighlight == AuthorHighlightMode.StripAndMarker) {
                     AuthorMarkers(layout = layout, runs = authorRuns.value.runs, colorOf = colorOf)
                 }
-                RemotePeersOverlay(
-                    layout = layout,
-                    remotePeers = remotePeers.value,
-                    background = palette.background,
-                    foreground = palette.text,
-                )
-                RemotePeersOverlay(
-                    layout = layout,
-                    remotePeers = ghosts.map { it.asPeer() },
-                    background = palette.background,
-                    foreground = palette.text,
-                    alpha = GHOST_ALPHA,
-                )
             }
         )
         following?.let {
@@ -415,7 +411,6 @@ internal data class EditorSettings(
 internal val RemoteEditsFadeIn = KodeEditorAnimations(appearance = KodeEditorAppearance())
 private val NoAuthorRuns: State<AuthorRuns> = mutableStateOf(AuthorRuns())
 private val AUTHOR_STRIP_WIDTH = 3.dp
-private const val GHOST_ALPHA = 0.4f
 private const val OPENING_SETTLE_MS = 1_000L
 
 /** the changed lines the editor went to light up this long, then fade */

@@ -30,7 +30,7 @@ import kotlin.test.assertTrue
 @RunWith(AndroidJUnit4::class)
 @Config(application = Application::class, sdk = [36])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-class RemotePeersOverlayTest {
+class RemoteCursorLabelTest {
 
     @get:Rule
     val composeRule = createComposeRule()
