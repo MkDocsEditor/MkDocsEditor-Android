@@ -75,4 +75,27 @@ class AgentRevealsTest {
         assertEquals(listOf(50 until 60, 70 until 80), reveals.hiddenRanges)
         assertEquals(2, reveals.step(100, text).map { it.tag }.distinct().size)
     }
+
+    @Test
+    fun `a folded part shows as a whole and counts as one character`() {
+        reveals.start("a1", "i1", listOf(10 until 40))
+        // 20 until 35 is folded
+        val folded = { position: Int -> if (position in 20 until 35) 35 else null }
+
+        // 9.6 characters
+        reveals.step(160, text, folded)
+        assertEquals(listOf(19 until 40), reveals.hiddenRanges)
+
+        // 0.6 left over plus 1.8 are 2.4: one character, then the whole fold
+        assertEquals(listOf(AgentReveals.Revealed(19, 35, "agent:a1")), reveals.step(30, text, folded))
+        assertEquals(listOf(35 until 40), reveals.hiddenRanges)
+    }
+
+    @Test
+    fun `a fold that reaches beyond the hidden text shows only the hidden text`() {
+        reveals.start("a1", "i1", listOf(10 until 20))
+
+        assertEquals(listOf(AgentReveals.Revealed(10, 20, "agent:a1")), reveals.step(17, text) { 50 })
+        assertTrue(reveals.isEmpty)
+    }
 }

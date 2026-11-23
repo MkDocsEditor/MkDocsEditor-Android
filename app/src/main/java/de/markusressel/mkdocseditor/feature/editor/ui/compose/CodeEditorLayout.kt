@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -101,7 +102,10 @@ internal fun CodeEditorLayout(
     changeJump: CodeEditorViewModel.ChangeJump? = null,
     onChangeJumpShown: (CodeEditorViewModel.ChangeJump) -> Unit = {},
     onAuthorLineClicked: ((Int) -> Unit)? = null,
+    onLayout: (KodeEditorLayout?) -> Unit = {},
 ) {
+    val currentOnLayout by rememberUpdatedState(onLayout)
+    DisposableEffect(Unit) { onDispose { currentOnLayout(null) } }
     val viewState = rememberKodeEditorViewState()
     val currentOnVisibleRangeChanged by rememberUpdatedState(onVisibleRangeChanged)
     LaunchedEffect(viewState, scrollSync) {
@@ -296,6 +300,7 @@ internal fun CodeEditorLayout(
             lineWrapping = settings.lineWrapping,
             animations = if (settings.animateRemoteEdits) RemoteEditsFadeIn else KodeEditorAnimations(),
             gutterColumns = listOfNotNull(numbers, authorStrip),
+            onTextLayout = { currentOnLayout(it) },
             overlay = { layout ->
                 changeHighlight?.let { ChangeHighlight(layout, it, highlightColor, { changeHighlightAlpha.value }) }
                 if (settings.authorHighlight == AuthorHighlightMode.StripAndMarker) {

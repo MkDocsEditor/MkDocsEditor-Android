@@ -148,6 +148,7 @@ internal data class CodeEditorScreen(
             previewResourceLoader = viewModel.previewResourceLoader,
             onViewMoved = viewModel::onViewMoved,
             onRevealAllowed = viewModel::onRevealAllowed,
+            onEditorLayout = viewModel::onEditorLayout,
         )
 
         ItemDialogs(

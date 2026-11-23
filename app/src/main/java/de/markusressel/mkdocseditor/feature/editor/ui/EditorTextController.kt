@@ -292,11 +292,17 @@ internal class EditorTextController(
         onPeersChanged()
     }
 
+    /**
+     * What is folded at a position in the editor, from its layout while it is shown. The reveal shows a folded part as
+     * a whole.
+     */
+    var collapsedRangeAt: (Int) -> TextRange? = { null }
+
     /** Moves the reveals on, see [revealing] */
     fun stepReveals(elapsedMs: Long) {
         if (reveals.isEmpty) return
         val text = editorState.text
-        reveals.step(elapsedMs, text).forEach { editorState.appear(it.start, it.end, it.tag) }
+        reveals.step(elapsedMs, text) { collapsedRangeAt(it)?.max }.forEach { editorState.appear(it.start, it.end, it.tag) }
         showReveals()
     }
 

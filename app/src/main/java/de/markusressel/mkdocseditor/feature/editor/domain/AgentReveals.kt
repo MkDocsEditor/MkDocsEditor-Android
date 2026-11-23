@@ -98,12 +98,13 @@ internal class AgentReveals {
 
     /**
      * Moves each reveal on by the time that passed. Fractions of a character carry over, and a character is never cut
-     * in half.
+     * in half. A folded part shows as a whole and counts as one character: typed out, nothing would seem to happen.
      *
      * @param text the text of the editor
+     * @param collapsedEndAt the end of the folded part that has a position within it, null if it is not folded
      * @return what became visible
      */
-    fun step(elapsedMs: Long, text: String): List<Revealed> {
+    fun step(elapsedMs: Long, text: String, collapsedEndAt: (Int) -> Int? = { null }): List<Revealed> {
         val revealed = mutableListOf<Revealed>()
         reveals.forEach { reveal ->
             reveal.carry += reveal.speed * elapsedMs
@@ -111,9 +112,22 @@ internal class AgentReveals {
             reveal.carry -= count
             while (count > 0 && reveal.hidden.isNotEmpty()) {
                 val range = reveal.hidden.first()
-                var until = minOf(range[1], range[0] + count)
-                if (until < range[1] && until in 1 until text.length && text[until - 1].isHighSurrogate()) until++
-                count -= until - range[0]
+                // a character, or a folded part as one, at a time
+                var until = range[0]
+                while (count > 0 && until < range[1]) {
+                    val collapsedEnd = collapsedEndAt(until)?.takeIf { it > until }
+                    if (collapsedEnd != null) {
+                        until = collapsedEnd
+                        count--
+                    } else {
+                        val from = until
+                        until++
+                        if (until < text.length && text[until - 1].isHighSurrogate()) until++
+                        // the speed is in UTF-16 units, as in the web client
+                        count -= until - from
+                    }
+                }
+                until = minOf(until, range[1])
                 revealed += Revealed(range[0], until, reveal.tag)
                 range[0] = until
                 if (range[0] >= range[1]) reveal.hidden.removeAt(0)

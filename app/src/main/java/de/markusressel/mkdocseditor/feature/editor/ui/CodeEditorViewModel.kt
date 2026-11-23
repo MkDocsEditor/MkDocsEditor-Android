@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
+import de.markusressel.kodeeditor.library.compose.KodeEditorLayout
 import de.markusressel.mkdocseditor.feature.editor.domain.AgentReveals
 import de.markusressel.mkdocseditor.feature.editor.domain.placeIn
 import de.markusressel.mkdocseditor.feature.editor.domain.captureView
@@ -1140,6 +1141,11 @@ internal class CodeEditorViewModel @Inject constructor(
     /** see [EditorTextController.revealAllowed] */
     internal fun onRevealAllowed(allowed: Boolean) {
         editorText.revealAllowed = allowed
+    }
+
+    /** the layout of the editor while it is shown, null when it is gone, so it is not kept beyond the screen */
+    internal fun onEditorLayout(layout: KodeEditorLayout?) {
+        editorText.collapsedRangeAt = layout?.let { it::collapsedRangeAt } ?: { null }
     }
 
     /** the source lines at the top of the editor and of the page, null for a side that was never shown */

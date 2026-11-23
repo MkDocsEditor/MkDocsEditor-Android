@@ -1,5 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
+import de.markusressel.kodeeditor.library.compose.KodeEditorLayout
 import androidx.compose.runtime.collectAsState
 import android.animation.ValueAnimator
 import androidx.compose.runtime.rememberUpdatedState
@@ -109,6 +110,7 @@ internal fun CodeEditorScreenContent(
     // not an event: it comes with every frame of a scroll
     onViewMoved: (editorTop: Double?, pageTop: Double?, editorZoom: Float?) -> Unit = { _, _, _ -> },
     onRevealAllowed: (Boolean) -> Unit = {},
+    onEditorLayout: (KodeEditorLayout?) -> Unit = {},
 ) {
     // from the window and not from the space of the editor: the keyboard takes away height, and that must
     // not close the page or change the arrangement while typing
@@ -279,6 +281,7 @@ internal fun CodeEditorScreenContent(
                         CodeEditorLayout(
                             modifier = Modifier.fillMaxSize().then(editorFocus.modifier),
                             restoreToCursor = editorFocus.hadFocus,
+                            onLayout = onEditorLayout,
                             state = editorState,
                             remotePeers = remotePeers,
                             settings = uiState.editorSettings,

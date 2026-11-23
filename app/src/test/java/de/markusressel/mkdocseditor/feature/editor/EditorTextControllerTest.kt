@@ -372,4 +372,21 @@ class EditorTextControllerTest {
         assertEquals(emptyList(), controller.editorState.rangeStyles)
         assertFalse(controller.revealing.value)
     }
+
+    @Test
+    fun `a folded part of an agent's text appears as a whole`() {
+        val document = TestDocument("hello world")
+        val controller = controller()
+        controller.bind(document)
+        controller.revealAllowed = true
+        // what the layout reports while "brave " is folded
+        controller.collapsedRangeAt = { if (it in 6 until 12) TextRange(6, 12) else null }
+
+        val splices = document.remoteEdit("hello brave world")
+        controller.onRemoteChange(document.text, splices, "bob", listOf(AgentReveal("agent-1", "i1", listOf(6 until 12))))
+        controller.stepReveals(17)
+
+        assertEquals(emptyList(), controller.editorState.rangeStyles)
+        assertFalse(controller.revealing.value)
+    }
 }
