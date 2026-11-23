@@ -134,6 +134,8 @@ internal class EditorTextController(
     /** Connects the editor to another document */
     fun bind(document: EditableTextDocument) {
         this.document = document
+        // a fade of the old document would show on the text of the new one
+        editorState.finishAppearing()
         showInEditor { editorState.setText(document.text.orEmpty(), TextRange.Zero) }
         onPeersChanged(emptyList())
         onGhostsChanged(emptyList())
@@ -179,7 +181,8 @@ internal class EditorTextController(
     }
 
     /**
-     * Another user changed the document
+     * Another user changed the document. The inserted text fades in, if the editor animates that; typing of the user
+     * never ends such a fade, many people can write at the same time.
      *
      * @param text the text of the document after the change
      * @param splices the change, each one refers to the text after the one before it
@@ -188,7 +191,11 @@ internal class EditorTextController(
     fun onRemoteChange(text: String, splices: List<TextSplice>, author: String? = null) {
         var fits = true
         showInEditor {
-            editorState.applyRemote(splices.map { EditorSplice(it.index, it.deleteCount, it.insert) })
+            editorState.applyRemote(
+                splices.map { EditorSplice(it.index, it.deleteCount, it.insert) },
+                appear = true,
+                appearTag = author.orEmpty(),
+            )
             // an edit on a wrong base text would change the wrong characters of the document
             if (editorState.text != text) {
                 Timber.e("The editor differs from the document after a remote change")

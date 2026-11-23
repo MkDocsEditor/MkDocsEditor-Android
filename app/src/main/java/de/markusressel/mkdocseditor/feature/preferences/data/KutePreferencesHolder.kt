@@ -175,6 +175,7 @@ class KutePreferencesHolder @Inject constructor(
                         editorTextSizePreference,
                         editorAuthorHighlightPreference,
                         editorScrollSyncPreference,
+                        editorAnimateRemoteEditsPreference,
                     )
                 )
             )
@@ -263,6 +264,16 @@ class KutePreferencesHolder @Inject constructor(
         KuteBooleanPreference(key = context.getString(R.string.editor_scroll_sync_key),
             icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_swap_vertical),
             title = context.getString(R.string.editor_scroll_sync_title),
+            defaultValue = true,
+            dataProvider = dataProvider,
+            onPreferenceChangedListener = { _, _ -> })
+    }
+
+    /** whether text that others type fades in, see [EditorSettings.animateRemoteEdits] */
+    val editorAnimateRemoteEditsPreference by lazy {
+        KuteBooleanPreference(key = context.getString(R.string.editor_animate_remote_edits_key),
+            icon = iconHelper.getPreferenceIcon(MaterialDesignIconic.Icon.gmi_flare),
+            title = context.getString(R.string.editor_animate_remote_edits_title),
             defaultValue = true,
             dataProvider = dataProvider,
             onPreferenceChangedListener = { _, _ -> })

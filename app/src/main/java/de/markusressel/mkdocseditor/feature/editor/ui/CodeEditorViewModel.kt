@@ -356,6 +356,8 @@ internal class CodeEditorViewModel @Inject constructor(
                     authorHighlight = AuthorHighlightMode.fromValue(authors),
                     scrollSync = scrollSync,
                 )
+            }.combine(preferencesHolder.editorAnimateRemoteEditsPreference.persistedValue) { settings, animate ->
+                settings.copy(animateRemoteEdits = animate)
             }.collect { settings -> _uiState.update { it.copy(editorSettings = settings) } }
         }
 

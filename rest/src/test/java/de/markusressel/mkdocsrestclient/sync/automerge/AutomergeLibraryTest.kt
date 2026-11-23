@@ -4,8 +4,10 @@ import org.automerge.Cursor
 import org.automerge.Document
 import org.automerge.ObjectId
 import org.automerge.ObjectType
+import org.automerge.PatchAction
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 /**
  * Pins down the behaviour of automerge-java that the sync code relies on.
@@ -79,5 +81,75 @@ class AutomergeLibraryTest {
         val loaded = Document.load(doc.save()).fork(actor)
         assertEquals(actor.toList(), loaded.actorId.toList())
         assertEquals(actor.toList(), Document(actor).actorId.toList())
+    }
+
+    // The positions of an agent's focus and change come from the server in code points, see docs/agent-presence.md
+    // of the backend. These pin down the units and the rules the client builds on.
+
+    @Test
+    fun `a cursor made at older heads counts code points and resolves in the current text`() {
+        val (doc, text) = newTextDocument("a😀bc")
+        val old = doc.heads
+        doc.startTransaction().use { tx ->
+            tx.spliceText(text, 0, 0, "😀😀")
+            tx.commit()
+        }
+
+        // 'b' is the third code point at the old heads, and the fifth now
+        assertEquals(4, doc.lookupCursorIndex(text, doc.makeCursor(text, 2, old)))
+        assertEquals(2, doc.lookupCursorIndex(text, doc.makeCursor(text, 2, old), old))
+    }
+
+    @Test
+    fun `a cursor at the end of the text can not be made, with heads neither`() {
+        val (doc, text) = newTextDocument("a😀b")
+        val old = doc.heads
+        doc.startTransaction().use { tx ->
+            tx.spliceText(text, 3, 0, "cd")
+            tx.commit()
+        }
+
+        // AutomergeException is not public
+        assertEquals("index 3 is out of bounds", assertFailsWith<RuntimeException> { doc.makeCursor(text, 3, old) }.message)
+        assertEquals("index 5 is out of bounds", assertFailsWith<RuntimeException> { doc.makeCursor(text, 5) }.message)
+        // so the end is the cursor of the last character, plus one
+        assertEquals(3, doc.lookupCursorIndex(text, doc.makeCursor(text, 2, old)) + 1)
+    }
+
+    @Test
+    fun `a cursor on a character that was deleted later resolves to the next one that is left`() {
+        val (doc, text) = newTextDocument("ab😀def")
+        val old = doc.heads
+        doc.startTransaction().use { tx ->
+            tx.spliceText(text, 1, 3, "")
+            tx.commit()
+        }
+
+        assertEquals("aef", doc.text(text).get())
+        assertEquals(1, doc.lookupCursorIndex(text, doc.makeCursor(text, 2, old)))
+    }
+
+    @Test
+    fun `the patches of a diff count code points and follow each other in the order of the text`() {
+        val (doc, text) = newTextDocument("0😀23456789")
+        val base = doc.heads
+        doc.startTransaction().use { tx ->
+            tx.spliceText(text, 8, 1, "")
+            tx.spliceText(text, 1, 0, "AB")
+            tx.spliceText(text, 6, 0, "Z")
+            tx.spliceText(text, 0, 1, "")
+            tx.commit()
+        }
+
+        assertEquals("AB😀23Z45679", doc.text(text).get())
+        val patches = doc.diff(base, doc.heads).map { patch ->
+            when (val action = patch.action) {
+                is PatchAction.SpliceText -> "insert ${action.text} at ${action.index}"
+                is PatchAction.DeleteList -> "delete ${action.length} at ${action.index}"
+                else -> action.toString()
+            }
+        }
+        // each one refers to the text after the ones before it, not to the text before the change
+        assertEquals(listOf("delete 1 at 0", "insert AB at 0", "insert Z at 5", "delete 1 at 10"), patches)
     }
 }
