@@ -47,7 +47,6 @@ import de.markusressel.mkdocseditor.feature.editor.domain.FOLLOW_PAUSE_MIN_MS
 import de.markusressel.mkdocseditor.feature.editor.domain.EditorScrollView
 import de.markusressel.mkdocseditor.feature.editor.domain.FollowTarget
 import de.markusressel.mkdocseditor.feature.editor.domain.lineOfPosition
-import de.markusressel.mkdocseditor.feature.editor.domain.SyncAnchor
 import de.markusressel.mkdocseditor.feature.editor.domain.editorTargetOf
 import de.markusressel.mkdocseditor.feature.editor.domain.lineCountOf
 import kotlinx.coroutines.flow.first
@@ -128,16 +127,17 @@ internal fun CodeEditorLayout(
             .collect { scrollSync.onEditorTop(it) }
     }
     LaunchedEffect(viewState, scrollSync) {
-        val line = scrollSync?.editorRestore ?: return@LaunchedEffect
-        // after a recreation: back to the line at the top, once the editor is laid out and has the text, which comes
-        // later after process death
+        val anchor = scrollSync?.editorRestore ?: return@LaunchedEffect
+        val line = anchor.line
+        // after a recreation back to the line at the top, after reading to the page's line, once the editor is laid out
+        // and has the text, which comes later after process death. The end of the text is a line too.
         withTimeoutOrNull(RESTORE_WAIT_MS) {
-            snapshotFlow { viewState.visibleRange != null && lineCountOf(state.text) > line.toInt() }.first { it }
+            snapshotFlow { viewState.visibleRange != null && lineCountOf(state.text) >= line }.first { it }
             if (restoreToCursor) {
                 // the editor gets its focus back, and the keyboard opens at the cursor
                 viewState.scrollToPosition(state.selection.end, animate = false)
             } else {
-                val target = editorTargetOf(SyncAnchor(line, 0f), lineCountOf(state.text))
+                val target = editorTargetOf(anchor, lineCountOf(state.text))
                 viewState.scrollToLine(target.line, target.fraction, target.viewportFraction, animate = false)
             }
         }
