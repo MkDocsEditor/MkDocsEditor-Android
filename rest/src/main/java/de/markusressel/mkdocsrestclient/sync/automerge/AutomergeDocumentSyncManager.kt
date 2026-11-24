@@ -72,10 +72,10 @@ class AutomergeDocumentSyncManager(
         get() = session.documentId
 
     override val text: String?
-        get() = session.text
+        get() = recovering({ session.text }) { session.text }
 
     override val version: DocumentVersion?
-        get() = session.version
+        get() = recovering({ session.version }) { session.version }
 
     override val localAuthor: String?
         get() = session.localAuthor
@@ -84,7 +84,7 @@ class AutomergeDocumentSyncManager(
         get() = session.hasLocalCopy
 
     override val hasUnsyncedChanges: Boolean
-        get() = session.hasUnsyncedChanges
+        get() = recovering({ session.hasUnsyncedChanges }) { session.hasUnsyncedChanges }
 
     override val readOnly: Boolean
         get() = session.readOnly
@@ -114,7 +114,7 @@ class AutomergeDocumentSyncManager(
             override fun onMessage(text: String) = post {
                 lastReceivedAt = SystemClock.elapsedRealtime()
                 try {
-                    session.onMessage(text)
+                    recovering({}) { session.onMessage(text) }
                 } catch (e: Exception) {
                     Timber.e(e, "Error handling sync message")
                 }
@@ -144,7 +144,7 @@ class AutomergeDocumentSyncManager(
         handler.removeCallbacks(reconnectRunnable)
         handler.removeCallbacks(heartbeatRunnable)
         if (connection.isConnected) {
-            session.flushSync()
+            recovering({}) { session.flushSync() }
         }
         connection.disconnect(code, reason)
         session.onDisconnected()
@@ -160,7 +160,7 @@ class AutomergeDocumentSyncManager(
         baseText: String,
         splices: List<TextSplice>,
     ): DocumentVersion? {
-        val applied = session.applyLocalEdit(base, baseText, splices)
+        val applied = recovering({ null }) { session.applyLocalEdit(base, baseText, splices) }
         if (applied != null && !handler.hasCallbacks(syncRunnable)) {
             handler.postDelayed(syncRunnable, SYNC_BATCH_DELAY_MS)
         }
@@ -173,12 +173,12 @@ class AutomergeDocumentSyncManager(
      */
     override fun onLocalSelectionChanged(anchor: Int?, head: Int?) = presence.onSelection(anchor, head)
 
-    override fun onLocalColorChanged(color: String?) = session.updateLocalColor(color)
+    override fun onLocalColorChanged(color: String?) = recovering({}) { session.updateLocalColor(color) }
 
     override fun onLocalViewportChanged(top: Int?, bottom: Int?) = presence.onViewport(top, bottom)
 
     override fun onPresenceIndexesChanged(enabled: Boolean) {
-        session.sendPresenceIndexes = enabled
+        recovering({}) { session.sendPresenceIndexes = enabled }
     }
 
     /**
@@ -187,7 +187,7 @@ class AutomergeDocumentSyncManager(
     override fun persistNow() {
         handler.removeCallbacks(persistRunnable)
         try {
-            session.persist()
+            recovering({}) { session.persist() }
         } catch (e: Exception) {
             Timber.e(e, "Could not persist document")
         }
@@ -205,10 +205,10 @@ class AutomergeDocumentSyncManager(
         post = { runnable, delayMs -> handler.postDelayed(runnable, delayMs) },
         cancel = handler::removeCallbacks,
         isPosted = handler::hasCallbacks,
-        send = session::updateLocalPresence,
+        send = { selection, viewport -> recovering({}) { session.updateLocalPresence(selection, viewport) } },
     )
 
-    private val syncRunnable = Runnable { session.flushSync() }
+    private val syncRunnable = Runnable { recovering({}) { session.flushSync() } }
 
     private val persistRunnable = Runnable { persistNow() }
 
@@ -223,7 +223,7 @@ class AutomergeDocumentSyncManager(
                 return
             }
             if (now - lastSentAt >= HEARTBEAT_INTERVAL_MS) {
-                session.sendHeartbeat()
+                recovering({}) { session.sendHeartbeat() }
             }
             scheduleHeartbeat()
         }
@@ -284,6 +284,32 @@ class AutomergeDocumentSyncManager(
                 reconnectAttempt++
                 handler.postDelayed(reconnectRunnable, delay)
             }
+        }
+    }
+
+    /**
+     * Runs [block] on the session. A panic of Automerge breaks the copy in memory for good (every later call panics
+     * too), so instead of ending the app the copy is loaded again from the store and the connection starts over.
+     *
+     * @param fallback what to answer when [block] panicked, after the copy was loaded again
+     */
+    private inline fun <T> recovering(fallback: () -> T, block: () -> T): T = try {
+        block()
+    } catch (e: RuntimeException) {
+        if (!e.isAutomergePanic()) throw e
+        recoverFromPanic(e)
+        fallback()
+    }
+
+    private fun recoverFromPanic(panic: RuntimeException) {
+        Timber.e(panic, "Automerge panicked, loading the local copy of ${session.documentId} again")
+        handler.removeCallbacks(syncRunnable)
+        handler.removeCallbacks(persistRunnable)
+        session.reloadAfterPanic()
+        if (connection.isConnected) {
+            connection.disconnect(CloseCode.GOING_AWAY, "Reloading the document")
+            // reconnects like after a failure, with a new sync state for the new copy
+            onConnectionClosed(code = null, httpStatus = null, throwable = panic)
         }
     }
 

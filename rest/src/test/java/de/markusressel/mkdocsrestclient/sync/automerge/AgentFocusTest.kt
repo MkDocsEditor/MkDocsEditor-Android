@@ -1,5 +1,7 @@
 package de.markusressel.mkdocsrestclient.sync.automerge
 
+import java.security.SecureRandom
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -102,5 +104,36 @@ class AgentFocusTest {
 
         assertEquals(emptyList(), agent.selections)
         assertNull(agent.viewport)
+    }
+
+    @Test
+    fun `the focus of an agent that writes while the user types does not break the document`() {
+        // automerge-java 0.0.9 panics on a fork at the heads of such a history after a few dozen changes, and a panic
+        // breaks the document: every later call panics too, which ended the app
+        // fixed actors, so the history is the same in each run
+        server = FakeSyncServer("# Testing\n\nSome text here with a line.\n", actorId = ByteArray(16) { 1 })
+        val actors = object : SecureRandom() {
+            override fun nextBytes(bytes: ByteArray) = bytes.fill(2)
+        }
+        session = DocumentSyncSession(server.documentId, InMemoryDocumentStore(), listener, random = actors, now = { time })
+        server.connect(session)
+        server.pump()
+        val random = Random(1)
+        repeat(100) { round ->
+            val text = server.document.text
+            val at = if (random.nextBoolean()) text.length else random.nextInt(text.length + 1)
+            val words = "w$round "
+            server.edit(text.substring(0, at) + words + text.substring(at))
+            if (random.nextInt(4) == 0) {
+                session.onLocalTextChanged(session.text + "x")
+                session.flushSync()
+            }
+            server.pump()
+
+            agentFocus(revision, from = at, to = at + words.length)
+            // at the end of the text it may be on either side of a concurrent change of the user
+            assertEquals(words.length, agent.selections.single().let { it.end - it.start }, "round $round")
+        }
+        assertEquals(server.document.text, session.text)
     }
 }

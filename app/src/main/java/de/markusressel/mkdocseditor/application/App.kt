@@ -9,6 +9,7 @@ import coil3.SingletonImageLoader
 import com.github.ajalt.timberkt.Timber
 import dagger.hilt.android.HiltAndroidApp
 import de.markusressel.mkdocseditor.BuildConfig
+import de.markusressel.mkdocseditor.application.log.ErrorLogTree
 import de.markusressel.mkdocseditor.application.log.FileTree
 import de.markusressel.mkdocseditor.data.persistence.DocumentPersistenceManager
 import de.markusressel.mkdocseditor.event.BusEvent
@@ -154,6 +155,14 @@ class App : Application(), Configuration.Provider, SingletonImageLoader.Factory 
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
             Timber.plant(FileTree(this))
+        }
+        // release plants nothing else, so errors and crashes would leave no trace
+        val errorLog = ErrorLogTree(getExternalFilesDir(null) ?: filesDir)
+        Timber.plant(errorLog)
+        val previous = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            errorLog.write(throwable, fatal = true)
+            previous?.uncaughtException(thread, throwable)
         }
     }
 

@@ -880,4 +880,28 @@ class DocumentSyncSessionTest {
         server.pump()
         assertEquals("abc", session.text)
     }
+
+    @Test
+    fun `after a panic of Automerge the copy is loaded again from the store, and the server brings back what it got`() {
+        val server = FakeSyncServer("one")
+        val listener = EditorListener()
+        val session = DocumentSyncSession(server.documentId, InMemoryDocumentStore(), listener)
+        val connection = server.connect(session)
+        server.pump()
+        session.type("one two", listener)
+        server.pump()
+        session.persist()
+        session.type("one two three", listener)
+        server.pump()
+
+        session.reloadAfterPanic()
+        server.disconnect(connection)
+        assertEquals("one two", session.text)
+        assertEquals("one two", listener.editorText)
+
+        server.connect(session)
+        server.pump()
+        assertEquals("one two three", session.text)
+        assertEquals("one two three", listener.editorText)
+    }
 }
