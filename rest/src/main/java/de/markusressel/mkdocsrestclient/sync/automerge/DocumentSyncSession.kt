@@ -967,6 +967,8 @@ class DocumentSyncSession(
         if (syncState == null) {
             return
         }
+        // the cursors point at characters of the edits not sent yet, and others resolve them when the presence arrives
+        flushSync()
         // a cursor runs on a timer, outside of any caller that could catch a failure, so one must not end the app
         val (selections, viewport) = try {
             val selections = localSelection?.let { (anchor, head) ->

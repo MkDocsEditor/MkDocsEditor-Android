@@ -904,4 +904,30 @@ class DocumentSyncSessionTest {
         assertEquals("one two three", session.text)
         assertEquals("one two three", listener.editorText)
     }
+
+    @Test
+    fun `the presence goes out after the edits it points into`() {
+        val server = FakeSyncServer("abc")
+        val alice = DocumentSyncSession(server.documentId, InMemoryDocumentStore(), EditorListener())
+        val seen = mutableListOf<List<RemoteSelection>>()
+        val bob = DocumentSyncSession(server.documentId, InMemoryDocumentStore(), object : DocumentSyncSession.Listener {
+            override fun onPeersChanged(peers: List<RemotePeer>) {
+                peers.singleOrNull()?.let { seen += it.selections }
+            }
+        })
+        server.connect(alice, username = "alice")
+        server.connect(bob, username = "bob")
+        server.pump()
+        seen.clear()
+
+        // typed, and the throttled cursor goes out before the timer of the batched sync
+        assertTrue(alice.onLocalTextChanged("abXc"))
+        alice.updateLocalPresence(selection = Pair<Int?, Int?>(3, 3), viewport = null)
+        alice.flushSync()
+        server.pump()
+
+        assertEquals("abXc", bob.text)
+        // never resolved in the text without the X, where it would be one too far to the left
+        assertEquals(listOf(listOf(RemoteSelection(3, 3))), seen.filter { it.isNotEmpty() }.distinct())
+    }
 }
