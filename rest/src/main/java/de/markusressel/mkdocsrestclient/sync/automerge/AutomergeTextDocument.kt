@@ -90,6 +90,7 @@ class AutomergeTextDocument private constructor(
         val text = try {
             document.text(contentId, heads).orElse(null)
         } catch (e: RuntimeException) {
+            if (e.isAutomergePanic()) throw e
             null
         }
         require(text == expectedText) { "Unknown document state $this" }
@@ -210,6 +211,7 @@ class AutomergeTextDocument private constructor(
             val current = text
             current.offsetByCodePoints(0, codePointIndex.coerceIn(0, current.codePointCount(0, current.length)))
         } catch (e: Exception) {
+            if (e.isAutomergePanic()) throw e
             null
         }
     }
@@ -218,20 +220,22 @@ class AutomergeTextDocument private constructor(
     private val knownHeads = HashSet<String>()
 
     /**
-     * Whether this document has every change of the heads (hex). automerge-java has no call for it: the text at
-     * unknown heads is empty without an error, only a fork at them fails.
+     * Whether this document has every change of the heads (hex). automerge-java has no call for it, and a fork at the
+     * heads panics in its native code for some histories (automerge 0.8.0, MissingOps), which breaks the document. So
+     * each head is checked on its own: at an unknown one the content is missing, it is in every change after the first.
      */
     fun hasHeads(headsHex: List<String>): Boolean {
         if (knownHeads.containsAll(headsHex)) return true
-        return try {
-            document.fork(headsHex.map { RestoredChangeHash(it.hexToBytes()) as ChangeHash }.toTypedArray()).free()
-            knownHeads.addAll(headsHex)
-            true
-        } catch (e: RuntimeException) {
-            false
-        } catch (e: IllegalArgumentException) {
-            false
+        val known = headsHex.all { hex ->
+            try {
+                document.get(ObjectId.ROOT, CONTENT_KEY, arrayOf<ChangeHash>(RestoredChangeHash(hex.hexToBytes()))).isPresent
+            } catch (e: RuntimeException) {
+                if (e.isAutomergePanic()) throw e
+                false
+            }
         }
+        if (known) knownHeads.addAll(headsHex)
+        return known
     }
 
     /**
@@ -255,6 +259,7 @@ class AutomergeTextDocument private constructor(
                 document.lookupCursorIndex(contentId, document.makeCursor(contentId, clamped.toLong(), heads)).toInt()
             }
         } catch (e: RuntimeException) {
+            if (e.isAutomergePanic()) throw e
             return positionOfCodePoint(index)
         }
         return positionOfCodePoint(codePoint)
@@ -344,6 +349,7 @@ class AutomergeTextDocument private constructor(
     fun actorsSince(heads: Array<ChangeHash>): Set<String>? = try {
         changeActors(document.encodeChangesSince(heads))
     } catch (e: RuntimeException) {
+        if (e.isAutomergePanic()) throw e
         null
     } catch (e: DataFormatException) {
         null
@@ -442,6 +448,12 @@ class AutomergeTextDocument private constructor(
         }
     }
 }
+
+/**
+ * Whether this is a panic of the native code of Automerge, which automerge-java turns into a RuntimeException. The
+ * document is broken afterwards: every later call on it panics too. So one must never be caught and ignored.
+ */
+fun Throwable.isAutomergePanic(): Boolean = this is RuntimeException && message?.startsWith("Rust panic") == true
 
 /**
  * Lower case hex representation of these bytes

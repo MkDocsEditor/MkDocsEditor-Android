@@ -267,16 +267,19 @@ class DocumentSyncSession(
 
     // Ids come from the path, so two servers can share one. A copy of another server stays in the store for that server
     // until this session persists, which keeps it aside (see reconcileWithStore). Its edits must never reach this server.
-    private var local: LocalCopy? = store.load(documentId)?.takeUnless { it.isFromOtherServer(origin) }?.let { stored ->
-        storedState = stored.documentState
-        storedOrigin = stored.origin
-        LocalCopy(
-            document = AutomergeTextDocument.load(stored.documentState, stored.actorId.hexToBytes()),
-            actorId = stored.actorId,
-            epoch = stored.epoch,
-            serverHeads = stored.serverHeads,
-        )
-    }
+    private var local: LocalCopy? = loadStoredCopy()
+
+    private fun loadStoredCopy(): LocalCopy? =
+        store.load(documentId)?.takeUnless { it.isFromOtherServer(origin) }?.let { stored ->
+            storedState = stored.documentState
+            storedOrigin = stored.origin
+            LocalCopy(
+                document = AutomergeTextDocument.load(stored.documentState, stored.actorId.hexToBytes()),
+                actorId = stored.actorId,
+                epoch = stored.epoch,
+                serverHeads = stored.serverHeads,
+            )
+        }
 
     private var send: ((String) -> Unit)? = null
 
@@ -387,6 +390,18 @@ class DocumentSyncSession(
                 instanceColor = localColor,
             )
         )
+    }
+
+    /**
+     * Loads the local copy again from the store, after Automerge panicked: the copy in memory is broken then, every call
+     * on it panics too. Edits that were not persisted yet are lost, the server still has those it got. Call
+     * [onDisconnected] as well, the sync state belongs to the broken copy.
+     */
+    fun reloadAfterPanic() {
+        local = loadStoredCopy()
+        dirty = false
+        pendingAgentChanges.clear()
+        listener.onTextReplaced(local?.document?.text ?: "")
     }
 
     /**
@@ -572,6 +587,7 @@ class DocumentSyncSession(
                 if (splices.isNotEmpty()) listener.onRemoteChange(current.document.text, splices, author = null)
                 return
             } catch (e: Exception) {
+                if (e.isAutomergePanic()) throw e
                 Timber.e(e, "Could not merge the stored copy of $documentId")
             }
         }
@@ -834,6 +850,7 @@ class DocumentSyncSession(
             val ranges = try {
                 document.insertedSince(base, message.change)
             } catch (e: RuntimeException) {
+                if (e.isAutomergePanic()) throw e
                 Timber.w(e, "Could not find what an agent inserted")
                 return@mapNotNull null
             }
@@ -960,6 +977,7 @@ class DocumentSyncSession(
             }
             selections to viewport
         } catch (e: Exception) {
+            if (e.isAutomergePanic()) throw e
             Timber.e(e, "Could not create the cursors of the local presence")
             return
         }
