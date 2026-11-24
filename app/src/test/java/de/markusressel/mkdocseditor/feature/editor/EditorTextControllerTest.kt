@@ -7,6 +7,7 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.text.TextRange
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatAction
 import de.markusressel.mkdocseditor.feature.editor.ui.EditorTextController
+import de.markusressel.mkdocseditor.feature.editor.ui.MAX_REVEAL_LENGTH
 import de.markusressel.mkdocsrestclient.sync.automerge.AgentReveal
 import de.markusressel.mkdocsrestclient.sync.automerge.AutomergeTextDocument
 import de.markusressel.mkdocsrestclient.sync.automerge.DocumentVersion
@@ -335,29 +336,52 @@ class EditorTextControllerTest {
     }
 
     @Test
-    fun `the text of an agent is hidden in the call that applies it, and typing into it shows it`() {
+    fun `the text of an agent is hidden in the call that applies it, and typing shows it`() {
         val document = TestDocument("hello world")
         val controller = controller()
         controller.bind(document)
         controller.revealAllowed = true
         controller.onPeersChanged(listOf(RemotePeer("agent-1", "bob", null, null, listOf(RemoteSelection(17, 17)))))
 
-        val splices = document.remoteEdit("hello brave world")
-        controller.onRemoteChange(document.text, splices, "bob", listOf(AgentReveal("agent-1", "i1", listOf(6 until 12))))
+        RevealFrames(controller).use { frames ->
+            val splices = document.remoteEdit("hello brave world")
+            controller.onRemoteChange(document.text, splices, "bob", listOf(AgentReveal("agent-1", "i1", listOf(6 until 12))))
 
-        assertEquals(listOf(6 to 12), controller.editorState.rangeStyles.map { it.start to it.end })
-        assertTrue(controller.revealing.value)
-        // the agent's cursor is at the head of what is shown
-        assertEquals(listOf(RemoteSelection(6, 6)), controller.peers.value.single().selections)
+            assertEquals("hello brave world", controller.text)
+            assertEquals(listOf(6 to 12), controller.editorState.rangeStyles.map { it.start to it.end })
+            // the agent's cursor is at the head of what is shown
+            assertEquals(listOf(RemoteSelection(6, 6)), controller.peers.value.single().selections)
 
-        controller.stepReveals(30)
-        assertEquals(listOf(7 to 12), controller.editorState.rangeStyles.map { it.start to it.end })
+            // 60 characters a second: one in two frames
+            frames.advance(2 * RevealFrames.FRAME_MS)
+            assertEquals(listOf(7 to 12), controller.editorState.rangeStyles.map { it.start to it.end })
+            assertEquals(listOf(RemoteSelection(7, 7)), controller.peers.value.single().selections)
 
-        controller.select(12, 12)
-        controller.editorState.replaceSelection("!")
-        assertEquals(emptyList(), controller.editorState.rangeStyles)
-        assertFalse(controller.revealing.value)
-        assertEquals(listOf(RemoteSelection(17, 17)), controller.peers.value.single().selections)
+            controller.select(17, 17)
+            controller.editorState.replaceSelection("!")
+            assertEquals(emptyList(), controller.editorState.rangeStyles)
+            frames.advance(RevealFrames.FRAME_MS)
+            // back at the focus of the agent
+            assertEquals(listOf(RemoteSelection(17, 17)), controller.peers.value.single().selections)
+        }
+    }
+
+    @Test
+    fun `between its chunks an agent without a focus keeps its cursor at the end of what it wrote`() {
+        val document = TestDocument("hello world")
+        val controller = controller()
+        controller.bind(document)
+        controller.revealAllowed = true
+        controller.onPeersChanged(listOf(RemotePeer("agent-1", "bob", null, null, emptyList())))
+
+        RevealFrames(controller).use { frames ->
+            val splices = document.remoteEdit("hello brave world")
+            controller.onRemoteChange(document.text, splices, "bob", listOf(AgentReveal("agent-1", "i1", listOf(6 until 12))))
+            frames.advance(1000)
+
+            assertEquals(emptyList(), controller.editorState.rangeStyles)
+            assertEquals(listOf(RemoteSelection(12, 12)), controller.peers.value.single().selections)
+        }
     }
 
     @Test
@@ -369,24 +393,36 @@ class EditorTextControllerTest {
         val splices = document.remoteEdit("hello brave world")
         controller.onRemoteChange(document.text, splices, "bob", listOf(AgentReveal("agent-1", "i1", listOf(6 until 12))))
 
+        assertEquals("hello brave world", controller.text)
         assertEquals(emptyList(), controller.editorState.rangeStyles)
-        assertFalse(controller.revealing.value)
     }
 
     @Test
-    fun `a folded part of an agent's text appears as a whole`() {
+    fun `a long change of an agent shows at once`() {
         val document = TestDocument("hello world")
         val controller = controller()
         controller.bind(document)
         controller.revealAllowed = true
-        // what the layout reports while "brave " is folded
-        controller.collapsedRangeAt = { if (it in 6 until 12) TextRange(6, 12) else null }
+        val long = "x".repeat(MAX_REVEAL_LENGTH + 1)
+
+        val splices = document.remoteEdit("hello $long world")
+        controller.onRemoteChange(document.text, splices, "bob", listOf(AgentReveal("agent-1", "i1", listOf(6 until 6 + long.length))))
+
+        assertEquals("hello $long world", controller.text)
+        assertEquals(emptyList(), controller.editorState.rangeStyles)
+    }
+
+    @Test
+    fun `turning the reveal off shows the rest at once`() {
+        val document = TestDocument("hello world")
+        val controller = controller()
+        controller.bind(document)
+        controller.revealAllowed = true
 
         val splices = document.remoteEdit("hello brave world")
         controller.onRemoteChange(document.text, splices, "bob", listOf(AgentReveal("agent-1", "i1", listOf(6 until 12))))
-        controller.stepReveals(17)
+        controller.revealAllowed = false
 
         assertEquals(emptyList(), controller.editorState.rangeStyles)
-        assertFalse(controller.revealing.value)
     }
 }

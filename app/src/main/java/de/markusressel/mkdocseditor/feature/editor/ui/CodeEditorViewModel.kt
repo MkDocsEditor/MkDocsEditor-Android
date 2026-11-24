@@ -1,7 +1,7 @@
 package de.markusressel.mkdocseditor.feature.editor.ui
 
-import de.markusressel.kodeeditor.library.compose.KodeEditorLayout
-import de.markusressel.mkdocseditor.feature.editor.domain.AgentReveals
+import de.markusressel.kodeeditor.library.compose.layout.KodeEditorLayout
+import de.markusressel.kodeeditor.library.compose.reveal.KodeEditorReveal
 import de.markusressel.mkdocseditor.feature.editor.domain.placeIn
 import de.markusressel.mkdocseditor.feature.editor.domain.captureView
 import de.markusressel.mkdocseditor.data.persistence.SavedDocumentView
@@ -48,7 +48,7 @@ import de.markusressel.mkdocseditor.feature.editor.ui.compose.SplitMode
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.picker.PageReferences
 import de.markusressel.mkdocsrestclient.reference.ReferenceModel
 import androidx.compose.runtime.State
-import de.markusressel.kodeeditor.library.compose.KodeEditorState
+import de.markusressel.kodeeditor.library.compose.state.KodeEditorState
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -289,6 +289,9 @@ internal class CodeEditorViewModel @Inject constructor(
     /** the other users, see [EditorTextController.peers] */
     internal val editorPeers: State<List<RemotePeer>> = editorText.peers
 
+    /** the text of agents that is typed out, run by the editor while it is shown */
+    internal val agentReveals: State<Map<String, KodeEditorReveal>> = editorText.agentReveals
+
     private val session: DocumentSession = DocumentSession(
         scope = viewModelScope,
         text = editorText,
@@ -340,17 +343,11 @@ internal class CodeEditorViewModel @Inject constructor(
 
         launch { _uiState.update { it.copy(qrCodesAvailable = qrCodesSupport.isSupported()) } }
         launch { session.onPresenceIndexesChanged(serverFeatures.has(ServerFeature.PRESENCE_INDEXES)) }
-        // types out the text of agents while there is some
+        // the cursor of an agent moves with the text it types out
         launch {
-            snapshotFlow { editorText.revealing.value }.collectLatest { revealing ->
-                var last = SystemClock.uptimeMillis()
-                while (revealing) {
-                    delay(AgentReveals.STEP_MS)
-                    val now = SystemClock.uptimeMillis()
-                    editorText.stepReveals(now - last)
-                    last = now
-                }
-            }
+            snapshotFlow { editorText.agentReveals.value.values.map { it.head to it.end } }
+                .distinctUntilChanged()
+                .collect { editorText.onRevealsMoved() }
         }
         launch {
             val history = serverFeatures.has(ServerFeature.HISTORY)
@@ -1146,7 +1143,7 @@ internal class CodeEditorViewModel @Inject constructor(
 
     /** the layout of the editor while it is shown, null when it is gone, so it is not kept beyond the screen */
     internal fun onEditorLayout(layout: KodeEditorLayout?) {
-        editorText.collapsedRangeAt = layout?.let { it::collapsedRangeAt } ?: { null }
+        editorText.layout = layout
     }
 
     /** the source lines at the top of the editor and of the page, null for a side that was never shown */

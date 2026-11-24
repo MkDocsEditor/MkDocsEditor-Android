@@ -1,6 +1,6 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight
 
-import de.markusressel.kodeeditor.library.compose.FoldRegion
+import de.markusressel.kodeeditor.library.compose.fold.FoldRegion
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

@@ -1,8 +1,8 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight
 
-import de.markusressel.kodeeditor.library.compose.FoldRegion
-import de.markusressel.kodeeditor.library.compose.KodeEditorFoldProvider
-import de.markusressel.kodeeditor.library.compose.MarkdownFoldProvider
+import de.markusressel.kodeeditor.library.compose.fold.FoldRegion
+import de.markusressel.kodeeditor.library.compose.fold.KodeEditorFoldProvider
+import de.markusressel.kodeeditor.library.compose.fold.providers.MarkdownFoldProvider
 
 /**
  * What can be folded in a page of MkDocs: a section from its heading to the next heading of the same or a higher

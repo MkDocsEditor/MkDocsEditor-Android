@@ -10,8 +10,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import de.markusressel.kodeeditor.library.compose.KodeEditorState
-import de.markusressel.kodeeditor.library.compose.TextSplice
+import de.markusressel.kodeeditor.library.compose.state.KodeEditorState
+import de.markusressel.kodeeditor.library.compose.state.TextSplice
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.CodeEditorLayout
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
 import de.markusressel.mkdocsrestclient.sync.automerge.RemoteSelection

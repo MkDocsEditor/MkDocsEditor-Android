@@ -10,13 +10,13 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import de.markusressel.kodeeditor.library.compose.KodeEditorLayout
+import de.markusressel.kodeeditor.library.compose.layout.KodeEditorLayout
 import de.markusressel.mkdocseditor.feature.editor.domain.ChangeTarget
 import kotlinx.coroutines.flow.takeWhile
 import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRuns
 import de.markusressel.mkdocseditor.feature.editor.domain.lineShares
 import androidx.compose.ui.unit.sp
-import de.markusressel.kodeeditor.library.compose.rememberLineNumberColumn
+import de.markusressel.kodeeditor.library.compose.gutter.rememberLineNumberColumn
 import de.markusressel.mkdocseditor.feature.preferences.data.DEFAULT_EDITOR_TEXT_SIZE
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
@@ -40,8 +40,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
-import de.markusressel.kodeeditor.library.compose.KodeEditorViewState
-import de.markusressel.kodeeditor.library.compose.rememberKodeEditorViewState
+import de.markusressel.kodeeditor.library.compose.view.KodeEditorViewState
+import de.markusressel.kodeeditor.library.compose.view.rememberKodeEditorViewState
 import de.markusressel.mkdocseditor.R
 import android.os.SystemClock
 import de.markusressel.mkdocseditor.feature.editor.domain.FOLLOW_PAUSE_MIN_MS
@@ -70,9 +70,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import de.markusressel.kodeeditor.library.compose.KodeEditor
 import de.markusressel.kodeeditor.library.compose.KodeEditorDefaults
-import de.markusressel.kodeeditor.library.compose.KodeEditorAnimations
-import de.markusressel.kodeeditor.library.compose.KodeEditorAppearance
-import de.markusressel.kodeeditor.library.compose.KodeEditorState
+import de.markusressel.kodeeditor.library.compose.animation.KodeEditorAnimations
+import de.markusressel.kodeeditor.library.compose.animation.KodeEditorAppearance
+import de.markusressel.kodeeditor.library.compose.state.KodeEditorState
 import de.markusressel.kodehighlighter.core.ui.KodeTextFieldDefaults
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.EditorColorScheme
 import de.markusressel.mkdocseditor.feature.editor.ui.compose.highlight.EditorPalette
@@ -301,7 +301,7 @@ internal fun CodeEditorLayout(
             enabled = true,
             readOnly = readOnly,
             lineWrapping = settings.lineWrapping,
-            animations = if (settings.animateRemoteEdits) RemoteEditsFadeIn else KodeEditorAnimations(),
+            animations = if (settings.animateRemoteEdits) RemoteEditsFadeIn else NoMotion,
             gutterColumns = listOfNotNull(numbers, authorStrip),
             onTextLayout = { currentOnLayout(it) },
             remoteCursors = remoteCursors.cursors,
@@ -407,8 +407,11 @@ internal data class EditorSettings(
     val animateRemoteEdits: Boolean = true,
 )
 
-/** how text that others type fades in */
+/** how text that others type fades in, and the cursors of others glide */
 internal val RemoteEditsFadeIn = KodeEditorAnimations(appearance = KodeEditorAppearance())
+
+/** "Animate edits of others" is off: no fades and no glides, also not of the user's own large changes */
+private val NoMotion = KodeEditorAnimations(appearance = null)
 private val NoAuthorRuns: State<AuthorRuns> = mutableStateOf(AuthorRuns())
 private val AUTHOR_STRIP_WIDTH = 3.dp
 private const val OPENING_SETTLE_MS = 1_000L

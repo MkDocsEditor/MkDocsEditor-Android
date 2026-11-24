@@ -6,14 +6,13 @@ import de.markusressel.mkdocsrestclient.reference.AuthorshipModel
 import androidx.compose.runtime.State
 import de.markusressel.mkdocsrestclient.sync.automerge.RemoteSelection
 import de.markusressel.mkdocsrestclient.sync.automerge.AgentReveal
-import de.markusressel.mkdocseditor.feature.editor.domain.AgentReveals
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.AnnotatedString
+import de.markusressel.mkdocseditor.feature.editor.domain.splitAgentText
 import androidx.compose.runtime.mutableStateOf
+import de.markusressel.kodeeditor.library.compose.layout.KodeEditorLayout
+import de.markusressel.kodeeditor.library.compose.reveal.KodeEditorReveal
 import androidx.compose.ui.text.TextRange
-import de.markusressel.kodeeditor.library.compose.KodeEditorListener
-import de.markusressel.kodeeditor.library.compose.KodeEditorState
+import de.markusressel.kodeeditor.library.compose.state.KodeEditorListener
+import de.markusressel.kodeeditor.library.compose.state.KodeEditorState
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatAction
 import de.markusressel.mkdocseditor.feature.editor.domain.FormatEdit
 import de.markusressel.mkdocseditor.feature.editor.domain.MarkdownFormatting
@@ -24,7 +23,7 @@ import de.markusressel.mkdocsrestclient.sync.automerge.RemoteGhost
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePosition
 import de.markusressel.mkdocsrestclient.sync.text.TextSplice
 import timber.log.Timber
-import de.markusressel.kodeeditor.library.compose.TextSplice as EditorSplice
+import de.markusressel.kodeeditor.library.compose.state.TextSplice as EditorSplice
 
 /**
  * The text of the editor: connects the [KodeEditorState] to the open document, and applies the
@@ -74,13 +73,13 @@ internal class EditorTextController(
 
     private val _peers = mutableStateOf(emptyList<RemotePeer>())
 
-    /** text of agents that is still being typed out */
-    private val reveals = AgentReveals()
+    private val _agentReveals = mutableStateOf(emptyMap<String, KodeEditorReveal>())
 
-    private val _revealing = mutableStateOf(false)
-
-    /** whether text of agents is being typed out, then [stepReveals] has to be called every [AgentReveals.STEP_MS] */
-    val revealing: State<Boolean> = _revealing
+    /**
+     * The text of each agent that is typed out, by client id. The editor runs them with [KodeEditorReveal.keepRevealing]
+     * while it is shown, and calls [onRevealsMoved] when they move.
+     */
+    val agentReveals: State<Map<String, KodeEditorReveal>> = _agentReveals
 
     /**
      * Whether live changes of agents may be typed out: the editor is shown and visible, the setting "Animate edits of
@@ -89,10 +88,14 @@ internal class EditorTextController(
     var revealAllowed: Boolean = false
         set(value) {
             field = value
-            if (!value && !reveals.isEmpty) {
-                reveals.finishAll()
-                showReveals()
-            }
+            if (!value) stopReveals()
+        }
+
+    /** the layout of the editor while it is shown, so the reveals show a folded part as a whole */
+    var layout: KodeEditorLayout? = null
+        set(value) {
+            field = value
+            agentReveals.value.values.forEach { it.layout = value }
         }
 
     /**
@@ -156,11 +159,8 @@ internal class EditorTextController(
                 val selection = editorState.selection
                 if (selection == reportedSelection) return
                 reportedSelection = selection
-                if (!applyingDocument) {
-                    // a tap on the text that is being typed out shows it at once; a cursor elsewhere does not
-                    if (selection.collapsed && reveals.onTap(selection.start)) showReveals()
-                    onSelectionChanged(selection)
-                }
+                // a cursor in the text that is typed out shows it at once, the reveal does that itself
+                if (!applyingDocument) onSelectionChanged(selection)
             }
         })
     }
@@ -168,8 +168,8 @@ internal class EditorTextController(
     /** Connects the editor to another document */
     fun bind(document: EditableTextDocument) {
         this.document = document
-        reveals.finishAll()
-        showReveals()
+        stopReveals()
+        _agentReveals.value = emptyMap()
         // a fade of the old document would show on the text of the new one
         editorState.finishAppearing()
         showInEditor { editorState.setText(document.text.orEmpty(), TextRange.Zero) }
@@ -191,6 +191,7 @@ internal class EditorTextController(
 
     /** The whole text of the document changed */
     fun onTextReplaced() {
+        stopReveals()
         showInEditor { editorState.setText(document.text ?: documentText) }
         forgetAuthors()
     }
@@ -226,37 +227,45 @@ internal class EditorTextController(
      * @param agentReveals live changes of agents among [splices], whose text is typed out if [revealAllowed]
      */
     fun onRemoteChange(text: String, splices: List<TextSplice>, author: String? = null, agentReveals: List<AgentReveal> = emptyList()) {
+        // a long change shows at once, after what the agent still types out
+        val typedOut = agentReveals.filter { reveal ->
+            val length = reveal.ranges.sumOf { it.last + 1 - it.first }
+            (revealAllowed && length in 1..MAX_REVEAL_LENGTH).also { if (!it) _agentReveals.value[reveal.clientId]?.stop() }
+        }
+        val split = splitAgentText(text, splices, typedOut.groupBy({ it.clientId }, { it.ranges }).mapValues { it.value.flatten() })
         var fits = true
         showInEditor {
             editorState.applyRemote(
-                splices.map { EditorSplice(it.index, it.deleteCount, it.insert) },
+                split.splices.map { EditorSplice(it.index, it.deleteCount, it.insert) },
                 appear = true,
                 appearTag = author.orEmpty(),
             )
             // in the same call, so the text of an agent never shows for a frame before it is hidden
-            var revealsChanged = false
-            splices.forEach { revealsChanged = reveals.onEdit(it.index, it.deleteCount, it.insert.length) || revealsChanged }
-            agentReveals.forEach {
-                // a new change of the same agent finishes its running reveal first
-                val running = it.clientId in reveals.heads
-                if (revealAllowed) reveals.start(it.clientId, it.instanceId, it.ranges) else reveals.finish(it.clientId)
-                revealsChanged = revealsChanged || running || it.clientId in reveals.heads
-            }
-            if (revealsChanged || agentReveals.isNotEmpty()) showReveals()
+            split.chunks.forEach { revealOf(it.clientId).insert(it.position, it.text) }
             // an edit on a wrong base text would change the wrong characters of the document
             if (editorState.text != text) {
                 Timber.e("The editor differs from the document after a remote change")
+                stopReveals()
                 editorState.setText(text)
                 fits = false
             }
         }
-        if (!fits) {
-            reveals.finishAll()
-            showReveals()
-            return forgetAuthors()
-        }
+        if (split.chunks.isNotEmpty()) publishPeers()
+        if (!fits) return forgetAuthors()
         splices.forEach { moveAuthors(it.index, it.deleteCount, it.insert.length, author) }
     }
+
+    private fun revealOf(clientId: String): KodeEditorReveal = _agentReveals.value[clientId]
+        ?: KodeEditorReveal(editorState, tag = "agent:$clientId").also {
+            it.layout = layout
+            _agentReveals.value += clientId to it
+        }
+
+    /** shows all text of agents that is still hidden */
+    private fun stopReveals() = agentReveals.value.values.forEach { it.stop() }
+
+    /** the reveals moved on, so the cursors of the agents move with them */
+    fun onRevealsMoved() = publishPeers()
 
     fun onAuthorColorsChanged(colors: Map<String, String?>) {
         _authorColors.value = authorColors + colors
@@ -279,38 +288,27 @@ internal class EditorTextController(
 
     fun onPeersChanged(peers: List<RemotePeer>) {
         reportedPeers = peers
+        // the reveals of agents that left, once they showed everything
+        val reveals = agentReveals.value
+        val gone = reveals.filter { (clientId, reveal) -> !reveal.isRevealing && peers.none { it.clientId == clientId } }
+        if (gone.isNotEmpty()) _agentReveals.value = reveals - gone.keys
         _authorColors.value = authorColors + peers.associate { it.username to it.color }
         publishPeers()
     }
 
-    /** An agent that types out its text has its cursor at the head of what is shown, and no viewport to jump to. */
+    /**
+     * An agent that types out its text has its cursor at the head of what is shown, and no viewport to jump to. Between
+     * its chunks the cursor is at its focus, or at the end of what it wrote when it has none, so it does not go away
+     * with each pause (docs/collaboration.md of KodeEditor).
+     */
     private fun publishPeers() {
-        val heads = reveals.heads
-        _peers.value = if (heads.isEmpty()) reportedPeers else reportedPeers.map { peer ->
-            heads[peer.clientId]?.let { peer.copy(selections = listOf(RemoteSelection(it, it)), viewport = null) } ?: peer
+        val reveals = agentReveals.value
+        _peers.value = if (reveals.isEmpty()) reportedPeers else reportedPeers.map { peer ->
+            val reveal = reveals[peer.clientId] ?: return@map peer
+            val at = reveal.head ?: reveal.end?.takeIf { peer.selections.isEmpty() } ?: return@map peer
+            peer.copy(selections = listOf(RemoteSelection(at, at)), viewport = null)
         }
         onPeersChanged()
-    }
-
-    /**
-     * What is folded at a position in the editor, from its layout while it is shown. The reveal shows a folded part as
-     * a whole.
-     */
-    var collapsedRangeAt: (Int) -> TextRange? = { null }
-
-    /** Moves the reveals on, see [revealing] */
-    fun stepReveals(elapsedMs: Long) {
-        if (reveals.isEmpty) return
-        val text = editorState.text
-        reveals.step(elapsedMs, text) { collapsedRangeAt(it)?.max }.forEach { editorState.appear(it.start, it.end, it.tag) }
-        showReveals()
-    }
-
-    /** hides what is still to be typed out, keeping its space */
-    private fun showReveals() {
-        editorState.setRangeStyles(reveals.hiddenRanges.map { AnnotatedString.Range(HIDDEN, it.first, it.last + 1) })
-        _revealing.value = !reveals.isEmpty
-        publishPeers()
     }
 
     fun select(start: Int, end: Int) {
@@ -390,9 +388,6 @@ internal class EditorTextController(
         if (applied) {
             documentText = editorState.text
             moveAuthors(splice.start, splice.removedLength, splice.inserted.length, document.localAuthor)
-            // typing into text that is still hidden shows it
-            reveals.onEdit(splice.start, splice.removedLength, splice.inserted.length)
-            if (!reveals.isEmpty || editorState.rangeStyles.isNotEmpty()) showReveals()
             onLocalEdit()
         } else {
             onTextReplaced()
@@ -421,8 +416,8 @@ internal class EditorTextController(
     }
 }
 
-/** the text an agent has not typed yet keeps its space */
-private val HIDDEN = SpanStyle(color = Color.Transparent)
+/** a longer change of an agent shows at once */
+internal const val MAX_REVEAL_LENGTH = 2048
 
 /** There is no document open */
 private object NoDocument : EditableTextDocument {

@@ -9,10 +9,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import de.markusressel.kodeeditor.library.compose.GutterCell
+import de.markusressel.kodeeditor.library.compose.gutter.GutterCell
 import de.markusressel.mkdocseditor.R
-import de.markusressel.kodeeditor.library.compose.KodeEditorGutterColumn
-import de.markusressel.kodeeditor.library.compose.KodeEditorLayout
+import de.markusressel.kodeeditor.library.compose.gutter.KodeEditorGutterColumn
+import de.markusressel.kodeeditor.library.compose.layout.KodeEditorLayout
 import de.markusressel.mkdocseditor.feature.editor.domain.AuthorRun
 import de.markusressel.mkdocseditor.feature.editor.domain.LineShare
 

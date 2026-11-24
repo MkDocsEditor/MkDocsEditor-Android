@@ -149,6 +149,7 @@ internal data class CodeEditorScreen(
             onViewMoved = viewModel::onViewMoved,
             onRevealAllowed = viewModel::onRevealAllowed,
             onEditorLayout = viewModel::onEditorLayout,
+            agentReveals = viewModel.agentReveals,
         )
 
         ItemDialogs(
