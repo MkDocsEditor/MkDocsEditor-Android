@@ -1,6 +1,7 @@
 package de.markusressel.mkdocseditor.feature.editor.ui.compose
 
-import de.markusressel.kodeeditor.library.compose.KodeEditorLayout
+import de.markusressel.kodeeditor.library.compose.layout.KodeEditorLayout
+import de.markusressel.kodeeditor.library.compose.reveal.KodeEditorReveal
 import androidx.compose.runtime.collectAsState
 import android.animation.ValueAnimator
 import androidx.compose.runtime.rememberUpdatedState
@@ -46,6 +47,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,9 +70,9 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.platform.testTag
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.iconics.typeface.library.materialdesigniconic.MaterialDesignIconic
-import de.markusressel.kodeeditor.library.compose.KodeEditorListener
-import de.markusressel.kodeeditor.library.compose.KodeEditorState
-import de.markusressel.kodeeditor.library.compose.TextSplice
+import de.markusressel.kodeeditor.library.compose.state.KodeEditorListener
+import de.markusressel.kodeeditor.library.compose.state.KodeEditorState
+import de.markusressel.kodeeditor.library.compose.state.TextSplice
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -111,6 +113,7 @@ internal fun CodeEditorScreenContent(
     onViewMoved: (editorTop: Double?, pageTop: Double?, editorZoom: Float?) -> Unit = { _, _, _ -> },
     onRevealAllowed: (Boolean) -> Unit = {},
     onEditorLayout: (KodeEditorLayout?) -> Unit = {},
+    agentReveals: State<Map<String, KodeEditorReveal>> = NoAgentReveals,
 ) {
     // from the window and not from the space of the editor: the keyboard takes away height, and that must
     // not close the page or change the arrangement while typing
@@ -138,6 +141,10 @@ internal fun CodeEditorScreenContent(
         lifecycleState.isAtLeast(Lifecycle.State.RESUMED)
     val currentOnRevealAllowed by rememberUpdatedState(onRevealAllowed)
     LaunchedEffect(revealAllowed) { currentOnRevealAllowed(revealAllowed) }
+    // with the frames of the screen; on a rotation each one goes on where it was
+    agentReveals.value.values.forEach { reveal ->
+        key(reveal) { LaunchedEffect(reveal) { reveal.keepRevealing() } }
+    }
     val currentOnViewMoved by rememberUpdatedState(onViewMoved)
     LaunchedEffect(scrollSync) {
         snapshotFlow { scrollSync.positions to scrollSync.editorZoom }.distinctUntilChanged().collect { (positions, zoom) ->
@@ -746,3 +753,4 @@ private fun CodeEditorScreenContentOnlinePreview() {
         )
     }
 }
+private val NoAgentReveals: State<Map<String, KodeEditorReveal>> = mutableStateOf(emptyMap())

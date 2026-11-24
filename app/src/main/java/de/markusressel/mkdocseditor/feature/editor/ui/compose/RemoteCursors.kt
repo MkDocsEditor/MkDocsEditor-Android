@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.unit.dp
-import de.markusressel.kodeeditor.library.compose.KodeEditorRemoteCursor
+import de.markusressel.kodeeditor.library.compose.cursor.KodeEditorRemoteCursor
 import de.markusressel.mkdocseditor.feature.avatar.data.Avatar
 import de.markusressel.mkdocseditor.feature.avatar.ui.compose.UserAvatar
 import de.markusressel.mkdocsrestclient.sync.automerge.RemotePeer
