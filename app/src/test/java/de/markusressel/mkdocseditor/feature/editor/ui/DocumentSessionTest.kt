@@ -613,6 +613,25 @@ class DocumentSessionTest {
     }
 
     @Test
+    fun `coming back to the foreground reconnects right away, unless connected or signed out`() = test { f ->
+        f.open()
+        val document = f.document
+        val connects = document.connects
+
+        f.session.onForeground()
+        assertEquals(connects + 1, document.connects, "not connected")
+
+        document.connected()
+        f.session.onForeground()
+        assertEquals(connects + 1, document.connects, "connected")
+
+        document.isConnected = false
+        document.listener.onConnectionStatusChanged(false, CloseCode.UNAUTHORIZED)
+        f.session.onForeground()
+        assertEquals(connects + 1, document.connects, "signed out")
+    }
+
+    @Test
     fun `a new network without a document does nothing`() = test { f ->
         f.session.start()
         f.environment.networkChanges.emit(Unit)

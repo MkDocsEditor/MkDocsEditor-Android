@@ -46,6 +46,13 @@ class WebsocketConnectionHandler(
     private var webSocket: WebSocket? = null
 
     /**
+     * The listener of the current socket. Callbacks check it rather than [webSocket]: OkHttp can call one before
+     * `newWebSocket` returns, a failure even at once, and dropping that one left the connection stuck.
+     */
+    @Volatile
+    private var current: WebSocketListener? = null
+
+    /**
      * Indicates if the websocket is connected
      */
     @Volatile
@@ -66,17 +73,17 @@ class WebsocketConnectionHandler(
 
         val request = Request.Builder().url(url).build()
 
-        webSocket = client.newWebSocket(request, object : WebSocketListener() {
-            private fun isCurrent(socket: WebSocket) = socket === webSocket
+        val socketListener = object : WebSocketListener() {
+            private val isCurrent get() = current === this
 
             override fun onOpen(webSocket: WebSocket, response: Response) {
-                if (!isCurrent(webSocket)) return
+                if (!isCurrent) return
                 isConnected = true
                 listener?.onOpen()
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
-                if (!isCurrent(webSocket)) return
+                if (!isCurrent) return
                 listener?.onMessage(text)
             }
 
@@ -85,24 +92,30 @@ class WebsocketConnectionHandler(
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                if (!isCurrent(webSocket)) return
-                markClosed()
+                if (!markClosed(this)) return
                 listener?.onClosed(code)
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                if (!isCurrent(webSocket)) return
+                if (!markClosed(this)) return
                 Timber.e(t, "Websocket error")
-                markClosed()
                 listener?.onClosed(code = null, httpStatus = response?.code, throwable = t)
             }
-        })
+        }
+        current = socketListener
+        val socket = client.newWebSocket(request, socketListener)
+        // it may have failed already
+        if (current === socketListener) webSocket = socket
     }
 
+    /** @return false if the socket of [socketListener] is not the current one anymore */
     @Synchronized
-    private fun markClosed() {
+    private fun markClosed(socketListener: WebSocketListener): Boolean {
+        if (current !== socketListener) return false
+        current = null
         isConnected = false
         webSocket = null
+        return true
     }
 
     /**
@@ -125,6 +138,7 @@ class WebsocketConnectionHandler(
     fun disconnect(code: Int, reason: String) {
         webSocket?.close(code, reason)
         webSocket = null
+        current = null
         isConnected = false
     }
 

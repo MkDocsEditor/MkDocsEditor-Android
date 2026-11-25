@@ -127,11 +127,20 @@ internal data class CodeEditorScreen(
             }
         }
 
-        // persist the local copy when the app goes to the background
+        // persist the local copy when the app goes to the background, and sync right away when it comes back
         val lifecycleOwner = LocalLifecycleOwner.current
         DisposableEffect(lifecycleOwner) {
+            // the observer gets ON_START when it is added too, while the editor connects already
+            var stopped = false
             val observer = LifecycleEventObserver { _, event ->
-                if (event == Lifecycle.Event.ON_STOP) viewModel.onStop()
+                when (event) {
+                    Lifecycle.Event.ON_STOP -> {
+                        stopped = true
+                        viewModel.onStop()
+                    }
+                    Lifecycle.Event.ON_START -> if (stopped) viewModel.onRestart()
+                    else -> Unit
+                }
             }
             lifecycleOwner.lifecycle.addObserver(observer)
             onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }

@@ -1087,6 +1087,11 @@ internal class CodeEditorViewModel @Inject constructor(
         session.persist()
     }
 
+    /** Called when the editor screen is visible again after [onStop] */
+    internal fun onRestart() {
+        session.onForeground()
+    }
+
     override fun onCleared() {
         saveViewOnLeave()
         leavePage()
