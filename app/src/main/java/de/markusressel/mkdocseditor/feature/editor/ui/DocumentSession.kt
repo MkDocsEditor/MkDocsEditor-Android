@@ -275,13 +275,20 @@ internal class DocumentSession(
 
         scope.launch {
             // no need to wait for the next try, which can be up to 30 seconds away
-            environment.networkChanges.collect {
-                if (syncedDocument?.isConnected == false &&
-                    _connectionStatus.value?.isAuthenticationFailure != true
-                ) {
-                    reconnect()
-                }
-            }
+            environment.networkChanges.collect { reconnectIfDown() }
+        }
+    }
+
+    /**
+     * The app is back in the foreground, after a notification was tapped for example. While it was not, Android may
+     * have blocked its network (Doze), and the next try can be up to 30 seconds away.
+     */
+    fun onForeground() = reconnectIfDown()
+
+    /** connects now rather than with the next try, except when signed out */
+    private fun reconnectIfDown() {
+        if (syncedDocument?.isConnected == false && _connectionStatus.value?.isAuthenticationFailure != true) {
+            reconnect()
         }
     }
 

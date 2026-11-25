@@ -1,7 +1,10 @@
 package de.markusressel.mkdocsrestclient.sync.websocket
 
 import de.markusressel.mkdocsrestclient.AuthorizationProvider
+import okhttp3.Dispatcher
+import okhttp3.OkHttpClient
 import java.net.ServerSocket
+import java.util.concurrent.AbstractExecutorService
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -65,6 +68,38 @@ class WebsocketConnectionHandlerTest {
             handler.connect("ws://127.0.0.1:${silent.localPort}/")
             assertTrue(failed.await(5, TimeUnit.SECONDS))
         }
+    }
+
+    @Test
+    fun `a connection that fails before connect returns is reported`() {
+        // OkHttp runs the call on its own thread, so the failure can come before connect has kept the socket: when the
+        // app may not use the network (Doze, background), connecting fails at once. Here it runs on the calling thread.
+        val inline = object : AbstractExecutorService() {
+            override fun execute(command: Runnable) = command.run()
+            override fun shutdown() = Unit
+            override fun shutdownNow() = emptyList<Runnable>()
+            override fun isShutdown() = false
+            override fun isTerminated() = false
+            override fun awaitTermination(timeout: Long, unit: TimeUnit) = true
+        }
+        val closed = ServerSocket(0).use { it.localPort }
+        var failures = 0
+        val handler = WebsocketConnectionHandler(
+            AuthorizationProvider.NONE,
+            OkHttpClient.Builder().dispatcher(Dispatcher(inline)).build(),
+        )
+        handler.setListener(object : WebsocketConnectionListener {
+            override fun onOpen() = Unit
+            override fun onMessage(text: String) = Unit
+            override fun onClosed(code: Int?, httpStatus: Int?, throwable: Throwable?) {
+                failures++
+            }
+        })
+
+        handler.connect("ws://127.0.0.1:$closed/")
+
+        assertEquals(1, failures)
+        assertFalse(handler.isConnected)
     }
 
     @Test
