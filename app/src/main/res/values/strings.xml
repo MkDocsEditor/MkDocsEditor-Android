@@ -25,6 +25,12 @@
     <string name="feed_deleted">Deleted</string>
     <string name="feed_moved">Moved from %1$s</string>
     <string name="feed_edited_in">In %1$s</string>
+    <plurals name="feed_edits">
+        <item quantity="one">%1$d edit</item>
+        <item quantity="other">%1$d edits</item>
+    </plurals>
+    <string name="feed_show_edits">Show the single edits</string>
+    <string name="feed_hide_edits">Hide the single edits</string>
     <!-- lines an edit added and removed, shown in green and red next to each other -->
     <string name="feed_lines_added">+%1$d</string>
     <string name="feed_lines_removed">−%1$d</string>
