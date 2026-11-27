@@ -15,7 +15,7 @@ androidxWork = "2.12.0"
 annotatedText = "1.0.3"
 annotation = "1.11.0"
 browserVersion = "1.10.0"
-codeHighlighterVersion = "7.0.1"
+codeHighlighterVersion = "7.2.0"
 collectionKtx = "1.7.0"
 commonsVersion = "master-SNAPSHOT"
 composeShimmer = "1.5.0"
@@ -36,11 +36,11 @@ kotlinCoroutinesCore = "1.11.0"
 kotlinCoroutinesAndroid = "1.11.0"
 kotlinxSerialization = "1.13.0"
 ksp = "2.3.14"
-kutePreferences = "v4.1.0"
+kutePreferences = "v4.2.0"
 lifecycleCommonJava8 = "2.10.0"
 lifecycleViewmodelKtx = "2.10.0"
 liveevent = "1.2.0"
-material3WindowSizeClass = "1.4.0"
+material3WindowSizeClass = "1.5.0"
 moshiVersion = "1.15.2"
 objectboxVersion = "5.4.2"
 okhttp = "5.5.1"
@@ -84,7 +84,7 @@ androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", versi
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
 # androidx-compose-material = { group = "androidx.compose.material", name = "material" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
-androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version = "1.4.0" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version = "1.5.0" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-compose-ui-text = { group = "androidx.compose.ui", name = "ui-text" }
@@ -156,7 +156,7 @@ markusressel-typedpreferences = { group = "com.github.markusressel", name = "Typ
 markusressel-kutepreferences-core = { group = "com.github.markusressel.KutePreferences", name = "core", version.ref = "kutePreferences" }
 markusressel-kutepreferences-ui = { group = "com.github.markusressel.KutePreferences", name = "ui", version.ref = "kutePreferences" }
 
-markusressel-kodeeditor = { module = "com.github.markusressel:KodeEditor", version = "9.6.1" }
+markusressel-kodeeditor = { module = "com.github.markusressel:KodeEditor", version = "9.7.0" }
 
 mikepenz-aboutlibraries = { module = "com.mikepenz:aboutlibraries", version.ref = "aboutlibrariesVersion" }
 mikepenz-aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutlibrariesVersion" }
