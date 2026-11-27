@@ -19,10 +19,12 @@ import de.markusressel.mkdocseditor.feature.common.ui.ShownTransfer
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
 import de.markusressel.mkdocseditor.feature.dashboard.data.DashboardStore
 import de.markusressel.mkdocseditor.feature.dashboard.domain.FamilyPinPermission
+import de.markusressel.mkdocseditor.feature.dashboard.domain.FeedRow
 import de.markusressel.mkdocseditor.feature.dashboard.domain.LoadDashboardUseCase
 import de.markusressel.mkdocseditor.feature.dashboard.domain.LoadHomePageUseCase
 import de.markusressel.mkdocseditor.feature.dashboard.domain.PinOutcome
 import de.markusressel.mkdocseditor.feature.dashboard.domain.SetPinUseCase
+import de.markusressel.mkdocseditor.feature.dashboard.domain.groupFeed
 import de.markusressel.mkdocseditor.feature.dashboard.domain.homePage
 import de.markusressel.mkdocseditor.feature.editor.domain.EditorResources
 import de.markusressel.mkdocseditor.feature.editor.domain.ExternalLinkOpener
@@ -138,6 +140,7 @@ internal class DashboardViewModel @Inject constructor(
                 UiEvent.LoadOlderFeed -> loadOlderFeed()
                 is UiEvent.DocumentClicked -> _events.send(DashboardEvent.OpenDocument(event.documentId))
                 is UiEvent.FeedEntryClicked -> openFeedEntry(event.entry)
+                is UiEvent.FeedGroupToggled -> toggle(event.row)
                 is UiEvent.UnpinClicked -> unpin(event.scope, event.pin)
                 is UiEvent.HomePageLinkClicked -> onLinkClicked(event.href)
                 UiEvent.CancelDownload -> download.cancel()
@@ -273,6 +276,11 @@ internal class DashboardViewModel @Inject constructor(
         }
     }
 
+    private fun toggle(row: FeedRow) = _uiState.update { old ->
+        val ids = row.entries.map { it.id }
+        old.copy(expandedFeedEntries = if (old.isExpanded(row)) old.expandedFeedEntries - ids.toSet() else old.expandedFeedEntries + ids)
+    }
+
     private suspend fun openFeedEntry(entry: FeedEntryModel) {
         val documentId = entry.documentId
         when {
@@ -356,6 +364,8 @@ internal class DashboardViewModel @Inject constructor(
      * @param lastSyncFailed the server did not answer the last time
      * @param mayPinForEveryone false for a reader, who can not remove the pins for everyone
      * @param download a file of a link on the home page, while it downloads
+     * @param expandedFeedEntries the entries of the groups the user opened. A group stays open when a refresh or an
+     * older page adds to it, because the entries it had are still in it.
      */
     data class UiState(
         val homePage: HomePageState? = null,
@@ -371,13 +381,22 @@ internal class DashboardViewModel @Inject constructor(
         val lastSyncFailed: Boolean = false,
         val mayPinForEveryone: Boolean = true,
         val download: TransferProgress? = null,
-    )
+        val expandedFeedEntries: Set<String> = emptySet(),
+    ) {
+        /** [feed] with the edits of a document folded, see [groupFeed] */
+        val feedRows: List<FeedRow> by lazy { groupFeed(feed) }
+
+        fun isExpanded(row: FeedRow) = row.isGroup && row.entries.any { it.id in expandedFeedEntries }
+    }
 
     sealed interface UiEvent {
         data object Refresh : UiEvent
         data object LoadOlderFeed : UiEvent
         data class DocumentClicked(val documentId: String) : UiEvent
         data class FeedEntryClicked(val entry: FeedEntryModel) : UiEvent
+
+        /** shows or hides the single edits of a group */
+        data class FeedGroupToggled(val row: FeedRow) : UiEvent
         data class UnpinClicked(val scope: PinScope, val pin: PinModel) : UiEvent
         data class HomePageLinkClicked(val href: String) : UiEvent
         data class TopAppBarActionClicked(val action: TopAppBarAction.FileBrowser) : UiEvent

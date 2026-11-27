@@ -20,6 +20,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -54,6 +57,7 @@ import de.markusressel.mkdocseditor.feature.common.ui.compose.TransferProgressBa
 import de.markusressel.mkdocseditor.feature.common.ui.compose.syncStatusText
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.MkDocsEditorTopAppBar
 import de.markusressel.mkdocseditor.feature.common.ui.compose.topbar.TopAppBarAction
+import de.markusressel.mkdocseditor.feature.dashboard.domain.FeedRow
 import de.markusressel.mkdocseditor.feature.dashboard.ui.DashboardViewModel.HomePageState
 import de.markusressel.mkdocseditor.feature.dashboard.ui.DashboardViewModel.UiEvent
 import de.markusressel.mkdocseditor.feature.dashboard.ui.DashboardViewModel.UiState
@@ -223,8 +227,26 @@ private fun ColumnScope.PinsAndFeed(uiState: UiState, onUiEvent: (UiEvent) -> Un
         SectionTitle(R.string.dashboard_feed_title)
         if (uiState.feed.isEmpty()) Hint(R.string.dashboard_feed_empty)
         val now = remember(uiState.feed) { Date() }
-        uiState.feed.forEach { entry ->
-            FeedEntry(entry = entry, now = now, onClick = { onUiEvent(UiEvent.FeedEntryClicked(entry)) })
+        uiState.feedRows.forEach { row ->
+            if (row.isGroup) {
+                val expanded = uiState.isExpanded(row)
+                FeedGroup(
+                    row = row,
+                    now = now,
+                    expanded = expanded,
+                    onClick = { onUiEvent(UiEvent.FeedEntryClicked(row.newest)) },
+                    onToggle = { onUiEvent(UiEvent.FeedGroupToggled(row)) },
+                )
+                if (expanded) {
+                    Column(modifier = Modifier.padding(start = 24.dp)) {
+                        row.entries.forEach { entry ->
+                            FeedEntry(entry = entry, now = now, onClick = { onUiEvent(UiEvent.FeedEntryClicked(entry)) })
+                        }
+                    }
+                }
+            } else {
+                FeedEntry(entry = row.newest, now = now, onClick = { onUiEvent(UiEvent.FeedEntryClicked(row.newest)) })
+            }
         }
         if (uiState.feedNext != null) {
             TextButton(
@@ -292,6 +314,39 @@ private fun FeedEntry(entry: FeedEntryModel, now: Date, onClick: () -> Unit) {
                 Text(listOf(authors, time).filter { it.isNotEmpty() }.joinToString(" · "), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 what?.let { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) }
                 counts?.let { Text(it, maxLines = 1) }
+            }
+        },
+    )
+}
+
+/**
+ * The edits of one document. A tap opens the newest at its change, like its own row would; the button shows the single
+ * edits. It has no line counts: those of several edits can not be added up.
+ */
+@Composable
+private fun FeedGroup(row: FeedRow, now: Date, expanded: Boolean, onClick: () -> Unit, onToggle: () -> Unit) {
+    val time = feedTime(row.newest.time, now) ?: stringResource(R.string.feed_just_now)
+    val authors = row.authors.joinToString(", ") { it.displayName }
+    val edits = pluralStringResource(R.plurals.feed_edits, row.entries.size, row.entries.size)
+    val what = row.headings.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.feed_edited_in, it.joinToString(", ")) }
+    ListItem(
+        modifier = Modifier.clickable(onClick = onClick),
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        leadingContent = { AuthorAvatar(row.newest.authors.firstOrNull()) },
+        headlineContent = { Text(row.newest.shownTitle, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        supportingContent = {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(listOf(authors, time).filter { it.isNotEmpty() }.joinToString(" · "), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(edits, maxLines = 1)
+                what?.let { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) }
+            }
+        },
+        trailingContent = {
+            IconButton(onClick = onToggle) {
+                Icon(
+                    if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                    contentDescription = stringResource(if (expanded) R.string.feed_hide_edits else R.string.feed_show_edits),
+                )
             }
         },
     )
@@ -404,6 +459,16 @@ private fun DashboardScreenContentPreview() {
                         path = "family/shopping.md",
                         authors = listOf(anna),
                         summary = FeedSummaryModel(linesAdded = 3, linesRemoved = 1, headings = listOf("Groceries")),
+                    ),
+                    FeedEntryModel(
+                        id = "f2",
+                        time = Date(),
+                        kind = FeedKind.EDITED,
+                        itemType = "document",
+                        documentId = "d1",
+                        path = "family/shopping.md",
+                        authors = listOf(anna),
+                        summary = FeedSummaryModel(linesAdded = 1, headings = listOf("Bakery")),
                     ),
                 ),
                 lastSync = Date(),
